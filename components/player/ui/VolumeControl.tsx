@@ -107,7 +107,7 @@ export function VolumeControl({
       </button>
 
       <div
-        className={`ml-1 flex items-center overflow-hidden transition-all duration-200 ${
+        className={`ms-[0.5em] flex items-center overflow-hidden transition-all duration-200 ${
           isHovering ? "w-24 opacity-100" : "w-0 opacity-0"
         }`}
       >
@@ -126,14 +126,14 @@ export function VolumeControl({
           tabIndex={0}
         >
           <div className="absolute inset-y-0 left-0 right-0 flex items-center">
-            <div className="relative h-[3px] w-full overflow-visible rounded-full transition-all duration-150 group-hover/slider:h-[5px]">
+            <div className="relative mx-[0.375em] h-[3px] w-full overflow-visible rounded-full transition-all duration-150 group-hover/slider:h-[5px]">
               <div className="relative h-full w-full">
                 <div className="absolute inset-0 rounded-full bg-white/25 transition-colors duration-150 group-hover/slider:bg-white/30" />
                 <div
                   className="absolute left-0 top-0 h-full rounded-full bg-primary transition-none"
                   style={{ width: `${progress}%` }}
                 >
-                  <div className="absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 translate-x-1/2 rounded-full bg-white shadow-md" />
+                  <div className="absolute right-0 top-1/2 h-[0.75em] w-[0.75em] -translate-y-1/2 translate-x-1/2 rounded-full bg-white shadow-md" />
                 </div>
               </div>
             </div>

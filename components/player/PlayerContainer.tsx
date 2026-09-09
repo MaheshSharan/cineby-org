@@ -260,7 +260,6 @@ export function PlayerContainer({
 
   const playerState = usePlayerState({
     videoRef,
-    autoPlay: true,
     initialSeekTime,
   });
   const { setRate } = playerState;

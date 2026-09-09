@@ -106,9 +106,11 @@ export class NumberSchema extends Schema<number> {
   private maxVal?: number;
   private isInt = false;
   private coerce = false;
+  private customMessage?: string;
 
   int(msg?: string): this {
     this.isInt = true;
+    if (msg) this.customMessage = msg;
     return this;
   }
 
@@ -137,7 +139,10 @@ export class NumberSchema extends Schema<number> {
       return 0;
     }
     if (this.isInt && !Number.isInteger(num)) {
-      ctx.issues.push({ path: [...ctx.path], message: "Expected integer" });
+      ctx.issues.push({
+        path: [...ctx.path],
+        message: this.customMessage || "Expected integer",
+      });
     }
     if (this.minVal !== undefined && num < this.minVal) {
       ctx.issues.push({ path: [...ctx.path], message: `Must be >= ${this.minVal}` });

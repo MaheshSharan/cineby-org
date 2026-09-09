@@ -4,7 +4,6 @@ import type { PlaybackRate, QualityLabel, SubtitleTrack } from "../types";
 
 interface UsePlayerStateOptions {
   videoRef: React.RefObject<HTMLVideoElement | null>;
-  autoPlay?: boolean;
   initialSeekTime?: number;
 }
 
@@ -32,7 +31,6 @@ export interface UsePlayerStateResult {
 
 export function usePlayerState({
   videoRef,
-  autoPlay = false,
   initialSeekTime = 0,
 }: UsePlayerStateOptions): UsePlayerStateResult {
   const [isPlaying, setIsPlaying] = useState(false);

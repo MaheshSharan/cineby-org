@@ -329,7 +329,7 @@ async function scrape(req: StreamRequest): Promise<StreamResponse> {
     return { sources: [], subtitles: [] };
   }
 
-  const { tmdbId, type, season, episode, signal } = req;
+  const { tmdbId, type, signal } = req;
 
   // Fetch metadata and seed concurrently
   const [meta, seed] = await Promise.all([
