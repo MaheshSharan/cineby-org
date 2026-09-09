@@ -261,11 +261,15 @@ async function scrapeServer(
         url: payload.playlist,
         type: "hls",
         quality: "1080p",
+        // direct: true prevents the registry from proxy-wrapping this URL.
+        // moon.peakstorm.top blocks datacenter IPs — the client must fetch
+        // this M3U8 browser-side via /api/stream/m3u8 instead.
+        direct: true,
         headers: {
           Referer: "https://www.vidy.st/",
           Origin: "https://www.vidy.st",
           "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
         },
         provider: {
           id: `${PROVIDER_ID}-${server.id}`,
@@ -301,11 +305,12 @@ async function scrapeServer(
         url: s.url,
         type: s.type === "mp4" ? "mp4" : s.type === "dash" ? "dash" : "hls",
         quality: parseQuality(s.quality),
+        direct: true,
         headers: {
           Referer: "https://www.vidy.st/",
           Origin: "https://www.vidy.st",
           "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
         },
         provider: {
           id: `${PROVIDER_ID}-${server.id}`,
@@ -444,3 +449,63 @@ export const vidyProvider: Provider = {
   fetch: scrape,
   fetchSubtitles: fetchSubtitlesOnly,
 };
+
+export function decryptVidyClientSources(
+  ciphertext: string,
+  seed: string,
+  tmdbId: number,
+  serverId = "miami"
+): StreamSource[] {
+  try {
+    const payload = decryptVidyPayload<DecryptedPayload>(ciphertext, seed, tmdbId);
+    const serverObj = VIDY_SERVERS.find((s) => s.id === serverId) ?? VIDY_SERVERS[0];
+
+    const sources: StreamSource[] = [];
+
+    if (payload.playlist) {
+      sources.push({
+        url: payload.playlist,
+        type: "hls",
+        quality: "1080p",
+        direct: true,
+        headers: {
+          Referer: "https://www.vidy.st/",
+          Origin: "https://www.vidy.st",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+        },
+        provider: {
+          id: `${PROVIDER_ID}-${serverObj.id}`,
+          name: serverObj.name,
+        },
+        audioTracks: [{ language: serverObj.audioLanguage, label: serverObj.audioLabel }],
+      });
+    }
+
+    for (const s of payload.sources ?? []) {
+      if (!s.url) continue;
+      sources.push({
+        url: s.url,
+        type: s.type === "mp4" ? "mp4" : s.type === "dash" ? "dash" : "hls",
+        quality: parseQuality(s.quality),
+        direct: true,
+        headers: {
+          Referer: "https://www.vidy.st/",
+          Origin: "https://www.vidy.st",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+        },
+        provider: {
+          id: `${PROVIDER_ID}-${serverObj.id}`,
+          name: serverObj.name,
+        },
+        audioTracks: [{ language: serverObj.audioLanguage, label: serverObj.audioLabel }],
+      });
+    }
+
+    return sources;
+  } catch (err) {
+    console.error("[vidy] Failed to decrypt client-provided ciphertext:", err);
+    return [];
+  }
+}

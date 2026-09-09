@@ -32,6 +32,10 @@ export function attachHls(
   src: string,
   options?: HlsOptions
 ): HlsController {
+  // If src is a Blob URL created for a rewritten M3U8, revoke it on destroy
+  // to release the memory held by the Blob.
+  const blobUrlToRevoke = src.startsWith("blob:") ? src : null;
+
   const hls = new Hls({
     enableWorker: true,
     backBufferLength: 30,
@@ -64,6 +68,9 @@ export function attachHls(
   return {
     destroy: () => {
       hls.destroy();
+      if (blobUrlToRevoke) {
+        URL.revokeObjectURL(blobUrlToRevoke);
+      }
     },
     setQuality: (quality) => {
       const cap = getHlsQualityCap(quality);

@@ -2,6 +2,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { resolveAllStreams, fetchProviderSubtitles } from "@/lib/providers/registry";
 import { decryptVidkingClientSources } from "@/lib/providers/sources/vidking";
+import { parseVixsrcEmbedHtml } from "@/lib/providers/sources/vixsrc";
+import { decryptVidyClientSources } from "@/lib/providers/sources/vidy";
 import { buildStreamProxyUrl } from "@/lib/providers/proxy";
 import type { MediaType, StreamResponse } from "@/lib/providers/types";
 
@@ -31,6 +33,14 @@ export default async function handler(
   const clientSeed = typeof body.seed === "string" ? body.seed : typeof query.seed === "string" ? query.seed : undefined;
   const clientServerId = typeof body.serverId === "string" ? body.serverId : typeof query.serverId === "string" ? query.serverId : "yoru";
 
+  // Vixsrc client-assisted payload
+  const vixsrcEmbedHtml = typeof body.embedHtml === "string" ? body.embedHtml : undefined;
+
+  // Vidy client-assisted payload
+  const vidyCiphertext = typeof body.vidyCiphertext === "string" ? body.vidyCiphertext : undefined;
+  const vidySeed = typeof body.vidySeed === "string" ? body.vidySeed : undefined;
+  const vidyServerId = typeof body.vidyServerId === "string" ? body.vidyServerId : "miami";
+
   const parsedTmdbId = Number.parseInt(String(tmdbId || ""), 10);
   if (!parsedTmdbId || Number.isNaN(parsedTmdbId)) {
     res.status(400).json({ error: "Missing or invalid tmdbId parameter." });
@@ -43,8 +53,10 @@ export default async function handler(
   const targetServer = typeof server === "string" && server.trim() ? server.trim() : undefined;
 
   try {
-    // 1. If client provided a browser-fetched encrypted payload, decrypt and sign immediately
-    if (clientCiphertext && clientSeed) {
+    // 1. If client provided a browser-fetched encrypted payload, decrypt and sign immediately.
+    // Guard with ENABLE_VIDKING so toggling the env flag also disables the client-assisted path.
+    const isVidkingEnabled = process.env.ENABLE_VIDKING !== "false" && process.env.ENABLE_VIDKING !== "0";
+    if (clientCiphertext && clientSeed && isVidkingEnabled) {
       console.log(`[resolve] Processing client-provided Vidking payload for tmdbId=${parsedTmdbId}`);
       const rawSources = decryptVidkingClientSources(clientCiphertext, clientSeed, parsedTmdbId, clientServerId);
 
@@ -70,6 +82,53 @@ export default async function handler(
         return;
       }
       console.warn(`[resolve] Client-provided payload failed to decrypt any sources, falling back to server`);
+    }
+
+    // 2. If client provided a browser-fetched vixsrc embed HTML, parse and sign immediately.
+    // Guard with ENABLE_VIXSRC so toggling the env flag also disables the client-assisted path.
+    const isVixsrcEnabled = process.env.ENABLE_VIXSRC !== "false" && process.env.ENABLE_VIXSRC !== "0";
+    if (vixsrcEmbedHtml && isVixsrcEnabled) {
+      console.log(`[resolve] Processing client-provided Vixsrc embed HTML for tmdbId=${parsedTmdbId}`);
+      const source = parseVixsrcEmbedHtml(vixsrcEmbedHtml);
+
+      if (source) {
+        const finalSource = {
+          ...source,
+          url: buildStreamProxyUrl(source.url, source.headers),
+        };
+
+        console.log(`[resolve] Vixsrc client-assisted resolution succeeded for tmdbId=${parsedTmdbId}`);
+        res.status(200).json({ sources: [finalSource], subtitles: [] });
+        return;
+      }
+      console.warn(`[resolve] Vixsrc client-provided embed HTML failed to parse, falling back to server`);
+    }
+
+    // 3. If client provided a browser-fetched Vidy payload, decrypt and sign immediately.
+    // Guard with ENABLE_VIDY so toggling the env flag also disables the client-assisted path.
+    const isVidyEnabled = process.env.ENABLE_VIDY !== "false" && process.env.ENABLE_VIDY !== "0";
+    if (vidyCiphertext && vidySeed && isVidyEnabled) {
+      console.log(`[resolve] Processing client-provided Vidy payload for tmdbId=${parsedTmdbId}`);
+      const rawSources = decryptVidyClientSources(vidyCiphertext, vidySeed, parsedTmdbId, vidyServerId);
+
+      if (rawSources.length > 0) {
+        const finalSources = rawSources.map((src) => ({
+          ...src,
+          url: buildStreamProxyUrl(src.url, src.headers),
+        }));
+
+        const subtitles = await fetchProviderSubtitles({
+          tmdbId: parsedTmdbId,
+          type: mediaType,
+          season: seasonNum,
+          episode: episodeNum,
+        }, targetServer || `vidy-${vidyServerId}`);
+
+        console.log(`[resolve] Vidy client-assisted resolution succeeded: ${finalSources.length} sources, ${subtitles.length} subtitles`);
+        res.status(200).json({ sources: finalSources, subtitles });
+        return;
+      }
+      console.warn(`[resolve] Vidy client-provided payload failed to decrypt any sources, falling back to server`);
     }
 
     console.log(`[resolve] Starting server-side stream resolution for tmdbId=${parsedTmdbId}, type=${mediaType}, server=${targetServer || "default"}`);
