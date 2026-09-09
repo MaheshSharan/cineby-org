@@ -5,9 +5,23 @@ import { ALL_PROVIDERS } from "./sources";
 import type { Provider, StreamRequest, StreamResponse, StreamSource, SubtitleTrack } from "./types";
 import { logError } from "@/lib/logger";
 
+function getEnvVar(name: string): string | undefined {
+  if (process.env[name] !== undefined) {
+    return process.env[name];
+  }
+  try {
+    const cfContext = (globalThis as unknown as Record<symbol, { env?: Record<string, unknown> }>)[
+      Symbol.for("__cloudflare-context__")
+    ];
+    const val = cfContext?.env?.[name];
+    if (typeof val === "string") return val;
+  } catch {}
+  return undefined;
+}
+
 function isProviderEnabled(provider: Provider): boolean {
   const envVar = `ENABLE_${provider.id.toUpperCase()}`;
-  const val = process.env[envVar];
+  const val = getEnvVar(envVar);
   // Enabled by default unless explicitly set to "false" or "0"
   if (val === "false" || val === "0") {
     return false;

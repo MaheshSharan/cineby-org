@@ -5,11 +5,33 @@ interface Descriptor { url: string; headers: Record<string, string>; expiresAt: 
 let devFallbackSecret: string | null = null;
 
 function secret(): string {
+  // 1. Check process.env
   const value = process.env.STREAM_PROXY_SECRET?.trim();
   if (value) return value;
-  if (process.env.NODE_ENV === "production") {
+
+  // 2. Check OpenNext Cloudflare ALS context
+  try {
+    const cfContext = (globalThis as unknown as Record<symbol, { env?: Record<string, unknown> }>)[
+      Symbol.for("__cloudflare-context__")
+    ];
+    const cfSecret = cfContext?.env?.STREAM_PROXY_SECRET;
+    if (typeof cfSecret === "string" && cfSecret.trim()) {
+      return cfSecret.trim();
+    }
+  } catch {
+    // Continue
+  }
+
+  // 4. Check global env
+  const globalEnv = (globalThis as unknown as { env?: Record<string, unknown> })?.env;
+  if (typeof globalEnv?.STREAM_PROXY_SECRET === "string" && globalEnv.STREAM_PROXY_SECRET.trim()) {
+    return globalEnv.STREAM_PROXY_SECRET.trim();
+  }
+
+  if (process.env.NODE_ENV === "production" && typeof navigator !== "undefined" && navigator.userAgent === "CloudFlare-Workers") {
     throw new Error("[signedProxy] STREAM_PROXY_SECRET must be configured in production");
   }
+
   if (!devFallbackSecret) {
     devFallbackSecret = "cineby_dev_stream_secret_default_fallback_key";
   }

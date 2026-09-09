@@ -54,7 +54,8 @@ export default async function handler(
 
     res.status(200).json(result);
     return;
-  } catch {
+  } catch (error) {
+    console.error("[api/stream/resolve] Error resolving stream:", error);
     res.status(500).json({
       sources: [],
       subtitles: [],

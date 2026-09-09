@@ -24,6 +24,22 @@
     "NEXT_PUBLIC_TMDB_IMAGE_BASE_URL": "https://image.tmdb.org/t/p",
     "NEXT_PUBLIC_ENABLE_IMAGE_PROXY": "true",
     "NEXT_PUBLIC_IMAGE_PROXY_URL": "https://wsrv.nl",
-    "STREAM_PROXY_URL": "https://cineby-stream-proxy.maheworks.workers.dev"
+    "STREAM_PROXY_URL": "https://cineby-stream-proxy.maheworks.workers.dev",
+    "ENABLE_VIDKING": "true",
+    "ENABLE_VIDY": "false",
+    "ENABLE_VIXSRC": "false"
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
   }
 }
