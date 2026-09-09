@@ -4,13 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { MovieDetails, TvDetails } from "@/lib/tmdb";
 import { getHeroBackdropUrl, getLogoUrl } from "@/lib/tmdb/image";
+import type { HistoryEntry } from "@/lib/db/types";
 import { listHistory } from "@/lib/api/history";
 import {
   addToWatchlist,
   checkWatchlist,
   removeFromWatchlist,
 } from "@/lib/api/watchlist";
-import { getEpisodeHref, getMediaHref, getPlayHref, getYear, formatRuntime } from "@/lib/utils/media";
+import { calculateResumeSeconds, getEpisodeHref, getMediaHref, getPlayHref, getYear, formatRuntime, formatPlaybackTime } from "@/lib/utils/media";
 import { getMovyRatings, getMovyTrailerUrl, type MovyRatings } from "@/lib/services/movy";
 
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -71,29 +72,57 @@ export function DetailPage({
   const heroBackdrop = getHeroBackdropUrl(details.backdropPath);
   const isTv = details.mediaType === "tv";
 
+  const [historyEntry, setHistoryEntry] = useState<HistoryEntry | null>(null);
+
   useEffect(() => {
-    if (!isTv || (seasonNumber && episodeNumber) || !user) {
+    if (!user) {
+      setHistoryEntry(null);
+      setHistoryEpisode(null);
       return;
     }
 
     let isCurrent = true;
 
-    listHistory()
-      .then((historyList) => {
-        if (!isCurrent) return;
-        const match = historyList.find(
-          (item) => item.mediaType === "tv" && item.mediaId === details.id
-        );
-        if (match?.seasonNumber && match?.episodeNumber) {
-          setHistoryEpisode({ season: match.seasonNumber, episode: match.episodeNumber });
-        }
-      })
-      .catch(() => {});
+    const fetchHistory = () => {
+      listHistory()
+        .then((historyList) => {
+          if (!isCurrent) return;
+          const match = historyList.find(
+            (item) => item.mediaType === details.mediaType && item.mediaId === details.id
+          );
+          if (match) {
+            // Only offer resume if progress is between 1% and 94% (avoid completed content)
+            if (match.progress !== null && match.progress > 0 && match.progress < 95) {
+              setHistoryEntry(match);
+            } else {
+              setHistoryEntry(null);
+            }
+
+            if (isTv && match.seasonNumber && match.episodeNumber) {
+              setHistoryEpisode({ season: match.seasonNumber, episode: match.episodeNumber });
+            }
+          } else {
+            setHistoryEntry(null);
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchHistory();
+
+    const handleProfileChange = () => {
+      fetchHistory();
+    };
+
+    window.addEventListener("cineby:profile-change", handleProfileChange);
+    window.addEventListener("storage", handleProfileChange);
 
     return () => {
       isCurrent = false;
+      window.removeEventListener("cineby:profile-change", handleProfileChange);
+      window.removeEventListener("storage", handleProfileChange);
     };
-  }, [details.id, episodeNumber, isTv, seasonNumber, user]);
+  }, [details.id, details.mediaType, isTv, user]);
 
   useEffect(() => {
     if (isTv) {
@@ -515,6 +544,50 @@ export function DetailPage({
             ) : null}
 
             <div className="mb-4 flex flex-wrap items-center gap-2 md:gap-3">
+              {historyEntry ? (() => {
+                const totalMinutes = isTv
+                  ? ("episodeRunTime" in details && details.episodeRunTime?.[0]
+                      ? details.episodeRunTime[0]
+                      : historyEntry.duration)
+                  : ("runtime" in details && details.runtime
+                      ? details.runtime
+                      : historyEntry.duration);
+
+                const resumeSeconds = calculateResumeSeconds(historyEntry.progress, totalMinutes);
+                const resumeLabel = resumeSeconds > 0
+                  ? `Resume at ${formatPlaybackTime(resumeSeconds)}`
+                  : `Resume${historyEntry.progress ? ` (${historyEntry.progress}%)` : ""}`;
+
+                const resumeHref = isTv
+                  ? getEpisodeHref(
+                      details.id,
+                      historyEntry.seasonNumber ?? historyEpisode?.season ?? 1,
+                      historyEntry.episodeNumber ?? historyEpisode?.episode ?? 1,
+                      resumeSeconds
+                    )
+                  : getPlayHref(
+                      details.mediaType,
+                      details.id,
+                      resumeSeconds
+                    );
+
+                return (
+                  <Link
+                    href={resumeHref}
+                    className="flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-[13px] font-semibold text-white shadow-glow transition-all duration-200 hover:brightness-110 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 md:h-12 md:gap-3 md:px-7 md:text-[14px]"
+                  >
+                    <svg
+                      className="h-5 w-5 fill-current md:h-[22px] md:w-[22px]"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <polygon points="5,3 19,12 5,21" />
+                    </svg>
+                    <span>{resumeLabel}</span>
+                  </Link>
+                );
+              })() : null}
+
               <Link
                 href={
                   isTv
@@ -525,7 +598,11 @@ export function DetailPage({
                       )
                     : getPlayHref(details.mediaType, details.id)
                 }
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-text-hi text-[#05070a] transition-all duration-200 hover:bg-white hover:shadow-glow active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg md:h-auto md:w-auto md:gap-3 md:px-7 md:py-2.5"
+                className={`flex h-11 items-center justify-center rounded-full transition-all duration-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg ${
+                  historyEntry
+                    ? "border border-white/20 bg-white/10 text-white hover:bg-white/20 px-4 md:px-6 text-[13px] md:text-[14px]"
+                    : "w-11 bg-text-hi text-[#05070a] hover:bg-white hover:shadow-glow md:h-auto md:w-auto md:gap-3 md:px-7 md:py-2.5"
+                }`}
               >
                 <svg
                   className="h-5 w-5 fill-current md:h-[22px] md:w-[22px]"
@@ -534,7 +611,9 @@ export function DetailPage({
                 >
                   <polygon points="5,3 19,12 5,21" />
                 </svg>
-                <span className="hidden md:inline">Play</span>
+                <span className={historyEntry ? "inline" : "hidden md:inline"}>
+                  {historyEntry ? "Start Over" : "Play"}
+                </span>
               </Link>
 
               <button

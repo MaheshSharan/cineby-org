@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import type { HistoryEntry } from "@/lib/db/types";
 import { listHistory, removeFromHistory } from "@/lib/api/history";
-import { getEpisodeHref, getPlayHref } from "@/lib/utils/media";
+import { calculateResumeSeconds, getEpisodeHref, getPlayHref } from "@/lib/utils/media";
 import { getPosterResponsiveUrls } from "@/lib/tmdb/image";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ContentRow } from "@/components/content/ContentRow";
@@ -21,14 +21,30 @@ export function ContinueWatchingRow() {
 
     let isCurrent = true;
 
-    listHistory().then((data) => {
-      if (isCurrent) {
-        setItems(data);
-      }
-    });
+    const loadHistory = () => {
+      listHistory().then((data) => {
+        if (!isCurrent) return;
+        // Filter: only show items with meaningful in-progress content (progress > 0 and progress < 95)
+        const inProgress = data.filter(
+          (item) => item.progress !== null && item.progress > 0 && item.progress < 95
+        );
+        setItems(inProgress);
+      });
+    };
+
+    loadHistory();
+
+    const handleProfileChange = () => {
+      loadHistory();
+    };
+
+    window.addEventListener("cineby:profile-change", handleProfileChange);
+    window.addEventListener("storage", handleProfileChange);
 
     return () => {
       isCurrent = false;
+      window.removeEventListener("cineby:profile-change", handleProfileChange);
+      window.removeEventListener("storage", handleProfileChange);
     };
   }, [user]);
 
@@ -63,10 +79,14 @@ interface ContinueWatchingCardProps {
 
 function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardProps) {
   const poster = getPosterResponsiveUrls(entry.posterPath);
+
+  // Calculate resume time in seconds based on duration or progress
+  const resumeSeconds = calculateResumeSeconds(entry.progress, entry.duration);
+
   const playHref =
     entry.mediaType === "tv" && entry.seasonNumber && entry.episodeNumber
-      ? getEpisodeHref(entry.mediaId, entry.seasonNumber, entry.episodeNumber)
-      : getPlayHref(entry.mediaType, entry.mediaId);
+      ? getEpisodeHref(entry.mediaId, entry.seasonNumber, entry.episodeNumber, resumeSeconds)
+      : getPlayHref(entry.mediaType, entry.mediaId, resumeSeconds);
 
   const subtitle =
     entry.mediaType === "tv"
@@ -74,7 +94,7 @@ function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardProps) {
       : "Movie";
 
   return (
-    <div className="group relative w-[140px] xs:w-[150px] flex-shrink-0 md:w-[180px] lg:w-[200px]">
+    <div className="group relative w-[140px] xs:w-[150px] flex-shrink-0 md:w-[180px] lg:w-[200px] snap-start">
       <button
         type="button"
         onClick={(e) => {
@@ -84,14 +104,18 @@ function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardProps) {
         }}
         title="Remove from history"
         aria-label={`Remove ${entry.title} from history`}
-        className="absolute right-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/70 backdrop-blur-md transition-colors duration-200 hover:text-red-400 md:invisible md:opacity-0 md:group-hover:visible md:group-hover:opacity-100"
+        className="absolute right-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/70 backdrop-blur-md transition-colors duration-normal hover:text-red-400 md:invisible md:opacity-0 md:group-hover:visible md:group-hover:opacity-100 focus-visible:visible focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
       >
         <XIcon size={14} />
       </button>
 
-      <Link href={playHref} aria-label={entry.title} className="flex flex-col">
-        <div className="relative aspect-[2/3] w-full overflow-hidden rounded-[10px] border border-white/10 bg-surface-1 transition-all duration-200">
-          <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-[#05070a]/[0.92] via-[#05070a]/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      <Link
+        href={playHref}
+        aria-label={`Resume ${entry.title}${entry.progress ? ` at ${entry.progress}%` : ""}`}
+        className="flex flex-col rounded-[10px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
+      >
+        <div className="relative aspect-[2/3] w-full overflow-hidden rounded-[10px] border border-white/10 bg-surface-1 transition-all duration-normal ease-out group-hover:border-white/20">
+          <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-[#05070a]/[0.92] via-[#05070a]/30 to-transparent opacity-0 transition-opacity duration-normal group-hover:opacity-100" />
           {poster.mobile ? (
             <picture>
               {poster.desktop ? (
@@ -103,7 +127,7 @@ function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardProps) {
                 alt={entry.title}
                 loading="lazy"
                 decoding="async"
-                className="aspect-[2/3] h-full w-full object-cover object-top transition-transform duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06]"
+                className="aspect-[2/3] h-full w-full object-cover object-top transition-transform duration-normal ease-out group-hover:scale-[1.03]"
               />
             </picture>
           ) : (

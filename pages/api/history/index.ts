@@ -2,21 +2,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { addHistoryEntry, clearHistory, listHistory, removeFromHistory } from "@/lib/db/history";
-import { logError } from "@/lib/logger";
+import { withApiContext, validate, sendValidationError } from "@/lib/validation";
+import { addHistorySchema } from "@/lib/validation/history";
 
-interface HistoryBody {
-  mediaType?: unknown;
-  mediaId?: unknown;
-  title?: unknown;
-  posterPath?: unknown;
-  backdropPath?: unknown;
-  seasonNumber?: unknown;
-  episodeNumber?: unknown;
-  duration?: unknown;
-  progress?: unknown;
-}
-
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default withApiContext("api/history", async (req: NextApiRequest, res: NextApiResponse) => {
   const user = getCurrentUser(req);
 
   if (!user) {
@@ -31,65 +20,51 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (req.method === "DELETE") {
     const id = req.query.id ? Number(req.query.id) : null;
-    try {
-      if (id && Number.isInteger(id)) {
-        removeFromHistory(user.id, user.activeProfileId ?? undefined, id);
-      } else {
-        clearHistory(user.id, user.activeProfileId ?? undefined);
-      }
-      res.status(200).json({ success: true });
-    } catch (error) {
-      logError("api/history", error);
-      res.status(500).json({ error: "Unable to update history." });
+    if (id && Number.isInteger(id) && id > 0) {
+      removeFromHistory(user.id, user.activeProfileId ?? undefined, id);
+    } else {
+      clearHistory(user.id, user.activeProfileId ?? undefined);
     }
+    res.status(200).json({ success: true });
     return;
   }
 
   if (req.method === "POST") {
-    const body = (req.body ?? {}) as HistoryBody;
-    const mediaType = body.mediaType === "movie" || body.mediaType === "tv" ? body.mediaType : null;
-    const mediaId =
-      typeof body.mediaId === "number" && Number.isInteger(body.mediaId) && body.mediaId > 0
-        ? body.mediaId
-        : null;
-    const title = typeof body.title === "string" && body.title.trim() ? body.title.trim().slice(0, 200) : null;
-    const posterPath = typeof body.posterPath === "string" && body.posterPath ? body.posterPath : null;
-    const backdropPath = typeof body.backdropPath === "string" && body.backdropPath ? body.backdropPath : null;
-    const seasonNumber = parseOptionalNumber(body.seasonNumber);
-    const episodeNumber = parseOptionalNumber(body.episodeNumber);
-    const duration = typeof body.duration === "string" ? body.duration : null;
-    const progress = typeof body.progress === "number" ? body.progress : null;
-
-    if (!mediaType || !mediaId || !title) {
-      res.status(400).json({ error: "mediaType, mediaId and title are required." });
+    const validation = validate(addHistorySchema, req.body ?? {});
+    if (!validation.success || !validation.data) {
+      sendValidationError(res, validation.errors ?? "Invalid history data");
       return;
     }
 
-    try {
-      addHistoryEntry(user.id, user.activeProfileId ?? undefined, {
-        mediaType,
-        mediaId,
-        title,
-        posterPath,
-        backdropPath,
-        seasonNumber,
-        episodeNumber,
-        duration,
-        progress,
-      });
-      res.status(201).json({ ok: true });
-    } catch (error) {
-      logError("api/history", error);
-      res.status(500).json({ error: "Unable to record watch history." });
-    }
+    const {
+      mediaType,
+      mediaId,
+      title,
+      posterPath,
+      backdropPath,
+      seasonNumber,
+      episodeNumber,
+      duration,
+      progress,
+    } = validation.data;
 
+    addHistoryEntry(user.id, user.activeProfileId ?? undefined, {
+      mediaType,
+      mediaId,
+      title,
+      posterPath: posterPath ?? null,
+      backdropPath: backdropPath ?? null,
+      seasonNumber: seasonNumber ?? null,
+      episodeNumber: episodeNumber ?? null,
+      duration: duration ?? null,
+      progress: progress ?? null,
+    });
+
+    res.status(201).json({ ok: true });
     return;
   }
 
   res.setHeader("Allow", "GET, POST, DELETE");
   res.status(405).json({ error: "Method not allowed" });
-}
+});
 
-function parseOptionalNumber(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
-}

@@ -16,6 +16,8 @@ export function initializeSchema(database: DatabaseSync): void {
       token TEXT NOT NULL UNIQUE,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       active_profile_id INTEGER REFERENCES profiles(id) ON DELETE SET NULL,
+      user_agent TEXT,
+      last_active_at TEXT,
       created_at TEXT NOT NULL,
       expires_at TEXT NOT NULL
     );
@@ -100,6 +102,14 @@ export function initializeSchema(database: DatabaseSync): void {
     }
     if (!historyColumns.some((col) => col.name === "progress")) {
       database.exec("ALTER TABLE watch_history ADD COLUMN progress INTEGER;");
+    }
+
+    const sessionColumns = database.prepare("PRAGMA table_info(sessions)").all() as { name: string }[];
+    if (!sessionColumns.some((col) => col.name === "user_agent")) {
+      database.exec("ALTER TABLE sessions ADD COLUMN user_agent TEXT;");
+    }
+    if (!sessionColumns.some((col) => col.name === "last_active_at")) {
+      database.exec("ALTER TABLE sessions ADD COLUMN last_active_at TEXT;");
     }
   } catch {
     // Migration checks are best-effort during schema init

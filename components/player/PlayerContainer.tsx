@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
 
 import type { Episode, MediaSource, PlayerMedia, PlayerSeason, PlayerSettings, ServerOption, SubtitleTrack } from "./types";
 import { HISTORY_SAVE_INTERVAL_MS, SERVERS } from "./constants";
@@ -232,9 +233,22 @@ export function PlayerContainer({
     subtitle,
   ]);
 
+  const router = useRouter();
+  const initialSeekTime = useMemo(() => {
+    const rawT = router.query.t;
+    if (typeof rawT === "string") {
+      const parsed = Number.parseFloat(rawT);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+    return 0;
+  }, [router.query.t]);
+
   const playerState = usePlayerState({
     videoRef,
     autoPlay: true,
+    initialSeekTime,
   });
   const { setRate } = playerState;
 

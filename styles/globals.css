@@ -24,6 +24,21 @@
     --border: 0 0% 12%;
     --input: 0 0% 12%;
     --ring: 0 72% 51%;
+
+    /* Motion Tokens */
+    --motion-fast: 120ms;
+    --motion-normal: 200ms;
+    --motion-slow: 300ms;
+    --ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   * {

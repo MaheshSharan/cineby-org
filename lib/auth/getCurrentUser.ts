@@ -1,4 +1,4 @@
-import { findValidSessionByToken } from "@/lib/db/sessions";
+import { findValidSessionByToken, touchSessionActivity } from "@/lib/db/sessions";
 import type { User } from "@/lib/db/types";
 
 import { getSessionToken, type CookieRequest } from "./session";
@@ -15,6 +15,8 @@ export function getCurrentUser(req: CookieRequest): User | null {
   if (!session) {
     return null;
   }
+
+  touchSessionActivity(token, session.last_active_at);
 
   return {
     id: session.user_id,

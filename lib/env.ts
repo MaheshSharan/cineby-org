@@ -21,3 +21,17 @@ export function isImageProxyEnabled(): boolean {
   return isProxyEnabled;
 }
 
+export function getCacheBackend(): "memory" | "redis" {
+  const backend = process.env.CACHE_BACKEND?.toLowerCase();
+  return backend === "redis" ? "redis" : "memory";
+}
+
+export function getCacheMaxEntries(): number {
+  const parsed = Number.parseInt(process.env.CACHE_MAX_ENTRIES ?? "", 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 5000;
+}
+
+export function getRedisUrl(): string | undefined {
+  return process.env.REDIS_URL?.trim() || undefined;
+}
+

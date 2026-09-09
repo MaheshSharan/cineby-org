@@ -3,6 +3,7 @@ import { tmdbGet } from "./client";
 import { getTmdbConfig } from "./config";
 import { toMediaSummary, toPaginated } from "./transform";
 import { validatePaginatedResponse } from "./validate";
+import { cachedFetch, TMDB_TTL_SECONDS, TMDB_STALE_SECONDS, tmdbCacheKeys } from "@/lib/cache";
 
 export interface DiscoverOptions {
   genreId?: number;
@@ -26,24 +27,33 @@ async function discover(
   mediaType: MediaType,
   options: DiscoverOptions
 ): Promise<Paginated<MediaSummary>> {
-  const { defaultLanguage } = getTmdbConfig();
+  const queryStr = `g${options.genreId ?? 0}_p${options.providerId ?? 0}_s${options.sortBy ?? "pop"}_pg${options.page ?? 1}_y${options.year ?? 0}`;
 
-  const raw = await tmdbGet<unknown>({
-    path,
-    params: {
-      language: defaultLanguage,
-      sort_by: options.sortBy ?? "popularity.desc",
-      page: options.page ?? 1,
-      with_genres: options.genreId,
-      with_watch_providers: options.providerId,
-      watch_region: options.providerId ? (options.watchRegion ?? "IN") : undefined,
-      year: options.year,
+  return cachedFetch({
+    key: tmdbCacheKeys.discover(mediaType, queryStr),
+    ttlSeconds: TMDB_TTL_SECONDS.discover,
+    staleSeconds: TMDB_STALE_SECONDS.discover,
+    fetcher: async () => {
+      const { defaultLanguage } = getTmdbConfig();
+
+      const raw = await tmdbGet<unknown>({
+        path,
+        params: {
+          language: defaultLanguage,
+          sort_by: options.sortBy ?? "popularity.desc",
+          page: options.page ?? 1,
+          with_genres: options.genreId,
+          with_watch_providers: options.providerId,
+          watch_region: options.providerId ? (options.watchRegion ?? "IN") : undefined,
+          year: options.year,
+        },
+      });
+
+      const { results, totalPages, totalResults } = validatePaginatedResponse(raw);
+
+      return toPaginated(results, options.page ?? 1, totalPages, totalResults, (item) =>
+        toMediaSummary(item, mediaType)
+      );
     },
   });
-
-  const { results, totalPages, totalResults } = validatePaginatedResponse(raw);
-
-  return toPaginated(results, options.page ?? 1, totalPages, totalResults, (item) =>
-    toMediaSummary(item, mediaType)
-  );
 }

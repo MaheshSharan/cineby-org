@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { PlaybackRate, QualityLabel, SubtitleTrack } from "../types";
 
 interface UsePlayerStateOptions {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   autoPlay?: boolean;
+  initialSeekTime?: number;
 }
 
 export interface UsePlayerStateResult {
@@ -32,17 +33,20 @@ export interface UsePlayerStateResult {
 export function usePlayerState({
   videoRef,
   autoPlay = false,
+  initialSeekTime = 0,
 }: UsePlayerStateOptions): UsePlayerStateResult {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
   const [isEnded, setIsEnded] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [currentTime, setCurrentTime] = useState(initialSeekTime);
   const [duration, setDuration] = useState(0);
   const [volume, setVolumeState] = useState(0.8);
   const [muted, setMuted] = useState(false);
   const [rate, setRateState] = useState<PlaybackRate>(1);
   const [quality, setQuality] = useState<QualityLabel | null>(null);
   const [subtitleLang, setSubtitleLang] = useState<string | null>(null);
+
+  const initialSeekDoneRef = useRef(false);
 
   const syncFromVideo = useCallback(() => {
     const element = videoRef.current;
@@ -60,6 +64,17 @@ export function usePlayerState({
   useEffect(() => {
     const element = videoRef.current;
     if (!element) return;
+
+    const handleLoadedMetadata = () => {
+      syncFromVideo();
+      if (!initialSeekDoneRef.current && initialSeekTime > 0) {
+        initialSeekDoneRef.current = true;
+        const safeDuration = Number.isFinite(element.duration) ? element.duration : initialSeekTime;
+        const target = Math.min(Math.max(0, initialSeekTime), safeDuration);
+        element.currentTime = target;
+        setCurrentTime(target);
+      }
+    };
 
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
@@ -83,7 +98,7 @@ export function usePlayerState({
     element.addEventListener("loadeddata", onPlayable);
     element.addEventListener("seeked", onPlayable);
     element.addEventListener("timeupdate", syncFromVideo);
-    element.addEventListener("loadedmetadata", syncFromVideo);
+    element.addEventListener("loadedmetadata", handleLoadedMetadata);
 
     if (autoPlay) {
       void element.play().catch(() => {});
@@ -99,9 +114,9 @@ export function usePlayerState({
       element.removeEventListener("loadeddata", onPlayable);
       element.removeEventListener("seeked", onPlayable);
       element.removeEventListener("timeupdate", syncFromVideo);
-      element.removeEventListener("loadedmetadata", syncFromVideo);
+      element.removeEventListener("loadedmetadata", handleLoadedMetadata);
     };
-  }, [autoPlay, syncFromVideo, videoRef]);
+  }, [autoPlay, initialSeekTime, syncFromVideo, videoRef]);
 
   const togglePlay = useCallback(() => {
     const element = videoRef.current;

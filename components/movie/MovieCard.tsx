@@ -32,15 +32,19 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
   const isBackdrop = variant === "backdrop";
 
   return (
-    <div className={`group ${widthClass} ${className}`}>
+    <div className={`group ${widthClass} snap-start ${className}`}>
       <div className="media-card media-card-vertical w-full">
-        <Link href={href} aria-label={media.title}>
+        <Link
+          href={href}
+          aria-label={media.title}
+          className="block rounded-[10px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
+        >
           <div
-            className={`relative w-full overflow-hidden rounded-[10px] border border-white/10 bg-surface-1 transition-all duration-200 ${
+            className={`relative w-full overflow-hidden rounded-[10px] border border-white/10 bg-surface-1 transition-all duration-normal ease-out group-hover:border-white/20 ${
               isBackdrop ? "aspect-[16/9]" : "aspect-[2/3]"
             }`}
           >
-            <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-[#05070a]/[0.92] via-[#05070a]/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-[#05070a]/[0.92] via-[#05070a]/30 to-transparent opacity-0 transition-opacity duration-normal group-hover:opacity-100" />
 
             {isBackdrop ? (
               backdrop.mobile ? (
@@ -54,7 +58,7 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
                     alt={media.title}
                     loading="lazy"
                     decoding="async"
-                    className="aspect-[16/9] h-full w-full object-cover object-center transition-transform duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06]"
+                    className="aspect-[16/9] h-full w-full object-cover object-center transition-transform duration-normal ease-out group-hover:scale-[1.03]"
                   />
                 </picture>
               ) : (
@@ -71,7 +75,7 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
                   alt={media.title}
                   loading="lazy"
                   decoding="async"
-                  className="aspect-[2/3] h-full w-full object-cover object-top transition-transform duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06]"
+                  className="aspect-[2/3] h-full w-full object-cover object-top transition-transform duration-normal ease-out group-hover:scale-[1.03]"
                 />
               </picture>
             ) : (

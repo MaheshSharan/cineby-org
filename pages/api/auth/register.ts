@@ -8,50 +8,47 @@ import {
 } from "@/lib/auth/session";
 import { createSession } from "@/lib/db/sessions";
 import { createUser, findUserByIdentifier, toPublicUser } from "@/lib/db/users";
-import { logError } from "@/lib/logger";
 import { allowAuthAttempt, authClientKey } from "@/lib/auth/rateLimit";
+import { withApiContext, validate, sendValidationError } from "@/lib/validation";
+import { registerSchema } from "@/lib/validation/auth";
 
-interface RegisterBody {
-  email?: unknown;
-  username?: unknown;
-  password?: unknown;
-  displayName?: unknown;
-}
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default withApiContext("api/auth/register", async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
 
-  const body = (req.body ?? {}) as RegisterBody;
+  const rawBody = (req.body ?? {}) as Record<string, unknown>;
   const rawIdentifier =
-    typeof body.username === "string" && body.username.trim()
-      ? body.username.trim()
-      : typeof body.email === "string" && body.email.trim()
-        ? body.email.trim()
-        : "";
-  const identifier = rawIdentifier.toLowerCase();
-  const password = typeof body.password === "string" ? body.password : "";
+    typeof rawBody.username === "string" && rawBody.username.trim()
+      ? rawBody.username.trim()
+      : typeof rawBody.email === "string" && rawBody.email.trim()
+      ? rawBody.email.trim()
+      : "";
+  const rawPassword = typeof rawBody.password === "string" ? rawBody.password : "";
   const rawDisplayName =
-    typeof body.displayName === "string" && body.displayName.trim()
-      ? body.displayName.trim()
-      : rawIdentifier;
-  const displayName = rawDisplayName ? rawDisplayName.slice(0, 60) : null;
+    typeof rawBody.displayName === "string" && rawBody.displayName.trim()
+      ? rawBody.displayName.trim().slice(0, 60)
+      : undefined;
 
-  if (!allowAuthAttempt(authClientKey(req, rawIdentifier))) {
+  const validation = validate(registerSchema, {
+    username: rawIdentifier,
+    password: rawPassword,
+    displayName: rawDisplayName,
+  });
+
+  if (!validation.success || !validation.data) {
+    sendValidationError(res, validation.errors ?? "Invalid registration details");
+    return;
+  }
+
+  const identifier = validation.data.username.toLowerCase();
+  const password = validation.data.password;
+  const displayName = validation.data.displayName || identifier;
+
+  if (!allowAuthAttempt(authClientKey(req, identifier))) {
     res.status(429).json({ error: "Too many attempts. Try again later." });
-    return;
-  }
-
-  if (!rawIdentifier || rawIdentifier.length < 3) {
-    res.status(400).json({ error: "Username or email must be at least 3 characters." });
-    return;
-  }
-
-  if (password.length < 8) {
-    res.status(400).json({ error: "Password must be at least 8 characters." });
     return;
   }
 
@@ -60,17 +57,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  try {
-    const passwordHash = await hashPassword(password);
-    const user = createUser(identifier, passwordHash, displayName);
+  const passwordHash = await hashPassword(password);
+  const user = createUser(identifier, passwordHash, displayName);
 
-    const token = createSessionToken();
-    createSession(user.id, token, new Date(Date.now() + SESSION_TTL_MS).toISOString());
+  const token = createSessionToken();
+  const userAgent = typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"].slice(0, 500) : null;
+  createSession(user.id, token, new Date(Date.now() + SESSION_TTL_MS).toISOString(), userAgent);
 
-    res.setHeader("Set-Cookie", buildSessionCookie(token));
-    res.status(201).json({ user: toPublicUser(user) });
-  } catch (error) {
-    logError("api/auth/register", error);
-    res.status(500).json({ error: "Unable to create account." });
-  }
-}
+  res.setHeader("Set-Cookie", buildSessionCookie(token));
+  res.status(201).json({ user: toPublicUser(user) });
+});
+

@@ -3,10 +3,13 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { createProfile, listProfiles } from "@/lib/db/profiles";
 
+import { withApiContext, validate, sendValidationError } from "@/lib/validation";
+import { createProfileSchema } from "@/lib/validation/profiles";
+
 const DEFAULT_AVATAR = "/avatar/classic-1.png";
 const MAX_PROFILES = 5;
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default withApiContext("api/profiles", async (req: NextApiRequest, res: NextApiResponse) => {
   const user = getCurrentUser(req);
   if (!user) {
     res.status(401).json({ error: "Authentication required" });
@@ -20,29 +23,31 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === "POST") {
-    const body = (req.body ?? {}) as Record<string, unknown>;
-    const name = typeof body.name === "string" ? body.name.trim().slice(0, 40) : "";
-    const avatarUrl = typeof body.avatarUrl === "string" ? body.avatarUrl : DEFAULT_AVATAR;
-    if (!name) {
-      res.status(400).json({ error: "Profile name is required." });
+    const rawBody = (req.body ?? {}) as Record<string, unknown>;
+    const body = {
+      name: typeof rawBody.name === "string" ? rawBody.name.trim() : "",
+      avatarUrl: typeof rawBody.avatarUrl === "string" ? rawBody.avatarUrl : DEFAULT_AVATAR,
+    };
+
+    const validation = validate(createProfileSchema, body);
+    if (!validation.success || !validation.data) {
+      sendValidationError(res, validation.errors ?? "Invalid profile data");
       return;
     }
-    if (!/^\/avatar\/classic-(?:[1-9]|1\d|2\d|30)\.png$/.test(avatarUrl)) {
-      res.status(400).json({ error: "Invalid avatar." });
-      return;
-    }
+
     if (listProfiles(user.id).length >= MAX_PROFILES) {
       res.status(409).json({ error: "Maximum profile limit reached." });
       return;
     }
-    const profile = createProfile(user.id, { name, avatarUrl });
+
+    const profile = createProfile(user.id, { name: validation.data.name, avatarUrl: validation.data.avatarUrl });
     res.status(201).json({ profile: toPublicProfile(profile) });
     return;
   }
 
   res.setHeader("Allow", "GET, POST");
   res.status(405).json({ error: "Method not allowed" });
-}
+});
 
 function toPublicProfile(profile: ReturnType<typeof createProfile>) {
   return {

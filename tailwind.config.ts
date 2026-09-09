@@ -75,6 +75,11 @@ const config: Config = {
       boxShadow: {
         glow: "0 0 32px #dc262659",
       },
+      transitionDuration: {
+        fast: "120ms",
+        normal: "200ms",
+        slow: "300ms",
+      },
     },
   },
   plugins: [],
