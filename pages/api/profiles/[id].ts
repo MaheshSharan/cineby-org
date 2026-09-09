@@ -7,16 +7,17 @@ import { withApiContext, validate, sendValidationError } from "@/lib/validation"
 import { updateProfileSchema } from "@/lib/validation/profiles";
 
 export default withApiContext("api/profiles/[id]", async (req: NextApiRequest, res: NextApiResponse) => {
-  const user = getCurrentUser(req);
+  const user = await getCurrentUser(req);
   if (!user) { res.status(401).json({ error: "Authentication required" }); return; }
   const profileId = Number(req.query.id);
   if (!Number.isInteger(profileId) || profileId <= 0) { res.status(400).json({ error: "Invalid profile id" }); return; }
-  const profile = findProfile(user.id, profileId);
+  const profile = await findProfile(user.id, profileId);
   if (!profile) { res.status(404).json({ error: "Profile not found" }); return; }
 
   if (req.method === "DELETE") {
-    if (findProfileCount(user.id) <= 1) { res.status(409).json({ error: "The last profile cannot be deleted." }); return; }
-    deleteProfile(user.id, profileId);
+    const profileCount = await findProfileCount(user.id);
+    if (profileCount <= 1) { res.status(409).json({ error: "The last profile cannot be deleted." }); return; }
+    await deleteProfile(user.id, profileId);
     res.status(204).end();
     return;
   }
@@ -34,7 +35,7 @@ export default withApiContext("api/profiles/[id]", async (req: NextApiRequest, r
     const hasPinInput = typeof rawBody.pin === "string";
     const pin = validation.data.pin?.trim() ?? "";
 
-    const updated = updateProfile(user.id, profileId, {
+    const updated = await updateProfile(user.id, profileId, {
       name,
       avatarUrl,
       pinHash: hasPinInput ? (pin ? await hashPassword(pin) : null) : profile.pin_hash,
@@ -49,6 +50,7 @@ export default withApiContext("api/profiles/[id]", async (req: NextApiRequest, r
   res.status(405).json({ error: "Method not allowed" });
 });
 
-function findProfileCount(userId: number): number {
-  return listProfiles(userId).length;
+async function findProfileCount(userId: number): Promise<number> {
+  const profiles = await listProfiles(userId);
+  return profiles.length;
 }

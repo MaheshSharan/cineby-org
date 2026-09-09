@@ -3,20 +3,20 @@ import type { User } from "@/lib/db/types";
 
 import { getSessionToken, type CookieRequest } from "./session";
 
-export function getCurrentUser(req: CookieRequest): User | null {
+export async function getCurrentUser(req: CookieRequest): Promise<User | null> {
   const token = getSessionToken(req);
 
   if (!token) {
     return null;
   }
 
-  const session = findValidSessionByToken(token);
+  const session = await findValidSessionByToken(token);
 
   if (!session) {
     return null;
   }
 
-  touchSessionActivity(token, session.last_active_at);
+  void touchSessionActivity(token, session.last_active_at);
 
   return {
     id: session.user_id,

@@ -47,22 +47,22 @@ export default withApiContext("api/auth/register", async (req: NextApiRequest, r
   const password = validation.data.password;
   const displayName = validation.data.displayName || identifier;
 
-  if (!allowAuthAttempt(authClientKey(req, identifier))) {
+  if (!(await allowAuthAttempt(authClientKey(req, identifier)))) {
     res.status(429).json({ error: "Too many attempts. Try again later." });
     return;
   }
 
-  if (findUserByIdentifier(identifier)) {
+  if (await findUserByIdentifier(identifier)) {
     res.status(409).json({ error: "An account with this username or email already exists." });
     return;
   }
 
   const passwordHash = await hashPassword(password);
-  const user = createUser(identifier, passwordHash, displayName);
+  const user = await createUser(identifier, passwordHash, displayName);
 
   const token = createSessionToken();
   const userAgent = typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"].slice(0, 500) : null;
-  createSession(user.id, token, new Date(Date.now() + SESSION_TTL_MS).toISOString(), userAgent);
+  await createSession(user.id, token, new Date(Date.now() + SESSION_TTL_MS).toISOString(), userAgent);
 
   res.setHeader("Set-Cookie", buildSessionCookie(token));
   res.status(201).json({ user: toPublicUser(user) });

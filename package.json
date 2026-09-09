@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv",
+    "deploy:proxy": "wrangler deploy --config workers/stream-proxy/wrangler.jsonc"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.3.7",

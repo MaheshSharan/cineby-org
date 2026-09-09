@@ -39,12 +39,12 @@ export default withApiContext("api/auth/login", async (req: NextApiRequest, res:
 
   const { identifier, password } = validation.data;
 
-  if (!allowAuthAttempt(authClientKey(req, identifier))) {
+  if (!(await allowAuthAttempt(authClientKey(req, identifier)))) {
     res.status(429).json({ error: "Too many attempts. Try again later." });
     return;
   }
 
-  const user = findUserByIdentifier(identifier);
+  const user = await findUserByIdentifier(identifier);
 
   if (!user || !(await verifyPassword(password, user.password_hash))) {
     res.status(401).json({ error: "Invalid username/email or password." });
@@ -53,11 +53,11 @@ export default withApiContext("api/auth/login", async (req: NextApiRequest, res:
 
   const token = createSessionToken();
   const userAgent = typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"].slice(0, 500) : null;
-  createSession(user.id, token, new Date(Date.now() + SESSION_TTL_MS).toISOString(), userAgent);
+  await createSession(user.id, token, new Date(Date.now() + SESSION_TTL_MS).toISOString(), userAgent);
 
   // Fallback for users who abandoned onboarding: they must end up with at
   // least one profile, but never while the signup wizard is still in flight.
-  ensureDefaultProfile(user.id, user.display_name ?? user.email.split("@")[0]);
+  await ensureDefaultProfile(user.id, user.display_name ?? user.email.split("@")[0]);
 
   res.setHeader("Set-Cookie", buildSessionCookie(token));
   res.status(200).json({ user: toPublicUser(user) });

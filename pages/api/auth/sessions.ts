@@ -11,7 +11,7 @@ import { withApiContext, validate, sendValidationError } from "@/lib/validation"
 import { revokeSessionSchema } from "@/lib/validation/sessions";
 
 export default withApiContext("api/auth/sessions", async (req: NextApiRequest, res: NextApiResponse) => {
-  const user = getCurrentUser(req);
+  const user = await getCurrentUser(req);
   const currentToken = getSessionToken(req);
 
   if (!user || !currentToken) {
@@ -20,7 +20,7 @@ export default withApiContext("api/auth/sessions", async (req: NextApiRequest, r
   }
 
   if (req.method === "GET") {
-    const sessions = listUserSessions(user.id, currentToken);
+    const sessions = await listUserSessions(user.id, currentToken);
     res.status(200).json({ sessions });
     return;
   }
@@ -40,13 +40,13 @@ export default withApiContext("api/auth/sessions", async (req: NextApiRequest, r
     }
 
     if (input.revokeOthers) {
-      deleteOtherUserSessions(user.id, currentToken);
+      await deleteOtherUserSessions(user.id, currentToken);
       res.status(200).json({ success: true, message: "Other sessions revoked." });
       return;
     }
 
     if (input.sessionId) {
-      const revoked = deleteSessionById(user.id, input.sessionId);
+      const revoked = await deleteSessionById(user.id, input.sessionId);
       if (!revoked) {
         res.status(404).json({ error: "Session not found or already revoked." });
         return;

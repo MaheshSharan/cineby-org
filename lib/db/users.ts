@@ -12,47 +12,40 @@ export interface UserRow {
 
 const SELECT_USER_COLUMNS = "id, email, password_hash, display_name, avatar_url, created_at";
 
-export function findUserByEmail(email: string): UserRow | null {
-  const row = getDb()
-    .prepare(`SELECT ${SELECT_USER_COLUMNS} FROM users WHERE LOWER(email) = LOWER(?)`)
-    .get(email.trim()) as UserRow | undefined;
-
-  return row ?? null;
+export async function findUserByEmail(email: string): Promise<UserRow | null> {
+  return getDb().get<UserRow>(
+    `SELECT ${SELECT_USER_COLUMNS} FROM users WHERE LOWER(email) = LOWER(?)`,
+    [email.trim()]
+  );
 }
 
-export function findUserByIdentifier(identifier: string): UserRow | null {
+export async function findUserByIdentifier(identifier: string): Promise<UserRow | null> {
   const trimmed = identifier.trim();
-  const row = getDb()
-    .prepare(
-      `SELECT ${SELECT_USER_COLUMNS} FROM users 
-       WHERE LOWER(email) = LOWER(?) OR LOWER(display_name) = LOWER(?)`
-    )
-    .get(trimmed, trimmed) as UserRow | undefined;
-
-  return row ?? null;
+  return getDb().get<UserRow>(
+    `SELECT ${SELECT_USER_COLUMNS} FROM users WHERE LOWER(email) = LOWER(?) OR LOWER(display_name) = LOWER(?)`,
+    [trimmed, trimmed]
+  );
 }
 
-export function findUserById(id: number): UserRow | null {
-  const row = getDb()
-    .prepare(`SELECT ${SELECT_USER_COLUMNS} FROM users WHERE id = ?`)
-    .get(id) as UserRow | undefined;
-
-  return row ?? null;
+export async function findUserById(id: number): Promise<UserRow | null> {
+  return getDb().get<UserRow>(
+    `SELECT ${SELECT_USER_COLUMNS} FROM users WHERE id = ?`,
+    [id]
+  );
 }
 
-export function createUser(
+export async function createUser(
   email: string,
   passwordHash: string,
   displayName: string | null,
   avatarUrl: string | null = null
-): UserRow {
-  const result = getDb()
-    .prepare(
-      "INSERT INTO users (email, password_hash, display_name, avatar_url, created_at) VALUES (?, ?, ?, ?, ?)"
-    )
-    .run(email.trim().toLowerCase(), passwordHash, displayName, avatarUrl, new Date().toISOString());
+): Promise<UserRow> {
+  const result = await getDb().run(
+    "INSERT INTO users (email, password_hash, display_name, avatar_url, created_at) VALUES (?, ?, ?, ?, ?)",
+    [email.trim().toLowerCase(), passwordHash, displayName, avatarUrl, new Date().toISOString()]
+  );
 
-  const user = findUserById(Number(result.lastInsertRowid));
+  const user = await findUserById(Number(result.lastInsertRowid));
 
   if (!user) {
     throw new Error("Failed to create user");
@@ -61,16 +54,12 @@ export function createUser(
   return user;
 }
 
-export function updateUserPassword(userId: number, passwordHash: string): void {
-  getDb()
-    .prepare("UPDATE users SET password_hash = ? WHERE id = ?")
-    .run(passwordHash, userId);
+export async function updateUserPassword(userId: number, passwordHash: string): Promise<void> {
+  await getDb().run("UPDATE users SET password_hash = ? WHERE id = ?", [passwordHash, userId]);
 }
 
-export function updateUserAvatar(userId: number, avatarUrl: string | null): void {
-  getDb()
-    .prepare("UPDATE users SET avatar_url = ? WHERE id = ?")
-    .run(avatarUrl, userId);
+export async function updateUserAvatar(userId: number, avatarUrl: string | null): Promise<void> {
+  await getDb().run("UPDATE users SET avatar_url = ? WHERE id = ?", [avatarUrl, userId]);
 }
 
 export function toPublicUser(row: UserRow): User {

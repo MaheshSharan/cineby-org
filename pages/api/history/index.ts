@@ -6,7 +6,7 @@ import { withApiContext, validate, sendValidationError } from "@/lib/validation"
 import { addHistorySchema } from "@/lib/validation/history";
 
 export default withApiContext("api/history", async (req: NextApiRequest, res: NextApiResponse) => {
-  const user = getCurrentUser(req);
+  const user = await getCurrentUser(req);
 
   if (!user) {
     res.status(401).json({ error: "Authentication required" });
@@ -14,16 +14,16 @@ export default withApiContext("api/history", async (req: NextApiRequest, res: Ne
   }
 
   if (req.method === "GET") {
-    res.status(200).json({ items: listHistory(user.id, user.activeProfileId ?? undefined) });
+    res.status(200).json({ items: await listHistory(user.id, user.activeProfileId ?? undefined) });
     return;
   }
 
   if (req.method === "DELETE") {
     const id = req.query.id ? Number(req.query.id) : null;
     if (id && Number.isInteger(id) && id > 0) {
-      removeFromHistory(user.id, user.activeProfileId ?? undefined, id);
+      await removeFromHistory(user.id, user.activeProfileId ?? undefined, id);
     } else {
-      clearHistory(user.id, user.activeProfileId ?? undefined);
+      await clearHistory(user.id, user.activeProfileId ?? undefined);
     }
     res.status(200).json({ success: true });
     return;
@@ -49,7 +49,7 @@ export default withApiContext("api/history", async (req: NextApiRequest, res: Ne
       progressSeconds,
     } = validation.data;
 
-    addHistoryEntry(user.id, user.activeProfileId ?? undefined, {
+    await addHistoryEntry(user.id, user.activeProfileId ?? undefined, {
       mediaType,
       mediaId,
       title,

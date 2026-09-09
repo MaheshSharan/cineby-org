@@ -16,7 +16,7 @@ export default withApiContext("api/auth/change-password", async (req: NextApiReq
     return;
   }
 
-  const currentUser = getCurrentUser(req);
+  const currentUser = await getCurrentUser(req);
   if (!currentUser) {
     res.status(401).json({ error: "You must be logged in to change your password." });
     return;
@@ -35,12 +35,12 @@ export default withApiContext("api/auth/change-password", async (req: NextApiReq
 
   const { currentPassword, newPassword } = validation.data;
 
-  if (!allowAuthAttempt(authClientKey(req, String(currentUser.id)))) {
+  if (!(await allowAuthAttempt(authClientKey(req, String(currentUser.id))))) {
     res.status(429).json({ error: "Too many attempts. Try again later." });
     return;
   }
 
-  const userRow = findUserById(currentUser.id);
+  const userRow = await findUserById(currentUser.id);
   if (!userRow) {
     res.status(404).json({ error: "User not found." });
     return;
@@ -53,10 +53,10 @@ export default withApiContext("api/auth/change-password", async (req: NextApiReq
   }
 
   const newPasswordHash = await hashPassword(newPassword);
-  updateUserPassword(currentUser.id, newPasswordHash);
+  await updateUserPassword(currentUser.id, newPasswordHash);
   const currentToken = getSessionToken(req);
   if (currentToken) {
-    deleteOtherUserSessions(currentUser.id, currentToken);
+    await deleteOtherUserSessions(currentUser.id, currentToken);
   }
 
   res.status(200).json({ success: true, message: "Password updated successfully." });

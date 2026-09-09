@@ -10,14 +10,14 @@ const DEFAULT_AVATAR = "/avatar/classic-1.png";
 const MAX_PROFILES = 5;
 
 export default withApiContext("api/profiles", async (req: NextApiRequest, res: NextApiResponse) => {
-  const user = getCurrentUser(req);
+  const user = await getCurrentUser(req);
   if (!user) {
     res.status(401).json({ error: "Authentication required" });
     return;
   }
 
   if (req.method === "GET") {
-    const profiles = listProfiles(user.id);
+    const profiles = await listProfiles(user.id);
     res.status(200).json({ profiles: profiles.map(toPublicProfile), activeProfileId: user.activeProfileId ?? profiles[0]?.id });
     return;
   }
@@ -35,12 +35,13 @@ export default withApiContext("api/profiles", async (req: NextApiRequest, res: N
       return;
     }
 
-    if (listProfiles(user.id).length >= MAX_PROFILES) {
+    const existingProfiles = await listProfiles(user.id);
+    if (existingProfiles.length >= MAX_PROFILES) {
       res.status(409).json({ error: "Maximum profile limit reached." });
       return;
     }
 
-    const profile = createProfile(user.id, { name: validation.data.name, avatarUrl: validation.data.avatarUrl });
+    const profile = await createProfile(user.id, { name: validation.data.name, avatarUrl: validation.data.avatarUrl });
     res.status(201).json({ profile: toPublicProfile(profile) });
     return;
   }
@@ -49,7 +50,9 @@ export default withApiContext("api/profiles", async (req: NextApiRequest, res: N
   res.status(405).json({ error: "Method not allowed" });
 });
 
-function toPublicProfile(profile: ReturnType<typeof createProfile>) {
+import type { ProfileRow } from "@/lib/db/profiles";
+
+function toPublicProfile(profile: ProfileRow) {
   return {
     id: profile.id,
     name: profile.name,

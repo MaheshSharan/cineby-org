@@ -25,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  const currentUser = getCurrentUser(req);
+  const currentUser = await getCurrentUser(req);
   if (!currentUser) {
     res.status(401).json({ error: "You must be logged in to update your avatar." });
     return;
@@ -50,8 +50,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    updateUserAvatar(currentUser.id, avatar);
-    const updatedUserRow = findUserById(currentUser.id);
+    await updateUserAvatar(currentUser.id, avatar);
+    const updatedUserRow = await findUserById(currentUser.id);
 
     if (!updatedUserRow) {
       res.status(500).json({ error: "Failed to load updated user." });

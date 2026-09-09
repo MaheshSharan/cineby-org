@@ -21,18 +21,16 @@ interface WatchlistRow {
   added_at: string;
 }
 
-export function addToWatchlist(userId: number, input: WatchlistInput, profileId?: number): void {
-  const effectiveProfileId = profileId ?? findDefaultProfileId(userId);
+export async function addToWatchlist(userId: number, input: WatchlistInput, profileId?: number): Promise<void> {
+  const effectiveProfileId = profileId ?? (await findDefaultProfileId(userId));
   // No profile yet (user is still onboarding): nothing to scope the item to.
   if (effectiveProfileId === null) return;
 
-  getDb()
-    .prepare(
-      `INSERT INTO watchlist (user_id, profile_id, media_type, media_id, title, poster_path, backdrop_path, added_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT (profile_id, media_type, media_id) DO NOTHING`
-    )
-    .run(
+  await getDb().run(
+    `INSERT INTO watchlist (user_id, profile_id, media_type, media_id, title, poster_path, backdrop_path, added_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT (profile_id, media_type, media_id) DO NOTHING`,
+    [
       userId,
       effectiveProfileId,
       input.mediaType,
@@ -40,44 +38,48 @@ export function addToWatchlist(userId: number, input: WatchlistInput, profileId?
       input.title,
       input.posterPath,
       input.backdropPath,
-      new Date().toISOString()
-    );
+      new Date().toISOString(),
+    ]
+  );
 }
 
-export function removeFromWatchlist(userId: number, mediaType: string, mediaId: number, profileId?: number): void {
-  const effectiveProfileId = profileId ?? findDefaultProfileId(userId);
+export async function removeFromWatchlist(userId: number, mediaType: string, mediaId: number, profileId?: number): Promise<void> {
+  const effectiveProfileId = profileId ?? (await findDefaultProfileId(userId));
   if (effectiveProfileId === null) return;
 
-  getDb()
-    .prepare("DELETE FROM watchlist WHERE user_id = ? AND profile_id = ? AND media_type = ? AND media_id = ?")
-    .run(userId, effectiveProfileId, mediaType, mediaId);
+  await getDb().run(
+    "DELETE FROM watchlist WHERE user_id = ? AND profile_id = ? AND media_type = ? AND media_id = ?",
+    [userId, effectiveProfileId, mediaType, mediaId]
+  );
 }
 
-export function clearWatchlist(userId: number, profileId?: number): void {
-  const effectiveProfileId = profileId ?? findDefaultProfileId(userId);
+export async function clearWatchlist(userId: number, profileId?: number): Promise<void> {
+  const effectiveProfileId = profileId ?? (await findDefaultProfileId(userId));
   if (effectiveProfileId === null) return;
 
-  getDb().prepare("DELETE FROM watchlist WHERE user_id = ? AND profile_id = ?").run(userId, effectiveProfileId);
+  await getDb().run("DELETE FROM watchlist WHERE user_id = ? AND profile_id = ?", [userId, effectiveProfileId]);
 }
 
-export function isInWatchlist(userId: number, mediaType: string, mediaId: number, profileId?: number): boolean {
-  const effectiveProfileId = profileId ?? findDefaultProfileId(userId);
+export async function isInWatchlist(userId: number, mediaType: string, mediaId: number, profileId?: number): Promise<boolean> {
+  const effectiveProfileId = profileId ?? (await findDefaultProfileId(userId));
   if (effectiveProfileId === null) return false;
 
-  const row = getDb()
-    .prepare("SELECT 1 AS present FROM watchlist WHERE user_id = ? AND profile_id = ? AND media_type = ? AND media_id = ?")
-    .get(userId, effectiveProfileId, mediaType, mediaId);
+  const row = await getDb().get<{ present: number }>(
+    "SELECT 1 AS present FROM watchlist WHERE user_id = ? AND profile_id = ? AND media_type = ? AND media_id = ?",
+    [userId, effectiveProfileId, mediaType, mediaId]
+  );
 
-  return row !== undefined;
+  return row !== null;
 }
 
-export function listWatchlist(userId: number, profileId?: number): WatchlistItem[] {
-  const effectiveProfileId = profileId ?? findDefaultProfileId(userId);
+export async function listWatchlist(userId: number, profileId?: number): Promise<WatchlistItem[]> {
+  const effectiveProfileId = profileId ?? (await findDefaultProfileId(userId));
   if (effectiveProfileId === null) return [];
 
-  const rows = getDb()
-    .prepare("SELECT * FROM watchlist WHERE user_id = ? AND profile_id = ? ORDER BY added_at DESC")
-    .all(userId, effectiveProfileId) as unknown as WatchlistRow[];
+  const rows = await getDb().all<WatchlistRow>(
+    "SELECT * FROM watchlist WHERE user_id = ? AND profile_id = ? ORDER BY added_at DESC",
+    [userId, effectiveProfileId]
+  );
 
   return rows.map((row) => ({
     id: row.id,

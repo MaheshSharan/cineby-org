@@ -3,14 +3,14 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { withApiContext } from "@/lib/validation";
 
-export default withApiContext("api/auth/me", (req: NextApiRequest, res: NextApiResponse) => {
+export default withApiContext("api/auth/me", async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
 
-  const user = getCurrentUser(req);
+  const user = await getCurrentUser(req);
 
   if (!user) {
     res.status(401).json({ user: null });

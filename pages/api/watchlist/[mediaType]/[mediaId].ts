@@ -3,8 +3,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { isInWatchlist, removeFromWatchlist } from "@/lib/db/watchlist";
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const user = getCurrentUser(req);
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const user = await getCurrentUser(req);
 
   if (!user) {
     res.status(401).json({ error: "Authentication required" });
@@ -23,12 +23,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === "GET") {
-    res.status(200).json({ inWatchlist: isInWatchlist(user.id, mediaType, mediaId, user.activeProfileId ?? undefined) });
+    res.status(200).json({ inWatchlist: await isInWatchlist(user.id, mediaType, mediaId, user.activeProfileId ?? undefined) });
     return;
   }
 
   if (req.method === "DELETE") {
-    removeFromWatchlist(user.id, mediaType, mediaId, user.activeProfileId ?? undefined);
+    await removeFromWatchlist(user.id, mediaType, mediaId, user.activeProfileId ?? undefined);
     res.status(200).json({ inWatchlist: false });
     return;
   }

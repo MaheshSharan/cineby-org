@@ -6,7 +6,7 @@ import { withApiContext, validate, sendValidationError } from "@/lib/validation"
 import { addToWatchlistSchema } from "@/lib/validation/watchlist";
 
 export default withApiContext("api/watchlist", async (req: NextApiRequest, res: NextApiResponse) => {
-  const user = getCurrentUser(req);
+  const user = await getCurrentUser(req);
 
   if (!user) {
     res.status(401).json({ error: "Authentication required" });
@@ -14,12 +14,12 @@ export default withApiContext("api/watchlist", async (req: NextApiRequest, res: 
   }
 
   if (req.method === "GET") {
-    res.status(200).json({ items: listWatchlist(user.id, user.activeProfileId ?? undefined) });
+    res.status(200).json({ items: await listWatchlist(user.id, user.activeProfileId ?? undefined) });
     return;
   }
 
   if (req.method === "DELETE") {
-    clearWatchlist(user.id, user.activeProfileId ?? undefined);
+    await clearWatchlist(user.id, user.activeProfileId ?? undefined);
     res.status(200).json({ success: true });
     return;
   }
@@ -33,7 +33,7 @@ export default withApiContext("api/watchlist", async (req: NextApiRequest, res: 
 
     const { mediaType, mediaId, title, posterPath, backdropPath } = validation.data;
 
-    addToWatchlist(
+    await addToWatchlist(
       user.id,
       { mediaType, mediaId, title, posterPath: posterPath ?? null, backdropPath: backdropPath ?? null },
       user.activeProfileId ?? undefined

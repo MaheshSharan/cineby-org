@@ -53,9 +53,9 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
       let episode = parseOptionalNumber(params[3]);
 
       if (!season || !episode) {
-        const user = getCurrentUser(context.req);
+        const user = await getCurrentUser(context.req);
         if (user) {
-          const historyList = listHistory(user.id);
+          const historyList = await listHistory(user.id);
           const match = historyList.find(
             (item) => item.mediaType === "tv" && item.mediaId === details.id
           );

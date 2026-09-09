@@ -31,3 +31,7 @@ next-env.d.ts
 /data
 cineby_extension/*
 .agents/
+
+# cloudflare
+/.open-next/
+/.wrangler/

@@ -3,16 +3,22 @@ import { getDb } from "@/lib/db/connection";
 const WINDOW_MS = 15 * 60_000;
 const MAX_ATTEMPTS = 10;
 
-export function allowAuthAttempt(key: string): boolean {
+export async function allowAuthAttempt(key: string): Promise<boolean> {
   const now = Date.now();
   const db = getDb();
-  const row = db.prepare("SELECT attempts, reset_at FROM auth_rate_limits WHERE key = ?").get(key) as { attempts: number; reset_at: number } | undefined;
+  const row = await db.get<{ attempts: number; reset_at: number }>(
+    "SELECT attempts, reset_at FROM auth_rate_limits WHERE key = ?",
+    [key]
+  );
   if (!row || row.reset_at <= now) {
-    db.prepare("INSERT INTO auth_rate_limits (key, attempts, reset_at) VALUES (?, 1, ?) ON CONFLICT(key) DO UPDATE SET attempts = 1, reset_at = excluded.reset_at").run(key, now + WINDOW_MS);
+    await db.run(
+      "INSERT INTO auth_rate_limits (key, attempts, reset_at) VALUES (?, 1, ?) ON CONFLICT(key) DO UPDATE SET attempts = 1, reset_at = excluded.reset_at",
+      [key, now + WINDOW_MS]
+    );
     return true;
   }
   if (row.attempts >= MAX_ATTEMPTS) return false;
-  db.prepare("UPDATE auth_rate_limits SET attempts = attempts + 1 WHERE key = ?").run(key);
+  await db.run("UPDATE auth_rate_limits SET attempts = attempts + 1 WHERE key = ?", [key]);
   return true;
 }
 
