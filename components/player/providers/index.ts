@@ -1,4 +1,5 @@
 import type { Quality, StreamResponse } from "@/lib/providers/types";
+import { fetchVidkingPayloadFromBrowser } from "@/lib/providers/sources/vidking/client";
 import type { MediaSource, QualityLabel, SubtitleTrack } from "../types";
 import type { StreamRequest, StreamResolutionResult } from "./types";
 
@@ -34,9 +35,35 @@ export async function resolveStream(
   }
 
   try {
-    const res = await fetch(`/api/stream/resolve?${params.toString()}`, {
+    // 1. Try client-side Vidking resolution to bypass Cloudflare 429 datacenter rate limits
+    const clientPayload = await fetchVidkingPayloadFromBrowser({
+      tmdbId: request.mediaId,
+      type: request.mediaType,
+      season: request.seasonNumber ?? undefined,
+      episode: request.episodeNumber ?? undefined,
+      targetServer: serverId,
       signal: request.signal,
     });
+
+    const res = clientPayload
+      ? await fetch("/api/stream/resolve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tmdbId: request.mediaId,
+            type: request.mediaType,
+            season: request.seasonNumber,
+            episode: request.episodeNumber,
+            server: serverId,
+            ciphertext: clientPayload.ciphertext,
+            seed: clientPayload.seed,
+            serverId: clientPayload.serverId,
+          }),
+          signal: request.signal,
+        })
+      : await fetch(`/api/stream/resolve?${params.toString()}`, {
+          signal: request.signal,
+        });
 
     if (res.ok) {
       const data: unknown = await res.json().catch(() => null);

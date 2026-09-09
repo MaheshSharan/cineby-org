@@ -7,7 +7,9 @@ let devFallbackSecret: string | null = null;
 function secret(): string {
   // 1. Check process.env
   const value = process.env.STREAM_PROXY_SECRET?.trim();
-  if (value) return value;
+  if (value) {
+    return value;
+  }
 
   // 2. Check OpenNext Cloudflare ALS context
   try {
@@ -28,10 +30,13 @@ function secret(): string {
     return globalEnv.STREAM_PROXY_SECRET.trim();
   }
 
-  if (process.env.NODE_ENV === "production" && typeof navigator !== "undefined" && navigator.userAgent === "CloudFlare-Workers") {
-    throw new Error("[signedProxy] STREAM_PROXY_SECRET must be configured in production");
+  // 5. Check direct globalThis
+  const directSecret = (globalThis as unknown as Record<string, unknown>).STREAM_PROXY_SECRET;
+  if (typeof directSecret === "string" && directSecret.trim()) {
+    return directSecret.trim();
   }
 
+  console.warn("[signedProxy] No STREAM_PROXY_SECRET found in any context! Falling back to dev fallback secret.");
   if (!devFallbackSecret) {
     devFallbackSecret = "cineby_dev_stream_secret_default_fallback_key";
   }

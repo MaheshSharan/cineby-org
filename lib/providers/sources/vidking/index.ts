@@ -65,11 +65,18 @@ async function fetchMetadata(
   tmdbId: number,
   signal?: AbortSignal
 ): Promise<TmdbMeta> {
+  const url = `${DB_BASE}/${type}/${tmdbId}?append_to_response=external_ids`;
   try {
-    const res = await fetch(
-      `${DB_BASE}/${type}/${tmdbId}?append_to_response=external_ids`,
-      { signal }
-    );
+    const res = await fetch(url, {
+      headers: {
+        Referer: "https://www.vidking.net/",
+        Origin: "https://www.vidking.net",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      },
+      signal,
+    });
+    console.log(`[vidking] fetchMetadata ${url} -> status=${res.status}`);
     if (res.ok) {
       const data: unknown = await res.json();
       if (data && typeof data === "object") {
@@ -87,26 +94,40 @@ async function fetchMetadata(
         const externalIds = obj.external_ids as Record<string, unknown> | undefined;
         const imdbId = String(externalIds?.imdb_id || "");
 
+        console.log(`[vidking] Metadata resolved: title="${title}", year="${year}", imdbId="${imdbId}"`);
         return { title, year, imdbId };
       }
     }
-  } catch {
-    // Ignore and fallback
+  } catch (err) {
+    console.error(`[vidking] fetchMetadata error:`, err);
   }
 
   return { title: "", year: "", imdbId: "" };
 }
 
 async function fetchSeed(tmdbId: number, signal?: AbortSignal): Promise<string | null> {
+  const url = `${API_BASE}/seed?mediaId=${tmdbId}`;
   try {
-    const res = await fetch(`${API_BASE}/seed?mediaId=${tmdbId}`, { signal });
+    const res = await fetch(url, {
+      headers: {
+        Referer: "https://www.vidking.net/",
+        Origin: "https://www.vidking.net",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      },
+      signal,
+    });
+    console.log(`[vidking] fetchSeed ${url} -> status=${res.status}`);
     if (res.ok) {
       const data: unknown = await res.json();
       if (data && typeof data === "object" && "seed" in data) {
-        return String((data as { seed: string }).seed);
+        const seed = String((data as { seed: string }).seed);
+        console.log(`[vidking] Obtained seed (length=${seed.length})`);
+        return seed;
       }
     }
   } catch (err) {
+    console.error(`[vidking] fetchSeed error:`, err);
     logError("Provider:vidking", err);
   }
   return null;
@@ -135,6 +156,10 @@ async function scrapeServer(
   try {
     const res = await fetch(url.toString(), {
       headers: {
+        Referer: "https://www.vidking.net/",
+        Origin: "https://www.vidking.net",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         "Cache-Control": "no-cache, no-store, must-revalidate",
         Pragma: "no-cache",
         Expires: "0",
@@ -142,12 +167,15 @@ async function scrapeServer(
       signal,
     });
 
+    console.log(`[vidking] scrapeServer ${server.id} -> status=${res.status}`);
     if (!res.ok) {
       return { sources: [], subtitles: [] };
     }
 
     const ciphertext = await res.text();
+    console.log(`[vidking] ${server.id} returned ${ciphertext.length} bytes of ciphertext`);
     const payload = decryptVidkingPayload<DecryptedPayload>(ciphertext, seed, tmdbId);
+    console.log(`[vidking] ${server.id} decrypted: ${(payload.sources ?? []).length} sources found`);
 
     const sources: StreamSource[] = (payload.sources ?? [])
       .filter((s) => Boolean(s.url))
@@ -355,6 +383,40 @@ async function fetchSubtitlesOnly(req: StreamRequest): Promise<SubtitleTrack[]> 
   const meta = await fetchMetadata(type, tmdbId, signal);
   if (!meta.imdbId) return [];
   return fetchVideasySubtitles(meta.imdbId, type, season, episode, signal);
+}
+
+export function decryptVidkingClientSources(
+  ciphertext: string,
+  seed: string,
+  tmdbId: number,
+  serverId = "yoru"
+): StreamSource[] {
+  try {
+    const payload = decryptVidkingPayload<DecryptedPayload>(ciphertext, seed, tmdbId);
+    const serverObj = SERVERS.find((s) => s.id === serverId) || SERVERS[0];
+
+    return (payload.sources ?? [])
+      .filter((s) => Boolean(s.url))
+      .map((s) => ({
+        url: s.url as string,
+        type: s.type === "mp4" ? "mp4" : s.type === "dash" ? "dash" : "hls",
+        quality: parseQuality(s.quality),
+        headers: {
+          Referer: "https://www.vidking.net/",
+          Origin: "https://www.vidking.net",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        },
+        provider: {
+          id: `${PROVIDER_ID}-${serverObj.id}`,
+          name: serverObj.name,
+        },
+        audioTracks: [{ language: "en", label: "English" }],
+      }));
+  } catch (err) {
+    console.error("[vidking] Failed to decrypt client-provided ciphertext:", err);
+    return [];
+  }
 }
 
 export const vidkingProvider: Provider = {

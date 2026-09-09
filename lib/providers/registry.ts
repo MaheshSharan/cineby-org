@@ -120,16 +120,23 @@ export async function resolveAllStreams(
   const timeoutMs = options?.timeoutMs ?? DEFAULT_PROVIDER_TIMEOUT_MS;
 
   const targetProviders = ALL_PROVIDERS.filter((p) => {
+    const enabled = isProviderEnabled(p);
+    const circuitOpen = isCircuitOpen(p.id);
+    console.log(`[registry] Provider ${p.id}: enabled=${enabled}, circuitOpen=${circuitOpen}`);
+
     if (options?.targetProviderId && options.targetProviderId !== "default") {
       const isTarget = p.id === options.targetProviderId || options.targetProviderId.startsWith(`${p.id}-`);
       if (!isTarget) return false;
       if (options.force) return true;
-      return isProviderEnabled(p) && !isCircuitOpen(p.id);
+      return enabled && !circuitOpen;
     }
-    return isProviderEnabled(p) && !isCircuitOpen(p.id);
+    return enabled && !circuitOpen;
   });
 
+  console.log(`[registry] Active targetProviders: [${targetProviders.map((p) => p.id).join(", ")}]`);
+
   if (targetProviders.length === 0) {
+    console.warn("[registry] No active providers found for request");
     return { sources: [], subtitles: [] };
   }
 
@@ -139,16 +146,20 @@ export async function resolveAllStreams(
   // If a specific provider is targeted, run directly
   if (options?.targetProviderId && options.targetProviderId !== "default") {
     const provider = targetProviders[0];
+    console.log(`[registry] Running single target provider: ${provider.id}`);
     const res = await fetchWithTimeout(
       provider,
       { ...request, serverId: options.targetProviderId },
       timeoutMs
     );
-    return processProviderResponse(res, provider);
+    const processed = processProviderResponse(res, provider);
+    console.log(`[registry] Provider ${provider.id} produced ${processed.sources.length} sources`);
+    return processed;
   }
 
   // Fastest-viable resolution across prioritized providers
   for (const provider of targetProviders) {
+    console.log(`[registry] Querying provider: ${provider.id}`);
     const res = await fetchWithTimeout(
       provider,
       { ...request, serverId: options?.targetProviderId },
@@ -156,10 +167,15 @@ export async function resolveAllStreams(
     );
 
     if (res.sources && res.sources.length > 0) {
-      return processProviderResponse(res, provider);
+      const processed = processProviderResponse(res, provider);
+      console.log(`[registry] Provider ${provider.id} succeeded with ${processed.sources.length} sources`);
+      return processed;
+    } else {
+      console.log(`[registry] Provider ${provider.id} returned 0 sources`);
     }
   }
 
+  console.warn("[registry] All providers returned 0 sources");
   return {
     sources: [],
     subtitles: [],
