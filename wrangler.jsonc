@@ -14,14 +14,16 @@
     {
       "binding": "DB",
       "database_name": "cineby-db",
-      "database_id": "YOUR_D1_DATABASE_ID_HERE",
+      "database_id": "0993f8c9-f27e-420a-8f34-6b778912ae12",
       "migrations_dir": "migrations"
     }
   ],
   "vars": {
+    "TMDB_API_URL": "https://db.wecollege.net/3",
     "NEXT_PUBLIC_TMDB_DEFAULT_LANGUAGE": "en",
     "NEXT_PUBLIC_TMDB_IMAGE_BASE_URL": "https://image.tmdb.org/t/p",
     "NEXT_PUBLIC_ENABLE_IMAGE_PROXY": "true",
-    "NEXT_PUBLIC_IMAGE_PROXY_URL": "https://wsrv.nl"
+    "NEXT_PUBLIC_IMAGE_PROXY_URL": "https://wsrv.nl",
+    "STREAM_PROXY_URL": "https://cineby-stream-proxy.maheworks.workers.dev"
   }
 }

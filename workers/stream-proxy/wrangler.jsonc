@@ -7,7 +7,6 @@
     "nodejs_compat"
   ],
   "vars": {
-    "STREAM_PROXY_SECRET": "cineby_dev_stream_secret_default_fallback_key",
-    "CORS_ALLOWED_ORIGINS": ""
+    "CORS_ALLOWED_ORIGINS": "https://cineby.maheworks.workers.dev,http://localhost:3000"
   }
 }
