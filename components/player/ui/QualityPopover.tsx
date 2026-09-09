@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { PlaybackRate, QualityLabel, ServerOption } from "../types";
 import { PLAYBACK_RATES } from "../constants";
 
@@ -34,6 +34,17 @@ export function QualityPopover({
   resolvedLevel,
 }: QualityPopoverProps) {
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+
+  // Pin active playing server to index 0 so it's always at the top without scrolling
+  const orderedServers = useMemo(() => {
+    if (!activeServerId || servers.length <= 1) {
+      return servers;
+    }
+    const activeIndex = servers.findIndex((s) => s.id === activeServerId);
+    if (activeIndex <= 0) return servers;
+    const activeServer = servers[activeIndex];
+    return [activeServer, ...servers.filter((_, i) => i !== activeIndex)];
+  }, [servers, activeServerId]);
 
   const toggleFavorite = (e: React.MouseEvent, serverId: string) => {
     e.stopPropagation();
@@ -99,7 +110,7 @@ export function QualityPopover({
                 Server
               </p>
               <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-0.5 pr-1">
-                {servers.map((server) => {
+                {orderedServers.map((server) => {
                   const isActive = activeServerId === server.id;
                   const isFav = !!favorites[server.id];
 
@@ -108,10 +119,10 @@ export function QualityPopover({
                       key={server.id}
                       type="button"
                       onClick={() => onServerChange(server.id)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-left transition-colors ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-left transition-all duration-150 cursor-pointer ${
                         isActive
-                          ? "text-white bg-white/[0.14]"
-                          : "text-gray-300 hover:text-white hover:bg-white/[0.08]"
+                          ? "bg-white/[0.08] border border-cyan-500/30 text-white shadow-[0_0_15px_rgba(6,182,212,0.1)]"
+                          : "text-gray-300 hover:text-white hover:bg-white/[0.04] border border-transparent"
                       }`}
                     >
                       <span className="flex-1 min-w-0">
@@ -122,6 +133,25 @@ export function QualityPopover({
                           </span>
                         ) : null}
                       </span>
+
+                      {/* Active Server Checkmark Badge matching subtitle selection */}
+                      {isActive && (
+                        <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-cyan-400/80 bg-cyan-500/20 text-cyan-300">
+                          <svg
+                            className="h-3 w-3"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2.5}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                      )}
 
                       <span
                         role="button"

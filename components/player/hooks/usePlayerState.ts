@@ -47,26 +47,37 @@ export function usePlayerState({
   const [subtitleLang, setSubtitleLang] = useState<string | null>(null);
 
   const initialSeekDoneRef = useRef(false);
+  const lastTimeUpdateRef = useRef(0);
 
-  const syncFromVideo = useCallback(() => {
-    const element = videoRef.current;
-    if (!element) return;
+  const syncFromVideo = useCallback(
+    (force = false) => {
+      const element = videoRef.current;
+      if (!element) return;
 
-    const time = element.currentTime;
-    setCurrentTime(time);
+      const now = performance.now();
+      // Throttle timeupdate event dispatch to ~250ms (4 times per second) unless forced (pause/seek/ended)
+      if (!force && now - lastTimeUpdateRef.current < 250) {
+        return;
+      }
+      lastTimeUpdateRef.current = now;
 
-    const dur = element.duration;
-    if (Number.isFinite(dur)) {
-      setDuration(dur);
-    }
-  }, [videoRef]);
+      const time = element.currentTime;
+      setCurrentTime(time);
+
+      const dur = element.duration;
+      if (Number.isFinite(dur) && dur > 0) {
+        setDuration((prev) => (prev !== dur ? dur : prev));
+      }
+    },
+    [videoRef]
+  );
 
   useEffect(() => {
     const element = videoRef.current;
     if (!element) return;
 
     const handleLoadedMetadata = () => {
-      syncFromVideo();
+      syncFromVideo(true);
       if (!initialSeekDoneRef.current && initialSeekTime > 0) {
         initialSeekDoneRef.current = true;
         const safeDuration = Number.isFinite(element.duration) ? element.duration : initialSeekTime;
@@ -77,10 +88,14 @@ export function usePlayerState({
     };
 
     const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
+    const onPause = () => {
+      setIsPlaying(false);
+      syncFromVideo(true);
+    };
     const onEnded = () => {
       setIsEnded(true);
       setIsPlaying(false);
+      syncFromVideo(true);
     };
     const onWaiting = () => setIsBuffering(true);
     const onPlaying = () => {
@@ -88,6 +103,11 @@ export function usePlayerState({
       setIsEnded(false);
     };
     const onPlayable = () => setIsBuffering(false);
+    const onSeeked = () => {
+      setIsBuffering(false);
+      syncFromVideo(true);
+    };
+    const onTimeUpdate = () => syncFromVideo(false);
 
     element.addEventListener("play", onPlay);
     element.addEventListener("pause", onPause);
@@ -96,13 +116,9 @@ export function usePlayerState({
     element.addEventListener("playing", onPlaying);
     element.addEventListener("canplay", onPlayable);
     element.addEventListener("loadeddata", onPlayable);
-    element.addEventListener("seeked", onPlayable);
-    element.addEventListener("timeupdate", syncFromVideo);
+    element.addEventListener("seeked", onSeeked);
+    element.addEventListener("timeupdate", onTimeUpdate);
     element.addEventListener("loadedmetadata", handleLoadedMetadata);
-
-    if (autoPlay) {
-      void element.play().catch(() => {});
-    }
 
     return () => {
       element.removeEventListener("play", onPlay);
@@ -112,11 +128,11 @@ export function usePlayerState({
       element.removeEventListener("playing", onPlaying);
       element.removeEventListener("canplay", onPlayable);
       element.removeEventListener("loadeddata", onPlayable);
-      element.removeEventListener("seeked", onPlayable);
-      element.removeEventListener("timeupdate", syncFromVideo);
+      element.removeEventListener("seeked", onSeeked);
+      element.removeEventListener("timeupdate", onTimeUpdate);
       element.removeEventListener("loadedmetadata", handleLoadedMetadata);
     };
-  }, [autoPlay, initialSeekTime, syncFromVideo, videoRef]);
+  }, [initialSeekTime, syncFromVideo, videoRef]);
 
   const togglePlay = useCallback(() => {
     const element = videoRef.current;

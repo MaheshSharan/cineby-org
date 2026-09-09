@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { SubtitleTrack } from "../types";
 
 export interface SubtitleAppearance {
@@ -22,6 +22,9 @@ interface AudioSubtitlesPopoverProps {
   onOpenOpenSubtitles?: () => void;
   appearance: SubtitleAppearance;
   onAppearanceChange: (appearance: SubtitleAppearance) => void;
+  subtitlesEnabled: boolean;
+  isSubtitlesFetching: boolean;
+  onToggleSubtitles: () => void;
 }
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -53,9 +56,25 @@ export function AudioSubtitlesPopover({
   onOpenOpenSubtitles,
   appearance,
   onAppearanceChange,
+  subtitlesEnabled,
+  isSubtitlesFetching,
+  onToggleSubtitles,
 }: AudioSubtitlesPopoverProps) {
   const [view, setView] = useState<"main" | "appearance">("main");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Pin selected subtitle track to index 0 so it's always at the top without scrolling
+  const orderedSubtitleTracks = useMemo(() => {
+    if (!activeSubtitleId || subtitleTracks.length <= 1) {
+      return subtitleTracks;
+    }
+    const activeIndex = subtitleTracks.findIndex(
+      (t) => t.id === activeSubtitleId || t.lang === activeSubtitleId
+    );
+    if (activeIndex <= 0) return subtitleTracks;
+    const activeTrack = subtitleTracks[activeIndex];
+    return [activeTrack, ...subtitleTracks.filter((_, i) => i !== activeIndex)];
+  }, [subtitleTracks, activeSubtitleId]);
 
   if (!open) return null;
 
@@ -294,28 +313,18 @@ export function AudioSubtitlesPopover({
                   <button
                     type="button"
                     role="switch"
-                    aria-checked={Boolean(activeSubtitleId)}
+                    aria-checked={subtitlesEnabled}
                     aria-label="Toggle subtitles"
-                    onClick={() => {
-                      if (activeSubtitleId) {
-                        onSubtitleChange(null);
-                      } else if (subtitleTracks.length > 0) {
-                        const defaultSub =
-                          subtitleTracks.find(
-                            (s) => s.lang.toLowerCase() === "en" || s.label.toLowerCase().includes("english")
-                          ) ?? subtitleTracks[0];
-                        onSubtitleChange(defaultSub);
-                      }
-                    }}
+                    onClick={onToggleSubtitles}
                     className={`group relative h-4 w-7 shrink-0 rounded-full border transition-all duration-200 cursor-pointer focus:outline-none ${
-                      activeSubtitleId
+                      subtitlesEnabled
                         ? "bg-cyan-500/20 border-cyan-500/50 shadow-[0_0_8px_rgba(6,182,212,0.25)]"
                         : "bg-white/[0.06] border-white/[0.1] hover:border-white/20"
                     }`}
                   >
                     <span
                       className={`absolute top-[1.5px] h-2.5 w-2.5 rounded-full transition-all duration-200 shadow-sm ${
-                        activeSubtitleId
+                        subtitlesEnabled
                           ? "left-[14px] bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]"
                           : "left-[2px] bg-white/40 group-hover:bg-white/60"
                       }`}
@@ -325,14 +334,44 @@ export function AudioSubtitlesPopover({
 
                 <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-1.5 pr-1">
                   {/* Subtitle Tracks */}
-                  {subtitleTracks.length === 0 ? (
+                  {!subtitlesEnabled ? (
+                    <div className="flex items-center justify-center px-3 py-4">
+                      <p className="text-center text-[12px] leading-relaxed text-gray-400">
+                        Enable to Search
+                      </p>
+                    </div>
+                  ) : isSubtitlesFetching ? (
+                    <div className="flex items-center justify-center px-3 py-6">
+                      <svg
+                        className="h-5 w-5 animate-spin text-cyan-400"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        aria-label="Loading subtitles"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                    </div>
+                  ) : orderedSubtitleTracks.length === 0 ? (
                     <div className="flex items-center justify-center px-3 py-4">
                       <p className="text-center text-[12px] leading-relaxed text-gray-400">
                         No subtitles available
                       </p>
                     </div>
                   ) : (
-                    subtitleTracks.map((track) => {
+                    orderedSubtitleTracks.map((track) => {
                       const isActive =
                         activeSubtitleId === track.id || activeSubtitleId === track.lang;
 

@@ -1,12 +1,27 @@
-import type { MediaSummary, MovieDetails, Paginated } from "../types";
+import type { MediaSummary, MovieDetails, MediaType, Paginated } from "../types";
 import { tmdbGet } from "./client";
 import { getTmdbConfig } from "./config";
-import { toMediaSummary, toMovieDetails, toPaginated } from "./transform";
+import { toLogoPath, toMediaSummary, toMovieDetails, toPaginated } from "./transform";
 import {
   validateMovieDetails,
   validatePaginatedResponse,
 } from "./validate";
 import { cachedFetch, TMDB_TTL_SECONDS, TMDB_STALE_SECONDS, tmdbCacheKeys } from "@/lib/cache";
+
+export async function getMediaLogo(mediaType: MediaType, id: string | number): Promise<string | null> {
+  return cachedFetch({
+    key: tmdbCacheKeys.mediaLogo(mediaType, id),
+    ttlSeconds: TMDB_TTL_SECONDS.movieDetails,
+    staleSeconds: TMDB_STALE_SECONDS.movieDetails,
+    fetcher: async () => {
+      const raw = await tmdbGet<unknown>({
+        path: `/${mediaType}/${id}/images`,
+        params: { include_image_language: "en,null" },
+      });
+      return toLogoPath(raw);
+    },
+  });
+}
 
 const MOVIE_DETAILS_APPEND =
   "credits,external_ids,videos,recommendations,translations,similar,release_dates,images";

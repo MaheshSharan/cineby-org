@@ -28,5 +28,6 @@ export interface HistoryEntry {
   episodeNumber: number | null;
   duration: string | null;
   progress: number | null;
+  progressSeconds?: number | null;
   watchedAt: string;
 }

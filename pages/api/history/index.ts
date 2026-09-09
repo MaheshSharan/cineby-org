@@ -46,6 +46,7 @@ export default withApiContext("api/history", async (req: NextApiRequest, res: Ne
       episodeNumber,
       duration,
       progress,
+      progressSeconds,
     } = validation.data;
 
     addHistoryEntry(user.id, user.activeProfileId ?? undefined, {
@@ -58,6 +59,7 @@ export default withApiContext("api/history", async (req: NextApiRequest, res: Ne
       episodeNumber: episodeNumber ?? null,
       duration: duration ?? null,
       progress: progress ?? null,
+      progressSeconds: progressSeconds ?? null,
     });
 
     res.status(201).json({ ok: true });

@@ -12,6 +12,7 @@ export interface HistoryInput {
   episodeNumber?: number | null;
   duration?: string | null;
   progress?: number | null;
+  progressSeconds?: number | null;
 }
 
 interface HistoryRow {
@@ -26,6 +27,7 @@ interface HistoryRow {
   episode_number: number | null;
   duration: string | null;
   progress: number | null;
+  progress_seconds: number | null;
   watched_at: string;
 }
 
@@ -43,8 +45,8 @@ export function addHistoryEntry(userId: number, profileId: number | undefined, i
   ).run(effectiveProfileId, input.mediaType, input.mediaId);
 
   db.prepare(
-    `INSERT INTO watch_history (user_id, profile_id, media_type, media_id, title, poster_path, backdrop_path, season_number, episode_number, duration, progress, watched_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO watch_history (user_id, profile_id, media_type, media_id, title, poster_path, backdrop_path, season_number, episode_number, duration, progress, progress_seconds, watched_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     userId,
     effectiveProfileId,
@@ -57,6 +59,7 @@ export function addHistoryEntry(userId: number, profileId: number | undefined, i
     input.episodeNumber ?? null,
     input.duration ?? null,
     input.progress ?? null,
+    input.progressSeconds ?? null,
     new Date().toISOString()
   );
 }
@@ -98,6 +101,7 @@ export function listHistory(userId: number, profileId?: number, limit = 50): His
     episodeNumber: row.episode_number,
     duration: row.duration,
     progress: row.progress,
+    progressSeconds: row.progress_seconds,
     watchedAt: row.watched_at,
   }));
 }

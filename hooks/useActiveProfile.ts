@@ -10,6 +10,26 @@ export interface ActiveProfile {
 
 interface ProfilesResponse { profiles: Array<ActiveProfile & { hasPin?: boolean }>; activeProfileId?: number; }
 
+let inFlightProfilesPromise: Promise<ProfilesResponse | null> | null = null;
+let inFlightUserId: number | null = null;
+
+function fetchProfilesDeduplicated(userId: number): Promise<ProfilesResponse | null> {
+  if (inFlightProfilesPromise && inFlightUserId === userId) {
+    return inFlightProfilesPromise;
+  }
+
+  inFlightUserId = userId;
+  inFlightProfilesPromise = fetch("/api/profiles")
+    .then((response) => (response.ok ? (response.json() as Promise<ProfilesResponse>) : null))
+    .catch(() => null)
+    .finally(() => {
+      inFlightProfilesPromise = null;
+      inFlightUserId = null;
+    });
+
+  return inFlightProfilesPromise;
+}
+
 /**
  * Hook providing the active profile across the entire app.
  * Scoped per user ID so different accounts never share profile data.
@@ -24,8 +44,7 @@ export function useActiveProfile() {
 
   const refreshProfile = useCallback(() => {
     if (userId === null) { setActiveProfile(null); return; }
-    void fetch("/api/profiles")
-      .then((response) => response.ok ? response.json() as Promise<ProfilesResponse> : null)
+    void fetchProfilesDeduplicated(userId)
       .then((data) => setActiveProfile(data?.profiles.find((profile) => profile.id === data.activeProfileId) ?? data?.profiles[0] ?? null))
       .catch(() => setActiveProfile(null));
   }, [userId]);

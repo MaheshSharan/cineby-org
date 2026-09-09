@@ -80,8 +80,11 @@ interface ContinueWatchingCardProps {
 function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardProps) {
   const poster = getPosterResponsiveUrls(entry.posterPath);
 
-  // Calculate resume time in seconds based on duration or progress
-  const resumeSeconds = calculateResumeSeconds(entry.progress, entry.duration);
+  // Use exact progress seconds if available; otherwise calculate from progress % and duration
+  const resumeSeconds =
+    entry.progressSeconds && entry.progressSeconds > 0
+      ? entry.progressSeconds
+      : calculateResumeSeconds(entry.progress, entry.duration);
 
   const playHref =
     entry.mediaType === "tv" && entry.seasonNumber && entry.episodeNumber

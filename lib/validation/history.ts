@@ -10,4 +10,5 @@ export const addHistorySchema = z.object({
   episodeNumber: z.number().int().min(1).nullable().optional(),
   duration: z.string().max(50).nullable().optional(),
   progress: z.number().min(0).max(100).nullable().optional(),
+  progressSeconds: z.number().min(0).nullable().optional(),
 });

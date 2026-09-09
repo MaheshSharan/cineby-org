@@ -23,7 +23,7 @@ export function TopOneCard({ media, className = "" }: TopOneCardProps) {
     if (logoPath) return;
 
     let isCurrent = true;
-    fetch(`/api/tmdb/${media.mediaType}/${media.id}`)
+    fetch(`/api/tmdb/logo?mediaType=${media.mediaType}&id=${media.id}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (isCurrent && data?.logoPath) {

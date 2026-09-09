@@ -23,9 +23,10 @@ async function fetchWithTimeout(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+  const onCallerAbort = () => controller.abort();
   // Link caller signal with timeout signal
   if (request.signal) {
-    request.signal.addEventListener("abort", () => controller.abort());
+    request.signal.addEventListener("abort", onCallerAbort);
   }
 
   try {
@@ -44,7 +45,58 @@ async function fetchWithTimeout(
     return { sources: [], subtitles: [] };
   } finally {
     clearTimeout(timeoutId);
+    if (request.signal) {
+      request.signal.removeEventListener("abort", onCallerAbort);
+    }
   }
+}
+
+function processProviderResponse(
+  res: StreamResponse,
+  provider: Provider
+): StreamResponse {
+  const collectedSources: StreamSource[] = [];
+  const collectedSubtitles: SubtitleTrack[] = [];
+  const seenSourceUrls = new Set<string>();
+  const seenSubtitleLabels = new Set<string>();
+
+  for (const source of res.sources) {
+    if (source.url && !seenSourceUrls.has(source.url)) {
+      seenSourceUrls.add(source.url);
+      collectedSources.push({
+        ...source,
+        url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers),
+        provider: {
+          id: source.provider?.id || provider.id,
+          name: source.provider?.name || provider.name,
+        },
+      });
+    }
+  }
+
+  for (const sub of res.subtitles) {
+    const key = `${sub.label.toLowerCase()}_${sub.lang?.toLowerCase() ?? ""}`;
+    if (sub.url && !seenSubtitleLabels.has(key)) {
+      seenSubtitleLabels.add(key);
+      collectedSubtitles.push({
+        ...sub,
+        flagUrl: sub.flagUrl,
+        format: sub.format,
+        url: buildStreamProxyUrl(sub.url, sub.headers),
+      });
+    }
+  }
+
+  collectedSources.sort((a, b) => {
+    const rankA = QUALITY_RANKS[a.quality] ?? 0;
+    const rankB = QUALITY_RANKS[b.quality] ?? 0;
+    return rankB - rankA;
+  });
+
+  return {
+    sources: collectedSources,
+    subtitles: collectedSubtitles,
+  };
 }
 
 export async function resolveAllStreams(
@@ -67,76 +119,36 @@ export async function resolveAllStreams(
     return { sources: [], subtitles: [] };
   }
 
-  const results = await Promise.allSettled(
-    targetProviders.map((p) =>
-      fetchWithTimeout(
-        p,
-        { ...request, serverId: options?.targetProviderId },
-        timeoutMs
-      )
-    )
-  );
+  // Sort by priority ASC (lower priority number = higher preference)
+  targetProviders.sort((a, b) => a.priority - b.priority);
 
-  const collectedSources: StreamSource[] = [];
-  const collectedSubtitles: SubtitleTrack[] = [];
-  const seenSourceUrls = new Set<string>();
-  const seenSubtitleLabels = new Set<string>();
+  // If a specific provider is targeted, run directly
+  if (options?.targetProviderId && options.targetProviderId !== "default") {
+    const provider = targetProviders[0];
+    const res = await fetchWithTimeout(
+      provider,
+      { ...request, serverId: options.targetProviderId },
+      timeoutMs
+    );
+    return processProviderResponse(res, provider);
+  }
 
-  for (let i = 0; i < results.length; i++) {
-    const res = results[i];
-    const provider = targetProviders[i];
+  // Fastest-viable resolution across prioritized providers
+  for (const provider of targetProviders) {
+    const res = await fetchWithTimeout(
+      provider,
+      { ...request, serverId: options?.targetProviderId },
+      timeoutMs
+    );
 
-    if (res.status === "fulfilled" && res.value) {
-      // Collect sources
-      for (const source of res.value.sources) {
-        if (source.url && !seenSourceUrls.has(source.url)) {
-          seenSourceUrls.add(source.url);
-          collectedSources.push({
-            ...source,
-            url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers),
-            provider: {
-              id: source.provider?.id || provider.id,
-              name: source.provider?.name || provider.name,
-            },
-          });
-        }
-      }
-
-      // Collect subtitles
-      for (const sub of res.value.subtitles) {
-        const key = `${sub.label.toLowerCase()}_${sub.lang?.toLowerCase() ?? ""}`;
-        if (sub.url && !seenSubtitleLabels.has(key)) {
-          seenSubtitleLabels.add(key);
-          collectedSubtitles.push({
-            ...sub,
-            flagUrl: sub.flagUrl,
-            format: sub.format,
-            url: buildStreamProxyUrl(sub.url, sub.headers),
-          });
-        }
-      }
+    if (res.sources && res.sources.length > 0) {
+      return processProviderResponse(res, provider);
     }
   }
 
-  // Sort sources: Provider Priority (ASC) -> Quality Rank (DESC)
-  collectedSources.sort((a, b) => {
-    const providerA = targetProviders.find((p) => p.id === a.provider.id);
-    const providerB = targetProviders.find((p) => p.id === b.provider.id);
-    const priorityA = providerA?.priority ?? 100;
-    const priorityB = providerB?.priority ?? 100;
-
-    if (priorityA !== priorityB) {
-      return priorityA - priorityB;
-    }
-
-    const rankA = QUALITY_RANKS[a.quality] ?? 0;
-    const rankB = QUALITY_RANKS[b.quality] ?? 0;
-    return rankB - rankA;
-  });
-
   return {
-    sources: collectedSources,
-    subtitles: collectedSubtitles,
+    sources: [],
+    subtitles: [],
   };
 }
 
@@ -145,4 +157,39 @@ export function listAvailableProviders(): { id: string; name: string }[] {
     id: p.id,
     name: p.name,
   }));
+}
+
+export async function fetchProviderSubtitles(
+  request: StreamRequest,
+  activeServerId?: string
+): Promise<SubtitleTrack[]> {
+  // Determine which provider owns the active server
+  const provider = activeServerId
+    ? ALL_PROVIDERS.find((p) => activeServerId === p.id || activeServerId.startsWith(`${p.id}-`))
+    : ALL_PROVIDERS.find((p) => isProviderEnabled(p) && !isCircuitOpen(p.id));
+
+  if (!provider?.fetchSubtitles) {
+    return [];
+  }
+
+  try {
+    const raw = await provider.fetchSubtitles(request);
+    const seen = new Set<string>();
+    const result: SubtitleTrack[] = [];
+
+    for (const sub of raw) {
+      const key = `${sub.label.toLowerCase()}_${sub.lang?.toLowerCase() ?? ""}`;
+      if (sub.url && !seen.has(key)) {
+        seen.add(key);
+        result.push({
+          ...sub,
+          url: buildStreamProxyUrl(sub.url, sub.headers),
+        });
+      }
+    }
+
+    return result;
+  } catch {
+    return [];
+  }
 }

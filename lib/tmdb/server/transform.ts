@@ -148,7 +148,7 @@ function toTvCertification(value: unknown): string | null {
   return nullableString(rated?.rating);
 }
 
-function toLogoPath(images: unknown): string | null {
+export function toLogoPath(images: unknown): string | null {
   const logos = recordArray(asRecord(images)?.logos);
 
   return nullableString(logos[0]?.file_path);

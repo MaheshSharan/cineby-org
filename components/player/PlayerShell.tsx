@@ -25,6 +25,9 @@ export function PlayerShell({
   const handleTimeUpdate = useCallback(
     (currentTime: number, duration: number, playback?: { seasonNumber?: number; episodeNumber?: number }) => {
       if (!media) return;
+      const calculatedPercent = Math.round((currentTime / Math.max(1, duration)) * 100);
+      const effectiveProgress = currentTime > 5 && calculatedPercent === 0 ? 1 : calculatedPercent;
+
       // Persist history through the existing POST endpoint.
       fetch("/api/history", {
         method: "POST",
@@ -38,7 +41,8 @@ export function PlayerShell({
           seasonNumber: playback?.seasonNumber ?? media.seasonNumber ?? null,
           episodeNumber: playback?.episodeNumber ?? media.episodeNumber ?? null,
           duration: media.duration ?? null,
-          progress: Math.round((currentTime / Math.max(1, duration)) * 100),
+          progress: effectiveProgress,
+          progressSeconds: Math.floor(currentTime),
         }),
       }).catch(() => {});
       onTimeUpdate?.(currentTime, duration);

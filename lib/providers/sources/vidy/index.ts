@@ -72,7 +72,7 @@ async function fetchMetadata(
 ): Promise<TmdbMeta> {
   try {
     const res = await fetch(
-      `${DB_BASE}/${type}/${tmdbId}?append_to_response=credits,external_ids,translations,images&language=en`,
+      `${DB_BASE}/${type}/${tmdbId}?append_to_response=external_ids,translations&language=en`,
       {
         headers: {
           Referer: "https://www.vidy.st/",
@@ -315,21 +315,7 @@ async function scrapeServer(
       });
     }
 
-    const subtitles: SubtitleTrack[] = (payload.subtitles ?? [])
-      .filter((sub) => Boolean(sub.url))
-      .map((sub, idx) => ({
-        id: `vidy-payload-${sub.lang || sub.language || idx}`,
-        lang: sub.lang || sub.language || "en",
-        label: sub.display || sub.lang || sub.language || `Subtitle ${idx + 1}`,
-        url: sub.url as string,
-        format: sub.url?.endsWith(".srt") ? "srt" : "vtt",
-        headers: {
-          Referer: "https://www.vidy.st/",
-          Origin: "https://www.vidy.st",
-        },
-      }));
-
-    return { sources, subtitles };
+    return { sources, subtitles: [] };
   } catch (error) {
     if (!signal?.aborted) {
       logError(`Provider:vidy:${server.id}`, error);
@@ -345,7 +331,7 @@ async function scrape(req: StreamRequest): Promise<StreamResponse> {
 
   const { tmdbId, type, season, episode, signal } = req;
 
-  // 1. Fetch metadata and seed concurrently
+  // Fetch metadata and seed concurrently
   const [meta, seed] = await Promise.all([
     fetchMetadata(type, tmdbId, signal),
     fetchSeed(tmdbId, signal),
@@ -354,11 +340,6 @@ async function scrape(req: StreamRequest): Promise<StreamResponse> {
   if (!seed) {
     return { sources: [], subtitles: [] };
   }
-
-  // 2. Fetch Vidy Subtitles concurrently in parallel with stream resolutions
-  const subtitlesPromise = meta.imdbId
-    ? fetchVidySubtitles(meta.imdbId, type, season, episode, signal)
-    : Promise.resolve<SubtitleTrack[]>([]);
 
   const requestedServerId = req.serverId?.startsWith(`${PROVIDER_ID}-`)
     ? req.serverId.slice(PROVIDER_ID.length + 1)
@@ -374,33 +355,58 @@ async function scrape(req: StreamRequest): Promise<StreamResponse> {
 
   // Fast startup: if no specific server requested, race servers with Promise.any()
   if (!requestedServerId) {
+    const serverControllers: AbortController[] = [];
     try {
       const fastestResult = await Promise.any(
         servers.map(async (server) => {
-          const result = await scrapeServer(server, req, meta, seed);
-          if (result.sources.length === 0) {
-            throw new Error(`${server.id} returned no playable sources`);
+          const serverController = new AbortController();
+          serverControllers.push(serverController);
+
+          const onParentAbort = () => serverController.abort();
+          if (signal) {
+            if (signal.aborted) {
+              serverController.abort();
+            } else {
+              signal.addEventListener("abort", onParentAbort, { once: true });
+            }
           }
-          return result;
+
+          try {
+            const result = await scrapeServer(
+              server,
+              { ...req, signal: serverController.signal },
+              meta,
+              seed
+            );
+            if (result.sources.length === 0) {
+              throw new Error(`${server.id} returned no playable sources`);
+            }
+            return result;
+          } finally {
+            if (signal) {
+              signal.removeEventListener("abort", onParentAbort);
+            }
+          }
         })
       );
 
-      const externalSubs = await subtitlesPromise.catch(() => []);
-      const mergedSubs = [...fastestResult.subtitles];
-      const seen = new Set(mergedSubs.map((s) => s.url));
-
-      for (const sub of externalSubs) {
-        if (!seen.has(sub.url)) {
-          seen.add(sub.url);
-          mergedSubs.push(sub);
+      // Cancel all remaining losing server requests immediately
+      for (const ctrl of serverControllers) {
+        if (!ctrl.signal.aborted) {
+          ctrl.abort();
         }
       }
 
       return {
         sources: fastestResult.sources,
-        subtitles: mergedSubs,
+        subtitles: [],
       };
     } catch {
+      for (const ctrl of serverControllers) {
+        if (!ctrl.signal.aborted) {
+          ctrl.abort();
+        }
+      }
       return { sources: [], subtitles: [] };
     }
   }
@@ -411,33 +417,24 @@ async function scrape(req: StreamRequest): Promise<StreamResponse> {
   );
 
   const allSources: StreamSource[] = [];
-  const allSubtitles: SubtitleTrack[] = [];
-  const seenSubtitles = new Set<string>();
 
   for (const r of results) {
     if (r.status === "fulfilled") {
       allSources.push(...r.value.sources);
-      for (const sub of r.value.subtitles) {
-        if (!seenSubtitles.has(sub.url)) {
-          seenSubtitles.add(sub.url);
-          allSubtitles.push(sub);
-        }
-      }
-    }
-  }
-
-  const externalSubs = await subtitlesPromise.catch(() => []);
-  for (const sub of externalSubs) {
-    if (!seenSubtitles.has(sub.url)) {
-      seenSubtitles.add(sub.url);
-      allSubtitles.push(sub);
     }
   }
 
   return {
     sources: allSources,
-    subtitles: allSubtitles,
+    subtitles: [],
   };
+}
+
+async function fetchSubtitlesOnly(req: StreamRequest): Promise<SubtitleTrack[]> {
+  const { tmdbId, type, season, episode, signal } = req;
+  const meta = await fetchMetadata(type, tmdbId, signal);
+  if (!meta.imdbId) return [];
+  return fetchVidySubtitles(meta.imdbId, type, season, episode, signal);
 }
 
 export const vidyProvider: Provider = {
@@ -445,4 +442,5 @@ export const vidyProvider: Provider = {
   name: PROVIDER_NAME,
   priority: 10,
   fetch: scrape,
+  fetchSubtitles: fetchSubtitlesOnly,
 };

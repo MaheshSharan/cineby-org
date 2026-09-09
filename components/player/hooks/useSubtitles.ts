@@ -52,9 +52,8 @@ export function useSubtitles({ videoRef }: UseSubtitlesOptions): UseSubtitlesRes
           }
         });
 
-        element.addEventListener("error", (e) => {
-          // Log subtitle load error if any
-          console.warn("[Player:Subtitles] Subtitle track failed to load:", track.url, e);
+        element.addEventListener("error", () => {
+          // Subtitle failed to load; silent fallback without raw console logging
         });
 
         video?.appendChild(element);

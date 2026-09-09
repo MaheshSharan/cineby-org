@@ -47,4 +47,6 @@ export const tmdbCacheKeys = {
     `tmdb:${TMDB_CACHE_VERSION}:search:${clean(query)}:p${page}`,
   popularMovies: (page: number) => `tmdb:${TMDB_CACHE_VERSION}:movie:popular:p${page}`,
   topRatedMovies: (page: number) => `tmdb:${TMDB_CACHE_VERSION}:movie:top_rated:p${page}`,
+  mediaLogo: (mediaType: string, id: string | number) =>
+    `tmdb:${TMDB_CACHE_VERSION}:logo:${clean(mediaType)}:${clean(id)}`,
 };

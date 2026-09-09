@@ -80,7 +80,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "*");
-    res.setHeader("Cache-Control", "no-store");
 
     const contentType = upstreamRes.headers.get("content-type") || "";
     const isM3u8 =
@@ -88,6 +87,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       contentType.includes("mpegurl") ||
       contentType.includes("application/x-mpegURL");
 
+    // Cache immutable static media chunks (.m4s, .ts, init.mp4) while keeping playlists dynamic
+    const pathname = targetUrl.pathname.toLowerCase();
+    const isStaticChunk =
+      pathname.endsWith(".ts") ||
+      pathname.endsWith(".m4s") ||
+      pathname.endsWith("init.mp4") ||
+      contentType.includes("video/mp2t") ||
+      contentType.includes("video/iso.segment");
+
+    if (isStaticChunk) {
+      res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+    } else {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    }
 
     if (isM3u8) {
       const text = await upstreamRes.text();

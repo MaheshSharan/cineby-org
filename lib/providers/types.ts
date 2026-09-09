@@ -51,4 +51,5 @@ export interface Provider {
   name: string;
   priority: number;
   fetch: (request: StreamRequest) => Promise<StreamResponse>;
+  fetchSubtitles?: (request: StreamRequest) => Promise<SubtitleTrack[]>;
 }

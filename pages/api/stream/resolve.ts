@@ -39,14 +39,17 @@ export default async function handler(
       { targetProviderId: targetServer }
     );
 
-    // If the requested server returned no streams, fall back to all available providers
+    // If the requested server returned no streams, fall back cleanly to default provider
     if ((!result.sources || result.sources.length === 0) && targetServer) {
-      result = await resolveAllStreams({
-        tmdbId: parsedTmdbId,
-        type: mediaType,
-        season: seasonNum,
-        episode: episodeNum,
-      });
+      result = await resolveAllStreams(
+        {
+          tmdbId: parsedTmdbId,
+          type: mediaType,
+          season: seasonNum,
+          episode: episodeNum,
+        },
+        { targetProviderId: "default" }
+      );
     }
 
     res.status(200).json(result);

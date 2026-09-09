@@ -57,6 +57,10 @@ export function PlayerContainer({
   const mediaEngineRef = useRef<MediaEngine | null>(null);
   const streamRequestControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
+  // Deferred stream abort so React DEV StrictMode's synthetic unmount/remount
+  // does not kill the initial request. Cancelled on remount; a real unmount
+  // never remounts so the abort still fires.
+  const pendingStreamAbortRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const endedRef = useRef(false);
 
   const qualityTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -74,11 +78,20 @@ export function PlayerContainer({
     autoNext: true,
   });
 
+  const [activeServerId, setActiveServerId] = useState<string>("default");
   const [stream, setStream] = useState<StreamState>({ source: null, isError: false });
   const [isResolvingStream, setIsResolvingStream] = useState(true);
   const [availableSources, setAvailableSources] = useState<MediaSource[]>([]);
   const [availableSubtitles, setAvailableSubtitles] = useState<SubtitleTrack[]>([]);
   const [activeAbrLevel, setActiveAbrLevel] = useState<string | null>(null);
+
+  // Subtitle lazy-fetch state: disabled by default until user opts in
+  const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
+  const [isSubtitlesFetching, setIsSubtitlesFetching] = useState(false);
+  // Cache flag: once fetched for a given media key, don't re-fetch on re-enable
+  const subtitlesFetchedRef = useRef(false);
+  // AbortController for in-flight subtitle fetch (cancelled on media change)
+  const subtitleFetchControllerRef = useRef<AbortController | null>(null);
 
   // Modals and Popovers state
   const [isQualityOpen, setIsQualityOpen] = useState(false);
@@ -292,6 +305,7 @@ export function PlayerContainer({
   };
 
   const controls = usePlayerControls({
+    containerRef,
     onTogglePlay: playerState.togglePlay,
     onSeekBy: playerState.seekBy,
     onToggleMute: playerState.toggleMute,
@@ -338,23 +352,17 @@ export function PlayerContainer({
       };
 
       const result = await resolveStream(serverId, request);
-      if (requestId !== requestIdRef.current) {
+      // A canceled request is not a provider failure and must never surface
+      // as "Unable to play this source". Replacement requests bump
+      // requestIdRef; only the newest request may attach a result.
+      if (controller.signal.aborted || requestId !== requestIdRef.current) {
         return;
       }
       setIsResolvingStream(false);
 
       if (result.subtitles && result.subtitles.length > 0) {
-        setAvailableSubtitles(result.subtitles);
-        // Auto-select English subtitle track by default if none is currently selected
-        if (!subtitles.activeTrack) {
-          const defaultSub =
-            result.subtitles.find(
-              (s) => s.lang.toLowerCase() === "en" || s.label.toLowerCase().includes("english")
-            ) ?? null;
-          if (defaultSub) {
-            subtitles.selectTrack(defaultSub);
-          }
-        }
+        // Subtitles from the fast resolve path are discarded here intentionally.
+        // The player fetches them on demand when the user enables the subtitle toggle.
       }
       if (result.sources && result.sources.length > 0) {
         setAvailableSources(result.sources);
@@ -366,10 +374,9 @@ export function PlayerContainer({
         return;
       }
 
-      // Sync active serverId in settings to the actual source provider ID if it switched/fallback
-      if (source.id && source.id !== serverId) {
-        setSettings((prev) => ({ ...prev, serverId: source.id }));
-      }
+      // Only update the activeServerId UI display state; do not mutate settings.serverId here
+      const playingServerId = source.id || serverId;
+      setActiveServerId(playingServerId);
 
       const format = source.format === "unknown" ? detectFormat(source.url) : source.format;
 
@@ -413,14 +420,125 @@ export function PlayerContainer({
     [currentEpisode, currentMediaKey, currentSeason, isTv, media.mediaId, media.mediaType]
   );
 
+  // Reset subtitle state when navigating to a new media (episode/movie change)
+  const prevMediaKeyRef = useRef(currentMediaKey);
   useEffect(() => {
-    void loadStream(settings.serverId);
-  }, [loadStream, settings.serverId]);
+    if (prevMediaKeyRef.current === currentMediaKey) return;
+    prevMediaKeyRef.current = currentMediaKey;
+    subtitleFetchControllerRef.current?.abort();
+    subtitleFetchControllerRef.current = null;
+    setSubtitlesEnabled(false);
+    setIsSubtitlesFetching(false);
+    setAvailableSubtitles([]);
+    subtitlesFetchedRef.current = false;
+    subtitles.selectTrack(null);
+  }, [currentMediaKey, subtitles]);
+
+  const handleToggleSubtitles = useCallback(() => {
+    setSubtitlesEnabled((enabled) => {
+      const nextEnabled = !enabled;
+
+      if (!nextEnabled) {
+        subtitles.selectTrack(null);
+        return false;
+      }
+
+      // Already fetched for this media: surface results immediately
+      if (subtitlesFetchedRef.current) {
+        return true;
+      }
+
+      subtitlesFetchedRef.current = true;
+      setIsSubtitlesFetching(true);
+
+      const controller = new AbortController();
+      subtitleFetchControllerRef.current = controller;
+
+      const params = new URLSearchParams({
+        tmdbId: media.mediaId.toString(),
+        type: media.mediaType,
+        server: activeServerId,
+      });
+      if (isTv) {
+        params.set("season", currentSeason.toString());
+        params.set("episode", currentEpisode.toString());
+      }
+
+      fetch(`/api/stream/subtitles?${params.toString()}`, { signal: controller.signal })
+        .then((res) => (res.ok ? res.json() : { subtitles: [] }))
+        .then((data: unknown) => {
+          if (controller.signal.aborted) return;
+          const tracks =
+            data && typeof data === "object" && "subtitles" in data
+              ? (data as { subtitles: SubtitleTrack[] }).subtitles
+              : [];
+
+          // Auto-select English subtitle by default
+          const defaultSub =
+            tracks.find(
+              (s) => s.lang.toLowerCase() === "en" || s.label.toLowerCase().includes("english")
+            ) ?? tracks[0] ?? null;
+
+          if (defaultSub) {
+            subtitles.selectTrack(defaultSub);
+            // Pin the selected track at index 0 so it's immediately visible
+            const reordered = [defaultSub, ...tracks.filter((t) => t.id !== defaultSub.id)];
+            setAvailableSubtitles(reordered);
+          } else {
+            setAvailableSubtitles(tracks);
+          }
+        })
+        .catch(() => {
+          // Aborted or network error: leave list empty
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) {
+            setIsSubtitlesFetching(false);
+          }
+        });
+
+      return true;
+    });
+  }, [activeServerId, currentEpisode, currentSeason, isTv, media.mediaId, media.mediaType, subtitles]);
+
+  // Stream load on initial mount or when media changes (episode/movie switch)
+  const initialMediaKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (initialMediaKeyRef.current !== currentMediaKey) {
+      initialMediaKeyRef.current = currentMediaKey;
+      void loadStream(settings.serverId);
+    }
+  }, [currentMediaKey, loadStream, settings.serverId]);
 
   useEffect(() => {
-    const onUnmount = () => {
+    // StrictMode remount cancels the synthetic cleanup's deferred abort.
+    if (pendingStreamAbortRef.current) {
+      clearTimeout(pendingStreamAbortRef.current);
+      pendingStreamAbortRef.current = null;
+    }
+
+    const abortStreamSync = () => {
       streamRequestControllerRef.current?.abort();
       streamRequestControllerRef.current = null;
+    };
+
+    const scheduleStreamAbort = () => {
+      const controller = streamRequestControllerRef.current;
+      if (!controller) {
+        return;
+      }
+      pendingStreamAbortRef.current = setTimeout(() => {
+        controller.abort();
+        if (streamRequestControllerRef.current === controller) {
+          streamRequestControllerRef.current = null;
+        }
+        pendingStreamAbortRef.current = null;
+      }, 0);
+    };
+
+    const onUnmount = () => {
+      subtitleFetchControllerRef.current?.abort();
+      subtitleFetchControllerRef.current = null;
       mediaEngineRef.current?.destroy();
       mediaEngineRef.current = null;
 
@@ -444,10 +562,20 @@ export function PlayerContainer({
       }
     };
 
-    window.addEventListener("beforeunload", onUnmount);
-    return () => {
-      window.removeEventListener("beforeunload", onUnmount);
+    // Page unload has no remount, so abort the stream synchronously.
+    const handleBeforeUnload = () => {
       onUnmount();
+      abortStreamSync();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      onUnmount();
+      // Deferred: a StrictMode synthetic cleanup is immediately followed by
+      // this effect re-running, which cancels the pending abort. A real
+      // unmount never re-runs, so the abort fires and cancels the request.
+      scheduleStreamAbort();
     };
   }, []);
 
@@ -552,9 +680,12 @@ export function PlayerContainer({
     [handleNavigate]
   );
 
-  const handleServerChange = useCallback((serverId: string) => {
-    setSettings((current) => ({ ...current, serverId }));
-  }, []);
+  const handleServerChange = useCallback(
+    (serverId: string) => {
+      void loadStream(serverId);
+    },
+    [loadStream]
+  );
 
   const handleQualityChange = useCallback((quality: PlayerSettings["quality"]) => {
     setSettings((current) => ({ ...current, quality }));
@@ -602,7 +733,26 @@ export function PlayerContainer({
             track.url !== prevUrl
         ),
       ]);
+      // Uploading a file implicitly enables subtitles
+      subtitlesFetchedRef.current = true;
+      setSubtitlesEnabled(true);
       subtitles.selectTrack(customTrack);
+    },
+    [subtitles]
+  );
+
+  const handleSubtitleChange = useCallback(
+    (track: SubtitleTrack | null) => {
+      subtitles.selectTrack(track);
+      if (track) {
+        setAvailableSubtitles((prev) => {
+          const exists = prev.some((t) => t.id === track.id);
+          if (!exists) {
+            return [track, ...prev];
+          }
+          return [track, ...prev.filter((t) => t.id !== track.id)];
+        });
+      }
     },
     [subtitles]
   );
@@ -712,7 +862,7 @@ export function PlayerContainer({
                     quality={settings.quality}
                     onQualityChange={handleQualityChange}
                     servers={serverOptions}
-                    activeServerId={settings.serverId}
+                    activeServerId={activeServerId}
                     onServerChange={handleServerChange}
                     rate={settings.rate}
                     onRateChange={handleRateChange}
@@ -769,10 +919,13 @@ export function PlayerContainer({
                     open={isAudioSubtitlesOpen}
                     subtitleTracks={availableSubtitles}
                     activeSubtitleId={subtitles.activeTrack?.id}
-                    onSubtitleChange={subtitles.selectTrack}
+                    onSubtitleChange={handleSubtitleChange}
                     onUploadSubtitle={handleUploadSubtitle}
                     appearance={appearance}
                     onAppearanceChange={setAppearance}
+                    subtitlesEnabled={subtitlesEnabled}
+                    isSubtitlesFetching={isSubtitlesFetching}
+                    onToggleSubtitles={handleToggleSubtitles}
                   />
                 </div>
 
@@ -834,7 +987,7 @@ export function PlayerContainer({
                 type="button"
                 onClick={() => {
                   setStream({ source: null, isError: false });
-                  void loadStream(settings.serverId);
+                  void loadStream(activeServerId);
                 }}
                 className="flex-shrink-0 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black transition-colors hover:bg-white/90 cursor-pointer"
               >

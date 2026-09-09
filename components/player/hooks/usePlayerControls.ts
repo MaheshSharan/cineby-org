@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AUTOHIDE_CONTROLS_MS, FORWARD_MS, REWIND_MS } from "../constants";
 
 interface UsePlayerControlsOptions {
+  containerRef?: React.RefObject<HTMLDivElement | null>;
   onTogglePlay: () => void;
   onSeekBy: (seconds: number) => void;
   onToggleMute: () => void;
@@ -20,6 +21,7 @@ export interface UsePlayerControlsResult {
 const EVENT_TARGETS = new Set(["BUTTON", "INPUT", "SELECT", "TEXTAREA"]);
 
 export function usePlayerControls({
+  containerRef,
   onTogglePlay,
   onSeekBy,
   onToggleMute,
@@ -122,16 +124,17 @@ export function usePlayerControls({
       showControls();
     };
 
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("pointerup", onPointerUp);
+    const targetElement = containerRef?.current ?? window;
+    targetElement.addEventListener("pointermove", onPointerMove as EventListener);
+    targetElement.addEventListener("pointerdown", onPointerDown as EventListener);
+    targetElement.addEventListener("pointerup", onPointerUp as EventListener);
 
     return () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("pointerup", onPointerUp);
+      targetElement.removeEventListener("pointermove", onPointerMove as EventListener);
+      targetElement.removeEventListener("pointerdown", onPointerDown as EventListener);
+      targetElement.removeEventListener("pointerup", onPointerUp as EventListener);
     };
-  }, [onTogglePlay, showControls]);
+  }, [containerRef, onTogglePlay, showControls]);
 
   useEffect(() => {
     scheduleHide();

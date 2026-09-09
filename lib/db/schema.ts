@@ -66,6 +66,7 @@ export function initializeSchema(database: DatabaseSync): void {
       backdrop_path TEXT,
       duration TEXT,
       progress INTEGER,
+      progress_seconds INTEGER,
       watched_at TEXT NOT NULL
     );
 
@@ -102,6 +103,9 @@ export function initializeSchema(database: DatabaseSync): void {
     }
     if (!historyColumns.some((col) => col.name === "progress")) {
       database.exec("ALTER TABLE watch_history ADD COLUMN progress INTEGER;");
+    }
+    if (!historyColumns.some((col) => col.name === "progress_seconds")) {
+      database.exec("ALTER TABLE watch_history ADD COLUMN progress_seconds INTEGER;");
     }
 
     const sessionColumns = database.prepare("PRAGMA table_info(sessions)").all() as { name: string }[];
