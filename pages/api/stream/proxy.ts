@@ -55,21 +55,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  const defaultReferer = rawTargetUrl.includes("vidking")
+  const isVidking =
+    rawTargetUrl.includes("vidking") ||
+    rawTargetUrl.includes("peakstorm") ||
+    rawTargetUrl.includes("fastportal") ||
+    rawTargetUrl.includes("solidmoon") ||
+    rawTargetUrl.includes("echogate") ||
+    rawTargetUrl.includes("speedracelight");
+
+  const defaultReferer = isVidking
     ? "https://www.vidking.net/"
     : rawTargetUrl.includes("vixsrc")
     ? "https://vixsrc.to"
     : "https://www.vidy.st/";
-  const defaultOrigin = rawTargetUrl.includes("vidking")
+  const defaultOrigin = isVidking
     ? "https://www.vidking.net"
     : rawTargetUrl.includes("vixsrc")
     ? "https://vixsrc.to"
     : "https://www.vidy.st";
 
+  const activeHeaders: Record<string, string> = {
+    "User-Agent": customHeaders["User-Agent"] || DEFAULT_UA,
+    Referer: customHeaders["Referer"] || defaultReferer,
+    Origin: customHeaders["Origin"] || defaultOrigin,
+  };
+
   const upstreamHeaders = new Headers();
-  upstreamHeaders.set("User-Agent", customHeaders["User-Agent"] || DEFAULT_UA);
-  upstreamHeaders.set("Referer", customHeaders["Referer"] || defaultReferer);
-  upstreamHeaders.set("Origin", customHeaders["Origin"] || defaultOrigin);
+  upstreamHeaders.set("User-Agent", activeHeaders["User-Agent"]);
+  upstreamHeaders.set("Referer", activeHeaders["Referer"]);
+  upstreamHeaders.set("Origin", activeHeaders["Origin"]);
   upstreamHeaders.set("Accept", "*/*");
 
   if (req.headers.range) {
@@ -120,7 +134,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               const abs = uri.startsWith("http://") || uri.startsWith("https://")
                 ? uri
                 : new URL(uri, targetBase).toString();
-              return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, customHeaders))}"`;
+              return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, activeHeaders))}"`;
             });
           }
 
@@ -132,7 +146,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             ? trimmed
             : new URL(trimmed, targetBase).toString();
 
-          return `/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(absoluteUrl, customHeaders))}`;
+          return `/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(absoluteUrl, activeHeaders))}`;
         })
         .join("\n");
 

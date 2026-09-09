@@ -158,22 +158,41 @@ export default {
     }
 
     const customHeaders = descriptor.headers;
-    const defaultReferer = rawTargetUrl.includes("vidking")
+    const isVidking =
+      rawTargetUrl.includes("vidking") ||
+      rawTargetUrl.includes("peakstorm") ||
+      rawTargetUrl.includes("fastportal") ||
+      rawTargetUrl.includes("solidmoon") ||
+      rawTargetUrl.includes("echogate") ||
+      rawTargetUrl.includes("speedracelight");
+
+    const defaultReferer = isVidking
       ? "https://www.vidking.net/"
       : rawTargetUrl.includes("vixsrc")
       ? "https://vixsrc.to"
       : "https://www.vidy.st/";
-    const defaultOrigin = rawTargetUrl.includes("vidking")
+    const defaultOrigin = isVidking
       ? "https://www.vidking.net"
       : rawTargetUrl.includes("vixsrc")
       ? "https://vixsrc.to"
       : "https://www.vidy.st";
 
+    const activeHeaders: Record<string, string> = {
+      "User-Agent": customHeaders["User-Agent"] || DEFAULT_UA,
+      Referer: customHeaders["Referer"] || defaultReferer,
+      Origin: customHeaders["Origin"] || defaultOrigin,
+    };
+
     const upstreamHeaders = new Headers();
-    upstreamHeaders.set("User-Agent", customHeaders["User-Agent"] || DEFAULT_UA);
-    upstreamHeaders.set("Referer", customHeaders["Referer"] || defaultReferer);
-    upstreamHeaders.set("Origin", customHeaders["Origin"] || defaultOrigin);
+    upstreamHeaders.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36");
+    upstreamHeaders.set("Referer", activeHeaders["Referer"]);
+    upstreamHeaders.set("Origin", activeHeaders["Origin"]);
     upstreamHeaders.set("Accept", "*/*");
+    upstreamHeaders.set("Accept-Language", "en-US,en;q=0.9");
+    upstreamHeaders.set("Sec-Fetch-Dest", "empty");
+    upstreamHeaders.set("Sec-Fetch-Mode", "cors");
+    upstreamHeaders.set("Sec-Fetch-Site", "cross-site");
+    upstreamHeaders.set("Priority", "u=1, i");
 
     const range = req.headers.get("range");
     if (range) {
@@ -185,6 +204,13 @@ export default {
       method: req.method,
       headers: upstreamHeaders,
     });
+    console.log(`[proxy] Fetching upstream ${targetUrl.hostname}${targetUrl.pathname} -> status=${upstreamRes.status} ${upstreamRes.statusText}`);
+
+    if (!upstreamRes.ok) {
+      const errClone = upstreamRes.clone();
+      const errBody = await errClone.text().catch(() => "");
+      console.log(`[proxy] Upstream error body preview: ${errBody.slice(0, 300)}`);
+    }
 
     const responseHeaders = new Headers(corsHeaders);
     const contentType = upstreamRes.headers.get("content-type") || "";
@@ -228,7 +254,7 @@ export default {
           if (match) {
             const uri = match[1];
             const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
-            const token = await createDescriptorToken(abs, customHeaders, secret);
+            const token = await createDescriptorToken(abs, activeHeaders, secret);
             rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
             continue;
           }
@@ -240,7 +266,7 @@ export default {
         }
 
         const absUrl = trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : new URL(trimmed, targetBase).toString();
-        const token = await createDescriptorToken(absUrl, customHeaders, secret);
+        const token = await createDescriptorToken(absUrl, activeHeaders, secret);
         rewrittenLines.push(`${workerOrigin}/?token=${encodeURIComponent(token)}`);
       }
 

@@ -49,7 +49,7 @@ export default async function handler(
       const rawSources = decryptVidkingClientSources(clientCiphertext, clientSeed, parsedTmdbId, clientServerId);
 
       if (rawSources.length > 0) {
-        const proxiedSources = rawSources.map((src) => ({
+        const finalSources = rawSources.map((src) => ({
           ...src,
           url: buildStreamProxyUrl(src.url, src.headers),
         }));
@@ -60,11 +60,11 @@ export default async function handler(
           type: mediaType,
           season: seasonNum,
           episode: episodeNum,
-        }, targetServer || "vidking-yoru");
+        }, targetServer || `vidking-${clientServerId}`);
 
-        console.log(`[resolve] Client-assisted resolution succeeded: ${proxiedSources.length} sources, ${subtitles.length} subtitles`);
+        console.log(`[resolve] Client-assisted resolution succeeded: ${finalSources.length} sources, ${subtitles.length} subtitles`);
         res.status(200).json({
-          sources: proxiedSources,
+          sources: finalSources,
           subtitles,
         });
         return;
