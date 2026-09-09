@@ -23,7 +23,15 @@ function getHlsQualityCap(quality: QualityLabel | null): number {
   }
 }
 
-export function attachHls(video: HTMLVideoElement, src: string): HlsController {
+export interface HlsOptions {
+  onLevelSwitched?: (levelHeight: number) => void;
+}
+
+export function attachHls(
+  video: HTMLVideoElement,
+  src: string,
+  options?: HlsOptions
+): HlsController {
   const hls = new Hls({
     enableWorker: true,
     backBufferLength: 30,
@@ -36,12 +44,20 @@ export function attachHls(video: HTMLVideoElement, src: string): HlsController {
   hls.loadSource(src);
   hls.attachMedia(video);
 
+  const notifyLevel = (levelIndex: number) => {
+    const level = hls.levels[levelIndex];
+    if (level?.height) {
+      options?.onLevelSwitched?.(level.height);
+    }
+  };
+
   hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
-    const level = hls.levels[data.level];
-    if (level) {
-      console.log(
-        `[HlsEngine] ⚡ Active Stream Switched -> ${level.height}p @ ${level.bitrate ? Math.round(level.bitrate / 1000) : 0} kbps (${level.url || "chunk stream"})`
-      );
+    notifyLevel(data.level);
+  });
+
+  hls.on(Hls.Events.MANIFEST_PARSED, () => {
+    if (hls.currentLevel >= 0) {
+      notifyLevel(hls.currentLevel);
     }
   });
 
@@ -54,16 +70,11 @@ export function attachHls(video: HTMLVideoElement, src: string): HlsController {
 
       if (cap === 0) {
         hls.currentLevel = -1;
-        console.log("[HlsEngine] Quality setting changed to: Auto (Adaptive Bitrate)");
         return;
       }
 
       const target = hls.levels.findLastIndex((level) => level.height <= cap);
       hls.currentLevel = target >= 0 ? target : hls.levels.length - 1;
-      const active = hls.levels[hls.currentLevel];
-      console.log(
-        `[HlsEngine] Quality setting changed to: ${quality} (Target Level: ${active?.height ?? cap}p)`
-      );
     },
     getLevels: () =>
       hls.levels.map((level) => ({

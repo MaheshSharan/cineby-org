@@ -36,8 +36,23 @@ export function useActiveProfile() {
   }, [refreshProfile]);
 
   useEffect(() => {
-    // Listen for same-tab storage events dispatched by profiles.tsx
-    return undefined;
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!e.key || (userId !== null && e.key === `cineby_active_profile_${userId}`)) {
+        refreshProfile();
+      }
+    };
+
+    const handleProfileChange = () => {
+      refreshProfile();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("cineby:profile-change", handleProfileChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("cineby:profile-change", handleProfileChange);
+    };
   }, [refreshProfile, userId]);
 
   return { activeProfile, refreshProfile };

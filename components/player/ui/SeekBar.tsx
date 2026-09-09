@@ -6,6 +6,23 @@ interface SeekBarProps {
   onSeek: (time: number) => void;
 }
 
+function formatTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return "0:00";
+  }
+
+  const totalSeconds = Math.floor(seconds);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${String(secs).padStart(2, "0")}`;
+}
+
 export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
@@ -37,6 +54,37 @@ export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
     onSeek(getTimeFromEvent(event.clientX));
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (duration <= 0) return;
+
+    switch (event.key) {
+      case "ArrowLeft":
+      case "ArrowDown": {
+        event.preventDefault();
+        onSeek(Math.max(0, currentTime - 5));
+        break;
+      }
+      case "ArrowRight":
+      case "ArrowUp": {
+        event.preventDefault();
+        onSeek(Math.min(duration, currentTime + 5));
+        break;
+      }
+      case "Home": {
+        event.preventDefault();
+        onSeek(0);
+        break;
+      }
+      case "End": {
+        event.preventDefault();
+        onSeek(duration);
+        break;
+      }
+      default:
+        break;
+    }
+  };
+
   return (
     <div
       ref={trackRef}
@@ -44,11 +92,13 @@ export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
       onClick={handleSeek}
+      onKeyDown={handleKeyDown}
       role="slider"
-      aria-label="Seek"
+      aria-label="Seek video"
       aria-valuemin={0}
       aria-valuemax={Math.round(duration)}
       aria-valuenow={Math.round(currentTime)}
+      aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
       tabIndex={0}
     >
       <div className="absolute inset-y-0 left-0 right-0 flex items-center">

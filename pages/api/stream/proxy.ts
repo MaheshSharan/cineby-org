@@ -88,19 +88,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       contentType.includes("mpegurl") ||
       contentType.includes("application/x-mpegURL");
 
-    const urlPath = targetUrl.pathname;
-    const isMaster = urlPath.endsWith("master.m3u8");
-    const isVariantPlaylist = isM3u8 && !isMaster;
-
-    if (isMaster) {
-      console.log(`[Stream Proxy] 📺 Master ABR Playlist loaded: ${targetUrl.hostname}${urlPath}`);
-    } else if (isVariantPlaylist) {
-      const qualityMatch = urlPath.match(/s(\d+p)/i) || urlPath.match(/(2160p|1440p|1080p|720p|480p|360p)/i);
-      const qualityTag = qualityMatch ? qualityMatch[1].toUpperCase() : "VARIANT";
-      console.log(`[Stream Proxy] 🎯 Switched/Loaded Quality Stream: [${qualityTag}] -> ${targetUrl.hostname}${urlPath}`);
-    } else if (rawTargetUrl.includes("subtitles") || rawTargetUrl.includes(".srt") || rawTargetUrl.includes(".vtt")) {
-      console.log(`[Stream Proxy] 📝 Subtitle Track loaded: ${targetUrl.hostname}${urlPath}${targetUrl.search}`);
-    }
 
     if (isM3u8) {
       const text = await upstreamRes.text();

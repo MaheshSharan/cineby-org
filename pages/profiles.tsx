@@ -66,6 +66,7 @@ export default function ProfilesPage() {
           const activeKey = `cineby_active_profile_${user.id}`;
           localStorage.setItem(activeKey, JSON.stringify(active));
           window.dispatchEvent(new StorageEvent("storage", { key: activeKey }));
+          window.dispatchEvent(new CustomEvent("cineby:profile-change", { detail: { profileId: active.id } }));
         }
       }
     } catch {
@@ -130,6 +131,7 @@ export default function ProfilesPage() {
         localStorage.setItem(activeKey, JSON.stringify(profile));
         window.dispatchEvent(new StorageEvent("storage", { key: activeKey }));
       }
+      window.dispatchEvent(new CustomEvent("cineby:profile-change", { detail: { profileId: profile.id } }));
 
       setPinPromptProfile(null);
       showToast(`Switched to ${profile.name}`);
@@ -286,6 +288,7 @@ export default function ProfilesPage() {
         localStorage.setItem(activeKey, JSON.stringify(newProfile));
         window.dispatchEvent(new StorageEvent("storage", { key: activeKey }));
       }
+      window.dispatchEvent(new CustomEvent("cineby:profile-change", { detail: { profileId: newProfile.id } }));
 
       // Land on "Who's watching?" so the user sees and selects the profile
       // they just created, instead of jumping straight to the home screen.

@@ -39,6 +39,41 @@ export function VolumeControl({
     onVolumeChange(getVolumeFromEvent(event.clientX));
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    switch (event.key) {
+      case "ArrowLeft":
+      case "ArrowDown": {
+        event.preventDefault();
+        onVolumeChange(Math.max(0, (muted ? 0 : volume) - 0.05));
+        break;
+      }
+      case "ArrowRight":
+      case "ArrowUp": {
+        event.preventDefault();
+        if (muted) {
+          onToggleMute();
+        }
+        onVolumeChange(Math.min(1, (muted ? 0 : volume) + 0.05));
+        break;
+      }
+      case "Home": {
+        event.preventDefault();
+        onVolumeChange(0);
+        break;
+      }
+      case "End": {
+        event.preventDefault();
+        if (muted) {
+          onToggleMute();
+        }
+        onVolumeChange(1);
+        break;
+      }
+      default:
+        break;
+    }
+  };
+
   return (
     <div
       className="group relative flex items-center"
@@ -81,11 +116,13 @@ export function VolumeControl({
           className="relative flex h-9 w-full cursor-pointer items-center group/slider"
           onPointerMove={handlePointerMove}
           onClick={handleClick}
+          onKeyDown={handleKeyDown}
           role="slider"
           aria-label="Volume"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(progress)}
+          aria-valuetext={muted ? "Muted" : `${Math.round(progress)}%`}
           tabIndex={0}
         >
           <div className="absolute inset-y-0 left-0 right-0 flex items-center">

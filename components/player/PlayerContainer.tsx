@@ -60,6 +60,8 @@ export function PlayerContainer({
 
   const qualityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const audioTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const activeBlobUrlsRef = useRef<Set<string>>(new Set());
+  const customSubtitleUrlRef = useRef<string | null>(null);
 
   const [settings, setSettings] = useState<PlayerSettings>({
     volume: 0.8,
@@ -75,6 +77,7 @@ export function PlayerContainer({
   const [isResolvingStream, setIsResolvingStream] = useState(true);
   const [availableSources, setAvailableSources] = useState<MediaSource[]>([]);
   const [availableSubtitles, setAvailableSubtitles] = useState<SubtitleTrack[]>([]);
+  const [activeAbrLevel, setActiveAbrLevel] = useState<string | null>(null);
 
   // Modals and Popovers state
   const [isQualityOpen, setIsQualityOpen] = useState(false);
@@ -361,7 +364,13 @@ export function PlayerContainer({
         mediaEngineRef.current = null;
       }
 
-      const engine = createMediaEngine(element, source.url, format);
+      setActiveAbrLevel(null);
+
+      const engine = createMediaEngine(element, source.url, format, {
+        onLevelSwitched: (levelHeight) => {
+          setActiveAbrLevel(`${levelHeight}p`);
+        },
+      });
       mediaEngineRef.current = engine;
 
       // Restore playback position seamlessly from the exact spot
@@ -403,6 +412,16 @@ export function PlayerContainer({
 
       if (qualityTimerRef.current) clearTimeout(qualityTimerRef.current);
       if (audioTimerRef.current) clearTimeout(audioTimerRef.current);
+
+      activeBlobUrlsRef.current.forEach((url) => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {
+          // ignore
+        }
+      });
+      activeBlobUrlsRef.current.clear();
+      customSubtitleUrlRef.current = null;
 
       const video = videoRef.current;
       if (video) {
@@ -537,14 +556,38 @@ export function PlayerContainer({
 
   const handleUploadSubtitle = useCallback(
     (file: File) => {
+      const prevUrl = customSubtitleUrlRef.current;
+      if (prevUrl) {
+        try {
+          URL.revokeObjectURL(prevUrl);
+        } catch {
+          // ignore
+        }
+        activeBlobUrlsRef.current.delete(prevUrl);
+        customSubtitleUrlRef.current = null;
+      }
+
       const url = URL.createObjectURL(file);
+      customSubtitleUrlRef.current = url;
+      activeBlobUrlsRef.current.add(url);
+
       const customTrack: SubtitleTrack = {
         id: `custom-${Date.now()}`,
         lang: "custom",
         label: file.name.replace(/\.[^/.]+$/, ""),
         url,
       };
-      setAvailableSubtitles((prev) => [customTrack, ...prev]);
+
+      setAvailableSubtitles((prev) => [
+        customTrack,
+        ...prev.filter(
+          (track) =>
+            track.id !== "custom" &&
+            !track.id.startsWith("custom-") &&
+            track.lang !== "custom" &&
+            track.url !== prevUrl
+        ),
+      ]);
       subtitles.selectTrack(customTrack);
     },
     [subtitles]
@@ -646,7 +689,7 @@ export function PlayerContainer({
                     </svg>
                     <span className="hidden md:inline">Quality</span>
                     <span className="hidden md:inline opacity-50 font-normal">
-                      {settings.quality ?? "1080p"}
+                      {settings.quality ?? (activeAbrLevel ? `Auto (${activeAbrLevel})` : "Auto")}
                     </span>
                   </button>
 
@@ -659,6 +702,7 @@ export function PlayerContainer({
                     onServerChange={handleServerChange}
                     rate={settings.rate}
                     onRateChange={handleRateChange}
+                    resolvedLevel={activeAbrLevel}
                   />
                 </div>
 

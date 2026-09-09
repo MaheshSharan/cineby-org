@@ -7,6 +7,9 @@ let devFallbackSecret: string | null = null;
 function secret(): string {
   const value = process.env.STREAM_PROXY_SECRET?.trim();
   if (value) return value;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("[signedProxy] STREAM_PROXY_SECRET must be configured in production");
+  }
   if (!devFallbackSecret) {
     devFallbackSecret = "cineby_dev_stream_secret_default_fallback_key";
   }

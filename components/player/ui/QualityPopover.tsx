@@ -11,9 +11,11 @@ interface QualityPopoverProps {
   onServerChange: (serverId: string) => void;
   rate: PlaybackRate;
   onRateChange: (rate: PlaybackRate) => void;
+  resolvedLevel?: string | null;
 }
 
 const QUALITY_OPTIONS: { value: QualityLabel | null; label: string; badge?: string }[] = [
+  { value: null, label: "Auto" },
   { value: "2160p", label: "2160p" },
   { value: "1080p", label: "1080p", badge: "Full HD" },
   { value: "720p", label: "720p", badge: "HD" },
@@ -29,6 +31,7 @@ export function QualityPopover({
   onServerChange,
   rate,
   onRateChange,
+  resolvedLevel,
 }: QualityPopoverProps) {
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
 
@@ -55,8 +58,8 @@ export function QualityPopover({
               </p>
               <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-0.5 pr-1">
                 {QUALITY_OPTIONS.map((q) => {
-                  const isActive =
-                    (quality === null && q.value === "1080p") || quality === q.value;
+                  const isActive = quality === q.value;
+                  const isAuto = q.value === null;
 
                   return (
                     <button
@@ -70,7 +73,14 @@ export function QualityPopover({
                       }`}
                     >
                       <span className="flex-1 min-w-0">
-                        <span className="block truncate">{q.label}</span>
+                        <span className="flex items-center gap-1.5 truncate">
+                          <span>{q.label}</span>
+                          {isAuto && resolvedLevel ? (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-white/10 text-cyan-400">
+                              {resolvedLevel}
+                            </span>
+                          ) : null}
+                        </span>
                         {q.badge ? (
                           <span className="block text-[11px] font-normal text-gray-500 mt-0.5 truncate">
                             {q.badge}

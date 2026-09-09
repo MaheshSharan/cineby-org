@@ -257,7 +257,7 @@ export function AudioSubtitlesPopover({
                     onClick={() => setView("main")}
                     className="flex w-full h-10 items-center justify-center rounded-full bg-white px-6 text-[13px] font-semibold text-[#0b0f14] transition-all hover:bg-white/90 cursor-pointer"
                   >
-                    Save to profile
+                    Apply settings
                   </button>
                 </div>
               </div>

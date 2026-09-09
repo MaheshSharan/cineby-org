@@ -49,13 +49,16 @@ async function fetchWithTimeout(
 
 export async function resolveAllStreams(
   request: StreamRequest,
-  options?: { timeoutMs?: number; targetProviderId?: string }
+  options?: { timeoutMs?: number; targetProviderId?: string; force?: boolean }
 ): Promise<StreamResponse> {
   const timeoutMs = options?.timeoutMs ?? DEFAULT_PROVIDER_TIMEOUT_MS;
 
   const targetProviders = ALL_PROVIDERS.filter((p) => {
     if (options?.targetProviderId && options.targetProviderId !== "default") {
-      return p.id === options.targetProviderId || options.targetProviderId.startsWith(`${p.id}-`);
+      const isTarget = p.id === options.targetProviderId || options.targetProviderId.startsWith(`${p.id}-`);
+      if (!isTarget) return false;
+      if (options.force) return true;
+      return isProviderEnabled(p) && !isCircuitOpen(p.id);
     }
     return isProviderEnabled(p) && !isCircuitOpen(p.id);
   });
