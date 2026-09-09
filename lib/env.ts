@@ -35,3 +35,14 @@ export function getRedisUrl(): string | undefined {
   return process.env.REDIS_URL?.trim() || undefined;
 }
 
+export function getCorsAllowedOrigins(): string[] {
+  const envVal = process.env.CORS_ALLOWED_ORIGINS?.trim();
+  if (!envVal) {
+    return [];
+  }
+  return envVal
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+

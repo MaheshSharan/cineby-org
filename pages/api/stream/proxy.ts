@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createProxyDescriptor, readProxyDescriptor } from "@/lib/providers/signedProxy";
+import { applyCorsHeaders } from "@/lib/cors";
 
 export const config = {
   api: {
@@ -12,8 +13,12 @@ const DEFAULT_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (applyCorsHeaders(req, res)) {
+    return;
+  }
+
   if (req.method !== "GET" && req.method !== "HEAD") {
-    res.setHeader("Allow", ["GET", "HEAD"]);
+    res.setHeader("Allow", ["GET", "HEAD", "OPTIONS"]);
     res.status(405).end();
     return;
   }
@@ -76,10 +81,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       method: req.method,
       headers: upstreamHeaders,
     });
-
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "*");
 
     const contentType = upstreamRes.headers.get("content-type") || "";
     const isM3u8 =

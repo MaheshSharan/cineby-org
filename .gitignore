@@ -30,3 +30,4 @@ next-env.d.ts
 # database
 /data
 cineby_extension/*
+.agents/
