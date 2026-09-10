@@ -2,6 +2,7 @@ import type { Quality, StreamResponse } from "@/lib/providers/types";
 import { fetchVidkingPayloadFromBrowser } from "@/lib/providers/sources/vidking/client";
 import { fetchVixsrcPayloadFromBrowser } from "@/lib/providers/sources/vixsrc/client";
 import { fetchVidyPayloadFromBrowser } from "@/lib/providers/sources/vidy/client";
+import { buildStreamProxyUrl } from "@/lib/providers/proxy";
 import type { MediaSource, QualityLabel, SubtitleTrack } from "../types";
 import type { StreamRequest, StreamResolutionResult } from "./types";
 
@@ -250,6 +251,17 @@ function needsBrowserM3u8Fetch(url: string): boolean {
  * Fetch an M3U8 that is blocked from server/datacenter IPs browser-side,
  * POST it to /api/stream/m3u8 for chunk URL rewriting, and return a Blob URL
  * that HLS.js can load directly. Returns null if any step fails.
+ *
+ * IMPORTANT: Browsers treat `Referer` and `Origin` as Forbidden Request Headers
+ * and silently drop them from fetch() calls. CDNs like peakstorm.top enforce
+ * Referer checks and return 403 when the wrong origin is sent.
+ *
+ * To work around this, the M3U8 fetch is routed through the stream proxy via a
+ * signed token that carries the required headers. The Cloudflare Worker then sets
+ * them server-side on the upstream fetch, bypassing the browser restriction.
+ *
+ * Segment CDNs (fastportal.top, rockyember.top) respond with
+ * access-control-allow-origin: * so they load fine without proxying.
  */
 async function rewriteM3u8ToBlobUrl(
   m3u8Url: string,
@@ -257,16 +269,10 @@ async function rewriteM3u8ToBlobUrl(
   signal?: AbortSignal
 ): Promise<string | null> {
   try {
-    // Step 1: fetch the raw M3U8 from the blocked CDN using the browser's residential IP
-    const m3u8Res = await fetch(m3u8Url, {
-      headers: {
-        "User-Agent": headers["User-Agent"] ?? navigator.userAgent,
-        Referer: headers["Referer"] ?? "https://www.vidy.st/",
-        Origin: headers["Origin"] ?? "https://www.vidy.st",
-        Accept: "*/*",
-      },
-      signal,
-    });
+    // Step 1: Fetch the M3U8 through the stream proxy so Referer/Origin headers
+    // are set server-side. Direct browser fetch silently drops these forbidden headers.
+    const proxyUrl = buildStreamProxyUrl(m3u8Url, headers);
+    const m3u8Res = await fetch(proxyUrl, { signal });
     if (!m3u8Res.ok) return null;
 
     const m3u8Text = await m3u8Res.text();
