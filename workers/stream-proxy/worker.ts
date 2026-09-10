@@ -249,6 +249,19 @@ export default {
           continue;
         }
 
+        if (trimmed.startsWith("#EXT-X-KEY:")) {
+          const match = /URI="([^"]+)"/.exec(trimmed);
+          if (match) {
+            const uri = match[1];
+            const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
+            const token = await createDescriptorToken(abs, activeHeaders, secret);
+            rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
+          } else {
+            rewrittenLines.push(line);
+          }
+          continue;
+        }
+
         if (trimmed.startsWith("#EXT-X-MAP:")) {
           const match = /URI="([^"]+)"/.exec(trimmed);
           if (match) {

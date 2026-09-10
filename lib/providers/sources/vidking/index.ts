@@ -15,11 +15,12 @@ const API_BASE = "https://api.speedracelight.com";
 const DB_BASE = "https://db.speedracelight.com/3";
 
 const SERVERS = [
-  { id: "breach", name: "Vidking - Breach", endpoint: "m4uhd/sources-with-title" },
   { id: "yoru", name: "Vidking - Yoru", endpoint: "cdn/sources-with-title" },
+  { id: "breach", name: "Vidking - Breach", endpoint: "m4uhd/sources-with-title" },
   { id: "cypher", name: "Vidking - Cypher", endpoint: "downloader2/sources-with-title" },
   { id: "neon", name: "Vidking - Neon", endpoint: "vsrc/sources-with-title" },
 ] as const;
+
 
 interface TmdbMeta {
   title: string;
@@ -401,6 +402,7 @@ export function decryptVidkingClientSources(
         url: s.url as string,
         type: s.type === "mp4" ? "mp4" : s.type === "dash" ? "dash" : "hls",
         quality: parseQuality(s.quality),
+        direct: true,
         headers: {
           Referer: "https://www.vidking.net/",
           Origin: "https://www.vidking.net",

@@ -85,6 +85,24 @@ export function PlayerContainer({
   const [availableSources, setAvailableSources] = useState<MediaSource[]>([]);
   const [availableSubtitles, setAvailableSubtitles] = useState<SubtitleTrack[]>([]);
   const [activeAbrLevel, setActiveAbrLevel] = useState<string | null>(null);
+  const [activeProviders, setActiveProviders] = useState<{ id: string; name: string }[]>([]);
+
+  // Fetch enabled providers dynamically to respect ENABLE_VIDY, ENABLE_VIDKING, ENABLE_VIXSRC
+  useEffect(() => {
+    let isCurrent = true;
+    fetch("/api/stream/providers")
+      .then((res) => (res.ok ? res.json() : { providers: [] }))
+      .then((data: unknown) => {
+        if (!isCurrent) return;
+        if (data && typeof data === "object" && "providers" in data && Array.isArray((data as { providers: unknown }).providers)) {
+          setActiveProviders((data as { providers: { id: string; name: string }[] }).providers);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
 
   // Subtitle lazy-fetch state: disabled by default until user opts in
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
@@ -855,8 +873,18 @@ export function PlayerContainer({
       }
     }
 
-    return list;
-  }, [availableSources]);
+    if (activeProviders.length === 0) {
+      return list;
+    }
+
+    const enabledProviderIds = new Set(activeProviders.map((p) => p.id));
+    return list.filter((server) => {
+      if (server.id === "default") return true;
+      return Array.from(enabledProviderIds).some((provId) =>
+        server.id === provId || server.id.startsWith(`${provId}-`)
+      );
+    });
+  }, [availableSources, activeProviders]);
 
   const isLoading = isResolvingStream && !stream.source;
 

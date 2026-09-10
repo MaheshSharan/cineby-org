@@ -63,7 +63,7 @@ export default async function handler(
       if (rawSources.length > 0) {
         const finalSources = rawSources.map((src) => ({
           ...src,
-          url: buildStreamProxyUrl(src.url, src.headers),
+          url: src.direct ? src.url : buildStreamProxyUrl(src.url, src.headers),
         }));
 
         // Fetch subtitles
@@ -94,7 +94,7 @@ export default async function handler(
       if (source) {
         const finalSource = {
           ...source,
-          url: buildStreamProxyUrl(source.url, source.headers),
+          url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers),
         };
 
         console.log(`[resolve] Vixsrc client-assisted resolution succeeded for tmdbId=${parsedTmdbId}`);
@@ -114,7 +114,7 @@ export default async function handler(
       if (rawSources.length > 0) {
         const finalSources = rawSources.map((src) => ({
           ...src,
-          url: buildStreamProxyUrl(src.url, src.headers),
+          url: src.direct ? src.url : buildStreamProxyUrl(src.url, src.headers),
         }));
 
         const subtitles = await fetchProviderSubtitles({

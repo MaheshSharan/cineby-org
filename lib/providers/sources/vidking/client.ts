@@ -12,11 +12,12 @@ export interface ClientEncryptedPayload {
 }
 
 const VIDKING_SERVERS = [
-  { id: "breach", name: "Vidking - Breach", endpoint: "m4uhd/sources-with-title" },
   { id: "yoru", name: "Vidking - Yoru", endpoint: "cdn/sources-with-title" },
+  { id: "breach", name: "Vidking - Breach", endpoint: "m4uhd/sources-with-title" },
   { id: "cypher", name: "Vidking - Cypher", endpoint: "downloader2/sources-with-title" },
   { id: "neon", name: "Vidking - Neon", endpoint: "vsrc/sources-with-title" },
 ] as const;
+
 
 export async function fetchVidkingPayloadFromBrowser(params: {
   tmdbId: number;
@@ -43,7 +44,7 @@ export async function fetchVidkingPayloadFromBrowser(params: {
     const seed = seedData?.seed;
     if (!seed || typeof seed !== "string") return null;
 
-    // 2. Select servers to try (prioritizing breach, or user's requested server)
+    // 2. Select servers to try (prioritizing yoru, or user's requested server)
     const serversToTry = targetServer && targetServer !== "default"
       ? VIDKING_SERVERS.filter((s) => targetServer === s.id || targetServer === `vidking-${s.id}`)
       : VIDKING_SERVERS;

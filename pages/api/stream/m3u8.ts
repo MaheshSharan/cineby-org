@@ -47,7 +47,14 @@ export default function handler(
     return;
   }
 
-  const base = baseUrl ? baseUrl.substring(0, baseUrl.lastIndexOf("/") + 1) : "";
+  const resolveUrl = (relativeOrAbsolute: string): string => {
+    if (!baseUrl) return relativeOrAbsolute;
+    try {
+      return new URL(relativeOrAbsolute, baseUrl).toString();
+    } catch {
+      return relativeOrAbsolute;
+    }
+  };
 
   const lines = m3u8Text.split("\n");
   const rewritten: string[] = [];
@@ -60,12 +67,26 @@ export default function handler(
       continue;
     }
 
+    // Rewrite #EXT-X-KEY URI (AES-128 encryption key)
+    if (t.startsWith("#EXT-X-KEY:")) {
+      const match = /URI="([^"]+)"/.exec(t);
+      if (match) {
+        const uri = match[1];
+        const abs = resolveUrl(uri);
+        const proxyUrl = buildStreamProxyUrl(abs, headers);
+        rewritten.push(t.replace(/URI="[^"]+"/, `URI="${proxyUrl}"`));
+      } else {
+        rewritten.push(line);
+      }
+      continue;
+    }
+
     // Rewrite #EXT-X-MAP URI (init segment)
     if (t.startsWith("#EXT-X-MAP:")) {
       const match = /URI="([^"]+)"/.exec(t);
       if (match) {
         const uri = match[1];
-        const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : `${base}${uri}`;
+        const abs = resolveUrl(uri);
         const proxyUrl = buildStreamProxyUrl(abs, headers);
         rewritten.push(t.replace(/URI="[^"]+"/, `URI="${proxyUrl}"`));
         continue;
@@ -79,7 +100,7 @@ export default function handler(
     }
 
     // Rewrite media segment URLs (relative or absolute)
-    const abs = t.startsWith("http://") || t.startsWith("https://") ? t : `${base}${t}`;
+    const abs = resolveUrl(t);
     rewritten.push(buildStreamProxyUrl(abs, headers));
   }
 
