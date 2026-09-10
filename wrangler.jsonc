@@ -29,6 +29,7 @@
     "ENABLE_VIDY": "false",
     "ENABLE_VIXSRC": "false"
   },
+  "secrets": ["STREAM_PROXY_SECRET"],
   "observability": {
     "logs": {
       "enabled": true,
