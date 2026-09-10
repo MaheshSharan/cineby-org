@@ -255,31 +255,7 @@ async function scrapeServer(
 
     const sources: StreamSource[] = [];
 
-    // Master Playlist (ABR adaptive stream)
-    if (payload.playlist) {
-      sources.push({
-        url: payload.playlist,
-        type: "hls",
-        quality: "1080p",
-        // direct: true prevents the registry from proxy-wrapping this URL.
-        // moon.peakstorm.top blocks datacenter IPs — the client must fetch
-        // this M3U8 browser-side via /api/stream/m3u8 instead.
-        direct: true,
-        headers: {
-          Referer: "https://www.vidy.st/",
-          Origin: "https://www.vidy.st",
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
-        },
-        provider: {
-          id: `${PROVIDER_ID}-${server.id}`,
-          name: server.name,
-        },
-        audioTracks: [{ language: server.audioLanguage, label: server.audioLabel }],
-      });
-    }
-
-    // Individual variant sources
+    // Individual variant sources first (direct HLS playlists per quality)
     const rawSources = payload.sources ?? [];
     for (const s of rawSources) {
       if (!s.url) continue;
@@ -317,6 +293,27 @@ async function scrapeServer(
           name: server.name,
         },
         audioTracks,
+      });
+    }
+
+    // Master Playlist fallback if no individual variants exist
+    if (sources.length === 0 && payload.playlist) {
+      sources.push({
+        url: payload.playlist,
+        type: "hls",
+        quality: "1080p",
+        direct: true,
+        headers: {
+          Referer: "https://www.vidy.st/",
+          Origin: "https://www.vidy.st",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+        },
+        provider: {
+          id: `${PROVIDER_ID}-${server.id}`,
+          name: server.name,
+        },
+        audioTracks: [{ language: server.audioLanguage, label: server.audioLabel }],
       });
     }
 
@@ -462,11 +459,12 @@ export function decryptVidyClientSources(
 
     const sources: StreamSource[] = [];
 
-    if (payload.playlist) {
+    for (const s of payload.sources ?? []) {
+      if (!s.url) continue;
       sources.push({
-        url: payload.playlist,
-        type: "hls",
-        quality: "1080p",
+        url: s.url,
+        type: s.type === "mp4" ? "mp4" : s.type === "dash" ? "dash" : "hls",
+        quality: parseQuality(s.quality),
         direct: true,
         headers: {
           Referer: "https://www.vidy.st/",
@@ -482,12 +480,11 @@ export function decryptVidyClientSources(
       });
     }
 
-    for (const s of payload.sources ?? []) {
-      if (!s.url) continue;
+    if (sources.length === 0 && payload.playlist) {
       sources.push({
-        url: s.url,
-        type: s.type === "mp4" ? "mp4" : s.type === "dash" ? "dash" : "hls",
-        quality: parseQuality(s.quality),
+        url: payload.playlist,
+        type: "hls",
+        quality: "1080p",
         direct: true,
         headers: {
           Referer: "https://www.vidy.st/",

@@ -41,27 +41,34 @@ export default async function handler(
 ) {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
 
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
+  if (req.method !== "GET" && req.method !== "POST") {
+    res.setHeader("Allow", ["GET", "POST"]);
     res.status(405).json({ error: "Method Not Allowed" });
     return;
   }
 
-  const body = typeof req.body === "object" ? (req.body as Record<string, unknown>) : {};
+  const body = typeof req.body === "object" && req.body !== null ? (req.body as Record<string, unknown>) : {};
+  const query = req.query;
 
-  const headers = (typeof body.headers === "object" && body.headers !== null
-    ? body.headers
-    : {}) as Record<string, string>;
+  const targetUrl = typeof body.url === "string" && body.url ? body.url : typeof query.url === "string" ? query.url : null;
+  const rawHeaders = (typeof body.headers === "object" && body.headers !== null ? body.headers : {}) as Record<string, string>;
+  const refererQuery = typeof query.referer === "string" ? query.referer : "";
+  const originQuery = typeof query.origin === "string" ? query.origin : "";
+
+  const headers: Record<string, string> = {
+    ...rawHeaders,
+    ...(refererQuery ? { Referer: refererQuery } : {}),
+    ...(originQuery ? { Origin: originQuery } : {}),
+  };
 
   let m3u8Text: string | null = null;
   let baseUrl: string | null = null;
 
-
-  if (typeof body.url === "string" && body.url) {
-    baseUrl = body.url;
+  if (targetUrl) {
+    baseUrl = targetUrl;
     try {
       const fetcherBase = getM3u8FetcherUrl().replace(/\/+$/, "");
-      let fetchUrl = body.url;
+      let fetchUrl = targetUrl;
       const fetchHeaders: Record<string, string> = {
         Referer: headers["Referer"] ?? "https://www.vidking.net/",
         Origin: headers["Origin"] ?? "https://www.vidking.net",
@@ -72,7 +79,7 @@ export default async function handler(
       // If a dedicated serverless M3U8 fetcher (Vercel / Lambda) is configured, route through it
       if (fetcherBase) {
         const params = new URLSearchParams({
-          url: body.url,
+          url: targetUrl,
           referer: fetchHeaders.Referer,
           origin: fetchHeaders.Origin,
         });
@@ -164,6 +171,19 @@ export default async function handler(
     // Pass through all other tags unchanged
     if (t.startsWith("#")) {
       rewritten.push(line);
+      continue;
+    }
+
+    // Check if line is a child/variant M3U8 playlist
+    const isSubPlaylist = t.endsWith(".m3u8") || t.includes(".m3u8?");
+    if (isSubPlaylist) {
+      const abs = resolveUrl(t);
+      const params = new URLSearchParams({
+        url: abs,
+        referer: proxyHeaders.Referer || "",
+        origin: proxyHeaders.Origin || "",
+      });
+      rewritten.push(`/api/stream/m3u8?${params.toString()}`);
       continue;
     }
 

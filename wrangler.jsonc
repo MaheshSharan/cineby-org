@@ -27,7 +27,7 @@
     "STREAM_PROXY_URL": "https://cineby-stream-proxy.maheworks.workers.dev",
     "STREAM_PROXY_SECRET": "97fb6688bedee07ff45711cf8f4f4798dbebda27a597f852263f71687cd8f12e",
     "ENABLE_VIDKING": "true",
-    "ENABLE_VIDY": "false",
+    "ENABLE_VIDY": "true",
     "ENABLE_VIXSRC": "false",
     "M3U8_FETCHER_URL": "https://proxym3u8-tau.vercel.app/api/m3u8"
   },
