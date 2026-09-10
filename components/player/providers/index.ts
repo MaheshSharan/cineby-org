@@ -2,7 +2,6 @@ import type { Quality, StreamResponse } from "@/lib/providers/types";
 import { fetchVidkingPayloadFromBrowser } from "@/lib/providers/sources/vidking/client";
 import { fetchVixsrcPayloadFromBrowser } from "@/lib/providers/sources/vixsrc/client";
 import { fetchVidyPayloadFromBrowser } from "@/lib/providers/sources/vidy/client";
-import { buildStreamProxyUrl } from "@/lib/providers/proxy";
 import type { MediaSource, QualityLabel, SubtitleTrack } from "../types";
 import type { StreamRequest, StreamResolutionResult } from "./types";
 
@@ -248,20 +247,19 @@ function needsBrowserM3u8Fetch(url: string): boolean {
 }
 
 /**
- * Fetch an M3U8 that is blocked from server/datacenter IPs browser-side,
- * POST it to /api/stream/m3u8 for chunk URL rewriting, and return a Blob URL
+ * Request the server to fetch and rewrite an M3U8 playlist, returning a Blob URL
  * that HLS.js can load directly. Returns null if any step fails.
  *
  * IMPORTANT: Browsers treat `Referer` and `Origin` as Forbidden Request Headers
  * and silently drop them from fetch() calls. CDNs like peakstorm.top enforce
  * Referer checks and return 403 when the wrong origin is sent.
  *
- * To work around this, the M3U8 fetch is routed through the stream proxy via a
- * signed token that carries the required headers. The Cloudflare Worker then sets
- * them server-side on the upstream fetch, bypassing the browser restriction.
+ * The server handles the M3U8 fetch via the signed stream proxy (which sets
+ * Referer/Origin server-side), then rewrites every segment URL through the proxy
+ * and returns the rewritten playlist. All node:crypto usage stays server-side.
  *
  * Segment CDNs (fastportal.top, rockyember.top) respond with
- * access-control-allow-origin: * so they load fine without proxying.
+ * access-control-allow-origin: * so they load fine without additional proxying.
  */
 async function rewriteM3u8ToBlobUrl(
   m3u8Url: string,
@@ -269,27 +267,20 @@ async function rewriteM3u8ToBlobUrl(
   signal?: AbortSignal
 ): Promise<string | null> {
   try {
-    // Step 1: Fetch the M3U8 through the stream proxy so Referer/Origin headers
-    // are set server-side. Direct browser fetch silently drops these forbidden headers.
-    const proxyUrl = buildStreamProxyUrl(m3u8Url, headers);
-    const m3u8Res = await fetch(proxyUrl, { signal });
-    if (!m3u8Res.ok) return null;
-
-    const m3u8Text = await m3u8Res.text();
-    if (!m3u8Text.trimStart().startsWith("#EXTM3U")) return null;
-
-    // Step 2: POST raw M3U8 to server for chunk URL signing + proxy rewriting
+    // Delegate fetch + rewrite to the server. The server signs the upstream request
+    // with the correct Referer/Origin via the stream proxy (node:crypto is server-only).
     const rewriteRes = await fetch("/api/stream/m3u8", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ m3u8Text, headers, baseUrl: m3u8Url }),
+      body: JSON.stringify({ url: m3u8Url, headers }),
       signal,
     });
     if (!rewriteRes.ok) return null;
 
     const rewrittenText = await rewriteRes.text();
+    if (!rewrittenText.trimStart().startsWith("#EXTM3U")) return null;
 
-    // Step 3: create a Blob URL for HLS.js — works identically to a remote URL
+    // Create a same-origin Blob URL for HLS.js
     const blob = new Blob([rewrittenText], { type: "application/vnd.apple.mpegurl" });
     return URL.createObjectURL(blob);
   } catch {

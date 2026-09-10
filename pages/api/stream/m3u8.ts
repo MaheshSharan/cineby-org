@@ -4,18 +4,22 @@ import { buildStreamProxyUrl } from "@/lib/providers/proxy";
 /**
  * POST /api/stream/m3u8
  *
- * Accepts a raw M3U8 playlist fetched browser-side (from hosts like moon.peakstorm.top
- * that block datacenter IPs but allow browser requests), rewrites every media segment
- * URL through the stream proxy, and returns the rewritten playlist as text/plain.
+ * Two modes:
  *
- * The client creates a Blob URL from this text and passes it to HLS.js.
+ * 1. Fetch + rewrite (preferred for client code):
+ *    Body: { url: string; headers: Record<string, string> }
+ *    Server fetches the M3U8 via the signed stream proxy (so Referer/Origin are
+ *    set server-side, bypassing the browser Forbidden Request Header restriction),
+ *    then rewrites every segment/key/map URL through the proxy and returns the
+ *    rewritten playlist as text/plain.
  *
- * Body: { m3u8Text: string; headers: Record<string, string>; baseUrl: string }
- *   - m3u8Text  Raw M3U8 content fetched from the upstream CDN
- *   - headers   Headers to embed in each proxy token (Referer, Origin, User-Agent)
- *   - baseUrl   The URL the M3U8 was fetched from (used to resolve relative segment paths)
+ * 2. Rewrite-only (legacy, kept for compatibility):
+ *    Body: { m3u8Text: string; headers: Record<string, string>; baseUrl: string }
+ *    Caller already has the raw M3U8 text; server just rewrites URLs.
+ *
+ * The client creates a Blob URL from the response and passes it to HLS.js.
  */
-export default function handler(
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<string | { error: string }>
 ) {
@@ -29,18 +33,40 @@ export default function handler(
 
   const body = typeof req.body === "object" ? (req.body as Record<string, unknown>) : {};
 
-  const m3u8Text = typeof body.m3u8Text === "string" ? body.m3u8Text : null;
   const headers = (typeof body.headers === "object" && body.headers !== null
     ? body.headers
     : {}) as Record<string, string>;
-  const baseUrl = typeof body.baseUrl === "string" ? body.baseUrl : null;
+
+  let m3u8Text: string | null = null;
+  let baseUrl: string | null = null;
+
+  if (typeof body.url === "string" && body.url) {
+    // Mode 1: server-side fetch via signed proxy
+    baseUrl = body.url;
+    const proxyUrl = buildStreamProxyUrl(body.url, headers);
+    try {
+      const upstream = await fetch(proxyUrl);
+      if (!upstream.ok) {
+        res.status(502).json({ error: `Upstream returned ${upstream.status}` });
+        return;
+      }
+      m3u8Text = await upstream.text();
+    } catch {
+      res.status(502).json({ error: "Failed to fetch M3U8 from upstream" });
+      return;
+    }
+  } else if (typeof body.m3u8Text === "string") {
+    // Mode 2: caller provides raw text
+    m3u8Text = body.m3u8Text;
+    baseUrl = typeof body.baseUrl === "string" ? body.baseUrl : null;
+  }
 
   if (!m3u8Text) {
-    res.status(400).json({ error: "Missing m3u8Text" });
+    res.status(400).json({ error: "Provide either 'url' or 'm3u8Text'" });
     return;
   }
 
-  // Quick sanity check — reject HTML challenge pages masquerading as M3U8
+  // Reject HTML challenge pages masquerading as M3U8
   const trimmed = m3u8Text.trimStart();
   if (!trimmed.startsWith("#EXTM3U") && !trimmed.startsWith("#EXT-X-")) {
     res.status(422).json({ error: "Provided text is not a valid M3U8 playlist" });
