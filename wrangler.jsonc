@@ -25,11 +25,12 @@
     "NEXT_PUBLIC_ENABLE_IMAGE_PROXY": "true",
     "NEXT_PUBLIC_IMAGE_PROXY_URL": "https://wsrv.nl",
     "STREAM_PROXY_URL": "https://cineby-stream-proxy.maheworks.workers.dev",
+    "STREAM_PROXY_SECRET": "97fb6688bedee07ff45711cf8f4f4798dbebda27a597f852263f71687cd8f12e",
     "ENABLE_VIDKING": "true",
     "ENABLE_VIDY": "false",
-    "ENABLE_VIXSRC": "false"
+    "ENABLE_VIXSRC": "false",
+    "M3U8_FETCHER_URL": "https://proxym3u8-tau.vercel.app/api/m3u8"
   },
-  "secrets": ["STREAM_PROXY_SECRET"],
   "observability": {
     "logs": {
       "enabled": true,

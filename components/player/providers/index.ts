@@ -247,19 +247,27 @@ function needsBrowserM3u8Fetch(url: string): boolean {
 }
 
 /**
- * Request the server to fetch and rewrite an M3U8 playlist, returning a Blob URL
- * that HLS.js can load directly. Returns null if any step fails.
+ * Fetch an M3U8 from a CDN that blocks datacenter IPs (like moon.peakstorm.top)
+ * using the browser's own residential IP, rewrite all segment URLs through the
+ * stream proxy, and return a Blob URL that HLS.js can load directly.
  *
- * IMPORTANT: Browsers treat `Referer` and `Origin` as Forbidden Request Headers
- * and silently drop them from fetch() calls. CDNs like peakstorm.top enforce
- * Referer checks and return 403 when the wrong origin is sent.
+ * Why browser-side:
+ *   moon.peakstorm.top blocks Cloudflare Worker datacenter IPs (confirmed: server
+ *   sends correct Referer but still gets 403). The browser's residential IP passes
+ *   the CDN's IP allowlist.
  *
- * The server handles the M3U8 fetch via the signed stream proxy (which sets
- * Referer/Origin server-side), then rewrites every segment URL through the proxy
- * and returns the rewritten playlist. All node:crypto usage stays server-side.
+ * Why referrerPolicy "no-referrer":
+ *   Browsers automatically attach the current page URL as Referer on cross-origin
+ *   requests. The CDN blocks requests with Referer: cineby.maheworks.workers.dev.
+ *   Setting referrerPolicy: "no-referrer" suppresses the header entirely so the
+ *   CDN sees no Referer, which it accepts (token-signed URLs, not Referer-gated).
  *
- * Segment CDNs (fastportal.top, rockyember.top) respond with
- * access-control-allow-origin: * so they load fine without additional proxying.
+ * Segment CDNs (fastportal.top, rockyember.top) serve access-control-allow-origin: *
+ * so HLS.js loads them directly after the proxy rewrites their URLs.
+ */
+/**
+ * Fetch and rewrite an M3U8 playlist through /api/stream/m3u8, returning a Blob URL
+ * that HLS.js loads directly. Direct CORS-open segments stream with zero proxying.
  */
 async function rewriteM3u8ToBlobUrl(
   m3u8Url: string,
@@ -267,8 +275,6 @@ async function rewriteM3u8ToBlobUrl(
   signal?: AbortSignal
 ): Promise<string | null> {
   try {
-    // Delegate fetch + rewrite to the server. The server signs the upstream request
-    // with the correct Referer/Origin via the stream proxy (node:crypto is server-only).
     const rewriteRes = await fetch("/api/stream/m3u8", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -280,13 +286,13 @@ async function rewriteM3u8ToBlobUrl(
     const rewrittenText = await rewriteRes.text();
     if (!rewrittenText.trimStart().startsWith("#EXTM3U")) return null;
 
-    // Create a same-origin Blob URL for HLS.js
     const blob = new Blob([rewrittenText], { type: "application/vnd.apple.mpegurl" });
     return URL.createObjectURL(blob);
   } catch {
     return null;
   }
 }
+
 
 export async function resolveStream(
   serverId: string,

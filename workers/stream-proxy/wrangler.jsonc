@@ -7,7 +7,7 @@
     "nodejs_compat"
   ],
   "vars": {
-    "CORS_ALLOWED_ORIGINS": "https://cineby.maheworks.workers.dev,http://localhost:3000"
-  },
-  "secrets": ["STREAM_PROXY_SECRET"]
+    "CORS_ALLOWED_ORIGINS": "https://cineby.maheworks.workers.dev,http://localhost:3000",
+    "STREAM_PROXY_SECRET": "97fb6688bedee07ff45711cf8f4f4798dbebda27a597f852263f71687cd8f12e"
+  }
 }

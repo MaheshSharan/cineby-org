@@ -249,3 +249,65 @@ export const myProvider: Provider = {
   fetch: scrape,
 };
 ```
+
+---
+
+## 10. Split-Proxy Architecture & CDN Hotlinking Bypass
+
+When streaming providers enforce anti-hotlinking and IP blocking, Cineby uses a **Split-Proxy Architecture** to keep playback fast, reliable, and free of browser extensions:
+
+### The Problem
+Upstream streaming CDNs (such as Vidking's `moon.peakstorm.top`) enforce two security layers:
+1. **IP Datacenter Firewall:** OpenResty blocks Cloudflare Workers datacenter IP subnets with HTTP 403.
+2. **Anti-Hotlinking Header Check:** Requests must include `Referer: https://www.vidking.net/` or `Origin: https://www.vidking.net`. Browsers strictly forbid client-side JavaScript (`fetch`) from setting or overriding `Referer`/`Origin` headers.
+
+### The Solution: Split-Proxy Pipeline
+
+```text
+[User Browser]
+      │
+      │ 1. "I want to play movie 1108427"
+      ▼
+[Cineby App /api/stream/m3u8]
+      │
+      │ 2. Fetch playlist via clean AWS IP (~5 KB)
+      ▼
+[Vercel Serverless Function] ──────► [moon.peakstorm.top] (CDN accepts clean IP)
+      │                                       │
+      │ 3. Raw M3U8 Playlist                  │ 200 OK
+      ◄───────────────────────────────────────┘
+      │
+      ▼
+[Cineby App /api/stream/m3u8]
+      │
+      │ 4. Rewrites segment URLs into signed proxy tokens
+      ▼
+[User Browser HLS.js Player]
+      │
+      │ 5. Requests video chunks (1.3 MB each)
+      ▼
+[Cloudflare Stream Proxy Worker] ────► [solidmoon.top] (Fetches with Referer)
+      │                                      │
+      │ 6. Fast video chunk streaming        │ 200 OK (video/mp4)
+      ◄──────────────────────────────────────┘
+      │
+[User Video Plays Smoothly]
+```
+
+### Component Roles
+1. **Vercel Serverless Egress Function (`M3U8_FETCHER_URL`):**
+   - Fetches **only** the initial small M3U8 manifest text file (~5 KB).
+   - Egresses from clean AWS Lambda IPs not blocked by CDN firewalls.
+   - Sets required `Referer: https://www.vidking.net/` and `Origin: https://www.vidking.net`.
+   - Never carries video segment traffic (zero high-bandwidth consumption).
+
+2. **Cineby API Route (`pages/api/stream/m3u8.ts`):**
+   - Receives the M3U8 playlist from the serverless fetcher.
+   - Rewrites all media segment URLs, init container maps (`#EXT-X-MAP`), and AES-128 keys (`#EXT-X-KEY`) into signed proxy tokens targeting `cineby-stream-proxy.maheworks.workers.dev`.
+   - Returns the rewritten playlist to HLS.js as a native `blob:` URL.
+
+3. **Cloudflare Stream Proxy Worker (`workers/stream-proxy/`):**
+   - Handles 100% of high-volume video chunks (`.m4s`, `.ts`) and init maps (`.mp4`).
+   - Verifies the HMAC-SHA256 token and attaches `Referer: https://www.vidking.net/`.
+   - Media segment CDNs (`solidmoon.top`, `fastportal.top`) do not block Cloudflare IPs, allowing fast streaming directly through Cloudflare Edge Cache.
+

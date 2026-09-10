@@ -19,6 +19,22 @@ import { buildStreamProxyUrl } from "@/lib/providers/proxy";
  *
  * The client creates a Blob URL from the response and passes it to HLS.js.
  */
+function getM3u8FetcherUrl(): string {
+  if (process.env.M3U8_FETCHER_URL?.trim()) {
+    return process.env.M3U8_FETCHER_URL.trim();
+  }
+  try {
+    const cfContext = (globalThis as unknown as Record<symbol, { env?: Record<string, unknown> }>)[
+      Symbol.for("__cloudflare-context__")
+    ];
+    const cfUrl = cfContext?.env?.M3U8_FETCHER_URL;
+    if (typeof cfUrl === "string" && cfUrl.trim()) {
+      return cfUrl.trim();
+    }
+  } catch {}
+  return "";
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<string | { error: string }>
@@ -40,12 +56,33 @@ export default async function handler(
   let m3u8Text: string | null = null;
   let baseUrl: string | null = null;
 
+
   if (typeof body.url === "string" && body.url) {
-    // Mode 1: server-side fetch via signed proxy
     baseUrl = body.url;
-    const proxyUrl = buildStreamProxyUrl(body.url, headers);
     try {
-      const upstream = await fetch(proxyUrl);
+      const fetcherBase = getM3u8FetcherUrl().replace(/\/+$/, "");
+      let fetchUrl = body.url;
+      const fetchHeaders: Record<string, string> = {
+        Referer: headers["Referer"] ?? "https://www.vidking.net/",
+        Origin: headers["Origin"] ?? "https://www.vidking.net",
+        "User-Agent": headers["User-Agent"] ?? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        Accept: "*/*",
+      };
+
+      // If a dedicated serverless M3U8 fetcher (Vercel / Lambda) is configured, route through it
+      if (fetcherBase) {
+        const params = new URLSearchParams({
+          url: body.url,
+          referer: fetchHeaders.Referer,
+          origin: fetchHeaders.Origin,
+        });
+        fetchUrl = `${fetcherBase}?${params.toString()}`;
+      }
+
+      const upstream = await fetch(fetchUrl, {
+        headers: fetcherBase ? { Accept: "*/*" } : fetchHeaders,
+      });
+
       if (!upstream.ok) {
         res.status(502).json({ error: `Upstream returned ${upstream.status}` });
         return;
@@ -82,6 +119,11 @@ export default async function handler(
     }
   };
 
+  const proxyHeaders: Record<string, string> = {
+    Referer: headers["Referer"] ?? "https://www.vidking.net/",
+    Origin: headers["Origin"] ?? "https://www.vidking.net",
+  };
+
   const lines = m3u8Text.split("\n");
   const rewritten: string[] = [];
 
@@ -99,7 +141,7 @@ export default async function handler(
       if (match) {
         const uri = match[1];
         const abs = resolveUrl(uri);
-        const proxyUrl = buildStreamProxyUrl(abs, headers);
+        const proxyUrl = buildStreamProxyUrl(abs, proxyHeaders);
         rewritten.push(t.replace(/URI="[^"]+"/, `URI="${proxyUrl}"`));
       } else {
         rewritten.push(line);
@@ -113,8 +155,8 @@ export default async function handler(
       if (match) {
         const uri = match[1];
         const abs = resolveUrl(uri);
-        const proxyUrl = buildStreamProxyUrl(abs, headers);
-        rewritten.push(t.replace(/URI="[^"]+"/, `URI="${proxyUrl}"`));
+        const mapUrl = buildStreamProxyUrl(abs, proxyHeaders);
+        rewritten.push(t.replace(/URI="[^"]+"/, `URI="${mapUrl}"`));
         continue;
       }
     }
@@ -125,9 +167,9 @@ export default async function handler(
       continue;
     }
 
-    // Rewrite media segment URLs (relative or absolute)
+    // Media segment URLs — route through signed stream proxy
     const abs = resolveUrl(t);
-    rewritten.push(buildStreamProxyUrl(abs, headers));
+    rewritten.push(buildStreamProxyUrl(abs, proxyHeaders));
   }
 
   res.setHeader("Content-Type", "text/plain; charset=utf-8");

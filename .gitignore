@@ -30,6 +30,8 @@ next-env.d.ts
 # database
 /data
 cineby_extension/*
+simple-proxy/
+vercel-m3u8-fetcher/
 .agents/
 
 # cloudflare
