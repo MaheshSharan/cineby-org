@@ -203,12 +203,24 @@ export function Header() {
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenAccount={() => {
           if (user) {
-            router.push("/profiles");
+            setIsProfileDropdownOpen((prev) => !prev);
           } else {
             openAuthModal("login");
           }
         }}
       />
+
+      {/* Mobile Profile Dropdown (anchored above dock) */}
+      <div className="md:hidden">
+        <ProfileDropdown
+          open={isProfileDropdownOpen}
+          placement="top"
+          onClose={() => setIsProfileDropdownOpen(false)}
+          onOpenAvatarModal={() => setIsAvatarModalOpen(true)}
+          profileAvatarUrl={activeProfile?.avatarUrl || user?.avatarUrl || undefined}
+          profileName={activeProfile?.name || user?.displayName || user?.email.split("@")[0]}
+        />
+      </div>
 
       <SearchModal open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       <AvatarModal

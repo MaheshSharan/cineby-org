@@ -18,6 +18,8 @@ interface ProfileDropdownProps {
   onOpenAvatarModal?: () => void;
   profileAvatarUrl?: string;
   profileName?: string;
+  placement?: "top" | "bottom";
+  className?: string;
 }
 
 export function ProfileDropdown({
@@ -26,6 +28,8 @@ export function ProfileDropdown({
   onOpenAvatarModal,
   profileAvatarUrl,
   profileName,
+  placement = "bottom",
+  className = "",
 }: ProfileDropdownProps) {
   const router = useRouter();
   const { user, logout, openAuthModal, showToast } = useAuth();
@@ -77,12 +81,21 @@ export function ProfileDropdown({
   };
 
   return (
-    <div className="absolute top-full right-0 z-50 pt-2 animate-in fade-in zoom-in-95 duration-150">
+    <div
+      className={
+        className ||
+        (placement === "top"
+          ? "fixed bottom-[76px] right-2 sm:right-6 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+          : "absolute top-full right-0 z-50 pt-2 animate-in fade-in zoom-in-95 duration-150")
+      }
+    >
       <div
         ref={menuRef}
         role="menu"
         aria-label="My Account"
-        className="profile-dropdown pointer-events-auto overflow-hidden w-[240px] rounded-[14px] origin-top-right text-left"
+        className={`profile-dropdown pointer-events-auto overflow-hidden w-[240px] rounded-[14px] text-left ${
+          placement === "top" ? "origin-bottom-right" : "origin-top-right"
+        }`}
         style={{
           background:
             "linear-gradient(rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.01) 100%), rgba(22, 22, 24, 0.94)",

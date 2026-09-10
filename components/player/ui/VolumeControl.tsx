@@ -107,7 +107,7 @@ export function VolumeControl({
       </button>
 
       <div
-        className={`ms-[0.5em] flex items-center overflow-hidden transition-all duration-200 ${
+        className={`hidden md:flex ms-[0.5em] items-center overflow-hidden transition-all duration-200 ${
           isHovering ? "w-24 opacity-100" : "w-0 opacity-0"
         }`}
       >

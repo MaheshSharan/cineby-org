@@ -42,10 +42,10 @@ export function PlayerControls({
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
       }`}
     >
-      <div className="w-full flex flex-col items-stretch pb-4 pt-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-        <div className="px-4 md:px-10">
+      <div className="w-full flex flex-col items-stretch pb-3 sm:pb-4 pt-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+        <div className="px-2 sm:px-4 md:px-10">
           {/* Seek row */}
-          <div className="flex items-center gap-x-3">
+          <div className="flex items-center gap-x-2 sm:gap-x-3">
             <div className="flex items-center flex-1">
               <SeekBar
                 currentTime={currentTime}
@@ -53,13 +53,13 @@ export function PlayerControls({
                 onSeek={onSeek}
               />
             </div>
-            <TimeDisplay currentTime={currentTime} duration={duration} />
+            <TimeDisplay currentTime={currentTime} duration={duration} className="text-xs sm:text-sm" />
           </div>
 
           {/* Controls row */}
-          <div className="relative flex items-center justify-between mt-2 md:mt-3">
+          <div className="relative flex items-center justify-between mt-1 sm:mt-2 md:mt-3">
             {/* Left Controls: Play/Pause, Rewind, Forward, Volume */}
-            <div className="flex space-x-2 md:space-x-3 items-center relative z-10">
+            <div className="flex space-x-1 sm:space-x-2 md:space-x-3 items-center relative z-10">
               {/* Play / Pause */}
               <button
                 type="button"
@@ -165,12 +165,12 @@ export function PlayerControls({
             {/* Center Controls: Episodes selector pill */}
             {centerSlot ? (
               <div className="absolute inset-x-0 flex items-center justify-center pointer-events-none z-10">
-                <div className="pointer-events-auto">{centerSlot}</div>
+                <div className="pointer-events-auto max-w-[40%] sm:max-w-none">{centerSlot}</div>
               </div>
             ) : null}
 
             {/* Right Controls: Fullscreen */}
-            <div className="flex items-center gap-3 relative z-10">
+            <div className="flex items-center gap-1 sm:gap-3 relative z-10">
               {/* Fullscreen */}
               <button
                 type="button"

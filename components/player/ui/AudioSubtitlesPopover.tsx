@@ -98,11 +98,11 @@ export function AudioSubtitlesPopover({
   return (
     <div
       data-player-ui
-      className={`fixed left-1/2 top-[76px] z-50 -translate-x-1/2 max-w-[calc(100vw-0.75rem)] md:absolute md:left-auto md:right-0 md:top-full md:max-w-none md:translate-x-0 md:pt-2 transition-opacity duration-150 origin-top md:origin-top-right will-change-[opacity] ${
+      className={`fixed left-1/2 top-[76px] z-50 -translate-x-1/2 w-[calc(100vw-1rem)] max-w-[min(480px,calc(100vw-1rem))] md:w-auto md:absolute md:left-auto md:right-0 md:top-full md:max-w-none md:translate-x-0 md:pt-2 transition-opacity duration-150 origin-top md:origin-top-right will-change-[opacity] ${
         open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       }`}
     >
-      <div className="player-surface rounded-xl p-4 shadow-2xl overflow-x-auto">
+      <div className="player-surface rounded-xl p-3 sm:p-4 shadow-2xl overflow-x-hidden">
         {view === "appearance" ? (
           /* ================= CUSTOMIZE APPEARANCE SUBVIEW ================= */
           <div className="w-[340px] max-w-[calc(100vw-2rem)] flex flex-col text-white">
@@ -287,8 +287,8 @@ export function AudioSubtitlesPopover({
           <div className="flex flex-col text-white">
             <div className="flex divide-x divide-white/10 max-h-[min(360px,50vh)]">
               {/* AUDIO COLUMN */}
-              <div className="min-w-[140px] md:min-w-[170px] max-w-[240px] flex flex-col min-h-0 pr-4">
-                <p className="px-2.5 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 flex-shrink-0">
+              <div className="w-1/2 min-w-0 flex-1 md:w-auto md:min-w-[170px] md:max-w-[240px] flex flex-col min-h-0 pr-2.5 sm:pr-4">
+                <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 flex-shrink-0">
                   Audio
                 </p>
                 <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-0.5 pr-1">
@@ -304,8 +304,8 @@ export function AudioSubtitlesPopover({
               </div>
 
               {/* SUBTITLES COLUMN */}
-              <div className="min-w-[140px] md:min-w-[170px] max-w-[240px] flex flex-col min-h-0 pl-4">
-                <div className="flex items-center justify-between px-2.5 pb-2.5 flex-shrink-0">
+              <div className="w-1/2 min-w-0 flex-1 md:w-auto md:min-w-[170px] md:max-w-[240px] flex flex-col min-h-0 pl-2.5 sm:pl-4">
+                <div className="flex items-center justify-between px-2 pb-2.5 flex-shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-400">
                     Subtitles
                   </span>

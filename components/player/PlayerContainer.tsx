@@ -8,6 +8,7 @@ import { createMediaEngine, type MediaEngine } from "./media";
 import { resolveStream } from "./providers";
 import { getSeasonEpisodes } from "@/lib/api/episodes";
 import { formatRuntime } from "@/lib/utils/media";
+import { srtToVtt } from "@/lib/utils/srtToVtt";
 
 import { usePlayerControls } from "./hooks/usePlayerControls";
 import { usePlayerState } from "./hooks/usePlayerState";
@@ -98,6 +99,11 @@ export function PlayerContainer({
   const [isAudioSubtitlesOpen, setIsAudioSubtitlesOpen] = useState(false);
   const [isEpisodesOpen, setIsEpisodesOpen] = useState(false);
   const [appearance, setAppearance] = useState<SubtitleAppearance>(DEFAULT_SUBTITLE_APPEARANCE);
+  const [seekFeedback, setSeekFeedback] = useState<{
+    side: "left" | "right";
+    seconds: number;
+    key: number;
+  } | null>(null);
 
   const isTv = media.mediaType === "tv";
   const seasons = useMemo<PlayerSeason[]>(() => media.seasons ?? [], [media.seasons]);
@@ -264,6 +270,14 @@ export function PlayerContainer({
   });
   const { setRate } = playerState;
 
+  const handleDoubleTapSeek = useCallback(
+    (seconds: number, side: "left" | "right") => {
+      playerState.seekBy(seconds);
+      setSeekFeedback({ side, seconds: Math.abs(seconds), key: Date.now() });
+    },
+    [playerState]
+  );
+
   function toggleFullscreen() {
     const element = containerRef.current;
     if (!element) return;
@@ -271,11 +285,29 @@ export function PlayerContainer({
     if (document.fullscreenElement) {
       void document.exitFullscreen();
     } else {
-      void element.requestFullscreen();
+      void element
+        .requestFullscreen()
+        .then(() => {
+          try {
+            const orientation = window.screen.orientation as {
+              lock?: (orientation: string) => Promise<void>;
+            };
+            if (typeof orientation?.lock === "function") {
+              void orientation.lock("landscape").catch(() => {});
+            }
+          } catch {
+            // Orientation lock may not be supported on this platform
+          }
+        })
+        .catch(() => {});
     }
   }
 
+  const isHoverSupported = () =>
+    typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
   const handleQualityMouseEnter = () => {
+    if (!isHoverSupported()) return;
     if (qualityTimerRef.current) clearTimeout(qualityTimerRef.current);
     if (audioTimerRef.current) clearTimeout(audioTimerRef.current);
     setIsAudioSubtitlesOpen(false);
@@ -283,6 +315,7 @@ export function PlayerContainer({
   };
 
   const handleQualityMouseLeave = () => {
+    if (!isHoverSupported()) return;
     if (qualityTimerRef.current) clearTimeout(qualityTimerRef.current);
     qualityTimerRef.current = setTimeout(() => {
       setIsQualityOpen(false);
@@ -290,6 +323,7 @@ export function PlayerContainer({
   };
 
   const handleAudioMouseEnter = () => {
+    if (!isHoverSupported()) return;
     if (qualityTimerRef.current) clearTimeout(qualityTimerRef.current);
     if (audioTimerRef.current) clearTimeout(audioTimerRef.current);
     setIsQualityOpen(false);
@@ -297,6 +331,7 @@ export function PlayerContainer({
   };
 
   const handleAudioMouseLeave = () => {
+    if (!isHoverSupported()) return;
     if (audioTimerRef.current) clearTimeout(audioTimerRef.current);
     audioTimerRef.current = setTimeout(() => {
       setIsAudioSubtitlesOpen(false);
@@ -307,6 +342,7 @@ export function PlayerContainer({
     containerRef,
     onTogglePlay: playerState.togglePlay,
     onSeekBy: playerState.seekBy,
+    onDoubleTapSeek: handleDoubleTapSeek,
     onToggleMute: playerState.toggleMute,
     onToggleFullscreen: toggleFullscreen,
     onToggleSettings: () => {
@@ -618,6 +654,42 @@ export function PlayerContainer({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isQualityOpen, isAudioSubtitlesOpen, isEpisodesOpen]);
 
+  // Unlock orientation when fullscreen exits (e.g. back gesture or button)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        try {
+          const orientation = window.screen.orientation as {
+            unlock?: () => void;
+          };
+          if (typeof orientation?.unlock === "function") {
+            orientation.unlock();
+          }
+        } catch {
+          // Orientation unlock may not be supported
+        }
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  // Auto-dismiss double-tap seek feedback indicator
+  useEffect(() => {
+    if (!seekFeedback) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setSeekFeedback(null);
+    }, 650);
+
+    return () => window.clearTimeout(timer);
+  }, [seekFeedback]);
+
   const handleToggleAutoNext = useCallback(() => {
     setSettings((current) => ({ ...current, autoNext: !current.autoNext }));
   }, []);
@@ -699,7 +771,7 @@ export function PlayerContainer({
   );
 
   const handleUploadSubtitle = useCallback(
-    (file: File) => {
+    async (file: File) => {
       const prevUrl = customSubtitleUrlRef.current;
       if (prevUrl) {
         try {
@@ -711,7 +783,16 @@ export function PlayerContainer({
         customSubtitleUrlRef.current = null;
       }
 
-      const url = URL.createObjectURL(file);
+      let url: string;
+      try {
+        const text = await file.text();
+        const vtt = srtToVtt(text);
+        const blob = new Blob([vtt], { type: "text/vtt;charset=utf-8" });
+        url = URL.createObjectURL(blob);
+      } catch {
+        url = URL.createObjectURL(file);
+      }
+
       customSubtitleUrlRef.current = url;
       activeBlobUrlsRef.current.add(url);
 
@@ -801,8 +882,32 @@ export function PlayerContainer({
               className="h-full w-full"
               playsInline
               preload="auto"
+              crossOrigin="anonymous"
             />
           </div>
+
+          {/* Double-tap Seek Feedback Indicator */}
+          {seekFeedback ? (
+            <div
+              key={seekFeedback.key}
+              className={`pointer-events-none absolute top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1 w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/20 text-white animate-in fade-in zoom-in-75 duration-200 ${
+                seekFeedback.side === "left" ? "left-[15%]" : "right-[15%]"
+              }`}
+            >
+              {seekFeedback.side === "left" ? (
+                <svg className="w-8 h-8 sm:w-9 sm:h-9" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
+                </svg>
+              ) : (
+                <svg className="w-8 h-8 sm:w-9 sm:h-9" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z" />
+                </svg>
+              )}
+              <span className="text-xs sm:text-sm font-bold tracking-wide">
+                {seekFeedback.side === "left" ? `-${seekFeedback.seconds}s` : `+${seekFeedback.seconds}s`}
+              </span>
+            </div>
+          ) : null}
 
           {/* Top Header Bar */}
           <PlayerHeader
@@ -1025,11 +1130,11 @@ export function PlayerContainer({
                   type="button"
                   onClick={() => setIsEpisodesOpen(true)}
                   aria-label="Episodes"
-                  className="tabbable group flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm font-semibold backdrop-blur-md transition-all active:scale-95 cursor-pointer"
+                  className="tabbable group flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-semibold backdrop-blur-md transition-all active:scale-95 cursor-pointer truncate max-w-full"
                 >
-                  <span>Episodes</span>
+                  <span className="truncate">Episodes</span>
                   <svg
-                    className={`w-3.5 h-3.5 text-gray-300 transition-transform duration-200 ${
+                    className={`w-3.5 h-3.5 flex-shrink-0 text-gray-300 transition-transform duration-200 ${
                       isEpisodesOpen ? "rotate-180" : ""
                     }`}
                     fill="none"

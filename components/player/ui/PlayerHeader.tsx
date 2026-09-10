@@ -22,7 +22,7 @@ export function PlayerHeader({
         visible ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"
       }`}
     >
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between h-[68px] md:h-20 lg:h-24 px-4 md:px-10 gap-x-4 md:gap-x-8 header-top">
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between h-16 md:h-20 lg:h-24 px-2 sm:px-4 md:px-10 gap-x-2 sm:gap-x-4 md:gap-x-8 header-top">
         <div className="flex items-center gap-3 md:gap-4 min-w-0">
           {onBack ? (
             <button

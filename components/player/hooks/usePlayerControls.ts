@@ -6,6 +6,7 @@ interface UsePlayerControlsOptions {
   containerRef?: React.RefObject<HTMLDivElement | null>;
   onTogglePlay: () => void;
   onSeekBy: (seconds: number) => void;
+  onDoubleTapSeek?: (seconds: number, side: "left" | "right") => void;
   onToggleMute: () => void;
   onToggleFullscreen: () => void;
   onToggleSettings: () => void;
@@ -24,6 +25,7 @@ export function usePlayerControls({
   containerRef,
   onTogglePlay,
   onSeekBy,
+  onDoubleTapSeek,
   onToggleMute,
   onToggleFullscreen,
   onToggleSettings,
@@ -34,6 +36,8 @@ export function usePlayerControls({
   const hideTimerRef = useRef<number | null>(null);
   const mouseDownAtRef = useRef(0);
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
+  const lastTapRef = useRef<{ time: number; x: number; y: number } | null>(null);
+  const singleTapTimerRef = useRef<number | null>(null);
 
   const scheduleHide = useCallback(() => {
     if (hideTimerRef.current !== null) {
@@ -107,20 +111,65 @@ export function usePlayerControls({
       const start = mouseDownPosRef.current;
       if (!start) return;
 
+      const now = Date.now();
       const dx = Math.abs(event.clientX - start.x);
       const dy = Math.abs(event.clientY - start.y);
-      const quickTap = Date.now() - mouseDownAtRef.current < 300 && dx < 8 && dy < 8;
+      const quickTap = now - mouseDownAtRef.current < 300 && dx < 12 && dy < 12;
 
-      // Only toggle play for taps on the media surface itself; taps on
-      // controls, buttons, modals, or the seekbar must never pause playback.
+      // Only handle taps on media surface; taps on controls, buttons, modals,
+      // or the seekbar must never toggle play or double-tap seek.
       const target = event.target as HTMLElement | null;
       const isPlayerUi =
         target?.closest("button, input, select, textarea, [role='slider'], [data-player-ui]") ??
         false;
 
       if (quickTap && !isPlayerUi) {
-        onTogglePlay();
+        const prevTap = lastTapRef.current;
+        const containerRect = containerRef?.current?.getBoundingClientRect();
+        const clientWidth = containerRect?.width ?? window.innerWidth;
+        const clickX = event.clientX - (containerRect?.left ?? 0);
+        const ratio = clickX / clientWidth;
+
+        // Check if this tap constitutes a double tap (within 300ms and 40px)
+        const isDoubleTap =
+          prevTap !== null &&
+          now - prevTap.time < 300 &&
+          Math.abs(event.clientX - prevTap.x) < 40 &&
+          Math.abs(event.clientY - prevTap.y) < 40;
+
+        if (isDoubleTap && onDoubleTapSeek) {
+          // Cancel any pending single-tap action
+          if (singleTapTimerRef.current !== null) {
+            window.clearTimeout(singleTapTimerRef.current);
+            singleTapTimerRef.current = null;
+          }
+          lastTapRef.current = null;
+
+          // Left 40% -> rewind 10s; Right 40% -> forward 10s; Middle 20% -> regular play toggle
+          if (ratio < 0.4) {
+            onDoubleTapSeek(-10, "left");
+          } else if (ratio > 0.6) {
+            onDoubleTapSeek(10, "right");
+          } else {
+            onTogglePlay();
+          }
+        } else {
+          lastTapRef.current = { time: now, x: event.clientX, y: event.clientY };
+          // If onDoubleTapSeek is supported, wait 260ms before treating as single tap
+          if (onDoubleTapSeek) {
+            if (singleTapTimerRef.current !== null) {
+              window.clearTimeout(singleTapTimerRef.current);
+            }
+            singleTapTimerRef.current = window.setTimeout(() => {
+              onTogglePlay();
+              singleTapTimerRef.current = null;
+            }, 260);
+          } else {
+            onTogglePlay();
+          }
+        }
       }
+
       showControls();
     };
 
@@ -133,8 +182,11 @@ export function usePlayerControls({
       targetElement.removeEventListener("pointermove", onPointerMove as EventListener);
       targetElement.removeEventListener("pointerdown", onPointerDown as EventListener);
       targetElement.removeEventListener("pointerup", onPointerUp as EventListener);
+      if (singleTapTimerRef.current !== null) {
+        window.clearTimeout(singleTapTimerRef.current);
+      }
     };
-  }, [containerRef, onTogglePlay, showControls]);
+  }, [containerRef, onDoubleTapSeek, onTogglePlay, showControls]);
 
   useEffect(() => {
     scheduleHide();
