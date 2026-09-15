@@ -51,6 +51,23 @@ function extractClientIp(req: NextApiRequest): string {
   return "";
 }
 
+function getAppOrigin(req: NextApiRequest): string {
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const forwardedHost = req.headers["x-forwarded-host"];
+  const host = (typeof forwardedHost === "string" ? forwardedHost : req.headers.host) || "";
+
+  if (!host) return "";
+
+  const proto =
+    typeof forwardedProto === "string"
+      ? forwardedProto.split(",")[0].trim()
+      : host.includes("localhost") || host.includes("127.0.0.1")
+      ? "http"
+      : "https";
+
+  return `${proto}://${host}`;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<string | { error: string }>
@@ -144,6 +161,15 @@ export default async function handler(
     }
   };
 
+  const appOrigin = getAppOrigin(req);
+
+  const toAbsolute = (urlOrPath: string): string => {
+    if (urlOrPath.startsWith("/") && appOrigin) {
+      return `${appOrigin}${urlOrPath}`;
+    }
+    return urlOrPath;
+  };
+
   const proxyHeaders: Record<string, string> = {
     Referer: headers["Referer"] ?? "https://www.vidking.net/",
     Origin: headers["Origin"] ?? "https://www.vidking.net",
@@ -166,7 +192,7 @@ export default async function handler(
       if (match) {
         const uri = match[1];
         const abs = resolveUrl(uri);
-        const proxyUrl = buildStreamProxyUrl(abs, proxyHeaders, clientIp);
+        const proxyUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
         rewritten.push(t.replace(/URI="[^"]+"/, `URI="${proxyUrl}"`));
       } else {
         rewritten.push(line);
@@ -180,7 +206,7 @@ export default async function handler(
       if (match) {
         const uri = match[1];
         const abs = resolveUrl(uri);
-        const mapUrl = buildStreamProxyUrl(abs, proxyHeaders, clientIp);
+        const mapUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
         rewritten.push(t.replace(/URI="[^"]+"/, `URI="${mapUrl}"`));
         continue;
       }
@@ -201,13 +227,13 @@ export default async function handler(
         referer: proxyHeaders.Referer || "",
         origin: proxyHeaders.Origin || "",
       });
-      rewritten.push(`/api/stream/m3u8?${params.toString()}`);
+      rewritten.push(toAbsolute(`/api/stream/m3u8?${params.toString()}`));
       continue;
     }
 
     // Media segment URLs — route through signed stream proxy
     const abs = resolveUrl(t);
-    rewritten.push(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
+    rewritten.push(toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp)));
   }
 
   res.setHeader("Content-Type", "text/plain; charset=utf-8");

@@ -1,4 +1,4 @@
-import type { PlaybackRate, QualityLabel, ServerOption } from "./types";
+import type { PlaybackRate, QualityLabel, ServerGroup, ServerOption } from "./types";
 
 export const HISTORY_SAVE_INTERVAL_MS = 30_000;
 
@@ -94,23 +94,65 @@ export function preloadFlags(codesOrUrls: string[]): void {
   }
 }
 
+export const SERVER_GROUPS: ServerGroup[] = [
+  {
+    id: "vidy",
+    name: "Vidy",
+    children: [
+      { id: "vidy-miami", name: "Miami", flagUrl: getFlagUrl("us") },
+      { id: "vidy-boise", name: "Boise", flagUrl: getFlagUrl("us") },
+      { id: "vidy-atlanta", name: "Atlanta", flagUrl: getFlagUrl("us") },
+      { id: "vidy-seattle", name: "Seattle", flagUrl: getFlagUrl("us") },
+      { id: "vidy-denver", name: "Denver", flagUrl: getFlagUrl("us") },
+      { id: "vidy-phoenix", name: "Phoenix", flagUrl: getFlagUrl("us") },
+      { id: "vidy-portland", name: "Portland", flagUrl: getFlagUrl("us") },
+      { id: "vidy-austin", name: "Austin", flagUrl: getFlagUrl("us") },
+      { id: "vidy-dallas", name: "Dallas", flagUrl: getFlagUrl("us") },
+      { id: "vidy-tampa", name: "Tampa", flagUrl: getFlagUrl("us") },
+      { id: "vidy-orlando", name: "Orlando", flagUrl: getFlagUrl("us") },
+      { id: "vidy-munich", name: "Munich", flagUrl: getFlagUrl("de") },
+      { id: "vidy-berlin", name: "Berlin", flagUrl: getFlagUrl("de") },
+      { id: "vidy-paris", name: "Paris", flagUrl: getFlagUrl("fr") },
+      { id: "vidy-delhi", name: "Delhi", flagUrl: getFlagUrl("in") },
+      { id: "vidy-cancun", name: "Cancun", flagUrl: getFlagUrl("mx") },
+    ],
+  },
+  {
+    id: "vidking",
+    name: "Vidking",
+    children: [
+      { id: "vidking-yoru", name: "Yoru", flagUrl: getFlagUrl("us") },
+      { id: "vidking-breach", name: "Breach", flagUrl: getFlagUrl("us") },
+      { id: "vidking-cypher", name: "Cypher", flagUrl: getFlagUrl("us") },
+      { id: "vidking-neon", name: "Neon", flagUrl: getFlagUrl("us") },
+    ],
+  },
+  {
+    id: "vixsrc",
+    name: "Vixsrc",
+    flagUrl: getFlagUrl("us"),
+    children: [],
+  },
+];
+
 export const SERVERS: ServerOption[] = [
-  { id: "default", name: "Auto", description: "Best available source", kind: "default" },
-  { id: "vidy-miami", name: "Miami", description: "Original audio · Fast HLS / 4K", kind: "default", flagUrl: getFlagUrl("us") },
-  { id: "vidy-boise", name: "Boise", description: "Original audio · High Bitrate HLS", kind: "default", flagUrl: getFlagUrl("us") },
-  { id: "vidy-atlanta", name: "Atlanta", description: "Original audio · Alternate HLS", kind: "default", flagUrl: getFlagUrl("us") },
-  { id: "vidy-seattle", name: "Seattle", description: "Original audio · Fast HLS", kind: "default", flagUrl: getFlagUrl("us") },
-  { id: "vidy-denver", name: "Denver", description: "Original audio · DASH / HLS", kind: "default", flagUrl: getFlagUrl("us") },
-  { id: "vidy-phoenix", name: "Phoenix", description: "Original audio · Alternate HLS", kind: "default", flagUrl: getFlagUrl("us") },
-  { id: "vidy-portland", name: "Portland", description: "Original audio · Alternate HLS", kind: "default", flagUrl: getFlagUrl("us") },
-  { id: "vidy-austin", name: "Austin", description: "Original audio · English stream", kind: "default", flagUrl: getFlagUrl("us") },
-  { id: "vidy-dallas", name: "Dallas", description: "Original audio · Alternate HLS", kind: "default", flagUrl: getFlagUrl("us") },
-  { id: "vidy-tampa", name: "Tampa", description: "Original audio · Fast HLS", kind: "default", flagUrl: getFlagUrl("us") },
-  { id: "vidy-orlando", name: "Orlando", description: "Original audio · Fast HLS", kind: "default", flagUrl: getFlagUrl("us") },
-  { id: "vidy-munich", name: "Munich", description: "German dubbed audio", kind: "default", flagUrl: getFlagUrl("de") },
-  { id: "vidy-berlin", name: "Berlin", description: "German dubbed audio", kind: "default", flagUrl: getFlagUrl("de") },
-  { id: "vidy-paris", name: "Paris", description: "French dubbed audio", kind: "default", flagUrl: getFlagUrl("fr") },
-  { id: "vidy-delhi", name: "Delhi", description: "Hindi dubbed audio", kind: "default", flagUrl: getFlagUrl("in") },
-  { id: "vidy-cancun", name: "Cancun", description: "Spanish dubbed audio", kind: "default", flagUrl: getFlagUrl("mx") },
+  { id: "default", name: "Auto", kind: "default" },
+  ...SERVER_GROUPS.flatMap((g) =>
+    g.children.length > 0
+      ? g.children.map((c) => ({
+          id: c.id,
+          name: c.name,
+          kind: "default" as const,
+          flagUrl: c.flagUrl,
+        }))
+      : [
+          {
+            id: g.id,
+            name: g.name,
+            kind: "default" as const,
+            flagUrl: getFlagUrl("us"),
+          },
+        ]
+  ),
 ];
 

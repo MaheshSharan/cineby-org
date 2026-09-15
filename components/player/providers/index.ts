@@ -4,6 +4,7 @@ import { fetchVixsrcPayloadFromBrowser } from "@/lib/providers/sources/vixsrc/cl
 import { fetchVidyPayloadFromBrowser } from "@/lib/providers/sources/vidy/client";
 import type { MediaSource, QualityLabel, SubtitleTrack } from "../types";
 import type { StreamRequest, StreamResolutionResult } from "./types";
+import { createPlaylistBlob, revokeAllBlobs } from "../utils/blobPool";
 
 function toQualityLabel(quality?: Quality | string): QualityLabel | null {
   switch (quality) {
@@ -331,8 +332,7 @@ async function rewriteM3u8ToBlobUrl(
     const rewrittenText = await rewriteRes.text();
     if (!rewrittenText.trimStart().startsWith("#EXTM3U")) return null;
 
-    const blob = new Blob([rewrittenText], { type: "application/vnd.apple.mpegurl" });
-    return URL.createObjectURL(blob);
+    return createPlaylistBlob(rewrittenText);
   } catch {
     return null;
   }
@@ -360,35 +360,37 @@ export async function resolveStream(
       if (data && typeof data === "object" && "sources" in data) {
         const payload = data as StreamResponse;
 
-        // Rewrite any M3U8 URLs from CDNs that block server IPs to Blob URLs.
-        // Run all rewrites in parallel — independent per source.
-        const mappedSources: MediaSource[] = await Promise.all(
-          (payload.sources ?? []).map(async (src) => {
-            let finalUrl = src.url;
+        // Clean up previous stream's blobs before registering new stream
+        revokeAllBlobs();
 
-            if (
-              src.type === "hls" &&
-              needsBrowserM3u8Fetch(src.url)
-            ) {
-              const blobUrl = await rewriteM3u8ToBlobUrl(
-                src.url,
-                src.headers ?? {},
-                request.signal
-              );
-              if (blobUrl) finalUrl = blobUrl;
-            }
+        const sources = payload.sources ?? [];
+        const mappedSources: MediaSource[] = [];
 
-            return {
-              id: src.provider.id,
-              kind: "default" as const,
-              name: src.provider.name,
-              url: finalUrl,
-              format: src.type === "unknown" ? "hls" : src.type,
-              quality: toQualityLabel(src.quality),
-              headers: src.headers,
-            };
-          })
-        );
+        for (let i = 0; i < sources.length; i++) {
+          const src = sources[i];
+          let finalUrl = src.url;
+
+          // Only rewrite the primary active source (index 0) to avoid wasting network
+          // requests and leaking orphaned Blobs for secondary sources.
+          if (i === 0 && src.type === "hls" && needsBrowserM3u8Fetch(src.url)) {
+            const blobUrl = await rewriteM3u8ToBlobUrl(
+              src.url,
+              src.headers ?? {},
+              request.signal
+            );
+            if (blobUrl) finalUrl = blobUrl;
+          }
+
+          mappedSources.push({
+            id: src.provider.id,
+            kind: "default" as const,
+            name: src.provider.name,
+            url: finalUrl,
+            format: src.type === "unknown" ? "hls" : src.type,
+            quality: toQualityLabel(src.quality),
+            headers: src.headers,
+          });
+        }
 
         const mappedSubtitles: SubtitleTrack[] = (payload.subtitles ?? []).map((sub, idx) => ({
           id: sub.id || `sub-${idx}-${sub.lang || sub.label}`,

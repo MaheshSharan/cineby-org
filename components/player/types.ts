@@ -26,6 +26,19 @@ export interface ServerOption {
   flagUrl?: string;
 }
 
+export interface ServerChild {
+  id: string;
+  name: string;
+  flagUrl?: string;
+}
+
+export interface ServerGroup {
+  id: string;
+  name: string;
+  flagUrl?: string;
+  children: ServerChild[];
+}
+
 export interface SubtitleTrack {
   id: string;
   lang: string;

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 
-import type { Episode, MediaSource, PlayerMedia, PlayerSeason, PlayerSettings, ServerOption, SubtitleTrack } from "./types";
-import { HISTORY_SAVE_INTERVAL_MS, SERVERS, preloadFlags } from "./constants";
+import type { Episode, MediaSource, PlayerMedia, PlayerSeason, PlayerSettings, ServerGroup, ServerOption, SubtitleTrack } from "./types";
+import { HISTORY_SAVE_INTERVAL_MS, SERVERS, SERVER_GROUPS, preloadFlags } from "./constants";
+import { revokeAllBlobs, revokeBlob } from "./utils/blobPool";
 
 import { createMediaEngine, type MediaEngine } from "./media";
 import { resolveStream } from "./providers";
@@ -571,6 +572,7 @@ export function PlayerContainer({
   useEffect(() => {
     if (prevMediaKeyRef.current === currentMediaKey) return;
     prevMediaKeyRef.current = currentMediaKey;
+    revokeAllBlobs();
     subtitleFetchControllerRef.current?.abort();
     subtitleFetchControllerRef.current = null;
     setSubtitlesEnabled(false);
@@ -694,12 +696,9 @@ export function PlayerContainer({
       failedTimersRef.current.forEach((timer) => clearTimeout(timer));
       failedTimersRef.current.clear();
 
+      revokeAllBlobs();
       activeBlobUrlsRef.current.forEach((url) => {
-        try {
-          URL.revokeObjectURL(url);
-        } catch {
-          // ignore
-        }
+        revokeBlob(url);
       });
       activeBlobUrlsRef.current.clear();
       customSubtitleUrlRef.current = null;
@@ -899,11 +898,7 @@ export function PlayerContainer({
     async (file: File) => {
       const prevUrl = customSubtitleUrlRef.current;
       if (prevUrl) {
-        try {
-          URL.revokeObjectURL(prevUrl);
-        } catch {
-          // ignore
-        }
+        revokeBlob(prevUrl);
         activeBlobUrlsRef.current.delete(prevUrl);
         customSubtitleUrlRef.current = null;
       }
@@ -994,6 +989,24 @@ export function PlayerContainer({
       );
     });
   }, [availableSources, activeProviders]);
+
+  const filteredServerGroups = useMemo<ServerGroup[]>(() => {
+    if (activeProviders.length === 0) {
+      return SERVER_GROUPS;
+    }
+    const enabledProviderIds = new Set(activeProviders.map((p) => p.id));
+    const result: ServerGroup[] = SERVER_GROUPS.filter((g) => enabledProviderIds.has(g.id));
+    for (const provider of activeProviders) {
+      if (!result.some((g) => g.id === provider.id)) {
+        result.push({
+          id: provider.id,
+          name: provider.name,
+          children: [],
+        });
+      }
+    }
+    return result;
+  }, [activeProviders]);
 
   const isLoading = isResolvingStream && !stream.source;
 
@@ -1102,6 +1115,7 @@ export function PlayerContainer({
                     open={isQualityOpen}
                     quality={settings.quality}
                     onQualityChange={handleQualityChange}
+                    serverGroups={filteredServerGroups}
                     servers={serverOptions}
                     activeServerId={activeServerId}
                     pendingServerId={pendingServerId}
