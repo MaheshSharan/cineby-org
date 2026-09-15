@@ -296,14 +296,14 @@ export function PlayerContainer({
     videoRef,
     initialSeekTime,
   });
-  const { setRate } = playerState;
+  const { setRate, seekBy: playerSeekBy } = playerState;
 
   const handleDoubleTapSeek = useCallback(
     (seconds: number, side: "left" | "right") => {
-      playerState.seekBy(seconds);
+      playerSeekBy(seconds);
       setSeekFeedback({ side, seconds: Math.abs(seconds), key: Date.now() });
     },
-    [playerState]
+    [playerSeekBy]
   );
 
   function toggleFullscreen() {

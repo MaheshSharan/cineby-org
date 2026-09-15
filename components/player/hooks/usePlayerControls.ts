@@ -101,8 +101,18 @@ export function usePlayerControls({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onTogglePlay, onSeekBy, onToggleMute, onToggleFullscreen, onToggleSettings, onToggleSubtitles]);
 
+  // Keep callbacks fresh in refs so pointerdown/up listeners NEVER re-subscribe on re-renders
+  const onTogglePlayRef = useRef(onTogglePlay);
+  onTogglePlayRef.current = onTogglePlay;
+
+  const onDoubleTapSeekRef = useRef(onDoubleTapSeek);
+  onDoubleTapSeekRef.current = onDoubleTapSeek;
+
+  const showControlsRef = useRef(showControls);
+  showControlsRef.current = showControls;
+
   useEffect(() => {
-    const onPointerMove = () => showControls();
+    const onPointerMove = () => showControlsRef.current();
     const onPointerDown = (event: PointerEvent) => {
       mouseDownAtRef.current = Date.now();
       mouseDownPosRef.current = { x: event.clientX, y: event.clientY };
@@ -123,11 +133,11 @@ export function usePlayerControls({
         target?.closest("button, input, select, textarea, [role='slider'], [data-player-ui]") ??
         false;
 
-      const isDesktop =
-        typeof window !== "undefined" &&
-        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      if (quickTap && !isPlayerUi) {
+        const isDesktop =
+          typeof window !== "undefined" &&
+          window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-      if (quickTap && !isPlayerUi && isDesktop) {
         const prevTap = lastTapRef.current;
         const containerRect = containerRef?.current?.getBoundingClientRect();
         const clientWidth = containerRect?.width ?? window.innerWidth;
@@ -141,7 +151,7 @@ export function usePlayerControls({
           Math.abs(event.clientX - prevTap.x) < 40 &&
           Math.abs(event.clientY - prevTap.y) < 40;
 
-        if (isDoubleTap && onDoubleTapSeek) {
+        if (isDoubleTap && onDoubleTapSeekRef.current) {
           // Cancel any pending single-tap action
           if (singleTapTimerRef.current !== null) {
             window.clearTimeout(singleTapTimerRef.current);
@@ -149,32 +159,34 @@ export function usePlayerControls({
           }
           lastTapRef.current = null;
 
-          // Left 40% -> rewind 10s; Right 40% -> forward 10s; Middle 20% -> regular play toggle
+          // Double tap: Left 40% -> rewind 10s; Right 40% -> forward 10s; Middle 20% -> regular play toggle
           if (ratio < 0.4) {
-            onDoubleTapSeek(-10, "left");
+            onDoubleTapSeekRef.current(-10, "left");
           } else if (ratio > 0.6) {
-            onDoubleTapSeek(10, "right");
+            onDoubleTapSeekRef.current(10, "right");
           } else {
-            onTogglePlay();
+            onTogglePlayRef.current();
           }
         } else {
           lastTapRef.current = { time: now, x: event.clientX, y: event.clientY };
-          // If onDoubleTapSeek is supported, wait 260ms before treating as single tap
-          if (onDoubleTapSeek) {
+
+          if (isDesktop) {
+            // On desktop: single click anywhere immediately toggles play/pause
             if (singleTapTimerRef.current !== null) {
               window.clearTimeout(singleTapTimerRef.current);
             }
             singleTapTimerRef.current = window.setTimeout(() => {
-              onTogglePlay();
+              onTogglePlayRef.current();
               singleTapTimerRef.current = null;
             }, 260);
           } else {
-            onTogglePlay();
+            // On mobile touch: single tap only toggles/shows controls (does NOT pause stream)
+            // Controls visibility is handled below via showControlsRef
           }
         }
       }
 
-      showControls();
+      showControlsRef.current();
     };
 
     const targetElement = containerRef?.current ?? window;
@@ -190,7 +202,7 @@ export function usePlayerControls({
         window.clearTimeout(singleTapTimerRef.current);
       }
     };
-  }, [containerRef, onDoubleTapSeek, onTogglePlay, showControls]);
+  }, [containerRef]);
 
   useEffect(() => {
     scheduleHide();
