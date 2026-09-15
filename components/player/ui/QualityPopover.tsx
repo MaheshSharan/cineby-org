@@ -40,7 +40,13 @@ export function QualityPopover({
     if (!activeServerId || servers.length <= 1) {
       return servers;
     }
-    const activeIndex = servers.findIndex((s) => s.id === activeServerId);
+    const cleanActiveId = activeServerId.replace(/^vidy-/, "");
+    const activeIndex = servers.findIndex(
+      (s) =>
+        s.id === activeServerId ||
+        s.id === cleanActiveId ||
+        s.id === `vidy-${cleanActiveId}`
+    );
     if (activeIndex <= 0) return servers;
     const activeServer = servers[activeIndex];
     return [activeServer, ...servers.filter((_, i) => i !== activeIndex)];
@@ -111,7 +117,11 @@ export function QualityPopover({
               </p>
               <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-0.5 pr-1">
                 {orderedServers.map((server) => {
-                  const isActive = activeServerId === server.id;
+                  const cleanActiveId = activeServerId.replace(/^vidy-/, "");
+                  const cleanServerId = server.id.replace(/^vidy-/, "");
+                  const isActive =
+                    activeServerId === server.id ||
+                    (cleanActiveId && cleanActiveId === cleanServerId);
                   const isFav = !!favorites[server.id];
 
                   return (

@@ -25,5 +25,21 @@ export const PLAYBACK_RATES: PlaybackRate[] = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.
 
 export const SERVERS: ServerOption[] = [
   { id: "default", name: "Auto", description: "Best available source", kind: "default" },
+  { id: "vidy-miami", name: "Miami", description: "Original audio · Fast HLS / 4K", kind: "default" },
+  { id: "vidy-boise", name: "Boise", description: "Original audio · High Bitrate HLS", kind: "default" },
+  { id: "vidy-atlanta", name: "Atlanta", description: "Original audio · Alternate HLS", kind: "default" },
+  { id: "vidy-seattle", name: "Seattle", description: "Original audio · Fast HLS", kind: "default" },
+  { id: "vidy-denver", name: "Denver", description: "Original audio · DASH / HLS", kind: "default" },
+  { id: "vidy-phoenix", name: "Phoenix", description: "Original audio · Alternate HLS", kind: "default" },
+  { id: "vidy-portland", name: "Portland", description: "Original audio · Alternate HLS", kind: "default" },
+  { id: "vidy-austin", name: "Austin", description: "Original audio · English stream", kind: "default" },
+  { id: "vidy-dallas", name: "Dallas", description: "Original audio · Alternate HLS", kind: "default" },
+  { id: "vidy-tampa", name: "Tampa", description: "Original audio · Fast HLS", kind: "default" },
+  { id: "vidy-orlando", name: "Orlando", description: "Original audio · Fast HLS", kind: "default" },
+  { id: "vidy-munich", name: "Munich", description: "German dubbed audio", kind: "default" },
+  { id: "vidy-berlin", name: "Berlin", description: "German dubbed audio", kind: "default" },
+  { id: "vidy-paris", name: "Paris", description: "French dubbed audio", kind: "default" },
+  { id: "vidy-delhi", name: "Delhi", description: "Hindi dubbed audio", kind: "default" },
+  { id: "vidy-cancun", name: "Cancun", description: "Spanish dubbed audio", kind: "default" },
 ];
 

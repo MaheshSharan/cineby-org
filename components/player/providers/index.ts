@@ -32,8 +32,31 @@ function isVixsrcServer(serverId: string): boolean {
   return serverId === "vixsrc" || serverId.startsWith("vixsrc-");
 }
 
+const VIDY_CHILD_SERVER_IDS = [
+  "miami",
+  "boise",
+  "atlanta",
+  "seattle",
+  "denver",
+  "phoenix",
+  "portland",
+  "austin",
+  "dallas",
+  "tampa",
+  "orlando",
+  "munich",
+  "berlin",
+  "paris",
+  "delhi",
+  "cancun",
+];
+
 function isVidyServer(serverId: string): boolean {
-  return serverId === "vidy" || serverId.startsWith("vidy-");
+  return (
+    serverId === "vidy" ||
+    serverId.startsWith("vidy-") ||
+    VIDY_CHILD_SERVER_IDS.includes(serverId)
+  );
 }
 
 async function buildFetchResponse(
@@ -246,6 +269,7 @@ const BROWSER_FETCH_M3U8_HOSTS = [
   "sun.peakstorm",
   "rockyember.top",
   "fastportal.top",
+  "mirrowcelo002.workers.dev",
   "vidy.st",
 ];
 

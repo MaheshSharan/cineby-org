@@ -17,14 +17,22 @@ export interface VidyClientPayload {
 const API_BASE = "https://api.wecollege.net";
 
 const VIDY_SERVERS = [
-  { id: "miami",   endpoint: "miami/sources" },
-  { id: "seattle", endpoint: "seattle/sources" },
-  { id: "denver",  endpoint: "denver/sources" },
-  { id: "atlanta", endpoint: "atlanta/sources" },
-  { id: "phoenix", endpoint: "phoenix/sources" },
-  { id: "portland",endpoint: "portland/sources" },
-  { id: "austin",  endpoint: "austin/sources" },
-  { id: "dallas",  endpoint: "dallas/sources" },
+  { id: "miami",    endpoint: "miami/sources" },
+  { id: "boise",    endpoint: "boise/sources" },
+  { id: "atlanta",  endpoint: "atlanta/sources" },
+  { id: "seattle",  endpoint: "seattle/sources" },
+  { id: "denver",   endpoint: "denver/sources" },
+  { id: "phoenix",  endpoint: "phoenix/sources" },
+  { id: "portland", endpoint: "portland/sources" },
+  { id: "austin",   endpoint: "austin/sources" },
+  { id: "dallas",   endpoint: "dallas/sources" },
+  { id: "tampa",    endpoint: "tampa/sources" },
+  { id: "orlando",  endpoint: "orlando/sources" },
+  { id: "munich",   endpoint: "munich/sources", language: "german" },
+  { id: "berlin",   endpoint: "berlin/sources" },
+  { id: "paris",    endpoint: "paris/sources" },
+  { id: "delhi",    endpoint: "delhi/sources" },
+  { id: "cancun",   endpoint: "cancun/sources" },
 ] as const;
 
 const BROWSER_UA =
@@ -59,10 +67,12 @@ export async function fetchVidyPayloadFromBrowser(params: {
     const seed = seedData?.seed;
     if (!seed || typeof seed !== "string") return null;
 
-    // Step 2: select servers to try
-    const serversToTry = targetServer && targetServer !== "default"
-      ? VIDY_SERVERS.filter((s) => targetServer === s.id || targetServer === `vidy-${s.id}`)
-      : VIDY_SERVERS;
+    // Step 2: select server to try.
+    // If targetServer is specified, only query that exact server.
+    // If "default", query "miami" first (no multi-server storms).
+    const normalizedTarget = targetServer?.replace(/^vidy-/, "") ?? "miami";
+    const serverToTry = VIDY_SERVERS.find((s) => s.id === normalizedTarget) ?? VIDY_SERVERS[0];
+    const serversToTry = [serverToTry];
 
     for (const server of serversToTry) {
       const url = new URL(`${API_BASE}/${server.endpoint}`);
