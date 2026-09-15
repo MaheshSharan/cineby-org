@@ -39,7 +39,14 @@ export function ProfileDropdown({
     if (!open) return;
 
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (!menuRef.current) return;
+
+      // Two ProfileDropdown instances (desktop + mobile) share the same open state.
+      // The hidden instance (inside a display:none ancestor like md:hidden or hidden md:flex)
+      // must not fire onClose, otherwise it kills the visible instance before click fires.
+      if (menuRef.current.offsetWidth === 0 && menuRef.current.offsetHeight === 0) return;
+
+      if (!menuRef.current.contains(e.target as Node)) {
         onClose();
       }
     };

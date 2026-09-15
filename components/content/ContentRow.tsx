@@ -114,7 +114,7 @@ export function ContentRow({ title, action, children, className = "" }: ContentR
           role="region"
           aria-label={typeof title === "string" ? title : "Content row"}
           onKeyDown={handleKeyDown}
-          className="no-scrollbar flex snap-x snap-mandatory gap-2.5 overflow-x-auto scroll-smooth pb-2 touch-pan-x focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20 rounded-[10px]"
+          className="no-scrollbar flex gap-2.5 overflow-x-auto overscroll-x-contain pb-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20 rounded-[10px]"
         >
           {children}
         </div>

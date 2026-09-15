@@ -105,7 +105,7 @@ The application depends on the `CacheStore` interface defined in `lib/cache/type
 ## 6. Touch-First Rows & Accessible Keyboard Navigation
 
 - `components/content/ContentRow.tsx`:
-  - Natural touch swipe with `touch-pan-x` and CSS scroll snap (`snap-x snap-mandatory`).
+  - Fluid touch momentum swipe with `overscroll-x-contain` ensuring vertical page scrolling remains unimpeded on mobile devices.
   - Keyboard navigation: Left and Right arrow keys move focus through focusable cards inside the row and automatically scroll them smoothly into view.
   - Accessible semantics: Row wrapper exposes `role="region"` and `aria-labelledby` linked to the row title heading.
   - Focus indicators: Focusable scroller and cards have clear `focus-visible:ring-2 focus-visible:ring-primary` outlines without breaking mouse clicks.
