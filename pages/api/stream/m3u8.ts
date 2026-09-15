@@ -35,6 +35,22 @@ function getM3u8FetcherUrl(): string {
   return "";
 }
 
+function extractClientIp(req: NextApiRequest): string {
+  const cfIp = req.headers["cf-connecting-ip"];
+  if (typeof cfIp === "string" && cfIp.trim()) return cfIp.trim();
+
+  const xff = req.headers["x-forwarded-for"];
+  if (typeof xff === "string" && xff.trim()) {
+    const first = xff.split(",")[0]?.trim();
+    if (first) return first;
+  }
+
+  const sockIp = req.socket?.remoteAddress;
+  if (typeof sockIp === "string" && sockIp.trim()) return sockIp.trim();
+
+  return "";
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<string | { error: string }>
@@ -46,6 +62,8 @@ export default async function handler(
     res.status(405).json({ error: "Method Not Allowed" });
     return;
   }
+
+  const clientIp = extractClientIp(req);
 
   const body = typeof req.body === "object" && req.body !== null ? (req.body as Record<string, unknown>) : {};
   const query = req.query;
@@ -148,7 +166,7 @@ export default async function handler(
       if (match) {
         const uri = match[1];
         const abs = resolveUrl(uri);
-        const proxyUrl = buildStreamProxyUrl(abs, proxyHeaders);
+        const proxyUrl = buildStreamProxyUrl(abs, proxyHeaders, clientIp);
         rewritten.push(t.replace(/URI="[^"]+"/, `URI="${proxyUrl}"`));
       } else {
         rewritten.push(line);
@@ -162,7 +180,7 @@ export default async function handler(
       if (match) {
         const uri = match[1];
         const abs = resolveUrl(uri);
-        const mapUrl = buildStreamProxyUrl(abs, proxyHeaders);
+        const mapUrl = buildStreamProxyUrl(abs, proxyHeaders, clientIp);
         rewritten.push(t.replace(/URI="[^"]+"/, `URI="${mapUrl}"`));
         continue;
       }
@@ -189,7 +207,7 @@ export default async function handler(
 
     // Media segment URLs — route through signed stream proxy
     const abs = resolveUrl(t);
-    rewritten.push(buildStreamProxyUrl(abs, proxyHeaders));
+    rewritten.push(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
   }
 
   res.setHeader("Content-Type", "text/plain; charset=utf-8");

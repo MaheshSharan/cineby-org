@@ -1,6 +1,13 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-interface Descriptor { url: string; headers: Record<string, string>; expiresAt: number; }
+export interface Descriptor {
+  url: string;
+  headers: Record<string, string>;
+  expiresAt: number;
+  ip?: string;
+}
+
+const DEFAULT_TTL_MS = 6 * 60 * 60_000; // 6 hours
 
 let devFallbackSecret: string | null = null;
 
@@ -47,8 +54,18 @@ function sign(payload: string): string {
   return createHmac("sha256", secret()).update(payload).digest("base64url");
 }
 
-export function createProxyDescriptor(url: string, headers: Record<string, string> = {}): string {
-  const payload = Buffer.from(JSON.stringify({ url, headers, expiresAt: Date.now() + 5 * 60_000 })).toString("base64url");
+export function createProxyDescriptor(
+  url: string,
+  headers: Record<string, string> = {},
+  clientIp?: string
+): string {
+  const descriptor: Descriptor = {
+    url,
+    headers,
+    expiresAt: Date.now() + DEFAULT_TTL_MS,
+    ...(clientIp ? { ip: clientIp.trim() } : {}),
+  };
+  const payload = Buffer.from(JSON.stringify(descriptor)).toString("base64url");
   return `${payload}.${sign(payload)}`;
 }
 
@@ -62,6 +79,11 @@ export function readProxyDescriptor(token: string): Descriptor | null {
     if (!value || typeof value !== "object") return null;
     const descriptor = value as Partial<Descriptor>;
     if (typeof descriptor.url !== "string" || typeof descriptor.expiresAt !== "number" || descriptor.expiresAt < Date.now()) return null;
-    return { url: descriptor.url, headers: descriptor.headers ?? {}, expiresAt: descriptor.expiresAt };
+    return {
+      url: descriptor.url,
+      headers: descriptor.headers ?? {},
+      expiresAt: descriptor.expiresAt,
+      ip: typeof descriptor.ip === "string" ? descriptor.ip : undefined,
+    };
   } catch { return null; }
 }

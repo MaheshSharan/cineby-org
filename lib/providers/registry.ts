@@ -67,7 +67,8 @@ async function fetchWithTimeout(
 
 function processProviderResponse(
   res: StreamResponse,
-  provider: Provider
+  provider: Provider,
+  clientIp?: string
 ): StreamResponse {
   const collectedSources: StreamSource[] = [];
   const collectedSubtitles: SubtitleTrack[] = [];
@@ -79,7 +80,7 @@ function processProviderResponse(
       seenSourceUrls.add(source.url);
       collectedSources.push({
         ...source,
-        url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers),
+        url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers, clientIp),
         provider: {
           id: source.provider?.id || provider.id,
           name: source.provider?.name || provider.name,
@@ -96,7 +97,7 @@ function processProviderResponse(
         ...sub,
         flagUrl: sub.flagUrl,
         format: sub.format,
-        url: buildStreamProxyUrl(sub.url, sub.headers),
+        url: buildStreamProxyUrl(sub.url, sub.headers, clientIp),
       });
     }
   }
@@ -115,7 +116,7 @@ function processProviderResponse(
 
 export async function resolveAllStreams(
   request: StreamRequest,
-  options?: { timeoutMs?: number; targetProviderId?: string; force?: boolean }
+  options?: { timeoutMs?: number; targetProviderId?: string; force?: boolean; clientIp?: string }
 ): Promise<StreamResponse> {
   const timeoutMs = options?.timeoutMs ?? DEFAULT_PROVIDER_TIMEOUT_MS;
 
@@ -152,7 +153,7 @@ export async function resolveAllStreams(
       { ...request, serverId: options.targetProviderId },
       timeoutMs
     );
-    const processed = processProviderResponse(res, provider);
+    const processed = processProviderResponse(res, provider, options.clientIp);
     console.log(`[registry] Provider ${provider.id} produced ${processed.sources.length} sources`);
     return processed;
   }
@@ -166,20 +167,14 @@ export async function resolveAllStreams(
       timeoutMs
     );
 
-    if (res.sources && res.sources.length > 0) {
-      const processed = processProviderResponse(res, provider);
-      console.log(`[registry] Provider ${provider.id} succeeded with ${processed.sources.length} sources`);
-      return processed;
-    } else {
-      console.log(`[registry] Provider ${provider.id} returned 0 sources`);
+    if (res.sources.length > 0) {
+      console.log(`[registry] Provider ${provider.id} succeeded with ${res.sources.length} sources`);
+      return processProviderResponse(res, provider, options?.clientIp);
     }
   }
 
-  console.warn("[registry] All providers returned 0 sources");
-  return {
-    sources: [],
-    subtitles: [],
-  };
+  console.warn("[registry] All target providers returned 0 sources");
+  return { sources: [], subtitles: [] };
 }
 
 export function listAvailableProviders(): { id: string; name: string }[] {
@@ -191,7 +186,8 @@ export function listAvailableProviders(): { id: string; name: string }[] {
 
 export async function fetchProviderSubtitles(
   request: StreamRequest,
-  activeServerId?: string
+  activeServerId?: string,
+  clientIp?: string
 ): Promise<SubtitleTrack[]> {
   // Determine which provider owns the active server
   const provider = activeServerId
@@ -213,7 +209,7 @@ export async function fetchProviderSubtitles(
         seen.add(key);
         result.push({
           ...sub,
-          url: buildStreamProxyUrl(sub.url, sub.headers),
+          url: buildStreamProxyUrl(sub.url, sub.headers, clientIp),
         });
       }
     }

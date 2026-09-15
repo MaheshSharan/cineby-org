@@ -19,10 +19,13 @@ export interface Env {
 const DEFAULT_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
+const DEFAULT_TTL_MS = 6 * 60 * 60_000; // 6 hours
+
 interface Descriptor {
   url: string;
   headers: Record<string, string>;
   expiresAt: number;
+  ip?: string;
 }
 
 // SubtleCrypto HMAC helper for pure Web Standards / Workers runtime
@@ -75,14 +78,30 @@ async function readDescriptor(token: string, secret: string): Promise<Descriptor
     if (typeof parsed.url !== "string" || typeof parsed.expiresAt !== "number" || parsed.expiresAt < Date.now()) {
       return null;
     }
-    return { url: parsed.url, headers: parsed.headers ?? {}, expiresAt: parsed.expiresAt };
+    return {
+      url: parsed.url,
+      headers: parsed.headers ?? {},
+      expiresAt: parsed.expiresAt,
+      ip: typeof parsed.ip === "string" ? parsed.ip : undefined,
+    };
   } catch {
     return null;
   }
 }
 
-async function createDescriptorToken(url: string, headers: Record<string, string>, secret: string): Promise<string> {
-  const payloadJson = JSON.stringify({ url, headers, expiresAt: Date.now() + 5 * 60_000 });
+async function createDescriptorToken(
+  url: string,
+  headers: Record<string, string>,
+  secret: string,
+  clientIp?: string
+): Promise<string> {
+  const descriptor: Descriptor = {
+    url,
+    headers,
+    expiresAt: Date.now() + DEFAULT_TTL_MS,
+    ...(clientIp ? { ip: clientIp.trim() } : {}),
+  };
+  const payloadJson = JSON.stringify(descriptor);
   const base64 = btoa(payloadJson).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   const signature = await signPayload(base64, secret);
   return `${base64}.${signature}`;
@@ -138,6 +157,31 @@ export default {
         status: 401,
         headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
       });
+    }
+
+    // IP-bound verification
+    const connectingIp = (
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0] ||
+      ""
+    ).trim();
+
+    if (descriptor.ip && connectingIp) {
+      const signedIp = descriptor.ip.trim();
+      const ipMatches =
+        signedIp === connectingIp ||
+        signedIp === "127.0.0.1" ||
+        signedIp === "::1" ||
+        connectingIp === "127.0.0.1" ||
+        connectingIp === "::1";
+
+      if (!ipMatches) {
+        console.warn(`[proxy] IP mismatch: signed=${signedIp}, connecting=${connectingIp}`);
+        return new Response(JSON.stringify({ error: "Access denied: IP mismatch" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
+        });
+      }
     }
 
     const rawTargetUrl = descriptor.url;
@@ -254,7 +298,7 @@ export default {
           if (match) {
             const uri = match[1];
             const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
-            const token = await createDescriptorToken(abs, activeHeaders, secret);
+            const token = await createDescriptorToken(abs, activeHeaders, secret, descriptor.ip);
             rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
           } else {
             rewrittenLines.push(line);
@@ -267,7 +311,7 @@ export default {
           if (match) {
             const uri = match[1];
             const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
-            const token = await createDescriptorToken(abs, activeHeaders, secret);
+            const token = await createDescriptorToken(abs, activeHeaders, secret, descriptor.ip);
             rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
             continue;
           }
@@ -279,7 +323,7 @@ export default {
         }
 
         const absUrl = trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : new URL(trimmed, targetBase).toString();
-        const token = await createDescriptorToken(absUrl, activeHeaders, secret);
+        const token = await createDescriptorToken(absUrl, activeHeaders, secret, descriptor.ip);
         rewrittenLines.push(`${workerOrigin}/?token=${encodeURIComponent(token)}`);
       }
 

@@ -7,6 +7,22 @@ import { decryptVidyClientSources } from "@/lib/providers/sources/vidy";
 import { buildStreamProxyUrl } from "@/lib/providers/proxy";
 import type { MediaType, StreamResponse } from "@/lib/providers/types";
 
+function extractClientIp(req: NextApiRequest): string {
+  const cfIp = req.headers["cf-connecting-ip"];
+  if (typeof cfIp === "string" && cfIp.trim()) return cfIp.trim();
+
+  const xff = req.headers["x-forwarded-for"];
+  if (typeof xff === "string" && xff.trim()) {
+    const first = xff.split(",")[0]?.trim();
+    if (first) return first;
+  }
+
+  const sockIp = req.socket?.remoteAddress;
+  if (typeof sockIp === "string" && sockIp.trim()) return sockIp.trim();
+
+  return "";
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<StreamResponse | { error: string }>
@@ -18,6 +34,8 @@ export default async function handler(
     res.status(405).json({ error: `Method ${req.method} Not Allowed` });
     return;
   }
+
+  const clientIp = extractClientIp(req);
 
   // Support both GET query and POST JSON body
   const body = (req.method === "POST" && typeof req.body === "object" ? req.body : {}) as Record<string, unknown>;
@@ -63,16 +81,20 @@ export default async function handler(
       if (rawSources.length > 0) {
         const finalSources = rawSources.map((src) => ({
           ...src,
-          url: src.direct ? src.url : buildStreamProxyUrl(src.url, src.headers),
+          url: src.direct ? src.url : buildStreamProxyUrl(src.url, src.headers, clientIp),
         }));
 
         // Fetch subtitles
-        const subtitles = await fetchProviderSubtitles({
-          tmdbId: parsedTmdbId,
-          type: mediaType,
-          season: seasonNum,
-          episode: episodeNum,
-        }, targetServer || `vidking-${clientServerId}`);
+        const subtitles = await fetchProviderSubtitles(
+          {
+            tmdbId: parsedTmdbId,
+            type: mediaType,
+            season: seasonNum,
+            episode: episodeNum,
+          },
+          targetServer || `vidking-${clientServerId}`,
+          clientIp
+        );
 
         console.log(`[resolve] Client-assisted resolution succeeded: ${finalSources.length} sources, ${subtitles.length} subtitles`);
         res.status(200).json({
@@ -94,7 +116,7 @@ export default async function handler(
       if (source) {
         const finalSource = {
           ...source,
-          url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers),
+          url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers, clientIp),
         };
 
         console.log(`[resolve] Vixsrc client-assisted resolution succeeded for tmdbId=${parsedTmdbId}`);
@@ -114,15 +136,19 @@ export default async function handler(
       if (rawSources.length > 0) {
         const finalSources = rawSources.map((src) => ({
           ...src,
-          url: src.direct ? src.url : buildStreamProxyUrl(src.url, src.headers),
+          url: src.direct ? src.url : buildStreamProxyUrl(src.url, src.headers, clientIp),
         }));
 
-        const subtitles = await fetchProviderSubtitles({
-          tmdbId: parsedTmdbId,
-          type: mediaType,
-          season: seasonNum,
-          episode: episodeNum,
-        }, targetServer || `vidy-${vidyServerId}`);
+        const subtitles = await fetchProviderSubtitles(
+          {
+            tmdbId: parsedTmdbId,
+            type: mediaType,
+            season: seasonNum,
+            episode: episodeNum,
+          },
+          targetServer || `vidy-${vidyServerId}`,
+          clientIp
+        );
 
         console.log(`[resolve] Vidy client-assisted resolution succeeded: ${finalSources.length} sources, ${subtitles.length} subtitles`);
         res.status(200).json({ sources: finalSources, subtitles });
@@ -140,7 +166,7 @@ export default async function handler(
         season: seasonNum,
         episode: episodeNum,
       },
-      { targetProviderId: targetServer }
+      { targetProviderId: targetServer, clientIp }
     );
 
     console.log(`[resolve] First pass found ${result.sources?.length ?? 0} sources`);
@@ -155,7 +181,7 @@ export default async function handler(
           season: seasonNum,
           episode: episodeNum,
         },
-        { targetProviderId: "default" }
+        { targetProviderId: "default", clientIp }
       );
       console.log(`[resolve] Fallback pass found ${result.sources?.length ?? 0} sources`);
     }

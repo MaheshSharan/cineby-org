@@ -1,6 +1,7 @@
 export function buildStreamProxyUrl(
   targetUrl: string,
-  headers?: Record<string, string>
+  headers?: Record<string, string>,
+  clientIp?: string
 ): string {
   if (!targetUrl) {
     return targetUrl;
@@ -22,7 +23,7 @@ export function buildStreamProxyUrl(
     return targetUrl;
   }
 
-  const params = new URLSearchParams({ token: createProxyDescriptor(targetUrl, headers) });
+  const params = new URLSearchParams({ token: createProxyDescriptor(targetUrl, headers, clientIp) });
 
   if (cleanBase.includes("?")) {
     return `${cleanBase}&${params.toString()}`;
