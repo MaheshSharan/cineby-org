@@ -104,6 +104,21 @@ export function PlayerContainer({
     };
   }, []);
 
+  // Preload server/subtitle flag SVGs so they render instantly with zero delay or pop-in
+  useEffect(() => {
+    const flagsToPreload = [
+      "/flags/us.svg",
+      "/flags/de.svg",
+      "/flags/fr.svg",
+      "/flags/in.svg",
+      "/flags/mx.svg",
+    ];
+    for (const flag of flagsToPreload) {
+      const img = new Image();
+      img.src = flag;
+    }
+  }, []);
+
   // Subtitle lazy-fetch state: disabled by default until user opts in
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
   const [isSubtitlesFetching, setIsSubtitlesFetching] = useState(false);
@@ -859,11 +874,13 @@ export function PlayerContainer({
     const list = [...SERVERS];
     for (const src of availableSources) {
       const existingIndex = list.findIndex((server) => server.id === src.id);
+      const existingServer = existingIndex >= 0 ? list[existingIndex] : undefined;
       const sourceOption: ServerOption = {
         id: src.id,
         name: src.name,
         description: src.quality ? `${src.quality} stream` : "Direct source",
         kind: src.kind,
+        flagUrl: existingServer?.flagUrl,
       };
 
       if (existingIndex >= 0) {

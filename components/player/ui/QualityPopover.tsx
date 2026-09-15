@@ -135,6 +135,20 @@ export function QualityPopover({
                           : "text-gray-300 hover:text-white hover:bg-white/[0.04] border border-transparent"
                       }`}
                     >
+                      {/* Flag Icon Container */}
+                      {server.flagUrl ? (
+                        <div className="flex h-5 w-6 flex-shrink-0 items-center justify-center rounded bg-black/40 p-0.5 border border-white/10 overflow-hidden shadow-inner">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={server.flagUrl}
+                            alt=""
+                            className="h-full w-full object-cover rounded-[2px]"
+                            loading="eager"
+                            decoding="sync"
+                          />
+                        </div>
+                      ) : null}
+
                       <span className="flex-1 min-w-0">
                         <span className="block truncate">{server.name}</span>
                         {server.description && !isActive ? (

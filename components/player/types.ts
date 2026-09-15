@@ -23,6 +23,7 @@ export interface ServerOption {
   name: string;
   description?: string;
   kind: ServerKind;
+  flagUrl?: string;
 }
 
 export interface SubtitleTrack {
