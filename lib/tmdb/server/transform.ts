@@ -55,6 +55,7 @@ export function toMediaSummary(item: Record<string, unknown>, mediaType: MediaTy
     mediaType,
     originalLanguage: nullableString(item.original_language) ?? "",
     popularity: asNumber(item.popularity),
+    logoPath: nullableString(item.logo_path),
   };
 }
 

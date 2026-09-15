@@ -5,6 +5,7 @@ import type { MediaSummary } from "@/lib/tmdb";
 import {
   discoverMovies,
   getGenres,
+  getMediaLogo,
   getTrending,
 } from "@/lib/tmdb/server";
 
@@ -92,7 +93,12 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async () =>
 
   return {
     props: {
-      heroItems: hero.results.slice(0, HERO_ITEMS),
+      heroItems: await Promise.all(
+        hero.results.slice(0, HERO_ITEMS).map(async (item) => ({
+          ...item,
+          logoPath: await getMediaLogo(item.mediaType, item.id),
+        }))
+      ),
       topTenItems: topTen.results.slice(0, TOP_TEN_ITEMS),
       onlyOnNetflix: onlyOnNetflix.results,
       trendingMovies: trendingMovies.results,

@@ -25,6 +25,7 @@ export interface MediaSummary {
   mediaType: MediaType;
   originalLanguage: string;
   popularity: number;
+  logoPath?: string | null;
 }
 
 export interface Paginated<T> {

@@ -2,10 +2,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import type { MediaSummary } from "@/lib/tmdb";
-import { getBackdropResponsiveUrls } from "@/lib/tmdb/image";
+import { getBackdropResponsiveUrls, getLogoUrl } from "@/lib/tmdb/image";
 import { getEpisodeHref, getMediaHref, getPlayHref, getYear } from "@/lib/utils/media";
 
-import { StarIcon } from "@/components/ui/icons";
 
 const HERO_AUTOPLAY_MS = 6000;
 
@@ -123,21 +122,28 @@ function HeroSlide({ item, genreNames }: HeroSlideProps) {
 
       <div className="absolute inset-0 z-[3] flex items-end pb-20">
         <div className="layout-container w-full">
-          <div className="max-w-2xl">
-            <h2 className="font-sans text-2xl font-black uppercase leading-[0.95] tracking-[-0.03em] text-text-hi drop-shadow-[0_8px_24px_rgba(0,0,0,0.55)] md:text-4xl xl:text-5xl">
-              {item.title}
-            </h2>
-
+          <div className="max-w-2xl translate-y-6">
+            {item.logoPath ? (
+              <div className="mb-4 max-w-[280px] sm:max-w-[340px] md:max-w-[420px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getLogoUrl(item.logoPath) ?? undefined}
+                  alt={item.title}
+                  className="max-h-24 w-auto object-contain object-left md:max-h-32"
+                />
+              </div>
+            ) : (
+              <h2 className="font-sans text-2xl font-black uppercase leading-[0.95] tracking-[-0.03em] text-text-hi drop-shadow-[0_8px_24px_rgba(0,0,0,0.55)] md:text-4xl xl:text-5xl">
+                {item.title}
+              </h2>
+            )}
             <div className="mt-[18px] mb-[10px] inline-flex flex-wrap items-center gap-[10px_14px] text-[13px] leading-none text-text-hi">
-              <span className="inline-flex items-center gap-1.5 font-medium tracking-[0.02em] text-accent-hi">
-                <StarIcon className="fill-primary text-primary" size={12} />
-                {item.voteAverage.toFixed(1)}
-              </span>
-              <span aria-hidden="true" className="inline-block h-[3px] w-[3px] rounded-full bg-[rgba(238,241,246,0.35)]" />
               {year ? <span className="tracking-[0.02em] text-[rgba(238,241,246,0.85)]">{year}</span> : null}
-              {genres.map((genre) => (
+              {genres.map((genre, idx) => (
                 <span key={genre} className="inline-flex items-center gap-1.5 text-[rgba(238,241,246,0.85)]">
-                  <span aria-hidden="true" className="inline-block h-[3px] w-[3px] rounded-full bg-[rgba(238,241,246,0.35)]" />
+                  {year || idx > 0 ? (
+                    <span aria-hidden="true" className="inline-block h-[3px] w-[3px] rounded-full bg-[rgba(238,241,246,0.35)]" />
+                  ) : null}
                   {genre}
                 </span>
               ))}
