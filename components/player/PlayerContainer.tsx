@@ -387,6 +387,8 @@ export function PlayerContainer({
   const currentMediaKey = `${media.mediaType}-${media.mediaId}-${isTv ? currentSeason : 0}-${isTv ? currentEpisode : 0}`;
   const lastMediaKeyRef = useRef<string>(currentMediaKey);
 
+  const loadStreamRef = useRef<(serverId: string, options?: { forcedTime?: number; fallbackServerId?: string; isFallback?: boolean }) => Promise<void>>(() => Promise.resolve());
+
   const triggerServerFailure = useCallback(
     (failedServerId: string, fallbackServerId: string, resumeTime: number) => {
       // Mark failed for 5 seconds
@@ -408,7 +410,7 @@ export function PlayerContainer({
 
       // Revert automatically to the last healthy fallback server
       if (fallbackServerId && fallbackServerId !== failedServerId) {
-        void loadStream(fallbackServerId, { forcedTime: resumeTime, isFallback: true });
+        void loadStreamRef.current(fallbackServerId, { forcedTime: resumeTime, isFallback: true });
       }
     },
     []
@@ -562,6 +564,7 @@ export function PlayerContainer({
     },
     [currentEpisode, currentMediaKey, currentSeason, isTv, media.mediaId, media.mediaType, triggerServerFailure]
   );
+  loadStreamRef.current = loadStream;
 
   // Reset subtitle state when navigating to a new media (episode/movie change)
   const prevMediaKeyRef = useRef(currentMediaKey);

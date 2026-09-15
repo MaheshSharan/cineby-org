@@ -159,7 +159,7 @@ export default async function handler(
 
     console.log(`[resolve] Starting server-side stream resolution for tmdbId=${parsedTmdbId}, type=${mediaType}, server=${targetServer || "default"}`);
 
-    let result = await resolveAllStreams(
+    const result = await resolveAllStreams(
       {
         tmdbId: parsedTmdbId,
         type: mediaType,
