@@ -80,6 +80,10 @@ export function PlayerContainer({
   });
 
   const [activeServerId, setActiveServerId] = useState<string>("default");
+  const [pendingServerId, setPendingServerId] = useState<string | null>(null);
+  const [failedServerIds, setFailedServerIds] = useState<Record<string, boolean>>({});
+  const failedTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const lastWorkingServerIdRef = useRef<string>("default");
   const [stream, setStream] = useState<StreamState>({ source: null, isError: false });
   const [isResolvingStream, setIsResolvingStream] = useState(true);
   const [availableSources, setAvailableSources] = useState<MediaSource[]>([]);
@@ -393,8 +397,38 @@ export function PlayerContainer({
   const currentMediaKey = `${media.mediaType}-${media.mediaId}-${isTv ? currentSeason : 0}-${isTv ? currentEpisode : 0}`;
   const lastMediaKeyRef = useRef<string>(currentMediaKey);
 
+  const triggerServerFailure = useCallback(
+    (failedServerId: string, fallbackServerId: string, resumeTime: number) => {
+      // Mark failed for 5 seconds
+      setFailedServerIds((prev) => ({ ...prev, [failedServerId]: true }));
+      const existingTimer = failedTimersRef.current.get(failedServerId);
+      if (existingTimer) clearTimeout(existingTimer);
+
+      const timer = setTimeout(() => {
+        setFailedServerIds((prev) => {
+          const next = { ...prev };
+          delete next[failedServerId];
+          return next;
+        });
+        failedTimersRef.current.delete(failedServerId);
+      }, 5000);
+      failedTimersRef.current.set(failedServerId, timer);
+
+      setPendingServerId(null);
+
+      // Revert automatically to the last healthy fallback server
+      if (fallbackServerId && fallbackServerId !== failedServerId) {
+        void loadStream(fallbackServerId, { forcedTime: resumeTime, isFallback: true });
+      }
+    },
+    []
+  );
+
   const loadStream = useCallback(
-    async (serverId: string) => {
+    async (
+      serverId: string,
+      options?: { forcedTime?: number; fallbackServerId?: string; isFallback?: boolean }
+    ) => {
       const element = videoRef.current;
       if (!element) return;
 
@@ -402,7 +436,12 @@ export function PlayerContainer({
       lastMediaKeyRef.current = currentMediaKey;
 
       // Remember current playback position so changing servers resumes from the exact spot
-      const previousTime = isSameMedia && element.currentTime > 0 ? element.currentTime : 0;
+      const previousTime =
+        typeof options?.forcedTime === "number"
+          ? options.forcedTime
+          : isSameMedia && element.currentTime > 0
+          ? element.currentTime
+          : 0;
 
       const requestId = ++requestIdRef.current;
       streamRequestControllerRef.current?.abort();
@@ -419,7 +458,13 @@ export function PlayerContainer({
         signal: controller.signal,
       };
 
-      const result = await resolveStream(serverId, request);
+      let result;
+      try {
+        result = await resolveStream(serverId, request);
+      } catch {
+        result = null;
+      }
+
       // A canceled request is not a provider failure and must never surface
       // as "Unable to play this source". Replacement requests bump
       // requestIdRef; only the newest request may attach a result.
@@ -428,24 +473,24 @@ export function PlayerContainer({
       }
       setIsResolvingStream(false);
 
-      if (result.subtitles && result.subtitles.length > 0) {
-        // Subtitles from the fast resolve path are discarded here intentionally.
-        // The player fetches them on demand when the user enables the subtitle toggle.
-      }
-      if (result.sources && result.sources.length > 0) {
-        setAvailableSources(result.sources);
-      }
+      const source = result?.source ?? null;
 
-      const source = result.source;
+      // Source resolution failure handling
       if (!source) {
-        setStream({ source: null, isError: true });
+        if (options?.fallbackServerId) {
+          triggerServerFailure(serverId, options.fallbackServerId, previousTime);
+        } else {
+          setPendingServerId(null);
+          setStream({ source: null, isError: true });
+        }
         return;
       }
 
-      // Only update the activeServerId UI display state; do not mutate settings.serverId here
-      const playingServerId = source.id || serverId;
-      setActiveServerId(playingServerId);
+      if (result?.sources && result.sources.length > 0) {
+        setAvailableSources(result.sources);
+      }
 
+      // Format detection
       const format = source.format === "unknown" ? detectFormat(source.url) : source.format;
 
       if (mediaEngineRef.current) {
@@ -455,9 +500,34 @@ export function PlayerContainer({
 
       setActiveAbrLevel(null);
 
+      // Flag to track if media played or failed
+      let hasCommitted = false;
+      const commitSuccess = () => {
+        if (hasCommitted) return;
+        hasCommitted = true;
+        setPendingServerId(null);
+        const playingServerId = source.id || serverId;
+        setActiveServerId(playingServerId);
+        lastWorkingServerIdRef.current = playingServerId;
+      };
+
+      const handlePlaybackFailure = () => {
+        if (hasCommitted) return;
+        hasCommitted = true;
+        if (options?.fallbackServerId) {
+          triggerServerFailure(serverId, options.fallbackServerId, previousTime);
+        } else {
+          setPendingServerId(null);
+          setStream({ source: null, isError: true });
+        }
+      };
+
       const engine = createMediaEngine(element, source.url, format, {
         onLevelSwitched: (levelHeight) => {
           setActiveAbrLevel(`${levelHeight}p`);
+        },
+        onError: () => {
+          handlePlaybackFailure();
         },
       });
       mediaEngineRef.current = engine;
@@ -481,11 +551,26 @@ export function PlayerContainer({
         }
       }
 
+      // Mark successful playback once media is ready to play
+      const onCanPlay = () => {
+        commitSuccess();
+        element.removeEventListener("canplay", onCanPlay);
+        element.removeEventListener("error", onError);
+      };
+      const onError = () => {
+        handlePlaybackFailure();
+        element.removeEventListener("canplay", onCanPlay);
+        element.removeEventListener("error", onError);
+      };
+
+      element.addEventListener("canplay", onCanPlay, { once: true });
+      element.addEventListener("error", onError, { once: true });
+
       endedRef.current = false;
       setStream({ source, isError: false });
       void element.play().catch(() => {});
     },
-    [currentEpisode, currentMediaKey, currentSeason, isTv, media.mediaId, media.mediaType]
+    [currentEpisode, currentMediaKey, currentSeason, isTv, media.mediaId, media.mediaType, triggerServerFailure]
   );
 
   // Reset subtitle state when navigating to a new media (episode/movie change)
@@ -612,6 +697,9 @@ export function PlayerContainer({
 
       if (qualityTimerRef.current) clearTimeout(qualityTimerRef.current);
       if (audioTimerRef.current) clearTimeout(audioTimerRef.current);
+
+      failedTimersRef.current.forEach((timer) => clearTimeout(timer));
+      failedTimersRef.current.clear();
 
       activeBlobUrlsRef.current.forEach((url) => {
         try {
@@ -786,9 +874,20 @@ export function PlayerContainer({
 
   const handleServerChange = useCallback(
     (serverId: string) => {
-      void loadStream(serverId);
+      if (serverId === activeServerId || serverId === pendingServerId) {
+        return;
+      }
+      const element = videoRef.current;
+      const currentTime = element && element.currentTime > 0 ? element.currentTime : 0;
+      const fallbackServerId = lastWorkingServerIdRef.current || activeServerId || "default";
+
+      setPendingServerId(serverId);
+      void loadStream(serverId, {
+        forcedTime: currentTime,
+        fallbackServerId,
+      });
     },
-    [loadStream]
+    [activeServerId, loadStream, pendingServerId]
   );
 
   const handleQualityChange = useCallback((quality: PlayerSettings["quality"]) => {
@@ -1012,6 +1111,8 @@ export function PlayerContainer({
                     onQualityChange={handleQualityChange}
                     servers={serverOptions}
                     activeServerId={activeServerId}
+                    pendingServerId={pendingServerId}
+                    failedServerIds={failedServerIds}
                     onServerChange={handleServerChange}
                     rate={settings.rate}
                     onRateChange={handleRateChange}

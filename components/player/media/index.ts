@@ -7,6 +7,7 @@ export type MediaEngine = HlsController | DashController | NativeController;
 
 export interface MediaEngineOptions {
   onLevelSwitched?: (levelHeight: number) => void;
+  onError?: (error: unknown) => void;
 }
 
 export function createMediaEngine(

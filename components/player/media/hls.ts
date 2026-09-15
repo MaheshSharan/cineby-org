@@ -25,6 +25,7 @@ function getHlsQualityCap(quality: QualityLabel | null): number {
 
 export interface HlsOptions {
   onLevelSwitched?: (levelHeight: number) => void;
+  onError?: (error: unknown) => void;
 }
 
 export function attachHls(
@@ -62,6 +63,12 @@ export function attachHls(
   hls.on(Hls.Events.MANIFEST_PARSED, () => {
     if (hls.currentLevel >= 0) {
       notifyLevel(hls.currentLevel);
+    }
+  });
+
+  hls.on(Hls.Events.ERROR, (_event, data) => {
+    if (data.fatal) {
+      options?.onError?.(data);
     }
   });
 
