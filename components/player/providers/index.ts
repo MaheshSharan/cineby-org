@@ -250,9 +250,23 @@ async function buildFetchResponse(
         signal: request.signal,
       });
     }
+
+    // Targeted Vidy child server had no playable stream — do not fall back to other servers
+    return new Response(JSON.stringify({ sources: [], subtitles: [] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  // Client fetch failed or unrecognised provider — fall through to server-side
+  // If specific Vidking or Vixsrc was targeted and failed, return empty directly
+  if (isVidkingServer(serverId) || isVixsrcServer(serverId)) {
+    return new Response(JSON.stringify({ sources: [], subtitles: [] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // Unrecognised provider or initial auto search — fall through to server-side
   return fetch(`/api/stream/resolve?${params.toString()}`, {
     signal: request.signal,
   });

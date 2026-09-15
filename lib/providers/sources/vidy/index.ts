@@ -355,62 +355,23 @@ async function scrape(req: StreamRequest): Promise<StreamResponse> {
     return { sources: [], subtitles: [] };
   }
 
-  // Fast startup: if no specific server requested, race servers with Promise.any()
+  // Auto / Default resolution: query servers sequentially 1-by-1 (Miami first, then next on failure)
   if (!requestedServerId) {
-    const serverControllers: AbortController[] = [];
-    try {
-      const fastestResult = await Promise.any(
-        servers.map(async (server) => {
-          const serverController = new AbortController();
-          serverControllers.push(serverController);
-
-          const onParentAbort = () => serverController.abort();
-          if (signal) {
-            if (signal.aborted) {
-              serverController.abort();
-            } else {
-              signal.addEventListener("abort", onParentAbort, { once: true });
-            }
-          }
-
-          try {
-            const result = await scrapeServer(
-              server,
-              { ...req, signal: serverController.signal },
-              meta,
-              seed
-            );
-            if (result.sources.length === 0) {
-              throw new Error(`${server.id} returned no playable sources`);
-            }
-            return result;
-          } finally {
-            if (signal) {
-              signal.removeEventListener("abort", onParentAbort);
-            }
-          }
-        })
-      );
-
-      // Cancel all remaining losing server requests immediately
-      for (const ctrl of serverControllers) {
-        if (!ctrl.signal.aborted) {
-          ctrl.abort();
+    for (const server of servers) {
+      if (signal?.aborted) break;
+      try {
+        const result = await scrapeServer(server, req, meta, seed);
+        if (result.sources.length > 0) {
+          return {
+            sources: result.sources,
+            subtitles: [],
+          };
         }
+      } catch {
+        // Try next child server on failure
       }
-
-      return {
-        sources: fastestResult.sources,
-        subtitles: [],
-      };
-    } catch {
-      for (const ctrl of serverControllers) {
-        if (!ctrl.signal.aborted) {
-          ctrl.abort();
-        }
-      }
-      return { sources: [], subtitles: [] };
     }
+    return { sources: [], subtitles: [] };
   }
 
   // Target specific server

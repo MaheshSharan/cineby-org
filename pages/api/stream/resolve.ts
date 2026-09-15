@@ -171,20 +171,7 @@ export default async function handler(
 
     console.log(`[resolve] First pass found ${result.sources?.length ?? 0} sources`);
 
-    // If the requested server returned no streams, fall back cleanly to default provider
-    if ((!result.sources || result.sources.length === 0) && targetServer) {
-      console.log(`[resolve] Falling back to default provider for tmdbId=${parsedTmdbId}`);
-      result = await resolveAllStreams(
-        {
-          tmdbId: parsedTmdbId,
-          type: mediaType,
-          season: seasonNum,
-          episode: episodeNum,
-        },
-        { targetProviderId: "default", clientIp }
-      );
-      console.log(`[resolve] Fallback pass found ${result.sources?.length ?? 0} sources`);
-    }
+
 
     res.status(200).json(result);
     return;
