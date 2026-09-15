@@ -43,9 +43,21 @@ function secret(): string {
     return directSecret.trim();
   }
 
-  console.warn("[signedProxy] No STREAM_PROXY_SECRET found in any context! Falling back to dev fallback secret.");
+  // In production, an absent secret must fail fast rather than signing with an insecure static key.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "[signedProxy] STREAM_PROXY_SECRET is required in production! Set it via Cloudflare secrets or environment variables."
+    );
+  }
+
   if (!devFallbackSecret) {
-    devFallbackSecret = "cineby_dev_stream_secret_default_fallback_key";
+    console.warn(
+      "[signedProxy] No STREAM_PROXY_SECRET found. Generated an ephemeral in-memory secret for local development."
+    );
+    // Ephemeral random secret for local development (not a static guessable string)
+    devFallbackSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
   return devFallbackSecret;
 }

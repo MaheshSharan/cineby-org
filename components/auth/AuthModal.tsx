@@ -9,6 +9,7 @@ import {
   MailIcon,
   UserRoundIcon,
 } from "@/components/ui/icons";
+import { Spinner } from "@/components/ui/Spinner";
 import type { AuthModalProps, AuthMode } from "@/components/auth/types";
 
 export type { AuthMode } from "@/components/auth/types";
@@ -258,17 +259,17 @@ export function AuthModal({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="mt-4 h-10 md:h-11 w-full rounded-xl bg-white text-[13px] font-semibold text-[#0b0f14] transition-colors hover:bg-white/90 disabled:opacity-50 cursor-pointer"
+                className="mt-4 h-10 md:h-11 w-full rounded-xl bg-white text-[13px] font-semibold text-[#0b0f14] transition-colors hover:bg-white/90 disabled:opacity-50 cursor-pointer flex items-center justify-center"
               >
-                <span className="inline-block">
-                  {isSubmitting
-                    ? "Please wait…"
-                    : activeMode === "login"
-                    ? "Login"
-                    : activeMode === "register"
-                    ? "Sign up"
-                    : "Sign up"}
-                </span>
+                {isSubmitting ? (
+                  <Spinner size="sm" className="text-[#0b0f14]" />
+                ) : (
+                  <span className="inline-block">
+                    {activeMode === "login"
+                      ? "Login"
+                      : "Sign up"}
+                  </span>
+                )}
               </button>
 
               <p className="mt-2 text-center text-xs text-white/40">Password recovery is available from account settings.</p>
