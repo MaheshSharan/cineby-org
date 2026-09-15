@@ -25,9 +25,12 @@ function formatTime(seconds: number): string {
 
 export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [dragTime, setDragTime] = useState<number | null>(null);
 
-  const progress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  const activeTime = dragTime !== null ? dragTime : currentTime;
+  const progress = duration > 0 ? Math.min(100, (activeTime / duration) * 100) : 0;
   const hoverProgress = hoverTime !== null && duration > 0 ? (hoverTime / duration) * 100 : 0;
 
   const getTimeFromEvent = (clientX: number): number => {
@@ -42,16 +45,54 @@ export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
     return ratio * duration;
   };
 
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    isDraggingRef.current = true;
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // ignore
+    }
+
+    const time = getTimeFromEvent(event.clientX);
+    setDragTime(time);
+    onSeek(time);
+  };
+
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    setHoverTime(getTimeFromEvent(event.clientX));
+    const time = getTimeFromEvent(event.clientX);
+    setHoverTime(time);
+
+    if (isDraggingRef.current) {
+      event.preventDefault();
+      setDragTime(time);
+      onSeek(time);
+    }
+  };
+
+  const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    try {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+    } catch {
+      // ignore
+    }
+
+    const time = getTimeFromEvent(event.clientX);
+    setDragTime(null);
+    onSeek(time);
   };
 
   const handlePointerLeave = () => {
-    setHoverTime(null);
-  };
-
-  const handleSeek = (event: React.MouseEvent<HTMLDivElement>) => {
-    onSeek(getTimeFromEvent(event.clientX));
+    if (!isDraggingRef.current) {
+      setHoverTime(null);
+    }
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -88,17 +129,19 @@ export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
   return (
     <div
       ref={trackRef}
-      className="relative z-20 flex h-9 w-full flex-1 cursor-pointer items-center group"
+      className="relative z-20 flex h-9 w-full flex-1 cursor-pointer items-center group touch-none"
+      onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
       onPointerLeave={handlePointerLeave}
-      onClick={handleSeek}
       onKeyDown={handleKeyDown}
       role="slider"
       aria-label="Seek video"
       aria-valuemin={0}
       aria-valuemax={Math.round(duration)}
-      aria-valuenow={Math.round(currentTime)}
-      aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
+      aria-valuenow={Math.round(activeTime)}
+      aria-valuetext={`${formatTime(activeTime)} of ${formatTime(duration)}`}
       tabIndex={0}
     >
       <div className="absolute inset-y-0 left-0 right-0 flex items-center">
