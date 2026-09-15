@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 
 import type { Episode, MediaSource, PlayerMedia, PlayerSeason, PlayerSettings, ServerOption, SubtitleTrack } from "./types";
-import { HISTORY_SAVE_INTERVAL_MS, SERVERS } from "./constants";
+import { HISTORY_SAVE_INTERVAL_MS, SERVERS, preloadFlags } from "./constants";
 
 import { createMediaEngine, type MediaEngine } from "./media";
 import { resolveStream } from "./providers";
@@ -108,19 +108,9 @@ export function PlayerContainer({
     };
   }, []);
 
-  // Preload server/subtitle flag SVGs so they render instantly with zero delay or pop-in
+  // Preload server/subtitle flag icons centrally so they render instantly without pop-in
   useEffect(() => {
-    const flagsToPreload = [
-      "/flags/us.svg",
-      "/flags/de.svg",
-      "/flags/fr.svg",
-      "/flags/in.svg",
-      "/flags/mx.svg",
-    ];
-    for (const flag of flagsToPreload) {
-      const img = new Image();
-      img.src = flag;
-    }
+    preloadFlags(["us", "de", "fr", "in", "mx", "es", "ja", "ko", "it", "pt", "ru", "zh"]);
   }, []);
 
   // Subtitle lazy-fetch state: disabled by default until user opts in

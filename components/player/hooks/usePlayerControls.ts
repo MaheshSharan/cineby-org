@@ -123,7 +123,11 @@ export function usePlayerControls({
         target?.closest("button, input, select, textarea, [role='slider'], [data-player-ui]") ??
         false;
 
-      if (quickTap && !isPlayerUi) {
+      const isDesktop =
+        typeof window !== "undefined" &&
+        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+      if (quickTap && !isPlayerUi && isDesktop) {
         const prevTap = lastTapRef.current;
         const containerRect = containerRef?.current?.getBoundingClientRect();
         const clientWidth = containerRect?.width ?? window.innerWidth;

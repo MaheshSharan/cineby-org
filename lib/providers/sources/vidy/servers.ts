@@ -17,7 +17,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "miami/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
-    flagUrl: "/flags/us.svg",
+    flagUrl: "https://flagsapi.com/US/flat/24.png",
     description: "Original audio · Fast HLS / 4K",
   },
   {
@@ -26,7 +26,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "boise/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
-    flagUrl: "/flags/us.svg",
+    flagUrl: "https://flagsapi.com/US/flat/24.png",
     description: "Original audio · High Bitrate HLS",
   },
   {
@@ -35,7 +35,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "atlanta/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
-    flagUrl: "/flags/us.svg",
+    flagUrl: "https://flagsapi.com/US/flat/24.png",
     description: "Original audio · Alternate HLS",
   },
   {
@@ -44,7 +44,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "seattle/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
-    flagUrl: "/flags/us.svg",
+    flagUrl: "https://flagsapi.com/US/flat/24.png",
     description: "Original audio · Fast HLS",
   },
   {
@@ -53,7 +53,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "denver/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
-    flagUrl: "/flags/us.svg",
+    flagUrl: "https://flagsapi.com/US/flat/24.png",
     description: "Original audio · DASH / HLS",
   },
   {
@@ -62,7 +62,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "phoenix/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
-    flagUrl: "/flags/us.svg",
+    flagUrl: "https://flagsapi.com/US/flat/24.png",
     description: "Original audio · Alternate HLS",
   },
   {
@@ -71,7 +71,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "portland/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
-    flagUrl: "/flags/us.svg",
+    flagUrl: "https://flagsapi.com/US/flat/24.png",
     description: "Original audio · Alternate HLS",
   },
   {
@@ -80,7 +80,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "austin/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
-    flagUrl: "/flags/us.svg",
+    flagUrl: "https://flagsapi.com/US/flat/24.png",
     description: "Original audio · English stream",
   },
   {
@@ -89,7 +89,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "dallas/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
-    flagUrl: "/flags/us.svg",
+    flagUrl: "https://flagsapi.com/US/flat/24.png",
     description: "Original audio · Alternate HLS",
   },
   {
@@ -98,7 +98,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "tampa/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
-    flagUrl: "/flags/us.svg",
+    flagUrl: "https://flagsapi.com/US/flat/24.png",
     description: "Original audio · Fast HLS",
   },
   {
@@ -107,7 +107,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "orlando/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
-    flagUrl: "/flags/us.svg",
+    flagUrl: "https://flagsapi.com/US/flat/24.png",
     description: "Original audio · Fast HLS",
   },
   {
@@ -116,7 +116,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "munich/sources",
     audioLanguage: "de",
     audioLabel: "German (Deutsch)",
-    flagUrl: "/flags/de.svg",
+    flagUrl: "https://flagsapi.com/DE/flat/24.png",
     description: "German dubbed audio",
     languageParam: "german",
   },
@@ -126,7 +126,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "berlin/sources",
     audioLanguage: "de",
     audioLabel: "German (Deutsch)",
-    flagUrl: "/flags/de.svg",
+    flagUrl: "https://flagsapi.com/DE/flat/24.png",
     description: "German dubbed audio",
     useGermanAltTitle: true,
   },
@@ -136,7 +136,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "paris/sources",
     audioLanguage: "fr",
     audioLabel: "French (Français)",
-    flagUrl: "/flags/fr.svg",
+    flagUrl: "https://flagsapi.com/FR/flat/24.png",
     description: "French dubbed audio",
   },
   {
@@ -145,7 +145,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "delhi/sources",
     audioLanguage: "hi",
     audioLabel: "Hindi (हिंदी)",
-    flagUrl: "/flags/in.svg",
+    flagUrl: "https://flagsapi.com/IN/flat/24.png",
     description: "Hindi dubbed audio",
   },
   {
@@ -154,7 +154,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
     endpoint: "cancun/sources",
     audioLanguage: "es",
     audioLabel: "Spanish (Español)",
-    flagUrl: "/flags/mx.svg",
+    flagUrl: "https://flagsapi.com/MX/flat/24.png",
     description: "Spanish dubbed audio",
   },
 ];

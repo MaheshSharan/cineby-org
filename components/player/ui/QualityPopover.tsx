@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { PlaybackRate, QualityLabel, ServerOption } from "../types";
-import { PLAYBACK_RATES } from "../constants";
+import { FALLBACK_FLAG_URL, PLAYBACK_RATES, getFlagUrl } from "../constants";
 
 interface QualityPopoverProps {
   open: boolean;
@@ -151,11 +151,14 @@ export function QualityPopover({
                         <div className="flex h-5 w-6 flex-shrink-0 items-center justify-center rounded bg-black/40 p-0.5 border border-white/10 overflow-hidden shadow-inner">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={server.flagUrl}
+                            src={getFlagUrl(server.flagUrl)}
                             alt=""
                             className="h-full w-full object-cover rounded-[2px]"
                             loading="eager"
                             decoding="sync"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = FALLBACK_FLAG_URL;
+                            }}
                           />
                         </div>
                       ) : null}

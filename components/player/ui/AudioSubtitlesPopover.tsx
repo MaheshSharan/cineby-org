@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import type { SubtitleTrack } from "../types";
+import { FALLBACK_FLAG_URL, getFlagUrl } from "../constants";
 
 export interface SubtitleAppearance {
   fontSize: number;
@@ -388,12 +389,17 @@ export function AudioSubtitlesPopover({
                         >
                           {/* Flag Icon Container */}
                           <div className="flex h-7 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-black/40 p-0.5 border border-white/10 overflow-hidden shadow-inner">
-                            {track.flagUrl ? (
+                            {track.flagUrl || track.lang ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={track.flagUrl}
+                                src={getFlagUrl(track.flagUrl || track.lang)}
                                 alt=""
                                 className="h-full w-full object-cover rounded-[4px]"
+                                loading="eager"
+                                decoding="sync"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = FALLBACK_FLAG_URL;
+                                }}
                               />
                             ) : (
                               <span className="text-[10px] font-bold text-white/50 uppercase">
