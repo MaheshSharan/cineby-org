@@ -824,7 +824,7 @@ export function PlayerContainer({
     fetchedSegmentKeyRef.current = null;
   }, [currentMediaKey]);
 
-  // Fetch SkipDB segments only after stream URL is resolved (zero interference during provider scraping)
+  // Fetch segments (IntroDB with SkipDB fallback) only after stream URL is resolved (zero interference during provider scraping)
   useEffect(() => {
     if (!stream.source?.url) {
       return;

@@ -47,7 +47,7 @@ export interface SubtitleTrack {
   flagUrl?: string;
 }
 
-export type SegmentType = "intro" | "recap" | "outro" | "preview";
+export type SegmentType = "intro" | "recap" | "outro" | "preview" | "post-credits";
 
 export interface MediaSegment {
   type: SegmentType;

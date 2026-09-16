@@ -37,3 +37,4 @@ vercel-m3u8-fetcher/
 # cloudflare
 /.open-next/
 /.wrangler/
+skills-lock.json
