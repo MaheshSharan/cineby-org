@@ -47,9 +47,18 @@ export interface SubtitleTrack {
   flagUrl?: string;
 }
 
+export type SegmentType = "intro" | "recap" | "outro" | "preview";
+
+export interface MediaSegment {
+  type: SegmentType;
+  start: number;
+  end: number;
+}
+
 export interface PlayerMedia {
   mediaType: MediaType;
   mediaId: number;
+  imdbId?: string | null;
   title: string;
   posterPath?: string | null;
   backdropPath?: string | null;
@@ -61,6 +70,7 @@ export interface PlayerMedia {
   releaseYear?: string | null;
   progress?: number | null;
   seasons?: PlayerSeason[];
+  segments?: MediaSegment[];
 }
 
 export interface PlayerSeason {

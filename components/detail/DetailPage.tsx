@@ -266,6 +266,7 @@ export function DetailPage({
         media={{
           mediaType: details.mediaType,
           mediaId: details.id,
+          imdbId: details.imdbId,
           title: details.title,
           posterPath: details.posterPath,
           backdropPath: details.backdropPath,

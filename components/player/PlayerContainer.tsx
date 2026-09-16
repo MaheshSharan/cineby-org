@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 
-import type { Episode, MediaSource, PlayerMedia, PlayerSeason, PlayerSettings, ServerGroup, ServerOption, SubtitleTrack } from "./types";
+import type { Episode, MediaSegment, MediaSource, PlayerMedia, PlayerSeason, PlayerSettings, ServerGroup, ServerOption, SubtitleTrack } from "./types";
 import { HISTORY_SAVE_INTERVAL_MS, SERVERS, SERVER_GROUPS, preloadFlags } from "./constants";
 import { revokeAllBlobs, revokeBlob } from "./utils/blobPool";
 
@@ -18,6 +18,7 @@ import { useSubtitles } from "./hooks/useSubtitles";
 import { AudioSubtitlesPopover, DEFAULT_SUBTITLE_APPEARANCE, type SubtitleAppearance } from "./ui/AudioSubtitlesPopover";
 import { EpisodesDrawer } from "./ui/EpisodesDrawer";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
+import { PlayerActionButton } from "./ui/PlayerActionButton";
 import { PlayerControls } from "./ui/PlayerControls";
 import { PlayerHeader } from "./ui/PlayerHeader";
 import { QualityPopover } from "./ui/QualityPopover";
@@ -807,6 +808,82 @@ export function PlayerContainer({
     setSettings((current) => ({ ...current, autoNext: !current.autoNext }));
   }, []);
 
+  // Segment resolution (Skip Intro / Next Episode via SkipDB)
+  const [apiSegments, setApiSegments] = useState<MediaSegment[]>([]);
+  const [dismissedIntro, setDismissedIntro] = useState(false);
+  const [dismissedNext, setDismissedNext] = useState(false);
+  const [isNavigatingNext, setIsNavigatingNext] = useState(false);
+  const fetchedSegmentKeyRef = useRef<string | null>(null);
+
+  // Reset dismiss and navigating states on episode/media switch
+  useEffect(() => {
+    setApiSegments([]);
+    setDismissedIntro(false);
+    setDismissedNext(false);
+    setIsNavigatingNext(false);
+    fetchedSegmentKeyRef.current = null;
+  }, [currentMediaKey]);
+
+  // Fetch SkipDB segments only after stream URL is resolved (zero interference during provider scraping)
+  useEffect(() => {
+    if (!stream.source?.url) {
+      return;
+    }
+
+    if (fetchedSegmentKeyRef.current === currentMediaKey) {
+      return;
+    }
+    fetchedSegmentKeyRef.current = currentMediaKey;
+
+    const controller = new AbortController();
+    const seasonParam = isTv ? currentSeason : undefined;
+    const episodeParam = isTv ? currentEpisode : undefined;
+    const durationParam =
+      playerState.duration > 0
+        ? Math.round(playerState.duration)
+        : media.runtime
+        ? Math.round(media.runtime * 60)
+        : undefined;
+
+    const params = new URLSearchParams();
+    if (media.imdbId) params.set("imdb_id", media.imdbId);
+    if (media.mediaId) params.set("tmdb_id", String(media.mediaId));
+    params.set("media_type", media.mediaType);
+    if (seasonParam) params.set("season", String(seasonParam));
+    if (episodeParam) params.set("episode", String(episodeParam));
+    if (durationParam) params.set("duration", String(durationParam));
+
+    fetch(`/api/segments?${params.toString()}`, {
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: unknown) => {
+        if (!data || typeof data !== "object") return;
+        const res = data as { segments?: MediaSegment[] };
+        if (Array.isArray(res.segments) && res.segments.length > 0) {
+          setApiSegments(res.segments);
+        }
+      })
+      .catch(() => {
+        // Silently ignore aborted or failed requests
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    currentEpisode,
+    currentMediaKey,
+    currentSeason,
+    isTv,
+    media.imdbId,
+    media.mediaId,
+    media.mediaType,
+    media.runtime,
+    playerState.duration,
+    stream.source?.url,
+  ]);
+
   const handleNavigate = useCallback(
     (seasonNumber: number, episodeNumber: number) => {
       setCurrentSeason(seasonNumber);
@@ -820,6 +897,7 @@ export function PlayerContainer({
 
   const handleNextEpisode = useCallback(() => {
     if (!activeSeasonInfo) {
+      setIsNavigatingNext(false);
       return;
     }
 
@@ -833,8 +911,35 @@ export function PlayerContainer({
     );
     if (nextSeason) {
       handleNavigate(nextSeason.seasonNumber, 1);
+    } else {
+      setIsNavigatingNext(false);
     }
   }, [activeSeasonInfo, currentEpisode, currentSeason, handleNavigate, seasons]);
+
+  const resolvedSegments =
+    media.segments && media.segments.length > 0 ? media.segments : apiSegments;
+
+  const introSegment = resolvedSegments.find(
+    (s) => s.type === "intro" || s.type === "recap"
+  );
+  const isIntroActive = useMemo(() => {
+    if (dismissedIntro || !introSegment) return false;
+    const time = playerState.currentTime;
+    return time >= introSegment.start && time < introSegment.end;
+  }, [dismissedIntro, introSegment, playerState.currentTime]);
+
+  const handleSkipIntro = useCallback(() => {
+    if (!introSegment) return;
+    setDismissedIntro(true);
+    playerState.seekTo(introSegment.end);
+  }, [introSegment, playerState]);
+
+  const outroSegment = resolvedSegments.find((s) => s.type === "outro");
+  const isNextEpisodeActive = useMemo(() => {
+    if (!isTv || !hasNext || dismissedNext || !outroSegment) return false;
+    const time = playerState.currentTime;
+    return time >= outroSegment.start;
+  }, [dismissedNext, hasNext, isTv, outroSegment, playerState.currentTime]);
 
   useEffect(() => {
     if (!playerState.isEnded) {
@@ -1261,6 +1366,40 @@ export function PlayerContainer({
                 </svg>
               </button>
             </div>
+          ) : null}
+
+          {/* Skip Intro / Next Episode Floating Action Button */}
+          {isIntroActive ? (
+            <PlayerActionButton
+              label="Skip Intro"
+              onClick={handleSkipIntro}
+              onDismiss={() => setDismissedIntro(true)}
+              isControlsVisible={controls.areControlsVisible}
+              icon={
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polygon points="5 4 15 12 5 20 5 4" fill="currentColor" />
+                  <line x1="19" y1="5" x2="19" y2="19" />
+                </svg>
+              }
+            />
+          ) : isNextEpisodeActive ? (
+            <PlayerActionButton
+              label="Next Episode"
+              isLoading={isNavigatingNext}
+              onClick={() => {
+                if (isNavigatingNext) return;
+                setIsNavigatingNext(true);
+                handleNextEpisode();
+              }}
+              onDismiss={() => setDismissedNext(true)}
+              isControlsVisible={controls.areControlsVisible}
+              icon={
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polygon points="5 4 15 12 5 20 5 4" fill="currentColor" />
+                  <line x1="19" y1="5" x2="19" y2="19" />
+                </svg>
+              }
+            />
           ) : null}
 
           {/* Bottom Controls Bar */}

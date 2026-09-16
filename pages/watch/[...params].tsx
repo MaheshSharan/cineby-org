@@ -89,6 +89,7 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
           media: {
             mediaType,
             mediaId: details.id,
+            imdbId: details.imdbId,
             title: details.title,
             posterPath: details.posterPath,
             backdropPath: details.backdropPath,
@@ -114,6 +115,7 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
         media: {
           mediaType,
           mediaId: details.id,
+          imdbId: details.imdbId,
           title: details.title,
           posterPath: details.posterPath,
           backdropPath: details.backdropPath,
