@@ -11,6 +11,7 @@ interface PlayerControlsProps {
   duration: number;
   volume: number;
   muted: boolean;
+  seekTime?: number;
   onTogglePlay: () => void;
   onSeek: (time: number) => void;
   onSeekBy: (seconds: number) => void;
@@ -27,6 +28,7 @@ export function PlayerControls({
   duration,
   volume,
   muted,
+  seekTime = 10,
   onTogglePlay,
   onSeek,
   onSeekBy,
@@ -89,12 +91,12 @@ export function PlayerControls({
                 </span>
               </button>
 
-              {/* Rewind 10s */}
+              {/* Rewind */}
               <button
                 type="button"
-                onClick={() => onSeekBy(-10)}
-                aria-label="Rewind 10 seconds"
-                title="Rewind 10 seconds (←)"
+                onClick={() => onSeekBy(-seekTime)}
+                aria-label={`Rewind ${seekTime} seconds`}
+                title={`Rewind ${seekTime} seconds (←)`}
                 className="tabbable p-2 rounded-full hover:bg-white/20 transition-transform duration-100 flex items-center gap-3 active:scale-110 active:bg-white/30 active:text-white"
               >
                 <span className="text-3xl md:text-2xl flex items-center justify-center w-[1em] h-[1em]">
@@ -113,20 +115,27 @@ export function PlayerControls({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
-                    <path
+                    <text
+                      x="7.5"
+                      y="21.5"
+                      textAnchor="middle"
                       fill="currentColor"
-                      d="M4.50426 14.2727V23H2.65909V16.0241H2.60795L0.609375 17.277V15.6406L2.76989 14.2727H4.50426ZM10.0004 23.1918C9.2674 23.1889 8.63672 23.0085 8.10831 22.6506C7.58274 22.2926 7.17791 21.7741 6.89382 21.0952C6.61257 20.4162 6.47337 19.5994 6.47621 18.6449C6.47621 17.6932 6.61683 16.8821 6.89808 16.2116C7.18217 15.5412 7.587 15.0312 8.11257 14.6818C8.64098 14.3295 9.27024 14.1534 10.0004 14.1534C10.7305 14.1534 11.3583 14.3295 11.8839 14.6818C12.4123 15.0341 12.8185 15.5455 13.1026 16.2159C13.3867 16.8835 13.5273 17.6932 13.5245 18.6449C13.5245 19.6023 13.3825 20.4205 13.0984 21.0994C12.8171 21.7784 12.4137 22.2969 11.8881 22.6548C11.3626 23.0128 10.7333 23.1918 10.0004 23.1918ZM10.0004 21.6619C10.5004 21.6619 10.8995 21.4105 11.1978 20.9077C11.4961 20.4048 11.6438 19.6506 11.641 18.6449C11.641 17.983 11.5728 17.4318 11.4364 16.9915C11.3029 16.5511 11.1126 16.2202 10.8654 15.9986C10.6211 15.777 10.3327 15.6662 10.0004 15.6662C9.5032 15.6662 9.10547 15.9148 8.80717 16.4119C8.50888 16.9091 8.35831 17.6534 8.35547 18.6449C8.35547 19.3153 8.42223 19.875 8.55575 20.3239C8.69212 20.7699 8.88388 21.1051 9.13104 21.3295C9.3782 21.5511 9.66797 21.6619 10.0004 21.6619Z"
-                    />
+                      fontSize="8.5"
+                      fontWeight="bold"
+                      fontFamily="system-ui, -apple-system, sans-serif"
+                    >
+                      {seekTime}
+                    </text>
                   </svg>
                 </span>
               </button>
 
-              {/* Forward 10s */}
+              {/* Forward */}
               <button
                 type="button"
-                onClick={() => onSeekBy(10)}
-                aria-label="Forward 10 seconds"
-                title="Forward 10 seconds (→)"
+                onClick={() => onSeekBy(seekTime)}
+                aria-label={`Forward ${seekTime} seconds`}
+                title={`Forward ${seekTime} seconds (→)`}
                 className="tabbable p-2 rounded-full hover:bg-white/20 transition-transform duration-100 flex items-center gap-3 active:scale-110 active:bg-white/30 active:text-white"
               >
                 <span className="text-3xl md:text-2xl flex items-center justify-center w-[1em] h-[1em]">
@@ -145,10 +154,17 @@ export function PlayerControls({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
-                    <path
+                    <text
+                      x="19"
+                      y="21.5"
+                      textAnchor="middle"
                       fill="currentColor"
-                      d="M16.5043 14.2727V23H14.6591V16.0241H14.608L12.6094 17.277V15.6406L14.7699 14.2727H16.5043ZM22.0004 23.1918C21.2674 23.1889 20.6367 23.0085 20.1083 22.6506C19.5827 22.2926 19.1779 21.7741 18.8938 21.0952C18.6126 20.4162 18.4734 19.5994 18.4762 18.6449C18.4762 17.6932 18.6168 16.8821 18.8981 16.2116C19.1822 15.5412 19.587 15.0312 20.1126 14.6818C20.641 14.3295 21.2702 14.1534 22.0004 14.1534C22.7305 14.1534 23.3583 14.3295 23.8839 14.6818C24.4123 15.0341 24.8185 15.5455 25.1026 16.2159C25.3867 16.8835 25.5273 17.6932 25.5245 18.6449C25.5245 19.6023 25.3825 20.4205 25.0984 21.0994C24.8171 21.7784 24.4137 22.2969 23.8881 22.6548C23.3626 23.0128 22.7333 23.1918 22.0004 23.1918ZM22.0004 21.6619C22.5004 21.6619 22.8995 21.4105 23.1978 20.9077C23.4961 20.4048 23.6438 19.6506 23.641 18.6449C23.641 17.983 23.5728 17.4318 23.4364 16.9915C23.3029 16.5511 23.1126 16.2202 22.8654 15.9986C22.6211 15.777 22.3327 15.6662 22.0004 15.6662C21.5032 15.6662 21.1055 15.9148 20.8072 16.4119C20.5089 16.9091 20.3583 17.6534 20.3555 18.6449C20.3555 19.3153 20.4222 19.875 20.5558 20.3239C20.6921 20.7699 20.8839 21.1051 21.131 21.3295C21.3782 21.5511 21.668 21.6619 22.0004 21.6619Z"
-                    />
+                      fontSize="8.5"
+                      fontWeight="bold"
+                      fontFamily="system-ui, -apple-system, sans-serif"
+                    >
+                      {seekTime}
+                    </text>
                   </svg>
                 </span>
               </button>

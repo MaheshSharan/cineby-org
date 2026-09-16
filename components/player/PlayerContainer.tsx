@@ -16,7 +16,7 @@ import { usePlayerState } from "./hooks/usePlayerState";
 import { useSubtitles } from "./hooks/useSubtitles";
 import { useSettings } from "@/hooks/useSettings";
 
-import { AudioSubtitlesPopover, DEFAULT_SUBTITLE_APPEARANCE, type SubtitleAppearance } from "./ui/AudioSubtitlesPopover";
+import { AudioSubtitlesPopover } from "./ui/AudioSubtitlesPopover";
 import { EpisodesDrawer } from "./ui/EpisodesDrawer";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
 import { PlayerActionButton } from "./ui/PlayerActionButton";
@@ -129,7 +129,6 @@ export function PlayerContainer({
   const [isQualityOpen, setIsQualityOpen] = useState(false);
   const [isAudioSubtitlesOpen, setIsAudioSubtitlesOpen] = useState(false);
   const [isEpisodesOpen, setIsEpisodesOpen] = useState(false);
-  const [appearance, setAppearance] = useState<SubtitleAppearance>(DEFAULT_SUBTITLE_APPEARANCE);
   const [seekFeedback, setSeekFeedback] = useState<{
     side: "left" | "right";
     seconds: number;
@@ -371,6 +370,7 @@ export function PlayerContainer({
 
   const controls = usePlayerControls({
     containerRef,
+    seekTime: appSettings.playback.seekTime,
     onTogglePlay: playerState.togglePlay,
     onSeekBy: playerState.seekBy,
     onDoubleTapSeek: handleDoubleTapSeek,
@@ -585,18 +585,10 @@ export function PlayerContainer({
     subtitles.selectTrack(null);
   }, [currentMediaKey, subtitles]);
 
-  const handleToggleSubtitles = useCallback(() => {
-    setSubtitlesEnabled((enabled) => {
-      const nextEnabled = !enabled;
-
-      if (!nextEnabled) {
-        subtitles.selectTrack(null);
-        return false;
-      }
-
-      // Already fetched for this media: surface results immediately
+  const fetchSubtitles = useCallback(
+    (targetLang: string = appSettings.playback.preferredLanguage || "en") => {
       if (subtitlesFetchedRef.current) {
-        return true;
+        return;
       }
 
       subtitlesFetchedRef.current = true;
@@ -624,20 +616,28 @@ export function PlayerContainer({
               ? (data as { subtitles: SubtitleTrack[] }).subtitles
               : [];
 
-          // Auto-select English subtitle by default
-          const defaultSub =
-            tracks.find(
-              (s) => s.lang.toLowerCase() === "en" || s.label.toLowerCase().includes("english")
-            ) ?? tracks[0] ?? null;
+          if (tracks.length > 0) {
+            const normalizedLang = targetLang.toLowerCase();
+            const preferredTrack =
+              tracks.find((s) => {
+                const code = (s.lang || "").toLowerCase();
+                const label = (s.label || "").toLowerCase();
+                return code === normalizedLang || code.startsWith(normalizedLang) || label.includes(normalizedLang);
+              }) ??
+              tracks.find((s) => s.lang.toLowerCase() === "en" || s.label.toLowerCase().includes("english")) ??
+              tracks[0] ??
+              null;
 
-          if (defaultSub) {
-            subtitles.selectTrack(defaultSub);
-            // Pin the selected track at index 0 so it's immediately visible
-            const reordered = [defaultSub, ...tracks.filter((t) => t.id !== defaultSub.id)];
-            setAvailableSubtitles(reordered);
-          } else {
-            setAvailableSubtitles(tracks);
+            if (preferredTrack) {
+              subtitles.selectTrack(preferredTrack);
+              const reordered = [preferredTrack, ...tracks.filter((t) => t.id !== preferredTrack.id)];
+              setAvailableSubtitles(reordered);
+              setSubtitlesEnabled(true);
+              return;
+            }
           }
+
+          setAvailableSubtitles(tracks);
         })
         .catch(() => {
           // Aborted or network error: leave list empty
@@ -647,10 +647,41 @@ export function PlayerContainer({
             setIsSubtitlesFetching(false);
           }
         });
+    },
+    [activeServerId, appSettings.playback.preferredLanguage, currentEpisode, currentSeason, isTv, media.mediaId, media.mediaType, subtitles]
+  );
 
+  const handleToggleSubtitles = useCallback(() => {
+    setSubtitlesEnabled((enabled) => {
+      const nextEnabled = !enabled;
+
+      if (!nextEnabled) {
+        subtitles.selectTrack(null);
+        return false;
+      }
+
+      if (subtitlesFetchedRef.current) {
+        if (!subtitles.activeTrack && availableSubtitles.length > 0) {
+          subtitles.selectTrack(availableSubtitles[0]);
+        }
+        return true;
+      }
+
+      fetchSubtitles();
       return true;
     });
-  }, [activeServerId, currentEpisode, currentSeason, isTv, media.mediaId, media.mediaType, subtitles]);
+  }, [availableSubtitles, fetchSubtitles, subtitles]);
+
+  // Auto-fetch & select subtitles when autoSubtitles setting is enabled
+  useEffect(() => {
+    if (!appSettings.playback.autoSubtitles || !stream.source?.url) {
+      return;
+    }
+
+    if (!subtitlesFetchedRef.current) {
+      fetchSubtitles(appSettings.playback.preferredLanguage || "en");
+    }
+  }, [appSettings.playback.autoSubtitles, appSettings.playback.preferredLanguage, fetchSubtitles, stream.source?.url]);
 
   // Stream load on initial mount or when media changes (episode/movie switch)
   const initialMediaKeyRef = useRef<string | null>(null);
@@ -1133,15 +1164,40 @@ export function PlayerContainer({
 
   const isLoading = isResolvingStream && !stream.source;
 
+  const { font: subFont, textSize: subSize, textColor: subColor, backgroundBlur: subBlur } =
+    appSettings.subtitles;
+
+  const subtitleColorHex =
+    subColor === "yellow"
+      ? "#fef08a"
+      : subColor === "cyan"
+      ? "#67e8f9"
+      : subColor === "magenta"
+      ? "#f472b6"
+      : "#ffffff";
+
+  const subtitleFontFamily =
+    subFont === "netflix"
+      ? "'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+      : subFont === "montserrat"
+      ? "'Montserrat', sans-serif"
+      : "'Inter', system-ui, -apple-system, sans-serif";
+
+  const subtitleFontSize = `${Math.round((subSize / 100) * 24)}px`;
+  const subtitleBgColor = subBlur ? "rgba(0, 0, 0, 0.75)" : "transparent";
+
   return (
     <div ref={containerRef} className="fixed inset-0 bg-black overflow-hidden select-none">
       {/* Subtitle Appearance Dynamic Cue Style */}
       <style jsx global>{`
         video::cue {
-          color: ${appearance.color} !important;
-          background-color: rgba(0, 0, 0, ${appearance.bgOpacity}) !important;
-          font-size: ${appearance.fontSize}px !important;
-          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9) !important;
+          color: ${subtitleColorHex} !important;
+          background-color: ${subtitleBgColor} !important;
+          font-size: ${subtitleFontSize} !important;
+          font-family: ${subtitleFontFamily} !important;
+          text-shadow: ${subBlur
+            ? "2px 2px 4px rgba(0, 0, 0, 0.9)"
+            : "2px 2px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.8)"} !important;
         }
       `}</style>
 
@@ -1301,8 +1357,6 @@ export function PlayerContainer({
                     activeSubtitleId={subtitles.activeTrack?.id}
                     onSubtitleChange={handleSubtitleChange}
                     onUploadSubtitle={handleUploadSubtitle}
-                    appearance={appearance}
-                    onAppearanceChange={setAppearance}
                     subtitlesEnabled={subtitlesEnabled}
                     isSubtitlesFetching={isSubtitlesFetching}
                     onToggleSubtitles={handleToggleSubtitles}
@@ -1437,6 +1491,7 @@ export function PlayerContainer({
             duration={playerState.duration}
             volume={playerState.volume}
             muted={playerState.muted}
+            seekTime={appSettings.playback.seekTime}
             onTogglePlay={playerState.togglePlay}
             onSeek={playerState.seekTo}
             onSeekBy={playerState.seekBy}

@@ -1,18 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
+import Link from "next/link";
 import type { SubtitleTrack } from "../types";
 import { FALLBACK_FLAG_URL, getFlagUrl } from "../constants";
-
-export interface SubtitleAppearance {
-  fontSize: number;
-  bgOpacity: number;
-  color: string;
-}
-
-export const DEFAULT_SUBTITLE_APPEARANCE: SubtitleAppearance = {
-  fontSize: 24,
-  bgOpacity: 0.5,
-  color: "#FFFFFF",
-};
 
 interface AudioSubtitlesPopoverProps {
   open: boolean;
@@ -21,31 +10,9 @@ interface AudioSubtitlesPopoverProps {
   onSubtitleChange: (track: SubtitleTrack | null) => void;
   onUploadSubtitle?: (file: File) => void;
   onOpenOpenSubtitles?: () => void;
-  appearance: SubtitleAppearance;
-  onAppearanceChange: (appearance: SubtitleAppearance) => void;
   subtitlesEnabled: boolean;
   isSubtitlesFetching: boolean;
   onToggleSubtitles: () => void;
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  let cleaned = hex.replace(/^#/, "");
-  if (cleaned.length === 3) {
-    cleaned = cleaned.split("").map((c) => c + c).join("");
-  }
-  const num = parseInt(cleaned, 16);
-  if (isNaN(num)) return { r: 255, g: 255, b: 255 };
-  return {
-    r: (num >> 16) & 255,
-    g: (num >> 8) & 255,
-    b: num & 255,
-  };
-}
-
-function rgbToHex(r: number, g: number, b: number): string {
-  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
-  const toHex = (n: number) => clamp(n).toString(16).padStart(2, "0");
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 export function AudioSubtitlesPopover({
@@ -55,13 +22,10 @@ export function AudioSubtitlesPopover({
   onSubtitleChange,
   onUploadSubtitle,
   onOpenOpenSubtitles,
-  appearance,
-  onAppearanceChange,
   subtitlesEnabled,
   isSubtitlesFetching,
   onToggleSubtitles,
 }: AudioSubtitlesPopoverProps) {
-  const [view, setView] = useState<"main" | "appearance">("main");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pin selected subtitle track to index 0 so it's always at the top without scrolling
@@ -86,16 +50,6 @@ export function AudioSubtitlesPopover({
     }
   };
 
-  const rgb = hexToRgb(appearance.color);
-
-  const handleRgbChange = (channel: "r" | "g" | "b", val: number) => {
-    const nextRgb = { ...rgb, [channel]: val };
-    onAppearanceChange({
-      ...appearance,
-      color: rgbToHex(nextRgb.r, nextRgb.g, nextRgb.b),
-    });
-  };
-
   return (
     <div
       data-player-ui
@@ -104,188 +58,7 @@ export function AudioSubtitlesPopover({
       }`}
     >
       <div className="player-surface rounded-xl p-3 sm:p-4 shadow-2xl overflow-x-hidden">
-        {view === "appearance" ? (
-          /* ================= CUSTOMIZE APPEARANCE SUBVIEW ================= */
-          <div className="w-[340px] max-w-[calc(100vw-2rem)] flex flex-col text-white">
-            <button
-              type="button"
-              onClick={() => setView("main")}
-              className="flex items-center justify-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.02] px-4 text-[12.5px] font-medium text-gray-300 transition-colors hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-white h-9 mb-3 flex-shrink-0 self-start cursor-pointer"
-            >
-              <svg
-                width="1.5em"
-                height="1.5em"
-                strokeWidth="1.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-3.5 h-3.5"
-                aria-hidden="true"
-              >
-                <path d="M15 6L9 12L15 18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Back to subtitles
-            </button>
-
-            <div className="max-h-[min(440px,58vh)] overflow-y-auto no-scrollbar -mr-2 pr-2">
-              <div className="px-3 space-y-5 h-full">
-                {/* Font Size */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
-                      Font Size
-                    </span>
-                    <span className="text-[13px] font-semibold text-white tabular-nums">
-                      {appearance.fontSize}px
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="16"
-                    max="50"
-                    step="1"
-                    aria-label="Font Size"
-                    value={appearance.fontSize}
-                    onChange={(e) =>
-                      onAppearanceChange({
-                        ...appearance,
-                        fontSize: Number(e.target.value),
-                      })
-                    }
-                    className="w-full accent-white cursor-pointer"
-                  />
-                </div>
-
-                {/* Background Opacity */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
-                      Background Blur
-                    </span>
-                    <span className="text-[13px] font-semibold text-white tabular-nums">
-                      {Math.round(appearance.bgOpacity * 100)}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    aria-label="Background Blur"
-                    value={appearance.bgOpacity}
-                    onChange={(e) =>
-                      onAppearanceChange({
-                        ...appearance,
-                        bgOpacity: Number(e.target.value),
-                      })
-                    }
-                    className="w-full accent-white cursor-pointer"
-                  />
-                </div>
-
-                {/* Color */}
-                <div className="space-y-2.5">
-                  <span className="block text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
-                    Color
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <label
-                      className="relative h-8 w-8 flex-shrink-0 cursor-pointer rounded-full ring-1 ring-inset ring-white/20 transition-all duration-150 hover:scale-110 hover:ring-white/50"
-                      aria-label="Color picker"
-                      style={{ backgroundColor: appearance.color }}
-                    >
-                      <input
-                        type="color"
-                        className="absolute inset-0 cursor-pointer opacity-0"
-                        value={appearance.color}
-                        onChange={(e) =>
-                          onAppearanceChange({
-                            ...appearance,
-                            color: e.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                    <div className="grid flex-1 grid-cols-3 gap-1.5">
-                      <div className="flex items-center gap-1 min-w-0">
-                        <span className="w-2.5 flex-shrink-0 text-[10px] font-bold uppercase text-gray-400/70">
-                          r
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          max="255"
-                          className="w-full min-w-0 h-8 rounded-lg bg-white/[0.03] border border-white/[0.08] text-center text-[12px] text-white focus:outline-none focus:border-white/[0.3] transition-colors tabular-nums"
-                          aria-label="Color R"
-                          value={rgb.r}
-                          onChange={(e) => handleRgbChange("r", Number(e.target.value))}
-                        />
-                      </div>
-                      <div className="flex items-center gap-1 min-w-0">
-                        <span className="w-2.5 flex-shrink-0 text-[10px] font-bold uppercase text-gray-400/70">
-                          g
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          max="255"
-                          className="w-full min-w-0 h-8 rounded-lg bg-white/[0.03] border border-white/[0.08] text-center text-[12px] text-white focus:outline-none focus:border-white/[0.3] transition-colors tabular-nums"
-                          aria-label="Color G"
-                          value={rgb.g}
-                          onChange={(e) => handleRgbChange("g", Number(e.target.value))}
-                        />
-                      </div>
-                      <div className="flex items-center gap-1 min-w-0">
-                        <span className="w-2.5 flex-shrink-0 text-[10px] font-bold uppercase text-gray-400/70">
-                          b
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          max="255"
-                          className="w-full min-w-0 h-8 rounded-lg bg-white/[0.03] border border-white/[0.08] text-center text-[12px] text-white focus:outline-none focus:border-white/[0.3] transition-colors tabular-nums"
-                          aria-label="Color B"
-                          value={rgb.b}
-                          onChange={(e) => handleRgbChange("b", Number(e.target.value))}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Latency */}
-                <div className="space-y-2.5">
-                  <span className="block text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
-                    Latency
-                  </span>
-                  <p className="text-xs text-gray-400/70">
-                    {activeSubtitleId ? "0ms" : "You haven't selected caption"}
-                  </p>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="space-y-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => onAppearanceChange(DEFAULT_SUBTITLE_APPEARANCE)}
-                    className="flex w-full h-10 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.02] px-6 text-[13px] font-medium text-gray-300 transition-colors hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-white cursor-pointer"
-                  >
-                    Reset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setView("main")}
-                    className="flex w-full h-10 items-center justify-center rounded-full bg-white px-6 text-[13px] font-semibold text-[#0b0f14] transition-all hover:bg-white/90 cursor-pointer"
-                  >
-                    Apply settings
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* ================= MAIN AUDIO & SUBTITLES VIEW ================= */
-          <div className="flex flex-col text-white">
+        <div className="flex flex-col text-white">
             <div className="flex divide-x divide-white/10 max-h-[min(360px,50vh)]">
               {/* AUDIO COLUMN */}
               <div className="w-1/2 min-w-0 flex-1 md:w-auto md:min-w-[170px] md:max-w-[240px] flex flex-col min-h-0 pr-2.5 sm:pr-4">
@@ -507,9 +280,10 @@ export function AudioSubtitlesPopover({
                 </svg>
               </button>
 
-              <button
-                type="button"
-                onClick={() => setView("appearance")}
+              <Link
+                href="/settings?tab=subtitles"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors text-left cursor-pointer"
               >
                 <span className="flex items-center gap-2.5 whitespace-nowrap">
@@ -531,7 +305,7 @@ export function AudioSubtitlesPopover({
                     <circle cx="17" cy="17" r="3" />
                     <circle cx="7" cy="7" r="3" />
                   </svg>
-                  Customize appearance
+                  Subtitle settings
                 </span>
                 <svg
                   width="1.5em"
@@ -545,10 +319,9 @@ export function AudioSubtitlesPopover({
                 >
                   <path d="M9 6L15 12L9 18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </button>
+              </Link>
             </div>
           </div>
-        )}
       </div>
     </div>
   );

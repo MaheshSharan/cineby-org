@@ -4,6 +4,7 @@ import { AUTOHIDE_CONTROLS_MS, FORWARD_MS, REWIND_MS } from "../constants";
 
 interface UsePlayerControlsOptions {
   containerRef?: React.RefObject<HTMLDivElement | null>;
+  seekTime?: number;
   onTogglePlay: () => void;
   onSeekBy: (seconds: number) => void;
   onDoubleTapSeek?: (seconds: number, side: "left" | "right") => void;
@@ -23,6 +24,7 @@ const EVENT_TARGETS = new Set(["BUTTON", "INPUT", "SELECT", "TEXTAREA"]);
 
 export function usePlayerControls({
   containerRef,
+  seekTime = 10,
   onTogglePlay,
   onSeekBy,
   onDoubleTapSeek,
@@ -75,11 +77,11 @@ export function usePlayerControls({
           break;
         case "ArrowLeft":
           event.preventDefault();
-          onSeekBy(-REWIND_MS / 1000);
+          onSeekBy(-seekTime);
           break;
         case "ArrowRight":
           event.preventDefault();
-          onSeekBy(FORWARD_MS / 1000);
+          onSeekBy(seekTime);
           break;
         case "m":
           onToggleMute();
@@ -99,7 +101,7 @@ export function usePlayerControls({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onTogglePlay, onSeekBy, onToggleMute, onToggleFullscreen, onToggleSettings, onToggleSubtitles]);
+  }, [onTogglePlay, onSeekBy, onToggleMute, onToggleFullscreen, onToggleSettings, onToggleSubtitles, seekTime]);
 
   // Keep callbacks fresh in refs so pointerdown/up listeners NEVER re-subscribe on re-renders
   const onTogglePlayRef = useRef(onTogglePlay);
@@ -159,11 +161,11 @@ export function usePlayerControls({
           }
           lastTapRef.current = null;
 
-          // Double tap: Left 40% -> rewind 10s; Right 40% -> forward 10s; Middle 20% -> regular play toggle
+          // Double tap: Left 40% -> rewind seekTime; Right 40% -> forward seekTime; Middle 20% -> regular play toggle
           if (ratio < 0.4) {
-            onDoubleTapSeekRef.current(-10, "left");
+            onDoubleTapSeekRef.current(-seekTime, "left");
           } else if (ratio > 0.6) {
-            onDoubleTapSeekRef.current(10, "right");
+            onDoubleTapSeekRef.current(seekTime, "right");
           } else {
             onTogglePlayRef.current();
           }

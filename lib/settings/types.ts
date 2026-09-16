@@ -46,7 +46,7 @@ export const DEFAULT_SETTINGS: CinebySettings = {
     autoplay: true,
     autoSkipIntro: false,
     seekTime: 10,
-    autoSubtitles: false,
+    autoSubtitles: true,
     preferredLanguage: "en",
   },
   subtitles: {
