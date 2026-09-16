@@ -7,6 +7,7 @@ interface PlayerActionButtonProps {
   icon?: ReactNode;
   durationMs?: number;
   onDismiss?: () => void;
+  onExpire?: () => void;
   className?: string;
   isControlsVisible?: boolean;
   isLoading?: boolean;
@@ -19,7 +20,7 @@ interface PlayerActionButtonProps {
  * - Positioned on the bottom-right above the seek bar.
  * - Smooth background progress fill sweeping from left to right over durationMs (default 5s).
  * - Timer pauses on hover so users have comfortable time to click.
- * - Auto-dismisses with smooth fade/scale transition once timer completes.
+ * - Auto-dismisses with smooth fade/scale transition once timer completes, or triggers onExpire if provided.
  */
 export function PlayerActionButton({
   label,
@@ -27,6 +28,7 @@ export function PlayerActionButton({
   icon,
   durationMs = 5000,
   onDismiss,
+  onExpire,
   className = "",
   isControlsVisible = true,
   isLoading = false,
@@ -43,6 +45,14 @@ export function PlayerActionButton({
       onDismiss?.();
     }, 250);
   }, [onDismiss]);
+
+  const handleComplete = useCallback(() => {
+    if (onExpire) {
+      onExpire();
+    } else {
+      handleDismiss();
+    }
+  }, [handleDismiss, onExpire]);
 
   useEffect(() => {
     // Reset timer whenever the button mounts or label changes
@@ -67,7 +77,7 @@ export function PlayerActionButton({
         setElapsedMs((prev) => {
           const next = prev + delta;
           if (next >= durationMs) {
-            handleDismiss();
+            handleComplete();
             return durationMs;
           }
           return next;

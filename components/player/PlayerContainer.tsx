@@ -14,6 +14,7 @@ import { srtToVtt } from "@/lib/utils/srtToVtt";
 import { usePlayerControls } from "./hooks/usePlayerControls";
 import { usePlayerState } from "./hooks/usePlayerState";
 import { useSubtitles } from "./hooks/useSubtitles";
+import { useSettings } from "@/hooks/useSettings";
 
 import { AudioSubtitlesPopover, DEFAULT_SUBTITLE_APPEARANCE, type SubtitleAppearance } from "./ui/AudioSubtitlesPopover";
 import { EpisodesDrawer } from "./ui/EpisodesDrawer";
@@ -55,6 +56,7 @@ export function PlayerContainer({
   onEnded,
   onNavigateEpisode,
 }: PlayerContainerProps) {
+  const { settings: appSettings, updatePlayback } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaEngineRef = useRef<MediaEngine | null>(null);
@@ -805,8 +807,8 @@ export function PlayerContainer({
   }, [seekFeedback]);
 
   const handleToggleAutoNext = useCallback(() => {
-    setSettings((current) => ({ ...current, autoNext: !current.autoNext }));
-  }, []);
+    updatePlayback({ autoplay: !appSettings.playback.autoplay });
+  }, [appSettings.playback.autoplay, updatePlayback]);
 
   // Segment resolution (Skip Intro / Next Episode via SkipDB)
   const [apiSegments, setApiSegments] = useState<MediaSegment[]>([]);
@@ -934,29 +936,45 @@ export function PlayerContainer({
     playerState.seekTo(introSegment.end);
   }, [introSegment, playerState]);
 
+  // Auto-skip intro if enabled in user playback settings
+  useEffect(() => {
+    if (!appSettings.playback.autoSkipIntro || dismissedIntro || !introSegment) {
+      return;
+    }
+
+    const time = playerState.currentTime;
+    if (time >= introSegment.start && time < introSegment.end) {
+      setDismissedIntro(true);
+      playerState.seekTo(introSegment.end);
+    }
+  }, [appSettings.playback.autoSkipIntro, dismissedIntro, introSegment, playerState]);
+
   const outroSegment = resolvedSegments.find((s) => s.type === "outro");
   const isNextEpisodeActive = useMemo(() => {
-    if (!isTv || !hasNext || dismissedNext || !outroSegment) return false;
+    if (!isTv || !hasNext || dismissedNext) return false;
     const time = playerState.currentTime;
-    return time >= outroSegment.start;
-  }, [dismissedNext, hasNext, isTv, outroSegment, playerState.currentTime]);
+    if (outroSegment) {
+      return time >= outroSegment.start;
+    }
+    return playerState.duration > 30 && time >= playerState.duration - 15;
+  }, [dismissedNext, hasNext, isTv, outroSegment, playerState.currentTime, playerState.duration]);
 
   useEffect(() => {
     if (!playerState.isEnded) {
       return;
     }
 
-    if (settings.autoNext && !endedRef.current && hasNext) {
+    if (appSettings.playback.autoplay && !endedRef.current && hasNext) {
       endedRef.current = true;
       handleNextEpisode();
       return;
     }
 
-    if (settings.autoNext && !endedRef.current && isLastEpisode) {
+    if (appSettings.playback.autoplay && !endedRef.current && isLastEpisode) {
       endedRef.current = true;
       onEnded?.();
     }
-  }, [playerState.isEnded, settings.autoNext, hasNext, isLastEpisode, handleNextEpisode, onEnded]);
+  }, [playerState.isEnded, appSettings.playback.autoplay, hasNext, isLastEpisode, handleNextEpisode, onEnded]);
 
   const handleSeasonChange = useCallback((seasonNumber: number) => {
     setDrawerSeason(seasonNumber);
@@ -1391,6 +1409,15 @@ export function PlayerContainer({
                 setIsNavigatingNext(true);
                 handleNextEpisode();
               }}
+              onExpire={() => {
+                if (appSettings.playback.autoplay) {
+                  if (isNavigatingNext) return;
+                  setIsNavigatingNext(true);
+                  handleNextEpisode();
+                } else {
+                  setDismissedNext(true);
+                }
+              }}
               onDismiss={() => setDismissedNext(true)}
               isControlsVisible={controls.areControlsVisible}
               icon={
@@ -1460,7 +1487,7 @@ export function PlayerContainer({
               activeEpisodeNumber={currentEpisode}
               activeSeasonNumber={currentSeason}
               isLoading={isEpisodesLoading}
-              autoNext={settings.autoNext}
+              autoNext={appSettings.playback.autoplay}
               onToggleAutoNext={handleToggleAutoNext}
             />
           ) : null}

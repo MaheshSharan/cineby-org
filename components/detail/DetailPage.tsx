@@ -166,7 +166,16 @@ export function DetailPage({
     };
   }, [details.id, details.title, details.releaseDate, details.mediaType]);
 
+  const isTrailerEnabled = settings.appearance.trailers;
+
   useEffect(() => {
+    if (!isTrailerEnabled) {
+      setDirectTrailerUrl(null);
+      setShowTrailer(false);
+      setTrailerReady(false);
+      return;
+    }
+
     let isCurrent = true;
 
     getMovyTrailerUrl(details.imdbId).then((url) => {
@@ -178,17 +187,19 @@ export function DetailPage({
     return () => {
       isCurrent = false;
     };
-  }, [details.imdbId]);
+  }, [details.imdbId, isTrailerEnabled]);
 
   useEffect(() => {
-    if (!directTrailerUrl) {
+    if (!directTrailerUrl || !isTrailerEnabled) {
+      setShowTrailer(false);
+      setTrailerReady(false);
       return;
     }
 
     const timer = window.setTimeout(() => setShowTrailer(true), TRAILER_DELAY_MS);
 
     return () => window.clearTimeout(timer);
-  }, [directTrailerUrl]);
+  }, [directTrailerUrl, isTrailerEnabled]);
 
   useEffect(() => {
     if (!user) {
@@ -339,7 +350,7 @@ export function DetailPage({
             style={{ background: GRADIENT_TOP_BOTTOM }}
           />
 
-          {directTrailerUrl && showTrailer ? (
+          {directTrailerUrl && showTrailer && isTrailerEnabled ? (
             <div
               className="absolute inset-0 w-full overflow-hidden transition-opacity duration-700 ease-in-out"
               style={{ opacity: trailerReady ? 1 : 0 }}
@@ -372,7 +383,7 @@ export function DetailPage({
           ) : null}
         </div>
 
-        {directTrailerUrl && showTrailer && trailerReady ? (
+        {directTrailerUrl && showTrailer && trailerReady && isTrailerEnabled ? (
           <button
             type="button"
             onClick={() => {
