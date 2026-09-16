@@ -1,13 +1,12 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import type { WatchlistItem } from "@/lib/db/types";
 import { clearAllWatchlist, listWatchlist, removeFromWatchlist } from "@/lib/api/watchlist";
 import { getMediaHref } from "@/lib/utils/media";
-import { getPosterResponsiveUrls } from "@/lib/tmdb/image";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
 import { TrashIcon, XIcon } from "@/components/ui/icons";
 
 const WatchlistPage: NextPage = () => {
@@ -184,60 +183,31 @@ interface WatchlistCardProps {
 }
 
 function WatchlistCard({ item, onRemove }: WatchlistCardProps) {
-  const poster = getPosterResponsiveUrls(item.posterPath);
   const href = getMediaHref(item.mediaType, item.mediaId);
   const typeLabel = item.mediaType === "tv" ? "TV Show" : "Movie";
 
   return (
-    <div className="group relative flex flex-col">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onRemove(item);
-        }}
-        title="Remove from watchlist"
-        aria-label={`Remove ${item.title} from watchlist`}
-        className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white/70 backdrop-blur-md transition-colors duration-200 hover:text-red-400 md:invisible md:opacity-0 md:group-hover:visible md:group-hover:opacity-100"
-      >
-        <XIcon size={16} />
-      </button>
-
-      <Link href={href} aria-label={item.title} className="flex flex-col">
-        <div className="relative aspect-[2/3] w-full overflow-hidden rounded-[10px] border border-white/10 bg-surface-1 transition-all duration-200">
-          <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-[#05070a]/[0.92] via-[#05070a]/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-          {poster.mobile ? (
-            <picture>
-              {poster.desktop ? (
-                <source media="(min-width: 768px)" srcSet={poster.desktop} />
-              ) : null}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={poster.mobile}
-                alt={item.title}
-                loading="lazy"
-                decoding="async"
-                className="aspect-[2/3] h-full w-full object-cover object-top transition-transform duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06]"
-              />
-            </picture>
-          ) : (
-            <div className="flex aspect-[2/3] h-full w-full items-center justify-center p-3 text-center text-[11px] font-medium text-text-mid">
-              {item.title}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-2.5 px-0.5">
-          <h3 className="line-clamp-1 text-[13px] font-medium leading-snug text-text-hi transition-colors duration-200 group-hover:text-primary">
-            {item.title}
-          </h3>
-          <div className="mt-1 flex items-center gap-1.5 truncate text-[11px] leading-none text-text-mid">
-            <span>{typeLabel}</span>
-          </div>
-        </div>
-      </Link>
-    </div>
+    <MediaPosterCard
+      title={item.title}
+      posterPath={item.posterPath}
+      href={href}
+      subtitle={typeLabel}
+      actions={
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRemove(item);
+          }}
+          title="Remove from watchlist"
+          aria-label={`Remove ${item.title} from watchlist`}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white/70 backdrop-blur-md transition-colors duration-200 hover:text-red-400 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+        >
+          <XIcon size={16} />
+        </button>
+      }
+    />
   );
 }
 

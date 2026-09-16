@@ -5,9 +5,16 @@ interface ContentRowProps {
   action?: ReactNode;
   children: ReactNode;
   className?: string;
+  scrollerClassName?: string;
 }
 
-export function ContentRow({ title, action, children, className = "" }: ContentRowProps) {
+export function ContentRow({
+  title,
+  action,
+  children,
+  className = "",
+  scrollerClassName = "",
+}: ContentRowProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -114,7 +121,7 @@ export function ContentRow({ title, action, children, className = "" }: ContentR
           role="region"
           aria-label={typeof title === "string" ? title : "Content row"}
           onKeyDown={handleKeyDown}
-          className="no-scrollbar flex gap-2.5 overflow-x-auto overscroll-x-contain pb-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20 rounded-[10px]"
+          className={`no-scrollbar flex gap-4 overflow-x-auto overscroll-x-contain pb-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20 rounded-[10px] ${scrollerClassName}`}
         >
           {children}
         </div>

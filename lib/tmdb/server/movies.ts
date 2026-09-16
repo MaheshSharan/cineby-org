@@ -40,6 +40,7 @@ export async function getMovieDetails(id: string | number): Promise<MovieDetails
           language: defaultLanguage,
           append_to_response: MOVIE_DETAILS_APPEND,
           include_video_language: "en,null",
+          include_image_language: "en,null",
         },
       });
 

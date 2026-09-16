@@ -31,6 +31,7 @@ export async function getTvDetails(id: string | number): Promise<TvDetails> {
           language: defaultLanguage,
           append_to_response: TV_DETAILS_APPEND,
           include_video_language: "en,null",
+          include_image_language: "en,null",
         },
       });
 

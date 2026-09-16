@@ -480,3 +480,12 @@ export function PencilIcon({ className, size = 16 }: IconProps) {
     </Icon>
   );
 }
+
+export function ClockIcon({ className, size = 16 }: IconProps) {
+  return (
+    <Icon className={className} size={size} strokeWidth={2}>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </Icon>
+  );
+}

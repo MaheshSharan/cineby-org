@@ -2,7 +2,7 @@
  * Centralized TMDB Cache Policies, TTLs, and Key Builders.
  */
 
-export const TMDB_CACHE_VERSION = "v1";
+export const TMDB_CACHE_VERSION = "v3";
 
 export const TMDB_TTL_SECONDS = {
   trending: 15 * 60, // 15 minutes

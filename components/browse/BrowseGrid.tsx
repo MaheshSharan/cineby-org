@@ -202,9 +202,9 @@ export function BrowseGrid({ mediaType, genres, initialItems }: BrowseGridProps)
       {items.length === 0 && !isLoading ? (
         <p className="py-12 text-center text-sm text-text-mid">No results found.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {items.map((item) => (
-            <MovieCard key={`${item.mediaType}-${item.id}`} media={item} variant="backdrop" className="w-full" />
+            <MovieCard key={`${item.mediaType}-${item.id}`} media={item} variant="catalog" />
           ))}
         </div>
       )}

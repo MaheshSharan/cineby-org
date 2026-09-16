@@ -1,6 +1,7 @@
 import type { MediaSummary } from "@/lib/tmdb";
+import { getMediaHref, getMediaTypeLabel, getYear } from "@/lib/utils/media";
 
-import { MovieCard } from "@/components/movie/MovieCard";
+import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
 
 interface RecommendationsRowProps {
   title: string;
@@ -19,7 +20,15 @@ export function RecommendationsRow({ title, items }: RecommendationsRowProps) {
       </h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {items.map((item) => (
-          <MovieCard key={item.id} media={item} variant="grid" />
+          <MediaPosterCard
+            key={item.id}
+            title={item.title}
+            posterPath={item.posterPath}
+            href={getMediaHref(item.mediaType, item.id)}
+            rating={item.voteAverage}
+            year={getYear(item.releaseDate)}
+            typeLabel={getMediaTypeLabel(item.mediaType)}
+          />
         ))}
       </div>
     </div>

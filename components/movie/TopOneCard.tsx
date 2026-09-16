@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import type { MediaSummary } from "@/lib/tmdb";
 import { getBackdropResponsiveUrls, getLogoUrl } from "@/lib/tmdb/image";
 import { getMediaHref, getMediaTypeLabel, getYear } from "@/lib/utils/media";
-import { StarIcon } from "@/components/ui/icons";
 
 interface TopOneCardProps {
   media: MediaSummary;
@@ -117,33 +116,6 @@ export function TopOneCard({ media, className = "" }: TopOneCardProps) {
             ) : null}
           </Link>
         </div>
-
-        {/* Bottom Label below card */}
-        <Link href={href} className="block mt-2.5 px-0.5">
-          <h3 className="text-[13px] font-medium leading-snug text-text-hi line-clamp-1 transition-colors duration-200 group-hover:text-primary">
-            {media.title}
-          </h3>
-          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-text-mid leading-none truncate">
-            {media.voteAverage > 0 ? (
-              <span className="inline-flex items-center gap-1">
-                <StarIcon size={10} className="fill-primary text-primary" />
-                <span className="tabular-nums">{media.voteAverage.toFixed(1)}</span>
-              </span>
-            ) : null}
-            {year ? (
-              <>
-                <span className="text-white/20" aria-hidden="true">·</span>
-                <span className="tabular-nums">{year}</span>
-              </>
-            ) : null}
-            {typeLabel ? (
-              <>
-                <span className="text-white/20" aria-hidden="true">·</span>
-                <span>{typeLabel}</span>
-              </>
-            ) : null}
-          </div>
-        </Link>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import type { GetServerSideProps, NextPage } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 
-import { getMovieDetails, getTvDetails } from "@/lib/tmdb/server";
+import { getMovieDetails, getSeasonEpisodes, getTvDetails } from "@/lib/tmdb/server";
 import type { TvDetails } from "@/lib/tmdb";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { listHistory } from "@/lib/db/history";
@@ -68,6 +68,15 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
         season = season ?? 1;
         episode = episode ?? 1;
       }
+
+      let episodeStillPath: string | null = null;
+      try {
+        const seasonData = await getSeasonEpisodes(details.id, season);
+        const currentEp = seasonData.episodes.find((e) => e.episodeNumber === episode);
+        if (currentEp?.stillPath) {
+          episodeStillPath = currentEp.stillPath;
+        }
+      } catch {}
 
       const duration = details.episodeRunTime?.[0]
         ? formatRuntime(details.episodeRunTime[0])

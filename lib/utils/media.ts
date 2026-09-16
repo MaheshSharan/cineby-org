@@ -76,3 +76,42 @@ export function calculateResumeSeconds(
   if (totalMinutes <= 0) return 0;
   return Math.floor((totalMinutes * 60 * progress) / 100);
 }
+
+export function formatTimeLeft(
+  progressPercent: number | null | undefined,
+  durationOrMinutes: string | number | null | undefined,
+  progressSeconds?: number | null
+): string {
+  const totalMinutes =
+    typeof durationOrMinutes === "number"
+      ? durationOrMinutes
+      : parseRuntimeToMinutes(durationOrMinutes);
+
+  if (totalMinutes > 0) {
+    const totalSeconds = totalMinutes * 60;
+    const watchedSeconds =
+      progressSeconds && progressSeconds > 0
+        ? progressSeconds
+        : Math.floor((totalSeconds * (progressPercent || 0)) / 100);
+    const leftSeconds = Math.max(0, totalSeconds - watchedSeconds);
+    const leftMinutes = Math.round(leftSeconds / 60);
+
+    if (leftMinutes <= 0) return "Finished";
+    const hours = Math.floor(leftMinutes / 60);
+    const remainingMins = leftMinutes % 60;
+
+    if (hours > 0 && remainingMins > 0) {
+      return `${hours}hr ${remainingMins}m left`;
+    }
+    if (hours > 0) {
+      return `${hours}hr left`;
+    }
+    return `${remainingMins}m left`;
+  }
+
+  if (progressPercent && progressPercent > 0 && progressPercent < 100) {
+    return `${Math.round(100 - progressPercent)}% left`;
+  }
+
+  return "";
+}

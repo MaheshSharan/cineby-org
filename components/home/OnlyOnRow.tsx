@@ -159,7 +159,7 @@ export function OnlyOnRow({ initialItems }: OnlyOnRowProps) {
   return (
     <ContentRow title={customTitle} className={isLoading ? "opacity-50 transition-opacity duration-200" : "transition-opacity duration-200"}>
       {displayItems.map((item) => (
-        <MovieCard key={item.id} media={item} variant="backdrop" />
+        <MovieCard key={item.id} media={item} variant="catalog" />
       ))}
     </ContentRow>
   );

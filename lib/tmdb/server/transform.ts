@@ -155,11 +155,19 @@ export function toLogoPath(images: unknown): string | null {
   return nullableString(logos[0]?.file_path);
 }
 
+export function toLogoBackdropPath(images: unknown, fallbackBackdropPath?: string | null): string | null {
+  const backdrops = recordArray(asRecord(images)?.backdrops);
+  const englishBackdrop = backdrops.find((b) => nullableString(b.iso_639_1) === "en");
+  return nullableString(englishBackdrop?.file_path) || fallbackBackdropPath || null;
+}
+
 export function toMovieDetails(raw: Record<string, unknown>): MovieDetails {
   const mediaType: MediaType = "movie";
+  const logoBackdrop = toLogoBackdropPath(raw.images, nullableString(raw.backdrop_path));
 
   return {
     ...toMediaSummary(raw, mediaType),
+    backdropPath: logoBackdrop,
     originalTitle: nullableString(raw.original_title) ?? "",
     tagline: nullableString(raw.tagline),
     status: nullableString(raw.status),
@@ -193,9 +201,11 @@ function toSeasons(value: unknown): Season[] {
 
 export function toTvDetails(raw: Record<string, unknown>): TvDetails {
   const mediaType: MediaType = "tv";
+  const logoBackdrop = toLogoBackdropPath(raw.images, nullableString(raw.backdrop_path));
 
   return {
     ...toMediaSummary(raw, mediaType),
+    backdropPath: logoBackdrop,
     originalName: nullableString(raw.original_name) ?? "",
     tagline: nullableString(raw.tagline),
     status: nullableString(raw.status),
