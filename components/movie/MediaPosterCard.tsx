@@ -213,7 +213,7 @@ export function MediaPosterCard({
 
           {progress != null ? (
             <div className="absolute bottom-0 left-0 z-20 h-[3px] w-full bg-[#05070a]/60">
-              <div className="h-full bg-gradient-to-r from-primary to-[#ff5252]" style={{ width: `${progressValue}%` }} />
+              <div className="h-full bg-primary" style={{ width: `${progressValue}%` }} />
             </div>
           ) : null}
         </div>

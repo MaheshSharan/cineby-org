@@ -14,6 +14,23 @@ export default function Document() {
         <link rel="apple-touch-icon" href="/logo.png" />
       </Head>
       <body className="bg-background">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var raw = localStorage.getItem('cineby_settings');
+                  if (raw) {
+                    var parsed = JSON.parse(raw);
+                    if (parsed && parsed.appearance && parsed.appearance.theme) {
+                      document.documentElement.setAttribute('data-theme', parsed.appearance.theme);
+                    }
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
         <Main />
         <NextScript />
       </body>

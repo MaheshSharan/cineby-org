@@ -294,7 +294,7 @@ export function DetailPage({
         <Link
           href="/"
           aria-label="Go back"
-          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.07] text-text-hi backdrop-blur-xl transition-all duration-200 hover:border-primary/40 hover:text-accent-hi hover:scale-[1.04]"
+          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.07] text-text-hi backdrop-blur-xl transition-all duration-200 hover:border-primary/40 hover:text-primary hover:scale-[1.04]"
         >
           <ChevronLeftIcon className="h-5 w-5" />
         </Link>

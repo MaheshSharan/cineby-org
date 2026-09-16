@@ -232,8 +232,8 @@ export function QualityPopover({
                           onClick={(e) => toggleFavorite(e, group.id)}
                           className={`p-1 -m-0.5 rounded-md transition-colors flex-shrink-0 cursor-pointer ${
                             isFav
-                              ? "text-red-400 hover:bg-white/10"
-                              : "text-gray-500 hover:text-red-400 hover:bg-white/10"
+                              ? "text-primary hover:bg-white/10"
+                              : "text-gray-500 hover:text-primary hover:bg-white/10"
                           }`}
                         >
                           <svg
@@ -371,8 +371,8 @@ export function QualityPopover({
                                   onClick={(e) => toggleFavorite(e, child.id)}
                                   className={`p-1 -m-0.5 rounded-md transition-colors flex-shrink-0 cursor-pointer ${
                                     isFav
-                                      ? "text-red-400 hover:bg-white/10"
-                                      : "text-gray-500 hover:text-red-400 hover:bg-white/10"
+                                      ? "text-primary hover:bg-white/10"
+                                      : "text-gray-500 hover:text-primary hover:bg-white/10"
                                   }`}
                                 >
                                   <svg

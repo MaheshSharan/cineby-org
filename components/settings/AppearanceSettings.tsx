@@ -7,7 +7,7 @@ import { ToggleSwitch } from "@/components/settings/ToggleSwitch";
 import type { DetailViewType, EpisodeViewStyle, SiteTheme } from "@/lib/settings/types";
 
 const THEME_OPTIONS: Array<{ value: SiteTheme; label: string; color: string }> = [
-  { value: "default", label: "Default", color: "#95FF50" },
+  { value: "default", label: "Default (Red)", color: "#dc2626" },
   { value: "emerald", label: "Emerald", color: "#10b981" },
   { value: "cyan", label: "Cyan", color: "#06b6d4" },
   { value: "amber", label: "Amber", color: "#f59e0b" },

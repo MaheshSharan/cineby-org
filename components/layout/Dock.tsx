@@ -165,7 +165,7 @@ export function Dock({ onOpenSearch, onOpenAccount }: DockProps) {
         {/* Home */}
         <Link
           href="/"
-          className={`${itemBaseClass} ${isHome ? "text-white after:absolute after:-bottom-2 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-primary after:shadow-[0_0_10px_#dc2626]" : ""}`}
+          className={`${itemBaseClass} ${isHome ? "text-white after:absolute after:-bottom-2 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-primary after:shadow-[0_0_10px_var(--primary-glow)]" : ""}`}
           aria-label="Home"
           title="Home"
         >

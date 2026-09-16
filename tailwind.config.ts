@@ -73,7 +73,7 @@ const config: Config = {
         ],
       },
       boxShadow: {
-        glow: "0 0 32px #dc262659",
+        glow: "0 0 32px var(--primary-glow)",
       },
       transitionDuration: {
         fast: "120ms",

@@ -39,11 +39,17 @@ function readSettingsFromStorage(): CinebySettings {
   }
 }
 
+function applyTheme(theme: string): void {
+  if (typeof document === "undefined") return;
+  document.documentElement.setAttribute("data-theme", theme || "default");
+}
+
 function writeSettingsToStorage(settings: CinebySettings): void {
   if (typeof window === "undefined") return;
 
   try {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    applyTheme(settings.appearance.theme);
     window.dispatchEvent(new StorageEvent("storage", { key: SETTINGS_STORAGE_KEY }));
     window.dispatchEvent(new CustomEvent("cineby:settings-change", { detail: settings }));
   } catch {
@@ -56,14 +62,18 @@ export function useSettings() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    setSettings(readSettingsFromStorage());
+    const initial = readSettingsFromStorage();
+    setSettings(initial);
+    applyTheme(initial.appearance.theme);
     setIsLoaded(true);
   }, []);
 
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === SETTINGS_STORAGE_KEY) {
-        setSettings(readSettingsFromStorage());
+        const next = readSettingsFromStorage();
+        setSettings(next);
+        applyTheme(next.appearance.theme);
       }
     };
 
@@ -71,8 +81,11 @@ export function useSettings() {
       const customEvent = e as CustomEvent<CinebySettings>;
       if (customEvent.detail) {
         setSettings(customEvent.detail);
+        applyTheme(customEvent.detail.appearance.theme);
       } else {
-        setSettings(readSettingsFromStorage());
+        const next = readSettingsFromStorage();
+        setSettings(next);
+        applyTheme(next.appearance.theme);
       }
     };
 

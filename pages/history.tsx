@@ -136,7 +136,7 @@ const HistoryPage: NextPage = () => {
               <button
                 type="button"
                 onClick={() => setShowClearConfirm(true)}
-                className="inline-flex items-center gap-2 self-start rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-medium text-text-mid backdrop-blur-md transition-all duration-200 hover:border-red-500/40 hover:bg-red-500/15 hover:text-red-400 sm:self-auto"
+                className="inline-flex items-center gap-2 self-start rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-medium text-text-mid backdrop-blur-md transition-all duration-200 hover:border-primary/40 hover:bg-primary/15 hover:text-primary sm:self-auto"
               >
                 <TrashIcon size={14} />
                 <span>Clear all history</span>
@@ -179,7 +179,7 @@ const HistoryPage: NextPage = () => {
                 type="button"
                 disabled={isClearing}
                 onClick={handleClearAll}
-                className="flex-1 rounded-xl bg-red-600 py-2.5 px-4 text-sm font-medium text-white shadow-lg transition-colors hover:bg-red-700 disabled:opacity-60"
+                className="flex-1 rounded-xl bg-primary py-2.5 px-4 text-sm font-medium text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90 disabled:opacity-60"
               >
                 {isClearing ? "Clearing…" : "Clear all"}
               </button>
@@ -247,7 +247,7 @@ function HistoryCard({ entry, onRemove, onAddToWatchlist }: HistoryCardProps) {
             }}
             title="Remove from history"
             aria-label={`Remove ${entry.title} from history`}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white/70 backdrop-blur-md transition-colors duration-200 hover:text-red-400 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white/70 backdrop-blur-md transition-colors duration-200 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
           >
             <XIcon size={16} />
           </button>
