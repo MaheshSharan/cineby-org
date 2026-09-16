@@ -489,3 +489,33 @@ export function ClockIcon({ className, size = 16 }: IconProps) {
     </Icon>
   );
 }
+
+export function PaletteIcon({ className, size = 16 }: IconProps) {
+  return (
+    <Icon className={className} size={size} strokeWidth={1.8}>
+      <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+      <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+      <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+      <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z" />
+    </Icon>
+  );
+}
+
+export function CirclePlayIcon({ className, size = 16 }: IconProps) {
+  return (
+    <Icon className={className} size={size} strokeWidth={1.8}>
+      <circle cx="12" cy="12" r="10" />
+      <polygon points="10 8 16 12 10 16 10 8" />
+    </Icon>
+  );
+}
+
+export function CaptionsIcon({ className, size = 16 }: IconProps) {
+  return (
+    <Icon className={className} size={size} strokeWidth={1.8}>
+      <rect width="20" height="14" x="2" y="5" rx="2" />
+      <path d="M7 15h4M15 15h2M7 11h2M13 11h4" />
+    </Icon>
+  );
+}

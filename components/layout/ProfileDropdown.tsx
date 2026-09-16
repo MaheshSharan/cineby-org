@@ -6,9 +6,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import {
   BookmarkIcon,
   GalleryVerticalEndIcon,
-  ImageIcon,
   LogOutIcon,
   PartyPopperIcon,
+  SettingsIcon,
   UsersIcon,
 } from "@/components/ui/icons";
 
@@ -78,13 +78,6 @@ export function ProfileDropdown({
   const handleSwitchProfile = () => {
     onClose();
     router.push("/profiles");
-  };
-
-  const handleChangeAvatar = () => {
-    onClose();
-    if (onOpenAvatarModal) {
-      onOpenAvatarModal();
-    }
   };
 
   return (
@@ -187,15 +180,15 @@ export function ProfileDropdown({
                 <span>Switch profile</span>
               </button>
 
-              <button
-                type="button"
+              <Link
+                href="/settings"
+                onClick={onClose}
                 role="menuitem"
-                onClick={handleChangeAvatar}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/[0.07] transition-colors duration-150 text-left cursor-pointer"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/[0.07] transition-colors duration-150 text-left"
               >
-                <ImageIcon size={15} className="shrink-0 text-white/55" />
-                <span>Change avatar</span>
-              </button>
+                <SettingsIcon size={15} className="shrink-0 text-white/55" />
+                <span>Settings</span>
+              </Link>
             </div>
 
             <div className="mx-3 h-px bg-white/10" />
@@ -213,29 +206,45 @@ export function ProfileDropdown({
             </div>
           </>
         ) : (
-          /* Logged out: Login / Sign up buttons matching Movy */
-          <div className="flex gap-2 p-2">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                openAuthModal("login");
-              }}
-              className="flex-1 rounded-lg bg-white font-semibold text-[#0b0f14] transition-colors hover:bg-white/90 py-2 px-3 text-[12px] cursor-pointer"
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                openAuthModal("register");
-              }}
-              className="flex-1 rounded-lg border border-white/15 hover:border-white/30 font-semibold text-white/85 hover:text-white transition-colors py-2 px-3 text-[12px] cursor-pointer"
-            >
-              Sign up
-            </button>
-          </div>
+          /* Logged out: Settings + Login / Sign up buttons */
+          <>
+            <div className="p-1.5">
+              <Link
+                href="/settings"
+                onClick={onClose}
+                role="menuitem"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/[0.07] transition-colors duration-150 text-left"
+              >
+                <SettingsIcon size={15} className="shrink-0 text-white/55" />
+                <span>Settings</span>
+              </Link>
+            </div>
+
+            <div className="mx-3 h-px bg-white/10" />
+
+            <div className="flex gap-2 p-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  openAuthModal("login");
+                }}
+                className="flex-1 rounded-lg bg-white font-semibold text-[#0b0f14] transition-colors hover:bg-white/90 py-2 px-3 text-[12px] cursor-pointer"
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  openAuthModal("register");
+                }}
+                className="flex-1 rounded-lg border border-white/15 hover:border-white/30 font-semibold text-white/85 hover:text-white transition-colors py-2 px-3 text-[12px] cursor-pointer"
+              >
+                Sign up
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>

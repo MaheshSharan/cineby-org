@@ -62,6 +62,20 @@ export async function updateUserAvatar(userId: number, avatarUrl: string | null)
   await getDb().run("UPDATE users SET avatar_url = ? WHERE id = ?", [avatarUrl, userId]);
 }
 
+export async function updateUserDisplayName(userId: number, displayName: string): Promise<void> {
+  await getDb().run("UPDATE users SET display_name = ? WHERE id = ?", [displayName.trim(), userId]);
+}
+
+export async function deleteUser(userId: number): Promise<void> {
+  const db = getDb();
+  // Delete related records explicitly to guarantee cleanup across both D1 and SQLite
+  await db.run("DELETE FROM watch_history WHERE user_id = ?", [userId]);
+  await db.run("DELETE FROM watchlist WHERE user_id = ?", [userId]);
+  await db.run("DELETE FROM profiles WHERE user_id = ?", [userId]);
+  await db.run("DELETE FROM sessions WHERE user_id = ?", [userId]);
+  await db.run("DELETE FROM users WHERE id = ?", [userId]);
+}
+
 export function toPublicUser(row: UserRow): User {
   return {
     id: row.id,
