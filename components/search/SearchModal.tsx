@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { MediaSummary, MediaType } from "@/lib/tmdb";
 import { getPosterResponsiveUrls } from "@/lib/tmdb/image";
 import { getEpisodeHref, getMediaHref, getPlayHref, getYear } from "@/lib/utils/media";
+import { useSettings } from "@/hooks/useSettings";
+import { useDetailModal } from "@/components/detail/DetailModalContext";
 
 import { ChevronDownIcon, SearchIcon, StarIcon, XIcon } from "@/components/ui/icons";
 
@@ -291,6 +293,10 @@ interface SearchResultItemProps {
 }
 
 function SearchResultItem({ item, isExpanded, onToggle, onSelect }: SearchResultItemProps) {
+  const { settings } = useSettings();
+  const { openDetailModal } = useDetailModal();
+  const isModalDetail = settings.appearance.detailViewType === "modal";
+
   const { mobile } = getPosterResponsiveUrls(item.posterPath);
   const year = getYear(item.releaseDate);
   const typeLabel = item.mediaType === "tv" ? "TV Show" : "Movie";
@@ -299,6 +305,19 @@ function SearchResultItem({ item, isExpanded, onToggle, onSelect }: SearchResult
       ? getEpisodeHref(item.id, 1, 1)
       : getPlayHref(item.mediaType, item.id);
   const mediaHref = getMediaHref(item.mediaType, item.id);
+
+  const handleDetailClick = (e: React.MouseEvent) => {
+    if (isModalDetail) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+        return;
+      }
+      e.preventDefault();
+      onSelect();
+      openDetailModal({ mediaType: item.mediaType, id: item.id });
+    } else {
+      onSelect();
+    }
+  };
 
   return (
     <div className="rounded-lg transition-colors duration-150 hover:bg-white/[0.03]">
@@ -369,7 +388,7 @@ function SearchResultItem({ item, isExpanded, onToggle, onSelect }: SearchResult
             </Link>
             <Link
               href={mediaHref}
-              onClick={onSelect}
+              onClick={handleDetailClick}
               className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-3.5 py-1.5 text-[12px] font-medium text-gray-300 transition-colors hover:bg-white/[0.12]"
             >
               <svg

@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { MediaSummary } from "@/lib/tmdb";
 import { getBackdropResponsiveUrls, getPosterResponsiveUrls } from "@/lib/tmdb/image";
 import { getMediaHref, getMediaTypeLabel, getYear } from "@/lib/utils/media";
+import { useSettings } from "@/hooks/useSettings";
+import { useDetailModal } from "@/components/detail/DetailModalContext";
 
 import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
 import { StarIcon } from "@/components/ui/icons";
@@ -24,6 +26,10 @@ interface MovieCardProps {
 }
 
 export function MovieCard({ media, variant = "poster", rank, className = "" }: MovieCardProps) {
+  const { settings } = useSettings();
+  const { openDetailModal } = useDetailModal();
+  const isModalDetail = settings.appearance.detailViewType === "modal";
+
   const poster = getPosterResponsiveUrls(media.posterPath);
   const backdrop = getBackdropResponsiveUrls(media.backdropPath || media.posterPath);
   const href = getMediaHref(media.mediaType, media.id);
@@ -33,12 +39,25 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
 
   const isBackdrop = variant === "backdrop";
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (isModalDetail) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+        return;
+      }
+      e.preventDefault();
+      openDetailModal({ mediaType: media.mediaType, id: media.id });
+    }
+  };
+
   if (variant === "catalog") {
     return (
       <MediaPosterCard
         title={media.title}
         posterPath={media.posterPath}
         href={href}
+        mediaType={media.mediaType}
+        mediaId={media.id}
+        onClick={handleCardClick}
         rating={media.voteAverage}
         year={year}
         typeLabel={typeLabel}
@@ -52,6 +71,7 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
       <div className="media-card media-card-vertical w-full">
         <Link
           href={href}
+          onClick={handleCardClick}
           aria-label={media.title}
           className="block rounded-[10px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
         >

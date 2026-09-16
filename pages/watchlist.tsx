@@ -191,6 +191,8 @@ function WatchlistCard({ item, onRemove }: WatchlistCardProps) {
       title={item.title}
       posterPath={item.posterPath}
       href={href}
+      mediaType={item.mediaType}
+      mediaId={item.mediaId}
       subtitle={typeLabel}
       actions={
         <button

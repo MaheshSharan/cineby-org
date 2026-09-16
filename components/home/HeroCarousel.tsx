@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import type { MediaSummary } from "@/lib/tmdb";
 import { getBackdropResponsiveUrls, getLogoUrl } from "@/lib/tmdb/image";
 import { getEpisodeHref, getMediaHref, getPlayHref, getYear } from "@/lib/utils/media";
-
+import { useSettings } from "@/hooks/useSettings";
+import { useDetailModal } from "@/components/detail/DetailModalContext";
 
 const HERO_AUTOPLAY_MS = 6000;
 
@@ -78,6 +79,10 @@ interface HeroSlideProps {
 }
 
 function HeroSlide({ item, genreNames }: HeroSlideProps) {
+  const { settings } = useSettings();
+  const { openDetailModal } = useDetailModal();
+  const isModalDetail = settings.appearance.detailViewType === "modal";
+
   const { mobile, desktop } = getBackdropResponsiveUrls(item.backdropPath);
   const year = getYear(item.releaseDate);
   const genres = getGenreNames(item, genreNames);
@@ -86,6 +91,16 @@ function HeroSlide({ item, genreNames }: HeroSlideProps) {
       ? getEpisodeHref(item.id, 1, 1)
       : getPlayHref(item.mediaType, item.id);
   const mediaHref = getMediaHref(item.mediaType, item.id);
+
+  const handleSeeMoreClick = (e: React.MouseEvent) => {
+    if (isModalDetail) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+        return;
+      }
+      e.preventDefault();
+      openDetailModal({ mediaType: item.mediaType, id: item.id });
+    }
+  };
 
   return (
     <div className="relative h-full w-full shrink-0 bg-neo-bg">
@@ -172,7 +187,7 @@ function HeroSlide({ item, genreNames }: HeroSlideProps) {
                   <span className="hidden md:inline">Play</span>
                 </button>
               </Link>
-              <Link href={mediaHref}>
+              <Link href={mediaHref} onClick={handleSeeMoreClick}>
                 <button
                   type="button"
                   className="flex items-center justify-center gap-2 rounded-full border border-text-hi/10 px-4 py-2 font-medium tracking-tight text-text-hi transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg active:scale-[0.98] hover:border-primary/40 hover:shadow-glow md:gap-3 md:px-6 md:py-2.5"

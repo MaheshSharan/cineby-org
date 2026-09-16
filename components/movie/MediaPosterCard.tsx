@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { getBackdropResponsiveUrls, getPosterResponsiveUrls } from "@/lib/tmdb/image";
+import { useSettings } from "@/hooks/useSettings";
+import { useDetailModal } from "@/components/detail/DetailModalContext";
 
 import { ClockIcon, StarIcon } from "@/components/ui/icons";
 
@@ -12,6 +14,9 @@ interface MediaPosterCardProps {
   posterPath: string | null;
   backdropPath?: string | null;
   href: string;
+  mediaType?: "movie" | "tv";
+  mediaId?: number;
+  onClick?: (e: React.MouseEvent) => void;
   subtitle?: ReactNode;
   rating?: number;
   year?: string;
@@ -29,6 +34,9 @@ export function MediaPosterCard({
   posterPath,
   backdropPath,
   href,
+  mediaType,
+  mediaId,
+  onClick,
   subtitle,
   rating,
   year,
@@ -40,6 +48,24 @@ export function MediaPosterCard({
   mode = "poster",
   className = "",
 }: MediaPosterCardProps) {
+  const { settings } = useSettings();
+  const { openDetailModal } = useDetailModal();
+  const isModalDetail = settings.appearance.detailViewType === "modal";
+
+  const handleDetailClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      onClick(e);
+      if (e.defaultPrevented) return;
+    }
+    if (isModalDetail && mediaType && mediaId) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+        return;
+      }
+      e.preventDefault();
+      openDetailModal({ mediaType, id: mediaId });
+    }
+  };
+
   const isContinue = mode === "continue";
   const poster = getPosterResponsiveUrls(posterPath);
   const backdrop = getBackdropResponsiveUrls(backdropPath ?? posterPath);
@@ -133,6 +159,7 @@ export function MediaPosterCard({
             {infoHref ? (
               <Link
                 href={infoHref}
+                onClick={handleDetailClick}
                 aria-label={`More info for ${title}`}
                 title="More info"
                 className="ml-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-md transition-all hover:bg-white/20 active:scale-95 shrink-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
@@ -175,6 +202,7 @@ export function MediaPosterCard({
 
       <Link
         href={href}
+        onClick={handleDetailClick}
         aria-label={title}
         className="block rounded-[10px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
       >

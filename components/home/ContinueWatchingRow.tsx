@@ -38,12 +38,10 @@ export function ContinueWatchingRow() {
     };
 
     window.addEventListener("cineby:profile-change", handleProfileChange);
-    window.addEventListener("storage", handleProfileChange);
 
     return () => {
       isCurrent = false;
       window.removeEventListener("cineby:profile-change", handleProfileChange);
-      window.removeEventListener("storage", handleProfileChange);
     };
   }, [user]);
 
@@ -106,6 +104,8 @@ function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardProps) {
       backdropPath={entry.backdropPath}
       href={playHref}
       infoHref={getMediaHref(entry.mediaType, entry.mediaId)}
+      mediaType={entry.mediaType}
+      mediaId={entry.mediaId}
       subtitle={subtitle}
       progress={entry.progress}
       duration={timeLeft || (entry.duration ? `${entry.duration} left` : null)}

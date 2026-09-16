@@ -36,6 +36,8 @@ interface DetailPageProps {
   isPlaying: boolean;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
+  variant?: "page" | "modal";
+  onClose?: () => void;
 }
 
 const TRAILER_DELAY_MS = 5000;
@@ -53,7 +55,10 @@ export function DetailPage({
   isPlaying,
   seasonNumber,
   episodeNumber,
+  variant = "page",
+  onClose,
 }: DetailPageProps) {
+  const isModal = variant === "modal";
   const router = useRouter();
   const { user, openAuthModal, showToast } = useAuth();
   const [isMuted, setIsMuted] = useState(true);
@@ -289,18 +294,26 @@ export function DetailPage({
 
   return (
     <div className="relative w-full bg-neo-bg text-white">
-      {!isPageReady ? <PageLoader /> : null}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-50 px-6 py-5 md:px-8 md:py-6">
-        <Link
-          href="/"
-          aria-label="Go back"
-          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.07] text-text-hi backdrop-blur-xl transition-all duration-200 hover:border-primary/40 hover:text-primary hover:scale-[1.04]"
-        >
-          <ChevronLeftIcon className="h-5 w-5" />
-        </Link>
-      </div>
+      {!isModal && !isPageReady ? <PageLoader /> : null}
+      {!isModal ? (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-50 px-6 py-5 md:px-8 md:py-6">
+          <Link
+            href="/"
+            aria-label="Go back"
+            className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.07] text-text-hi backdrop-blur-xl transition-all duration-200 hover:border-primary/40 hover:text-primary hover:scale-[1.04]"
+          >
+            <ChevronLeftIcon className="h-5 w-5" />
+          </Link>
+        </div>
+      ) : null}
 
-      <div className="relative min-h-[60vh] w-full md:min-h-[75vh] lg:min-h-[85vh]">
+      <div
+        className={`relative w-full ${
+          isModal
+            ? "min-h-[380px] md:min-h-[460px]"
+            : "min-h-[60vh] md:min-h-[75vh] lg:min-h-[85vh]"
+        }`}
+      >
         <div className="absolute inset-0 overflow-hidden">
           {heroBackdrop ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -409,7 +422,13 @@ export function DetailPage({
           </button>
         ) : null}
 
-        <div className="relative z-10 flex min-h-[60vh] flex-col justify-end px-8 pb-12 pt-28 md:min-h-[75vh] md:px-16 md:pb-16 lg:min-h-[85vh] lg:px-24">
+        <div
+          className={`relative z-10 flex flex-col justify-end ${
+            isModal
+              ? "min-h-[380px] md:min-h-[460px] px-6 pb-8 pt-16 md:px-10 md:pb-10 md:pt-20"
+              : "min-h-[60vh] md:min-h-[75vh] lg:min-h-[85vh] px-8 pb-12 pt-28 md:px-16 md:pb-16 lg:px-24"
+          }`}
+        >
           <div
             className="w-full max-w-2xl text-left"
             onMouseEnter={() => setShowOverview(true)}
@@ -575,6 +594,7 @@ export function DetailPage({
                 return (
                   <Link
                     href={resumeHref}
+                    onClick={onClose}
                     className="flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-[13px] font-semibold text-white shadow-glow transition-all duration-200 hover:brightness-110 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 md:h-12 md:gap-3 md:px-7 md:text-[14px]"
                   >
                     <svg
@@ -599,6 +619,7 @@ export function DetailPage({
                       )
                     : getPlayHref(details.mediaType, details.id)
                 }
+                onClick={onClose}
                 className={`flex h-11 items-center justify-center rounded-full transition-all duration-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg ${
                   historyEntry
                     ? "border border-white/20 bg-white/10 text-white hover:bg-white/20 px-4 md:px-6 text-[13px] md:text-[14px]"
@@ -654,7 +675,13 @@ export function DetailPage({
         </div>
       </div>
 
-      <div className="z-[1] w-full px-8 pb-4 md:px-16 lg:px-24 lg:pb-20">
+      <div
+        className={`z-[1] w-full ${
+          isModal
+            ? "px-6 pb-8 md:px-10 md:pb-12"
+            : "px-8 pb-4 md:px-16 lg:px-24 lg:pb-20"
+        }`}
+      >
         {isTv && "seasons" in details ? (
           <EpisodesSection
             tvId={details.id}

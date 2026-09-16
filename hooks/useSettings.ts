@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { User } from "@/lib/db/types";
@@ -60,7 +69,18 @@ function writeSettingsToStorage(settings: CinebySettings): void {
   }
 }
 
-export function useSettings() {
+interface SettingsContextType {
+  settings: CinebySettings;
+  isLoaded: boolean;
+  updateAppearance: (patch: Partial<AppearanceSettings>) => void;
+  updatePlayback: (patch: Partial<PlaybackSettings>) => void;
+  updateSubtitles: (patch: Partial<SubtitlesSettings>) => void;
+  resetSettings: () => void;
+}
+
+const SettingsContext = createContext<SettingsContextType | null>(null);
+
+export function SettingsProvider({ children }: { children: ReactNode }) {
   let user: User | null = null;
   try {
     const auth = useAuth();
@@ -114,7 +134,7 @@ export function useSettings() {
     setIsLoaded(true);
   }, []);
 
-  // Sync settings from server when user logs in or loads
+  // Sync settings from server ONCE when user logs in or loads
   useEffect(() => {
     if (!user) return;
 
@@ -235,13 +255,34 @@ export function useSettings() {
     syncToServer(DEFAULT_SETTINGS);
   }, [syncToServer]);
 
-  return {
-    settings,
-    isLoaded,
-    updateAppearance,
-    updatePlayback,
-    updateSubtitles,
-    resetSettings,
-  };
+  return createElement(
+    SettingsContext.Provider,
+    {
+      value: {
+        settings,
+        isLoaded,
+        updateAppearance,
+        updatePlayback,
+        updateSubtitles,
+        resetSettings,
+      },
+    },
+    children
+  );
+}
+
+export function useSettings(): SettingsContextType {
+  const context = useContext(SettingsContext);
+  if (!context) {
+    return {
+      settings: DEFAULT_SETTINGS,
+      isLoaded: true,
+      updateAppearance: () => {},
+      updatePlayback: () => {},
+      updateSubtitles: () => {},
+      resetSettings: () => {},
+    };
+  }
+  return context;
 }
 

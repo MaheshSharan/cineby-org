@@ -25,6 +25,8 @@ export function RecommendationsRow({ title, items }: RecommendationsRowProps) {
             title={item.title}
             posterPath={item.posterPath}
             href={getMediaHref(item.mediaType, item.id)}
+            mediaType={item.mediaType}
+            mediaId={item.id}
             rating={item.voteAverage}
             year={getYear(item.releaseDate)}
             typeLabel={getMediaTypeLabel(item.mediaType)}
