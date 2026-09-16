@@ -1,5 +1,7 @@
 import Hls from "hls.js";
 
+import { createCachingLoader } from "@/lib/player/media/cachingHlsLoader";
+import type { SegmentByteCache } from "@/lib/player/media/segmentByteCache";
 import type { QualityLabel } from "../types";
 
 export interface HlsController {
@@ -26,6 +28,8 @@ function getHlsQualityCap(quality: QualityLabel | null): number {
 export interface HlsOptions {
   onLevelSwitched?: (levelHeight: number) => void;
   onError?: (error: unknown) => void;
+  cache?: SegmentByteCache;
+  mediaKey?: string;
 }
 
 export function attachHls(
@@ -44,6 +48,9 @@ export function attachHls(
     maxMaxBufferLength: 40,
     startLevel: -1,
     capLevelToPlayerSize: true,
+    ...(options?.cache && options?.mediaKey
+      ? { loader: createCachingLoader(options.cache, options.mediaKey) }
+      : {}),
   });
 
   hls.loadSource(src);

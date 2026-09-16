@@ -24,7 +24,7 @@ const LANGUAGE_OPTIONS = [
 
 export function PlaybackSettings() {
   const { settings, updatePlayback } = useSettings();
-  const { autoplay, autoSkipIntro, seekTime, autoSubtitles, preferredLanguage } = settings.playback;
+  const { autoplay, autoSkipIntro, seekTime, autoSubtitles, preferredLanguage, hoverThumbnails } = settings.playback;
 
   const [isSeekMenuOpen, setIsSeekMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -122,7 +122,7 @@ export function PlaybackSettings() {
         </div>
 
         {/* Auto Subtitles */}
-        <div className="pt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="max-w-md">
             <p className="text-[15px] font-medium text-white">Auto Subtitles</p>
             <p className="text-[13px] text-white/50 mt-0.5">
@@ -178,6 +178,21 @@ export function PlaybackSettings() {
               ariaLabel="Auto Subtitles"
             />
           </div>
+        </div>
+
+        {/* Scrubbing Preview */}
+        <div className="pt-5 flex items-center justify-between gap-4">
+          <div className="max-w-md">
+            <p className="text-[15px] font-medium text-white">Scrubbing Preview</p>
+            <p className="text-[13px] text-white/50 mt-0.5">
+              Show video thumbnail previews while hovering over the progress bar.
+            </p>
+          </div>
+          <ToggleSwitch
+            checked={hoverThumbnails}
+            onChange={(val) => updatePlayback({ hoverThumbnails: val })}
+            ariaLabel="Scrubbing Preview"
+          />
         </div>
       </div>
     </div>

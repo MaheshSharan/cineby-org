@@ -1,3 +1,4 @@
+import type { SegmentByteCache } from "@/lib/player/media/segmentByteCache";
 import type { StreamFormat } from "../types";
 import { attachDash, type DashController } from "./dash";
 import { attachHls, type HlsController } from "./hls";
@@ -8,6 +9,8 @@ export type MediaEngine = HlsController | DashController | NativeController;
 export interface MediaEngineOptions {
   onLevelSwitched?: (levelHeight: number) => void;
   onError?: (error: unknown) => void;
+  cache?: SegmentByteCache;
+  mediaKey?: string;
 }
 
 export function createMediaEngine(

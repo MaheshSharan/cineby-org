@@ -15,6 +15,7 @@ import { usePlayerControls } from "./hooks/usePlayerControls";
 import { usePlayerState } from "./hooks/usePlayerState";
 import { useSubtitles } from "./hooks/useSubtitles";
 import { useSettings } from "@/hooks/useSettings";
+import { createSegmentByteCache } from "@/lib/player/media/segmentByteCache";
 
 import { AudioSubtitlesPopover } from "./ui/AudioSubtitlesPopover";
 import { EpisodesDrawer } from "./ui/EpisodesDrawer";
@@ -283,6 +284,17 @@ export function PlayerContainer({
   ]);
 
   const router = useRouter();
+  const mediaKey = useMemo(() => {
+    if (isTv) {
+      return `${media.mediaId}:s${currentSeason}:e${currentEpisode}`;
+    }
+    return `${media.mediaId}`;
+  }, [isTv, media.mediaId, currentSeason, currentEpisode]);
+
+  const segmentByteCache = useMemo(() => {
+    return createSegmentByteCache();
+  }, [mediaKey]);
+
   const initialSeekTime = useMemo(() => {
     const rawT = router.query.t;
     if (typeof rawT === "string") {
@@ -525,6 +537,8 @@ export function PlayerContainer({
         onError: () => {
           handlePlaybackFailure();
         },
+        cache: segmentByteCache,
+        mediaKey,
       });
       mediaEngineRef.current = engine;
 
@@ -1490,6 +1504,10 @@ export function PlayerContainer({
             currentTime={playerState.currentTime}
             duration={playerState.duration}
             bufferedTime={playerState.bufferedTime}
+            src={stream.source?.url}
+            mediaKey={mediaKey}
+            cache={segmentByteCache}
+            hoverThumbnails={appSettings.playback.hoverThumbnails}
             volume={playerState.volume}
             muted={playerState.muted}
             seekTime={appSettings.playback.seekTime}

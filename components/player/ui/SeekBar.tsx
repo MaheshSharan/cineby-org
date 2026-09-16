@@ -1,9 +1,17 @@
 import { useRef, useState } from "react";
 
+import { useThumbnailPreview } from "../hooks/useThumbnailPreview";
+import { ProgressBarThumbnail } from "./ProgressBarThumbnail";
+import type { SegmentByteCache } from "@/lib/player/media/segmentByteCache";
+
 interface SeekBarProps {
   currentTime: number;
   duration: number;
   bufferedTime?: number;
+  src?: string | null;
+  mediaKey?: string;
+  cache?: SegmentByteCache | null;
+  hoverThumbnails?: boolean;
   onSeek: (time: number) => void;
 }
 
@@ -28,12 +36,23 @@ export function SeekBar({
   currentTime,
   duration,
   bufferedTime = 0,
+  src,
+  mediaKey = "",
+  cache,
+  hoverThumbnails = false,
   onSeek,
 }: SeekBarProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [dragTime, setDragTime] = useState<number | null>(null);
+
+  const { requestFrame } = useThumbnailPreview({
+    src: src ?? null,
+    mediaKey,
+    cache: cache ?? null,
+    enabled: Boolean(hoverThumbnails && src && mediaKey && cache),
+  });
 
   const activeTime = dragTime !== null ? dragTime : currentTime;
   const progress = duration > 0 ? Math.min(100, (activeTime / duration) * 100) : 0;
@@ -152,6 +171,15 @@ export function SeekBar({
       aria-valuetext={`${formatTime(activeTime)} of ${formatTime(duration)}`}
       tabIndex={0}
     >
+      {/* Hover Thumbnail Preview (Gated by settings) */}
+      {hoverThumbnails && hoverTime !== null && duration > 0 && (
+        <ProgressBarThumbnail
+          hoverTime={hoverTime}
+          hoverProgress={hoverProgress}
+          requestFrame={requestFrame}
+        />
+      )}
+
       {/* Hover Time Tooltip (Seek Preview) */}
       {hoverTime !== null && duration > 0 && (
         <div

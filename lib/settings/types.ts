@@ -19,6 +19,7 @@ export interface PlaybackSettings {
   seekTime: number; // 5, 10, 15, 30 seconds
   autoSubtitles: boolean;
   preferredLanguage: string;
+  hoverThumbnails: boolean;
 }
 
 export interface SubtitlesSettings {
@@ -48,6 +49,7 @@ export const DEFAULT_SETTINGS: CinebySettings = {
     seekTime: 10,
     autoSubtitles: true,
     preferredLanguage: "en",
+    hoverThumbnails: false,
   },
   subtitles: {
     font: "cineby",
@@ -79,6 +81,7 @@ export function toApiSettingsResponse(settings: CinebySettings): Record<string, 
     autoSkipIntro: settings.playback.autoSkipIntro,
     seekTime: settings.playback.seekTime,
     autoSubtitles: settings.playback.autoSubtitles,
+    hoverThumbnails: settings.playback.hoverThumbnails,
     defaultSubtitleLanguage: settings.playback.preferredLanguage,
     preferredLanguage: settings.playback.preferredLanguage,
     subtitleFont: settings.subtitles.font,
@@ -217,6 +220,13 @@ export function normalizeApiSettings(payload: unknown): CinebySettings {
     ? raw.subtitleBackground
     : DEFAULT_SETTINGS.subtitles.backgroundBlur;
 
+  // Hover thumbnails
+  const hoverThumbnails = typeof rawPlayback.hoverThumbnails === "boolean"
+    ? rawPlayback.hoverThumbnails
+    : typeof raw.hoverThumbnails === "boolean"
+    ? raw.hoverThumbnails
+    : DEFAULT_SETTINGS.playback.hoverThumbnails;
+
   return {
     appearance: {
       theme,
@@ -231,6 +241,7 @@ export function normalizeApiSettings(payload: unknown): CinebySettings {
       seekTime,
       autoSubtitles,
       preferredLanguage,
+      hoverThumbnails,
     },
     subtitles: {
       font,

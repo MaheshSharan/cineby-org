@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { SeekBar } from "./SeekBar";
 import { TimeDisplay } from "./TimeDisplay";
 import { VolumeControl } from "./VolumeControl";
+import type { SegmentByteCache } from "@/lib/player/media/segmentByteCache";
 
 interface PlayerControlsProps {
   visible: boolean;
@@ -10,6 +11,10 @@ interface PlayerControlsProps {
   currentTime: number;
   duration: number;
   bufferedTime?: number;
+  src?: string | null;
+  mediaKey?: string;
+  cache?: SegmentByteCache | null;
+  hoverThumbnails?: boolean;
   volume: number;
   muted: boolean;
   seekTime?: number;
@@ -28,6 +33,10 @@ export function PlayerControls({
   currentTime,
   duration,
   bufferedTime = 0,
+  src,
+  mediaKey,
+  cache,
+  hoverThumbnails,
   volume,
   muted,
   seekTime = 10,
@@ -55,6 +64,10 @@ export function PlayerControls({
                 currentTime={currentTime}
                 duration={duration}
                 bufferedTime={bufferedTime}
+                src={src}
+                mediaKey={mediaKey}
+                cache={cache}
+                hoverThumbnails={hoverThumbnails}
                 onSeek={onSeek}
               />
             </div>
