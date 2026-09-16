@@ -138,7 +138,7 @@ function HeroSlide({ item, genreNames }: HeroSlideProps) {
       <div className="absolute inset-0 z-[3] flex items-end pb-20">
         <div className="layout-container w-full">
           <div className="max-w-2xl translate-y-6">
-            {item.logoPath ? (
+            {item.logoPath && settings.appearance.useImageLogos ? (
               <div className="mb-4 max-w-[280px] sm:max-w-[340px] md:max-w-[420px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

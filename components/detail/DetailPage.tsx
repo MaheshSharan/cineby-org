@@ -15,6 +15,7 @@ import { calculateResumeSeconds, getEpisodeHref, getMediaHref, getPlayHref, getY
 import { getMovyRatings, getMovyTrailerUrl, type MovyRatings } from "@/lib/services/movy";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useSettings } from "@/hooks/useSettings";
 import { CastRow } from "@/components/detail/CastRow";
 import { EpisodesSection } from "@/components/detail/EpisodesSection";
 import { RecommendationsRow } from "@/components/detail/RecommendationsRow";
@@ -61,6 +62,7 @@ export function DetailPage({
   const isModal = variant === "modal";
   const router = useRouter();
   const { user, openAuthModal, showToast } = useAuth();
+  const { settings } = useSettings();
   const [isMuted, setIsMuted] = useState(true);
   const [inWatchlist, setInWatchlist] = useState(false);
   const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
@@ -434,7 +436,7 @@ export function DetailPage({
             onMouseEnter={() => setShowOverview(true)}
             onMouseLeave={() => setShowOverview(false)}
           >
-            {details.logoPath ? (
+            {details.logoPath && settings.appearance.useImageLogos ? (
               <div className="mb-4 max-w-[280px] sm:max-w-[340px] md:max-w-[420px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
