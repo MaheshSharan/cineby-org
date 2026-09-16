@@ -73,6 +73,7 @@ export async function deleteUser(userId: number): Promise<void> {
   await db.run("DELETE FROM watchlist WHERE user_id = ?", [userId]);
   await db.run("DELETE FROM profiles WHERE user_id = ?", [userId]);
   await db.run("DELETE FROM sessions WHERE user_id = ?", [userId]);
+  await db.run("DELETE FROM user_settings WHERE user_id = ?", [userId]);
   await db.run("DELETE FROM users WHERE id = ?", [userId]);
 }
 
