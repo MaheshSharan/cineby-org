@@ -13,6 +13,7 @@ export interface UsePlayerStateResult {
   isEnded: boolean;
   currentTime: number;
   duration: number;
+  bufferedTime: number;
   volume: number;
   muted: boolean;
   rate: PlaybackRate;
@@ -38,6 +39,7 @@ export function usePlayerState({
   const [isEnded, setIsEnded] = useState(false);
   const [currentTime, setCurrentTime] = useState(initialSeekTime);
   const [duration, setDuration] = useState(0);
+  const [bufferedTime, setBufferedTime] = useState(0);
   const [volume, setVolumeState] = useState(0.8);
   const [muted, setMuted] = useState(false);
   const [rate, setRateState] = useState<PlaybackRate>(1);
@@ -53,7 +55,7 @@ export function usePlayerState({
       if (!element) return;
 
       const now = performance.now();
-      // Throttle timeupdate event dispatch to ~250ms (4 times per second) unless forced (pause/seek/ended)
+      // Throttle timeupdate event dispatch to ~250ms (4 times per second) unless forced (pause/seek/ended/progress)
       if (!force && now - lastTimeUpdateRef.current < 250) {
         return;
       }
@@ -65,6 +67,29 @@ export function usePlayerState({
       const dur = element.duration;
       if (Number.isFinite(dur) && dur > 0) {
         setDuration((prev) => (prev !== dur ? dur : prev));
+      }
+
+      const b = element.buffered;
+      if (b && b.length > 0) {
+        let end = 0;
+        for (let i = 0; i < b.length; i++) {
+          if (b.start(i) <= time && time <= b.end(i)) {
+            end = b.end(i);
+            break;
+          }
+        }
+        if (end === 0) {
+          for (let i = 0; i < b.length; i++) {
+            if (b.end(i) >= time) {
+              end = b.end(i);
+              break;
+            }
+          }
+          if (end === 0) {
+            end = b.end(b.length - 1);
+          }
+        }
+        setBufferedTime(end);
       }
     },
     [videoRef]
@@ -106,6 +131,7 @@ export function usePlayerState({
       syncFromVideo(true);
     };
     const onTimeUpdate = () => syncFromVideo(false);
+    const onProgress = () => syncFromVideo(true);
 
     element.addEventListener("play", onPlay);
     element.addEventListener("pause", onPause);
@@ -116,6 +142,7 @@ export function usePlayerState({
     element.addEventListener("loadeddata", onPlayable);
     element.addEventListener("seeked", onSeeked);
     element.addEventListener("timeupdate", onTimeUpdate);
+    element.addEventListener("progress", onProgress);
     element.addEventListener("loadedmetadata", handleLoadedMetadata);
 
     return () => {
@@ -128,6 +155,7 @@ export function usePlayerState({
       element.removeEventListener("loadeddata", onPlayable);
       element.removeEventListener("seeked", onSeeked);
       element.removeEventListener("timeupdate", onTimeUpdate);
+      element.removeEventListener("progress", onProgress);
       element.removeEventListener("loadedmetadata", handleLoadedMetadata);
     };
   }, [initialSeekTime, syncFromVideo, videoRef]);
@@ -205,6 +233,7 @@ export function usePlayerState({
     isEnded,
     currentTime,
     duration,
+    bufferedTime,
     volume,
     muted,
     rate,

@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 interface SeekBarProps {
   currentTime: number;
   duration: number;
+  bufferedTime?: number;
   onSeek: (time: number) => void;
 }
 
@@ -23,7 +24,12 @@ function formatTime(seconds: number): string {
   return `${minutes}:${String(secs).padStart(2, "0")}`;
 }
 
-export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
+export function SeekBar({
+  currentTime,
+  duration,
+  bufferedTime = 0,
+  onSeek,
+}: SeekBarProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
@@ -32,6 +38,8 @@ export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
   const activeTime = dragTime !== null ? dragTime : currentTime;
   const progress = duration > 0 ? Math.min(100, (activeTime / duration) * 100) : 0;
   const hoverProgress = hoverTime !== null && duration > 0 ? (hoverTime / duration) * 100 : 0;
+  const bufferedProgress =
+    duration > 0 && bufferedTime > 0 ? Math.min(100, (bufferedTime / duration) * 100) : 0;
 
   const getTimeFromEvent = (clientX: number): number => {
     const track = trackRef.current;
@@ -144,23 +152,47 @@ export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
       aria-valuetext={`${formatTime(activeTime)} of ${formatTime(duration)}`}
       tabIndex={0}
     >
+      {/* Hover Time Tooltip (Seek Preview) */}
+      {hoverTime !== null && duration > 0 && (
+        <div
+          className="pointer-events-none absolute -top-3 -translate-y-full -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/75 px-2.5 py-1 text-xs font-medium tracking-wide text-white shadow-xl backdrop-blur-xl z-40"
+          style={{
+            left: `clamp(30px, ${hoverProgress}%, calc(100% - 30px))`,
+          }}
+        >
+          {formatTime(hoverTime)}
+        </div>
+      )}
+
       <div className="absolute inset-y-0 left-0 right-0 flex items-center">
         <div className="relative h-[3px] w-full overflow-visible rounded-full transition-all duration-150 group-hover:h-[5px]">
           <div className="relative h-full w-full">
-            <div className="absolute inset-0 rounded-full bg-white/25 transition-colors duration-150 group-hover:bg-white/30" />
+            {/* Background base track */}
+            <div className="absolute inset-0 rounded-full bg-white/20 transition-colors duration-150 group-hover:bg-white/25" />
 
+            {/* Buffer / Loaded progress bar (preloaded segments) */}
+            {bufferedProgress > 0 ? (
+              <div
+                className="absolute left-0 top-0 h-full rounded-full bg-white/40 pointer-events-none transition-[width] duration-150"
+                style={{ width: `${bufferedProgress}%` }}
+              />
+            ) : null}
+
+            {/* Hover preview highlight up to cursor */}
             {hoverProgress > 0 ? (
               <div
-                className="absolute inset-0 rounded-full bg-white/15"
+                className="absolute left-0 top-0 h-full rounded-full bg-white/15 pointer-events-none"
                 style={{ width: `${hoverProgress}%` }}
               />
             ) : null}
 
+            {/* Primary playback progress fill */}
             <div
-              className="absolute left-0 top-0 h-full rounded-full bg-primary transition-none"
+              className="absolute left-0 top-0 h-full rounded-full bg-primary transition-none z-10 pointer-events-none"
               style={{ width: `${progress}%` }}
             >
-              <div className="absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 translate-x-1/2 rounded-full bg-white shadow-md" />
+              {/* Scrubber thumb circle */}
+              <div className="absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 translate-x-1/2 rounded-full bg-white shadow-lg pointer-events-none scale-0 transition-transform duration-100 group-hover:scale-100" />
             </div>
           </div>
         </div>
@@ -168,3 +200,4 @@ export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
     </div>
   );
 }
+

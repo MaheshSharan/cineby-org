@@ -1489,6 +1489,7 @@ export function PlayerContainer({
             isPlaying={playerState.isPlaying}
             currentTime={playerState.currentTime}
             duration={playerState.duration}
+            bufferedTime={playerState.bufferedTime}
             volume={playerState.volume}
             muted={playerState.muted}
             seekTime={appSettings.playback.seekTime}

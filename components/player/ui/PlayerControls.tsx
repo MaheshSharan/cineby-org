@@ -9,6 +9,7 @@ interface PlayerControlsProps {
   isPlaying: boolean;
   currentTime: number;
   duration: number;
+  bufferedTime?: number;
   volume: number;
   muted: boolean;
   seekTime?: number;
@@ -26,6 +27,7 @@ export function PlayerControls({
   isPlaying,
   currentTime,
   duration,
+  bufferedTime = 0,
   volume,
   muted,
   seekTime = 10,
@@ -52,6 +54,7 @@ export function PlayerControls({
               <SeekBar
                 currentTime={currentTime}
                 duration={duration}
+                bufferedTime={bufferedTime}
                 onSeek={onSeek}
               />
             </div>
