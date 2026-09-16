@@ -99,8 +99,8 @@ export function AppearanceSettings() {
           </div>
           <SegmentedPill<EpisodeViewStyle>
             options={[
+              { label: "Vertical", value: "vertical" },
               { label: "Carousel", value: "carousel" },
-              { label: "Grid", value: "grid" },
             ]}
             value={episodeViewStyle}
             onChange={(val) => updateAppearance({ episodeViewStyle: val })}

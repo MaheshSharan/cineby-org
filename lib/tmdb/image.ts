@@ -45,6 +45,12 @@ export function getStillThumbUrl(path: string | null | undefined): string | null
   return tmdbUrl ? optimizeImageUrl(tmdbUrl, 50) : null;
 }
 
+export function getSeasonPosterThumbUrl(path: string | null | undefined): string | null {
+  const tmdbUrl = buildImageUrl(path, "w154");
+
+  return tmdbUrl ? optimizeImageUrl(tmdbUrl, 60) : null;
+}
+
 function optimizeImageUrl(rawUrl: string, quality: number): string {
   if (!isImageProxyEnabled()) {
     return rawUrl;

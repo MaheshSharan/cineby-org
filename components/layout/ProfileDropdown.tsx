@@ -15,7 +15,6 @@ import {
 interface ProfileDropdownProps {
   open: boolean;
   onClose: () => void;
-  onOpenAvatarModal?: () => void;
   profileAvatarUrl?: string;
   profileName?: string;
   placement?: "top" | "bottom";
@@ -25,7 +24,6 @@ interface ProfileDropdownProps {
 export function ProfileDropdown({
   open,
   onClose,
-  onOpenAvatarModal,
   profileAvatarUrl,
   profileName,
   placement = "bottom",

@@ -1,4 +1,4 @@
-import type { MediaSegment, SegmentFetchParams, SegmentType } from "./types";
+import type { MediaSegment, SegmentFetchParams } from "./types";
 
 interface SkipDbSegmentRaw {
   start_ms: number;

@@ -1,5 +1,5 @@
 export type SiteTheme = "default" | "emerald" | "cyan" | "amber" | "rose" | "purple";
-export type EpisodeViewStyle = "carousel" | "grid";
+export type EpisodeViewStyle = "carousel" | "vertical";
 export type DetailViewType = "page" | "modal";
 
 export type SubtitleFont = "cineby" | "netflix" | "montserrat";
@@ -37,7 +37,7 @@ export interface CinebySettings {
 export const DEFAULT_SETTINGS: CinebySettings = {
   appearance: {
     theme: "default",
-    episodeViewStyle: "carousel",
+    episodeViewStyle: "vertical",
     detailViewType: "page",
     useImageLogos: true,
     trailers: true,
@@ -58,7 +58,6 @@ export const DEFAULT_SETTINGS: CinebySettings = {
 };
 
 const VALID_THEMES: readonly SiteTheme[] = ["default", "emerald", "cyan", "amber", "rose", "purple"];
-const VALID_EPISODE_STYLES: readonly EpisodeViewStyle[] = ["carousel", "grid"];
 const VALID_DETAIL_VIEWS: readonly DetailViewType[] = ["page", "modal"];
 const VALID_FONTS: readonly SubtitleFont[] = ["cineby", "netflix", "montserrat"];
 const VALID_COLORS: readonly SubtitleColor[] = ["white", "yellow", "cyan", "magenta"];
@@ -71,7 +70,7 @@ export function toApiSettingsResponse(settings: CinebySettings): Record<string, 
   return {
     // Cinejoy flat compatibility
     theme: settings.appearance.theme,
-    episodeViewStyle: settings.appearance.episodeViewStyle === "carousel" ? "default" : settings.appearance.episodeViewStyle,
+    episodeViewStyle: settings.appearance.episodeViewStyle,
     detailViewType: settings.appearance.detailViewType,
     useImageLogos: settings.appearance.useImageLogos,
     trailersEnabled: settings.appearance.trailers,
@@ -116,13 +115,17 @@ export function normalizeApiSettings(payload: unknown): CinebySettings {
     ? (themeCandidate as SiteTheme)
     : DEFAULT_SETTINGS.appearance.theme;
 
-  // Episode view style: "default" in Cinejoy maps to "carousel" in Cineby
+  // Episode view style: "vertical" is default, "carousel" is horizontal row
   const episodeStyleCandidate = (rawAppearance.episodeViewStyle ?? raw.episodeViewStyle) as string | undefined;
   let episodeViewStyle: EpisodeViewStyle = DEFAULT_SETTINGS.appearance.episodeViewStyle;
-  if (episodeStyleCandidate === "default" || episodeStyleCandidate === "carousel") {
+  if (episodeStyleCandidate === "carousel") {
     episodeViewStyle = "carousel";
-  } else if (episodeStyleCandidate === "grid") {
-    episodeViewStyle = "grid";
+  } else if (
+    episodeStyleCandidate === "vertical" ||
+    episodeStyleCandidate === "grid" ||
+    episodeStyleCandidate === "default"
+  ) {
+    episodeViewStyle = "vertical";
   }
 
   // Detail view type
