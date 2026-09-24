@@ -282,14 +282,24 @@ const BROWSER_FETCH_M3U8_HOSTS = [
   "peakstorm.top",
   "moon.peakstorm",
   "sun.peakstorm",
+  "quietridge.top",
+  "moon.quietridge",
   "rockyember.top",
   "fastportal.top",
+  "solidmoon.top",
+  "echogate",
   "mirrowcelo002.workers.dev",
   "vidy.st",
+  "vidking.net",
+  "speedracelight.com",
 ];
 
 function needsBrowserM3u8Fetch(url: string): boolean {
-  return BROWSER_FETCH_M3U8_HOSTS.some((host) => url.includes(host));
+  if (!url) return false;
+  return (
+    BROWSER_FETCH_M3U8_HOSTS.some((host) => url.includes(host)) ||
+    /\.(top|workers\.dev)\//i.test(url)
+  );
 }
 
 /**

@@ -104,9 +104,18 @@ export default async function handler(
     try {
       const fetcherBase = getM3u8FetcherUrl().replace(/\/+$/, "");
       let fetchUrl = targetUrl;
+      const isVidyStream =
+        targetUrl.includes("vidy") ||
+        targetUrl.includes("quietridge") ||
+        targetUrl.includes("rockyember") ||
+        targetUrl.includes("wecollege");
+
+      const defaultReferer = isVidyStream ? "https://www.vidy.st/" : "https://www.vidking.net/";
+      const defaultOrigin = isVidyStream ? "https://www.vidy.st" : "https://www.vidking.net";
+
       const fetchHeaders: Record<string, string> = {
-        Referer: headers["Referer"] ?? "https://www.vidking.net/",
-        Origin: headers["Origin"] ?? "https://www.vidking.net",
+        Referer: headers["Referer"] ?? defaultReferer,
+        Origin: headers["Origin"] ?? defaultOrigin,
         "User-Agent": headers["User-Agent"] ?? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         Accept: "*/*",
       };
@@ -170,9 +179,16 @@ export default async function handler(
     return urlOrPath;
   };
 
+  const fallbackUrl = baseUrl ?? targetUrl ?? "";
+  const isVidyProxy =
+    fallbackUrl.includes("vidy") ||
+    fallbackUrl.includes("quietridge") ||
+    fallbackUrl.includes("rockyember") ||
+    fallbackUrl.includes("wecollege");
+
   const proxyHeaders: Record<string, string> = {
-    Referer: headers["Referer"] ?? "https://www.vidking.net/",
-    Origin: headers["Origin"] ?? "https://www.vidking.net",
+    Referer: headers["Referer"] ?? (isVidyProxy ? "https://www.vidy.st/" : "https://www.vidking.net/"),
+    Origin: headers["Origin"] ?? (isVidyProxy ? "https://www.vidy.st" : "https://www.vidking.net"),
   };
 
   const lines = m3u8Text.split("\n");
