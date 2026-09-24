@@ -284,6 +284,8 @@ const BROWSER_FETCH_M3U8_HOSTS = [
   "sun.peakstorm",
   "quietridge.top",
   "moon.quietridge",
+  "stillhaven.top",
+  "sun.stillhaven",
   "rockyember.top",
   "fastportal.top",
   "solidmoon.top",

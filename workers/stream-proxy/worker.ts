@@ -204,7 +204,12 @@ export default {
     const customHeaders = descriptor.headers;
     const isVidking =
       rawTargetUrl.includes("vidking") ||
-      rawTargetUrl.includes("speedracelight");
+      rawTargetUrl.includes("speedracelight") ||
+      rawTargetUrl.includes("stillhaven") ||
+      rawTargetUrl.includes("peakstorm") ||
+      rawTargetUrl.includes("fastportal") ||
+      rawTargetUrl.includes("solidmoon") ||
+      rawTargetUrl.includes("echogate");
 
     const isVidy =
       rawTargetUrl.includes("vidy.st") ||

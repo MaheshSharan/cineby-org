@@ -184,6 +184,7 @@ async function scrapeServer(
         url: s.url as string,
         type: s.type === "mp4" ? "mp4" : s.type === "dash" ? "dash" : "hls",
         quality: parseQuality(s.quality),
+        direct: true,
         headers: {
           Referer: "https://www.vidking.net/",
           Origin: "https://www.vidking.net",
