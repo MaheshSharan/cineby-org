@@ -204,19 +204,25 @@ export default {
     const customHeaders = descriptor.headers;
     const isVidking =
       rawTargetUrl.includes("vidking") ||
-      rawTargetUrl.includes("peakstorm") ||
-      rawTargetUrl.includes("fastportal") ||
-      rawTargetUrl.includes("solidmoon") ||
-      rawTargetUrl.includes("echogate") ||
       rawTargetUrl.includes("speedracelight");
+
+    const isVidy =
+      rawTargetUrl.includes("vidy.st") ||
+      rawTargetUrl.includes("wecollege.net") ||
+      rawTargetUrl.includes("quietridge") ||
+      rawTargetUrl.includes("rockyember");
 
     const defaultReferer = isVidking
       ? "https://www.vidking.net/"
+      : isVidy
+      ? "https://www.vidy.st/"
       : rawTargetUrl.includes("vixsrc")
       ? "https://vixsrc.to"
       : "https://www.vidy.st/";
     const defaultOrigin = isVidking
       ? "https://www.vidking.net"
+      : isVidy
+      ? "https://www.vidy.st"
       : rawTargetUrl.includes("vixsrc")
       ? "https://vixsrc.to"
       : "https://www.vidy.st";
