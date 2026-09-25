@@ -12,6 +12,9 @@ export interface DiscoverOptions {
   sortBy?: string;
   page?: number;
   year?: number;
+  voteCountGte?: number;
+  voteAverageGte?: number;
+  withKeywords?: string;
 }
 
 export async function discoverMovies(options: DiscoverOptions = {}): Promise<Paginated<MediaSummary>> {
@@ -27,7 +30,7 @@ async function discover(
   mediaType: MediaType,
   options: DiscoverOptions
 ): Promise<Paginated<MediaSummary>> {
-  const queryStr = `g${options.genreId ?? 0}_p${options.providerId ?? 0}_s${options.sortBy ?? "pop"}_pg${options.page ?? 1}_y${options.year ?? 0}`;
+  const queryStr = `g${options.genreId ?? 0}_p${options.providerId ?? 0}_s${options.sortBy ?? "pop"}_pg${options.page ?? 1}_y${options.year ?? 0}_vc${options.voteCountGte ?? 0}_va${options.voteAverageGte ?? 0}_k${options.withKeywords ?? ""}`;
 
   return cachedFetch({
     key: tmdbCacheKeys.discover(mediaType, queryStr),
@@ -44,8 +47,11 @@ async function discover(
           page: options.page ?? 1,
           with_genres: options.genreId,
           with_watch_providers: options.providerId,
-          watch_region: options.providerId ? (options.watchRegion ?? "IN") : undefined,
+          watch_region: options.providerId ? (options.watchRegion ?? "US") : undefined,
           year: options.year,
+          "vote_count.gte": options.voteCountGte,
+          "vote_average.gte": options.voteAverageGte,
+          with_keywords: options.withKeywords,
         },
       });
 

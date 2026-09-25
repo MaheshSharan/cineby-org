@@ -1,14 +1,19 @@
 import type {
+  MediaSummary,
+  Paginated,
   SeasonEpisodes,
   TvDetails,
 } from "../types";
 import { tmdbGet } from "./client";
 import { getTmdbConfig } from "./config";
 import {
+  toMediaSummary,
+  toPaginated,
   toSeasonEpisodes,
   toTvDetails,
 } from "./transform";
 import {
+  validatePaginatedResponse,
   validateSeasonEpisodes,
   validateTvDetails,
 } from "./validate";
@@ -57,6 +62,46 @@ export async function getSeasonEpisodes(
       });
 
       return toSeasonEpisodes(validateSeasonEpisodes(raw));
+    },
+  });
+}
+
+export async function getPopularTv(page = 1): Promise<Paginated<MediaSummary>> {
+  return cachedFetch({
+    key: tmdbCacheKeys.popularTv(page),
+    ttlSeconds: TMDB_TTL_SECONDS.discover,
+    staleSeconds: TMDB_STALE_SECONDS.discover,
+    fetcher: async () => {
+      const { defaultLanguage } = getTmdbConfig();
+
+      const raw = await tmdbGet<unknown>({
+        path: "/tv/popular",
+        params: { language: defaultLanguage, page },
+      });
+
+      const { results, totalPages, totalResults } = validatePaginatedResponse(raw);
+
+      return toPaginated(results, page, totalPages, totalResults, (item) => toMediaSummary(item, "tv"));
+    },
+  });
+}
+
+export async function getTopRatedTv(page = 1): Promise<Paginated<MediaSummary>> {
+  return cachedFetch({
+    key: tmdbCacheKeys.topRatedTv(page),
+    ttlSeconds: TMDB_TTL_SECONDS.discover,
+    staleSeconds: TMDB_STALE_SECONDS.discover,
+    fetcher: async () => {
+      const { defaultLanguage } = getTmdbConfig();
+
+      const raw = await tmdbGet<unknown>({
+        path: "/tv/top_rated",
+        params: { language: defaultLanguage, page },
+      });
+
+      const { results, totalPages, totalResults } = validatePaginatedResponse(raw);
+
+      return toPaginated(results, page, totalPages, totalResults, (item) => toMediaSummary(item, "tv"));
     },
   });
 }
