@@ -1,4 +1,5 @@
-import type { MediaType } from "@/lib/tmdb";
+import type { PlayerSeason } from "@/components/player/types";
+import type { MediaType, Season } from "@/lib/tmdb";
 
 export function getYear(dateString: string | null): string {
   if (!dateString) {
@@ -114,4 +115,28 @@ export function formatTimeLeft(
   }
 
   return "";
+}
+
+export function toPlayerSeasons(
+  seasons?: readonly (Season | PlayerSeason)[] | null
+): PlayerSeason[] {
+  if (!Array.isArray(seasons)) return [];
+  return seasons
+    .filter(
+      (season): season is Season | PlayerSeason =>
+        Boolean(
+          season &&
+          typeof season.seasonNumber === "number" &&
+          season.seasonNumber > 0 &&
+          typeof season.episodeCount === "number" &&
+          season.episodeCount > 0
+        )
+    )
+    .map((season) => ({
+      seasonNumber: season.seasonNumber,
+      name: season.name?.trim() || `Season ${season.seasonNumber}`,
+      episodeCount: season.episodeCount,
+      overview: season.overview ?? "",
+    }))
+    .sort((a, b) => a.seasonNumber - b.seasonNumber);
 }

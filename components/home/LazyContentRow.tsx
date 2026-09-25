@@ -63,7 +63,7 @@ export function LazyContentRow({
               />
             ))
           : items.map((item) => (
-              <MovieCard key={item.id} media={item} variant="catalog" />
+              <MovieCard key={`${item.mediaType || "media"}-${item.id}`} media={item} variant="catalog" />
             ))}
       </ContentRow>
     </div>

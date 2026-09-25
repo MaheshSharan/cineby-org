@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/router";
 import type { MovieDetails, TvDetails } from "@/lib/tmdb";
 
@@ -33,7 +33,7 @@ export function DetailModalProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const closeDetailModal = () => {
+  const closeDetailModal = useCallback(() => {
     abortControllerRef.current?.abort();
     setIsOpen(false);
     setMediaType(null);
@@ -41,9 +41,9 @@ export function DetailModalProvider({ children }: { children: ReactNode }) {
     setDetails(null);
     setError(null);
     setIsLoading(false);
-  };
+  }, []);
 
-  const openDetailModal = ({ mediaType: type, id }: OpenModalParams) => {
+  const openDetailModal = useCallback(({ mediaType: type, id }: OpenModalParams) => {
     abortControllerRef.current?.abort();
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -73,7 +73,7 @@ export function DetailModalProvider({ children }: { children: ReactNode }) {
         setError(err instanceof Error ? err.message : "Failed to load details");
         setIsLoading(false);
       });
-  };
+  }, []);
 
   useEffect(() => {
     const handleRouteChange = () => {
@@ -85,21 +85,33 @@ export function DetailModalProvider({ children }: { children: ReactNode }) {
     return () => {
       router.events.off("routeChangeStart", handleRouteChange);
     };
-  }, [router]);
+  }, [router, closeDetailModal]);
+
+  const contextValue = useMemo<DetailModalContextType>(
+    () => ({
+      isOpen,
+      mediaType,
+      mediaId,
+      details,
+      isLoading,
+      error,
+      openDetailModal,
+      closeDetailModal,
+    }),
+    [
+      isOpen,
+      mediaType,
+      mediaId,
+      details,
+      isLoading,
+      error,
+      openDetailModal,
+      closeDetailModal,
+    ]
+  );
 
   return (
-    <DetailModalContext.Provider
-      value={{
-        isOpen,
-        mediaType,
-        mediaId,
-        details,
-        isLoading,
-        error,
-        openDetailModal,
-        closeDetailModal,
-      }}
-    >
+    <DetailModalContext.Provider value={contextValue}>
       {children}
     </DetailModalContext.Provider>
   );

@@ -11,9 +11,90 @@
  */
 
 export interface Env {
-  STREAM_PROXY_SECRET: string;
-  STREAM_PROXY_ALLOWED_HOSTS?: string;
+  STREAM_PROXY_SECRET?: string;
   CORS_ALLOWED_ORIGINS?: string;
+  ENVIRONMENT?: string;
+}
+
+function isPrivateIpv4(ip: string): boolean {
+  const parts = ip.split(".").map((p) => parseInt(p, 10));
+  if (parts.length !== 4 || parts.some((p) => isNaN(p) || p < 0 || p > 255)) {
+    return true;
+  }
+  const [a, b] = parts;
+  if (a === 0) return true;
+  if (a === 10) return true;
+  if (a === 127) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  if (a === 192 && b === 0 && parts[2] === 0) return true;
+  if (a === 198 && (b === 18 || b === 19)) return true;
+  if (a >= 224) return true;
+  return false;
+}
+
+function isPrivateHost(hostname: string): boolean {
+  let host = hostname.toLowerCase().trim();
+
+  // Strip wrapping brackets (for IPv6 literals like [::1])
+  if (host.startsWith("[") && host.includes("]")) {
+    const closeBracket = host.indexOf("]");
+    host = host.slice(1, closeBracket);
+  } else if (host.includes(":") && !host.includes("::")) {
+    // If standard host:port format with a single colon, strip port
+    const colonIdx = host.indexOf(":");
+    if (host.indexOf(":", colonIdx + 1) === -1) {
+      host = host.slice(0, colonIdx);
+    }
+  }
+
+  // Strip trailing DNS root dot
+  host = host.replace(/\.+$/, "");
+
+  if (!host) return true;
+
+  if (
+    host === "localhost" ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    host.endsWith(".lan") ||
+    host.endsWith(".home") ||
+    host.endsWith(".corp") ||
+    host === "metadata.google.internal"
+  ) {
+    return true;
+  }
+
+  if (
+    host === "::1" ||
+    host === "::" ||
+    host.startsWith("fe80:") ||
+    host.startsWith("fe8") ||
+    host.startsWith("fe9") ||
+    host.startsWith("fea") ||
+    host.startsWith("feb") ||
+    host.startsWith("fc") ||
+    host.startsWith("fd")
+  ) {
+    return true;
+  }
+
+  if (host.startsWith("::ffff:")) {
+    return isPrivateIpv4(host.slice(7));
+  }
+
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host)) {
+    return isPrivateIpv4(host);
+  }
+
+  // Block numeric single-value or non-quad IPs (e.g. 2130706433 or 127.1)
+  if (/^\d+$/.test(host) || /^(\d+\.){1,2}\d+$/.test(host) || /^0x[0-9a-f]+$/i.test(host)) {
+    return true;
+  }
+
+  return false;
 }
 
 const DEFAULT_UA =
@@ -149,7 +230,22 @@ export default {
 
     const url = new URL(req.url);
     const rawToken = url.searchParams.get("token") || "";
-    const secret = env.STREAM_PROXY_SECRET || "cineby_dev_stream_secret_default_fallback_key";
+
+    const isDev =
+      env.ENVIRONMENT === "development" ||
+      (typeof process !== "undefined" && process.env?.NODE_ENV === "development");
+
+    const configuredSecret = env.STREAM_PROXY_SECRET?.trim();
+    if (!configuredSecret && !isDev) {
+      return new Response(
+        JSON.stringify({ error: "Server Misconfiguration: STREAM_PROXY_SECRET is required" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
+        }
+      );
+    }
+    const secret = configuredSecret || "cineby_dev_stream_secret_default_fallback_key";
 
     const descriptor = await readDescriptor(rawToken, secret);
     if (!descriptor) {
@@ -159,7 +255,7 @@ export default {
       });
     }
 
-    // IP-bound verification
+    // IP verification (log mismatch for diagnostics without blocking mobile/CGNAT users)
     const connectingIp = (
       req.headers.get("cf-connecting-ip") ||
       req.headers.get("x-forwarded-for")?.split(",")[0] ||
@@ -176,11 +272,7 @@ export default {
         connectingIp === "::1";
 
       if (!ipMatches) {
-        console.warn(`[proxy] IP mismatch: signed=${signedIp}, connecting=${connectingIp}`);
-        return new Response(JSON.stringify({ error: "Access denied: IP mismatch" }), {
-          status: 403,
-          headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
-        });
+        console.warn(`[proxy] Client IP notice: signed=${signedIp}, connecting=${connectingIp}`);
       }
     }
 
@@ -196,41 +288,17 @@ export default {
       return new Response(JSON.stringify({ error: "Unsupported stream protocol" }), { status: 400, headers: corsHeaders });
     }
 
-    // SSRF Protections
-    if (["localhost", "127.0.0.1", "::1"].includes(targetUrl.hostname) || targetUrl.hostname.endsWith(".local")) {
-      return new Response(JSON.stringify({ error: "Private stream hosts are not allowed" }), { status: 403, headers: corsHeaders });
+    // SSRF Protections: block private networks, localhost, link-local, and cloud metadata
+    if (isPrivateHost(targetUrl.hostname)) {
+      return new Response(JSON.stringify({ error: "Access denied: Private or internal target host" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
+      });
     }
 
-    const customHeaders = descriptor.headers;
-    const isVidking =
-      rawTargetUrl.includes("vidking") ||
-      rawTargetUrl.includes("speedracelight") ||
-      rawTargetUrl.includes("stillhaven") ||
-      rawTargetUrl.includes("peakstorm") ||
-      rawTargetUrl.includes("fastportal") ||
-      rawTargetUrl.includes("solidmoon") ||
-      rawTargetUrl.includes("echogate");
-
-    const isVidy =
-      rawTargetUrl.includes("vidy.st") ||
-      rawTargetUrl.includes("wecollege.net") ||
-      rawTargetUrl.includes("quietridge") ||
-      rawTargetUrl.includes("rockyember");
-
-    const defaultReferer = isVidking
-      ? "https://www.vidking.net/"
-      : isVidy
-      ? "https://www.vidy.st/"
-      : rawTargetUrl.includes("vixsrc")
-      ? "https://vixsrc.to"
-      : "https://www.vidy.st/";
-    const defaultOrigin = isVidking
-      ? "https://www.vidking.net"
-      : isVidy
-      ? "https://www.vidy.st"
-      : rawTargetUrl.includes("vixsrc")
-      ? "https://vixsrc.to"
-      : "https://www.vidy.st";
+    const customHeaders = descriptor.headers || {};
+    const defaultReferer = targetUrl.origin + "/";
+    const defaultOrigin = targetUrl.origin;
 
     const activeHeaders: Record<string, string> = {
       "User-Agent": customHeaders["User-Agent"] || DEFAULT_UA,
@@ -239,7 +307,7 @@ export default {
     };
 
     const upstreamHeaders = new Headers();
-    upstreamHeaders.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36");
+    upstreamHeaders.set("User-Agent", activeHeaders["User-Agent"]);
     upstreamHeaders.set("Referer", activeHeaders["Referer"]);
     upstreamHeaders.set("Origin", activeHeaders["Origin"]);
     upstreamHeaders.set("Accept", "*/*");
@@ -254,11 +322,52 @@ export default {
       upstreamHeaders.set("Range", range);
     }
 
-    // Fetch upstream media
-    const upstreamRes = await fetch(targetUrl.toString(), {
-      method: req.method,
-      headers: upstreamHeaders,
-    });
+    // Fetch upstream media safely with redirect validation
+    let currentUrl = targetUrl.toString();
+    let upstreamRes: Response | null = null;
+    let redirects = 0;
+    const MAX_REDIRECTS = 3;
+
+    while (redirects <= MAX_REDIRECTS) {
+      let parsedTarget: URL;
+      try {
+        parsedTarget = new URL(currentUrl);
+      } catch {
+        return new Response(JSON.stringify({ error: "Invalid stream URL" }), { status: 400, headers: corsHeaders });
+      }
+
+      if (parsedTarget.protocol !== "http:" && parsedTarget.protocol !== "https:") {
+        return new Response(JSON.stringify({ error: "Unsupported stream protocol" }), { status: 400, headers: corsHeaders });
+      }
+
+      if (isPrivateHost(parsedTarget.hostname)) {
+        return new Response(JSON.stringify({ error: "Access denied: Private redirect target" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
+        });
+      }
+
+      upstreamRes = await fetch(currentUrl, {
+        method: req.method,
+        headers: upstreamHeaders,
+        redirect: "manual",
+      });
+
+      if (upstreamRes.status >= 300 && upstreamRes.status < 400) {
+        const location = upstreamRes.headers.get("Location") || upstreamRes.headers.get("location");
+        if (location && redirects < MAX_REDIRECTS) {
+          redirects++;
+          currentUrl = new URL(location, currentUrl).toString();
+          continue;
+        }
+      }
+      break;
+    }
+
+    if (!upstreamRes) {
+      return new Response(JSON.stringify({ error: "Upstream stream fetch failed" }), { status: 502, headers: corsHeaders });
+    }
+
     console.log(`[proxy] Fetching upstream ${targetUrl.hostname}${targetUrl.pathname} -> status=${upstreamRes.status} ${upstreamRes.statusText}`);
 
     if (!upstreamRes.ok) {
@@ -309,8 +418,12 @@ export default {
           if (match) {
             const uri = match[1];
             const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
-            const token = await createDescriptorToken(abs, activeHeaders, secret, descriptor.ip);
-            rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
+            if (!isPrivateHost(abs)) {
+              const token = await createDescriptorToken(abs, activeHeaders, secret, descriptor.ip);
+              rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
+            } else {
+              rewrittenLines.push(line);
+            }
           } else {
             rewrittenLines.push(line);
           }
@@ -322,8 +435,27 @@ export default {
           if (match) {
             const uri = match[1];
             const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
-            const token = await createDescriptorToken(abs, activeHeaders, secret, descriptor.ip);
-            rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
+            if (!isPrivateHost(abs)) {
+              const token = await createDescriptorToken(abs, activeHeaders, secret, descriptor.ip);
+              rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
+            } else {
+              rewrittenLines.push(line);
+            }
+            continue;
+          }
+        }
+
+        if (trimmed.startsWith("#EXT-X-MEDIA:")) {
+          const match = /URI="([^"]+)"/.exec(trimmed);
+          if (match) {
+            const uri = match[1];
+            const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
+            if (!isPrivateHost(abs)) {
+              const token = await createDescriptorToken(abs, activeHeaders, secret, descriptor.ip);
+              rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
+            } else {
+              rewrittenLines.push(line);
+            }
             continue;
           }
         }
@@ -334,8 +466,12 @@ export default {
         }
 
         const absUrl = trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : new URL(trimmed, targetBase).toString();
-        const token = await createDescriptorToken(absUrl, activeHeaders, secret, descriptor.ip);
-        rewrittenLines.push(`${workerOrigin}/?token=${encodeURIComponent(token)}`);
+        if (!isPrivateHost(absUrl)) {
+          const token = await createDescriptorToken(absUrl, activeHeaders, secret, descriptor.ip);
+          rewrittenLines.push(`${workerOrigin}/?token=${encodeURIComponent(token)}`);
+        } else {
+          rewrittenLines.push(line);
+        }
       }
 
       responseHeaders.set("Content-Type", "application/vnd.apple.mpegurl");

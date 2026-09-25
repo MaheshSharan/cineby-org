@@ -1,12 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { discoverMovies, discoverTv } from "@/lib/tmdb/server";
-import { logError } from "@/lib/logger";
+import { discoverMovies, discoverTv, getTopRatedMovies, getTopRatedTv } from "@/lib/tmdb/server";
+import { withApiContext } from "@/lib/validation";
+import { applyCorsHeaders } from "@/lib/cors";
 import type { MediaType } from "@/lib/tmdb";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default withApiContext("api/tmdb/browse", async (req: NextApiRequest, res: NextApiResponse) => {
+  if (applyCorsHeaders(req, res)) {
+    return;
+  }
+
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     res.status(405).json({ error: "Method not allowed" });
@@ -18,18 +20,18 @@ export default async function handler(
   const sortBy = typeof req.query.sortBy === "string" ? req.query.sortBy : undefined;
   const page = parsePage(req.query.page);
 
-  try {
-    const result =
-      mediaType === "tv"
-        ? await discoverTv({ genreId, sortBy, page })
-        : await discoverMovies({ genreId, sortBy, page });
+  const isTopRated = !genreId && (sortBy === "vote_average.desc" || sortBy === "top_rated");
 
-    res.status(200).json(result);
-  } catch (error) {
-    logError("api/tmdb/browse", error);
-    res.status(500).json({ error: "Failed to fetch browse results" });
-  }
-}
+  const result = isTopRated
+    ? mediaType === "tv"
+      ? await getTopRatedTv(page)
+      : await getTopRatedMovies(page)
+    : mediaType === "tv"
+    ? await discoverTv({ genreId, sortBy, page })
+    : await discoverMovies({ genreId, sortBy, page });
+
+  res.status(200).json(result);
+});
 
 function parseMediaType(value: unknown): MediaType {
   if (value === "tv") {

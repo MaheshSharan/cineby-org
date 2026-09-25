@@ -60,6 +60,6 @@ export default withApiContext("api/auth/login", async (req: NextApiRequest, res:
   await ensureDefaultProfile(user.id, user.display_name ?? user.email.split("@")[0]);
 
   res.setHeader("Set-Cookie", buildSessionCookie(token));
-  res.status(200).json({ user: toPublicUser(user) });
+  res.status(200).json({ user: toPublicUser(user, true) });
 });
 

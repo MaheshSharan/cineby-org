@@ -13,15 +13,10 @@ export function ContinueWatchingRow() {
   const [items, setItems] = useState<HistoryEntry[]>([]);
 
   useEffect(() => {
-    if (!user) {
-      setItems([]);
-      return;
-    }
-
     let isCurrent = true;
 
     const loadHistory = () => {
-      listHistory().then((data) => {
+      listHistory(Boolean(user)).then((data) => {
         if (!isCurrent) return;
         // Filter: only show items with meaningful in-progress content (progress > 0 and progress < 95)
         const inProgress = data.filter(
@@ -33,26 +28,28 @@ export function ContinueWatchingRow() {
 
     loadHistory();
 
-    const handleProfileChange = () => {
+    const handleHistoryChange = () => {
       loadHistory();
     };
 
-    window.addEventListener("cineby:profile-change", handleProfileChange);
+    window.addEventListener("cineby:profile-change", handleHistoryChange);
+    window.addEventListener("cineby:history-change", handleHistoryChange);
 
     return () => {
       isCurrent = false;
-      window.removeEventListener("cineby:profile-change", handleProfileChange);
+      window.removeEventListener("cineby:profile-change", handleHistoryChange);
+      window.removeEventListener("cineby:history-change", handleHistoryChange);
     };
   }, [user]);
 
   const handleRemove = async (entry: HistoryEntry) => {
-    const success = await removeFromHistory(entry.id);
+    const success = await removeFromHistory(entry.id, Boolean(user));
     if (success) {
       setItems((prev) => prev.filter((i) => i.id !== entry.id));
     }
   };
 
-  if (!user || items.length === 0) {
+  if (items.length === 0) {
     return null;
   }
 

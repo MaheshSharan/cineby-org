@@ -11,7 +11,7 @@ import {
   checkWatchlist,
   removeFromWatchlist,
 } from "@/lib/api/watchlist";
-import { calculateResumeSeconds, getEpisodeHref, getMediaHref, getPlayHref, getYear, formatRuntime, formatPlaybackTime } from "@/lib/utils/media";
+import { calculateResumeSeconds, getEpisodeHref, getMediaHref, getPlayHref, getYear, formatRuntime, formatPlaybackTime, toPlayerSeasons } from "@/lib/utils/media";
 import { getTrailerUrl } from "@/lib/services/trailer";
 
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -20,7 +20,6 @@ import { CastRow } from "@/components/detail/CastRow";
 import { EpisodesSection } from "@/components/detail/EpisodesSection";
 import { RecommendationsRow } from "@/components/detail/RecommendationsRow";
 import { PlayerShell } from "@/components/player/PlayerShell";
-import type { PlayerSeason } from "@/components/player/types";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PlayButton } from "@/components/ui/PlayButton";
 import {
@@ -700,16 +699,4 @@ export function DetailPage({
       </div>
     </div>
   );
-}
-
-function toPlayerSeasons(seasons: TvDetails["seasons"]): PlayerSeason[] {
-  return seasons
-    .filter((season) => season.seasonNumber > 0 && season.episodeCount > 0)
-    .map((season) => ({
-      seasonNumber: season.seasonNumber,
-      name: season.name,
-      episodeCount: season.episodeCount,
-      overview: season.overview,
-    }))
-    .sort((a, b) => a.seasonNumber - b.seasonNumber);
 }

@@ -65,6 +65,6 @@ export default withApiContext("api/auth/register", async (req: NextApiRequest, r
   await createSession(user.id, token, new Date(Date.now() + SESSION_TTL_MS).toISOString(), userAgent);
 
   res.setHeader("Set-Cookie", buildSessionCookie(token));
-  res.status(201).json({ user: toPublicUser(user) });
+  res.status(201).json({ user: toPublicUser(user, false) });
 });
 

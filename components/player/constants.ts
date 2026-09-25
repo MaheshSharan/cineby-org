@@ -2,17 +2,7 @@ import type { PlaybackRate, QualityLabel, ServerGroup, ServerOption } from "./ty
 
 export const HISTORY_SAVE_INTERVAL_MS = 30_000;
 
-export const HISTORY_SAVE_THRESHOLD_S = 15;
-
-export const DEFAULT_VOLUME = 0.8;
-
-export const REWIND_MS = 10000;
-
-export const FORWARD_MS = 10000;
-
 export const AUTOHIDE_CONTROLS_MS = 3000;
-
-export const SHOW_CONTROLS_TRANSITION_MS = 300;
 
 export const QUALITIES: QualityLabel[] = ["2160p", "1080p", "720p", "480p"];
 

@@ -5,6 +5,7 @@ export interface User {
   avatarUrl: string | null;
   createdAt: string;
   activeProfileId?: number | null;
+  hasProfiles?: boolean;
 }
 
 export interface WatchlistItem {

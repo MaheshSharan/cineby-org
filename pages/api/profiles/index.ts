@@ -1,7 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
-import { createProfile, listProfiles } from "@/lib/db/profiles";
+import { getSessionToken } from "@/lib/auth/session";
+import { createProfile, listProfiles, parseProfileGenres, type ProfileRow } from "@/lib/db/profiles";
 
 import { withApiContext, validate, sendValidationError } from "@/lib/validation";
 import { createProfileSchema } from "@/lib/validation/profiles";
@@ -24,10 +25,23 @@ export default withApiContext("api/profiles", async (req: NextApiRequest, res: N
 
   if (req.method === "POST") {
     const rawBody = (req.body ?? {}) as Record<string, unknown>;
-    const body = {
+    const body: Record<string, unknown> = {
       name: typeof rawBody.name === "string" ? rawBody.name.trim() : "",
       avatarUrl: typeof rawBody.avatarUrl === "string" ? rawBody.avatarUrl : DEFAULT_AVATAR,
     };
+
+    if (typeof rawBody.pin === "string" && rawBody.pin.trim()) {
+      body.pin = rawBody.pin.trim();
+    }
+    if (Array.isArray(rawBody.movieGenres)) {
+      body.movieGenres = rawBody.movieGenres.filter((item): item is string => typeof item === "string");
+    }
+    if (Array.isArray(rawBody.tvGenres)) {
+      body.tvGenres = rawBody.tvGenres.filter((item): item is string => typeof item === "string");
+    }
+    if (typeof rawBody.autoSelect === "boolean") {
+      body.autoSelect = rawBody.autoSelect;
+    }
 
     const validation = validate(createProfileSchema, body);
     if (!validation.success || !validation.data) {
@@ -41,7 +55,16 @@ export default withApiContext("api/profiles", async (req: NextApiRequest, res: N
       return;
     }
 
-    const profile = await createProfile(user.id, { name: validation.data.name, avatarUrl: validation.data.avatarUrl });
+    const token = getSessionToken(req);
+    const profile = await createProfile(user.id, {
+      name: validation.data.name,
+      avatarUrl: validation.data.avatarUrl,
+      pin: validation.data.pin,
+      movieGenres: validation.data.movieGenres,
+      tvGenres: validation.data.tvGenres,
+      autoSelect: validation.data.autoSelect ?? false,
+      sessionToken: token,
+    });
     res.status(201).json({ profile: toPublicProfile(profile) });
     return;
   }
@@ -50,24 +73,13 @@ export default withApiContext("api/profiles", async (req: NextApiRequest, res: N
   res.status(405).json({ error: "Method not allowed" });
 });
 
-import type { ProfileRow } from "@/lib/db/profiles";
-
 function toPublicProfile(profile: ProfileRow) {
   return {
     id: profile.id,
     name: profile.name,
     avatarUrl: profile.avatar_url,
     hasPin: Boolean(profile.pin_hash),
-    movieGenres: parseGenres(profile.movie_genres),
-    tvGenres: parseGenres(profile.tv_genres),
+    movieGenres: parseProfileGenres(profile.movie_genres),
+    tvGenres: parseProfileGenres(profile.tv_genres),
   };
-}
-
-function parseGenres(value: string): string[] {
-  try {
-    const parsed: unknown = JSON.parse(value);
-    return Array.isArray(parsed) && parsed.every((item) => typeof item === "string") ? parsed : [];
-  } catch {
-    return [];
-  }
 }

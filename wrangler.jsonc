@@ -30,7 +30,9 @@
     "ENABLE_VIXSRC": "false",
     "M3U8_FETCHER_URL": "https://proxym3u8-tau.vercel.app/api/m3u8",
     "INTRODB_API_URL": "https://api.introdb.app",
-    "SKIPDB_API_URL": "https://api.skipdb.tv"
+    "SKIPDB_API_URL": "https://api.skipdb.tv",
+    "CACHE_BACKEND": "redis",
+    "UPSTASH_REDIS_REST_URL": "https://sought-cub-298860.upstash.io"
   },
   "observability": {
     "logs": {

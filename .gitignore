@@ -39,3 +39,6 @@ vercel-m3u8-fetcher/
 /.wrangler/
 skills-lock.json
 docs/settings-arc.md
+
+audit_comprehensive_report.md
+

@@ -38,16 +38,23 @@ export async function addHistoryEntry(userId: number, profileId: number | undefi
 
   const db = getDb();
 
-  // Deduplicate: remove any prior history entry for this catalog item
-  // so that only 1 latest state per movie or TV show is retained.
+  // Atomic UPSERT: Single O(1) operation preventing race conditions during rapid playback pings
   await db.run(
-    "DELETE FROM watch_history WHERE profile_id = ? AND media_type = ? AND media_id = ?",
-    [effectiveProfileId, input.mediaType, input.mediaId]
-  );
-
-  await db.run(
-    `INSERT INTO watch_history (user_id, profile_id, media_type, media_id, title, poster_path, backdrop_path, season_number, episode_number, duration, progress, progress_seconds, watched_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO watch_history (
+      user_id, profile_id, media_type, media_id, title,
+      poster_path, backdrop_path, season_number, episode_number,
+      duration, progress, progress_seconds, watched_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(profile_id, media_type, media_id) DO UPDATE SET
+      title = excluded.title,
+      poster_path = excluded.poster_path,
+      backdrop_path = excluded.backdrop_path,
+      season_number = excluded.season_number,
+      episode_number = excluded.episode_number,
+      duration = excluded.duration,
+      progress = excluded.progress,
+      progress_seconds = excluded.progress_seconds,
+      watched_at = excluded.watched_at`,
     [
       userId,
       effectiveProfileId,

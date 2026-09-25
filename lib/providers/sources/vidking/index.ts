@@ -7,7 +7,7 @@ import type {
   SubtitleTrack,
 } from "../../types";
 import { decryptVidkingPayload } from "./cipher";
-import { logError } from "@/lib/logger";
+import { logger, logError } from "@/lib/logger";
 
 const PROVIDER_ID = "vidking";
 const PROVIDER_NAME = "Vidking";
@@ -77,7 +77,7 @@ async function fetchMetadata(
       },
       signal,
     });
-    console.log(`[vidking] fetchMetadata ${url} -> status=${res.status}`);
+    logger.debug(`[vidking] fetchMetadata ${url} -> status=${res.status}`);
     if (res.ok) {
       const data: unknown = await res.json();
       if (data && typeof data === "object") {
@@ -95,12 +95,12 @@ async function fetchMetadata(
         const externalIds = obj.external_ids as Record<string, unknown> | undefined;
         const imdbId = String(externalIds?.imdb_id || "");
 
-        console.log(`[vidking] Metadata resolved: title="${title}", year="${year}", imdbId="${imdbId}"`);
+        logger.debug(`[vidking] Metadata resolved: title="${title}", year="${year}", imdbId="${imdbId}"`);
         return { title, year, imdbId };
       }
     }
   } catch (err) {
-    console.error(`[vidking] fetchMetadata error:`, err);
+    logger.error(`[vidking] fetchMetadata error`, err);
   }
 
   return { title: "", year: "", imdbId: "" };
@@ -118,17 +118,17 @@ async function fetchSeed(tmdbId: number, signal?: AbortSignal): Promise<string |
       },
       signal,
     });
-    console.log(`[vidking] fetchSeed ${url} -> status=${res.status}`);
+    logger.debug(`[vidking] fetchSeed ${url} -> status=${res.status}`);
     if (res.ok) {
       const data: unknown = await res.json();
       if (data && typeof data === "object" && "seed" in data) {
         const seed = String((data as { seed: string }).seed);
-        console.log(`[vidking] Obtained seed (length=${seed.length})`);
+        logger.debug(`[vidking] Obtained seed (length=${seed.length})`);
         return seed;
       }
     }
   } catch (err) {
-    console.error(`[vidking] fetchSeed error:`, err);
+    logger.error(`[vidking] fetchSeed error`, err);
     logError("Provider:vidking", err);
   }
   return null;
@@ -168,15 +168,15 @@ async function scrapeServer(
       signal,
     });
 
-    console.log(`[vidking] scrapeServer ${server.id} -> status=${res.status}`);
+    logger.debug(`[vidking] scrapeServer ${server.id} -> status=${res.status}`);
     if (!res.ok) {
       return { sources: [], subtitles: [] };
     }
 
     const ciphertext = await res.text();
-    console.log(`[vidking] ${server.id} returned ${ciphertext.length} bytes of ciphertext`);
+    logger.debug(`[vidking] ${server.id} returned ${ciphertext.length} bytes of ciphertext`);
     const payload = decryptVidkingPayload<DecryptedPayload>(ciphertext, seed, tmdbId);
-    console.log(`[vidking] ${server.id} decrypted: ${(payload.sources ?? []).length} sources found`);
+    logger.debug(`[vidking] ${server.id} decrypted: ${(payload.sources ?? []).length} sources found`);
 
     const sources: StreamSource[] = (payload.sources ?? [])
       .filter((s) => Boolean(s.url))
@@ -417,7 +417,7 @@ export function decryptVidkingClientSources(
         audioTracks: [{ language: "en", label: "English" }],
       }));
   } catch (err) {
-    console.error("[vidking] Failed to decrypt client-provided ciphertext:", err);
+    logger.error("[vidking] Failed to decrypt client-provided ciphertext", err);
     return [];
   }
 }

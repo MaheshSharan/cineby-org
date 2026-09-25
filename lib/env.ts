@@ -17,26 +17,57 @@ export function getImageProxyUrl(): string {
   return imageProxyUrl.replace(/\/+$/, "");
 }
 
+export function getEnvVar(name: string): string | undefined {
+  if (process.env[name] !== undefined) {
+    return process.env[name];
+  }
+  try {
+    const cfContext = (globalThis as unknown as Record<symbol, { env?: Record<string, unknown> }>)[
+      Symbol.for("__cloudflare-context__")
+    ];
+    const val = cfContext?.env?.[name];
+    if (typeof val === "string") return val;
+  } catch {}
+  return undefined;
+}
+
 export function isImageProxyEnabled(): boolean {
   return isProxyEnabled;
 }
 
 export function getCacheBackend(): "memory" | "redis" {
-  const backend = process.env.CACHE_BACKEND?.toLowerCase();
-  return backend === "redis" ? "redis" : "memory";
+  const backend = getEnvVar("CACHE_BACKEND")?.toLowerCase();
+  if (backend === "redis") return "redis";
+  if (backend === "memory") return "memory";
+  if (getEnvVar("UPSTASH_REDIS_REST_URL") || getEnvVar("REDIS_URL")) {
+    return "redis";
+  }
+  return "memory";
 }
 
 export function getCacheMaxEntries(): number {
-  const parsed = Number.parseInt(process.env.CACHE_MAX_ENTRIES ?? "", 10);
+  const parsed = Number.parseInt(getEnvVar("CACHE_MAX_ENTRIES") ?? "", 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 5000;
 }
 
 export function getRedisUrl(): string | undefined {
-  return process.env.REDIS_URL?.trim() || undefined;
+  return getEnvVar("REDIS_URL")?.trim() || undefined;
+}
+
+export function getUpstashRedisRestUrl(): string | undefined {
+  return (
+    getEnvVar("UPSTASH_REDIS_REST_URL")?.trim() ||
+    getEnvVar("REDIS_URL")?.trim() ||
+    undefined
+  );
+}
+
+export function getUpstashRedisRestToken(): string | undefined {
+  return getEnvVar("UPSTASH_REDIS_REST_TOKEN")?.trim() || undefined;
 }
 
 export function getCorsAllowedOrigins(): string[] {
-  const envVal = process.env.CORS_ALLOWED_ORIGINS?.trim();
+  const envVal = getEnvVar("CORS_ALLOWED_ORIGINS")?.trim();
   if (!envVal) {
     return [];
   }

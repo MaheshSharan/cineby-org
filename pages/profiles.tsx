@@ -9,11 +9,13 @@ import { ProfileEditor } from "@/components/profile/ProfileEditor";
 import { ProfileGrid } from "@/components/profile/ProfileGrid";
 import { ProfileWizard } from "@/components/profile/ProfileWizard";
 import type { Profile, ProfileListResponse } from "@/components/profile/types";
+import { LogOutIcon } from "@/components/ui/icons";
 import { CLASSIC_AVATARS } from "@/lib/profile/avatars";
+import { syncGuestHistoryToServer } from "@/lib/api/history";
 
 export default function ProfilesPage() {
   const router = useRouter();
-  const { user, isLoading, showToast } = useAuth();
+  const { user, isLoading, showToast, refresh, logout } = useAuth();
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isManaging, setIsManaging] = useState(false);
@@ -65,7 +67,6 @@ export default function ProfilesPage() {
           const active = list.find((p) => p.id === activeId) || list[0];
           const activeKey = `cineby_active_profile_${user.id}`;
           localStorage.setItem(activeKey, JSON.stringify(active));
-          window.dispatchEvent(new StorageEvent("storage", { key: activeKey }));
           window.dispatchEvent(new CustomEvent("cineby:profile-change", { detail: { profileId: active.id } }));
         }
       }
@@ -129,9 +130,11 @@ export default function ProfilesPage() {
       if (user) {
         const activeKey = `cineby_active_profile_${user.id}`;
         localStorage.setItem(activeKey, JSON.stringify(profile));
-        window.dispatchEvent(new StorageEvent("storage", { key: activeKey }));
       }
       window.dispatchEvent(new CustomEvent("cineby:profile-change", { detail: { profileId: profile.id } }));
+
+      // Merge any offline guest history into the selected profile
+      syncGuestHistoryToServer().catch(() => {});
 
       setPinPromptProfile(null);
       showToast(`Switched to ${profile.name}`);
@@ -244,14 +247,30 @@ export default function ProfilesPage() {
   const handleFinishWizard = async () => {
     setIsFinishingWizard(true);
     try {
-      // 1. Create Profile
+      const pinValue = wizardPin.trim();
+      const payload: {
+        name: string;
+        avatarUrl: string;
+        pin?: string;
+        movieGenres?: string[];
+        tvGenres?: string[];
+        autoSelect: boolean;
+      } = {
+        name: wizardName.trim() || "User",
+        avatarUrl: wizardAvatar,
+        movieGenres: selectedMovieGenres,
+        tvGenres: selectedTvGenres,
+        autoSelect: true,
+      };
+
+      if (pinValue) {
+        payload.pin = pinValue;
+      }
+
       const createRes = await fetch("/api/profiles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: wizardName.trim() || "User",
-          avatarUrl: wizardAvatar,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!createRes.ok) {
@@ -263,32 +282,17 @@ export default function ProfilesPage() {
       const createData = (await createRes.json()) as { profile: Profile };
       const newProfile = createData.profile;
 
-      // 2. Set PIN & Genres if configured
-      if (wizardPin.trim() || selectedMovieGenres.length > 0 || selectedTvGenres.length > 0) {
-        await fetch(`/api/profiles/${newProfile.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            pin: wizardPin.trim() || undefined,
-            movieGenres: selectedMovieGenres,
-            tvGenres: selectedTvGenres,
-          }),
-        });
-      }
-
-      // 3. Select as Active Profile
-      await fetch(`/api/profiles/${newProfile.id}/select`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin: wizardPin.trim() }),
-      });
-
       if (user) {
         const activeKey = `cineby_active_profile_${user.id}`;
         localStorage.setItem(activeKey, JSON.stringify(newProfile));
-        window.dispatchEvent(new StorageEvent("storage", { key: activeKey }));
       }
       window.dispatchEvent(new CustomEvent("cineby:profile-change", { detail: { profileId: newProfile.id } }));
+
+      // Merge any offline guest history into the newly created profile
+      syncGuestHistoryToServer().catch(() => {});
+
+      // Refresh auth state so user.hasProfiles becomes true immediately
+      await refresh();
 
       // Land on "Who's watching?" so the user sees and selects the profile
       // they just created, instead of jumping straight to the home screen.
@@ -339,6 +343,24 @@ export default function ProfilesPage() {
             }}
           />
         </div>
+
+        {/* Top-Right Sign Out Button */}
+        {user && (
+          <div className="absolute top-5 right-5 sm:top-6 sm:right-8 z-30">
+            <button
+              type="button"
+              onClick={async () => {
+                await logout();
+                router.replace("/");
+              }}
+              className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-white/70 backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/10 hover:text-white cursor-pointer"
+              aria-label="Sign out"
+            >
+              <LogOutIcon size={14} className="transition-transform group-hover:-translate-x-0.5" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        )}
 
         <div className="relative flex min-h-[100dvh] items-center justify-center px-6 py-14">
           {editingProfile ? (

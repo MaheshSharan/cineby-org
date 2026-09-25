@@ -308,6 +308,6 @@ Upstream streaming CDNs (such as Vidking's `moon.peakstorm.top`) enforce two sec
 
 3. **Cloudflare Stream Proxy Worker (`workers/stream-proxy/`):**
    - Handles 100% of high-volume video chunks (`.m4s`, `.ts`) and init maps (`.mp4`).
-   - Verifies the HMAC-SHA256 token and attaches `Referer: https://www.vidking.net/`.
-   - Media segment CDNs (`solidmoon.top`, `fastportal.top`) do not block Cloudflare IPs, allowing fast streaming directly through Cloudflare Edge Cache.
+   - Autonomously verifies the HMAC-SHA256 token, validates SSRF/private host safety, and forwards the stamped provider headers (`vidking.net`, `vidy.st`, `vixsrc.to`) directly to upstream CDNs.
+   - Streams media directly through Cloudflare Edge with zero domain allowlist maintenance.
 

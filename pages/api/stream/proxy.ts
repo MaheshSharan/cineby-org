@@ -1,6 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import type { ReadableStream as WebReadableStream } from "node:stream/web";
 import { createProxyDescriptor, readProxyDescriptor } from "@/lib/providers/signedProxy";
 import { applyCorsHeaders } from "@/lib/cors";
+import { isPrivateHost } from "@/lib/providers/allowlist";
+import { withApiContext } from "@/lib/validation";
 
 export const config = {
   api: {
@@ -12,7 +17,7 @@ export const config = {
 const DEFAULT_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default withApiContext("api/stream/proxy", async (req: NextApiRequest, res: NextApiResponse) => {
   if (applyCorsHeaders(req, res)) {
     return;
   }
@@ -30,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
   const rawTargetUrl = descriptor.url;
-  const customHeaders = descriptor.headers;
+  const customHeaders = descriptor.headers || {};
 
   let targetUrl: URL;
   try {
@@ -45,34 +50,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  const allowedHosts = (process.env.STREAM_PROXY_ALLOWED_HOSTS ?? "").split(",").map((host) => host.trim()).filter(Boolean);
-  if (allowedHosts.length > 0 && !allowedHosts.some((host) => targetUrl.hostname === host || targetUrl.hostname.endsWith(`.${host}`))) {
-    res.status(403).json({ error: "Stream host is not allowed" });
-    return;
-  }
-  if (["localhost", "127.0.0.1", "::1"].includes(targetUrl.hostname) || targetUrl.hostname.endsWith(".local")) {
-    res.status(403).json({ error: "Private stream hosts are not allowed" });
+  if (isPrivateHost(targetUrl.hostname)) {
+    res.status(403).json({ error: "Stream host is private or internal" });
     return;
   }
 
-  const isVidking =
-    rawTargetUrl.includes("vidking") ||
-    rawTargetUrl.includes("peakstorm") ||
-    rawTargetUrl.includes("fastportal") ||
-    rawTargetUrl.includes("solidmoon") ||
-    rawTargetUrl.includes("echogate") ||
-    rawTargetUrl.includes("speedracelight");
-
-  const defaultReferer = isVidking
-    ? "https://www.vidking.net/"
-    : rawTargetUrl.includes("vixsrc")
-    ? "https://vixsrc.to"
-    : "https://www.vidy.st/";
-  const defaultOrigin = isVidking
-    ? "https://www.vidking.net"
-    : rawTargetUrl.includes("vixsrc")
-    ? "https://vixsrc.to"
-    : "https://www.vidy.st";
+  const defaultReferer = targetUrl.origin + "/";
+  const defaultOrigin = targetUrl.origin;
 
   const activeHeaders: Record<string, string> = {
     "User-Agent": customHeaders["User-Agent"] || DEFAULT_UA,
@@ -91,10 +75,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const upstreamRes = await fetch(targetUrl, {
-      method: req.method,
-      headers: upstreamHeaders,
-    });
+    let currentUrl = targetUrl.toString();
+    let upstreamRes: Response | null = null;
+    let redirects = 0;
+    const MAX_REDIRECTS = 3;
+
+    while (redirects <= MAX_REDIRECTS) {
+      const parsed = new URL(currentUrl);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        res.status(400).json({ error: "Unsupported stream URL protocol" });
+        return;
+      }
+      if (isPrivateHost(parsed.hostname)) {
+        res.status(403).json({ error: "Stream host is private or internal" });
+        return;
+      }
+
+      upstreamRes = await fetch(currentUrl, {
+        method: req.method,
+        headers: upstreamHeaders,
+        redirect: "manual",
+      });
+
+      if (upstreamRes.status >= 300 && upstreamRes.status < 400) {
+        const location = upstreamRes.headers.get("location");
+        if (location && redirects < MAX_REDIRECTS) {
+          redirects++;
+          currentUrl = new URL(location, currentUrl).toString();
+          continue;
+        }
+      }
+      break;
+    }
+
+    if (!upstreamRes) {
+      res.status(502).json({ error: "Upstream stream fetch failed" });
+      return;
+    }
 
     const contentType = upstreamRes.headers.get("content-type") || "";
     const isM3u8 =
@@ -128,13 +145,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const trimmed = line.trim();
           if (!trimmed) return line;
 
+          // Rewrite #EXT-X-KEY:URI="url"
+          if (trimmed.startsWith("#EXT-X-KEY:")) {
+            return trimmed.replace(/URI="([^"]+)"/, (_, uri) => {
+              const abs = uri.startsWith("http://") || uri.startsWith("https://")
+                ? uri
+                : new URL(uri, targetBase).toString();
+              if (!isPrivateHost(abs)) {
+                return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, activeHeaders))}"`;
+              }
+              return `URI="${uri}"`;
+            });
+          }
+
           // Rewrite #EXT-X-MAP:URI="url" tags (used by fMP4 / HLS v6)
           if (trimmed.startsWith("#EXT-X-MAP:")) {
             return trimmed.replace(/URI="([^"]+)"/, (_, uri) => {
               const abs = uri.startsWith("http://") || uri.startsWith("https://")
                 ? uri
                 : new URL(uri, targetBase).toString();
-              return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, activeHeaders))}"`;
+              if (!isPrivateHost(abs)) {
+                return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, activeHeaders))}"`;
+              }
+              return `URI="${uri}"`;
+            });
+          }
+
+          // Rewrite #EXT-X-MEDIA:URI="url" (alternative audio / subtitle renditions)
+          if (trimmed.startsWith("#EXT-X-MEDIA:")) {
+            return trimmed.replace(/URI="([^"]+)"/, (_, uri) => {
+              const abs = uri.startsWith("http://") || uri.startsWith("https://")
+                ? uri
+                : new URL(uri, targetBase).toString();
+              if (!isPrivateHost(abs)) {
+                return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, activeHeaders))}"`;
+              }
+              return `URI="${uri}"`;
             });
           }
 
@@ -146,7 +192,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             ? trimmed
             : new URL(trimmed, targetBase).toString();
 
-          return `/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(absoluteUrl, activeHeaders))}`;
+          if (!isPrivateHost(absoluteUrl)) {
+            return `/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(absoluteUrl, activeHeaders))}`;
+          }
+          return line;
         })
         .join("\n");
 
@@ -191,17 +240,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(upstreamRes.status);
 
     if (upstreamRes.body) {
-      const reader = upstreamRes.body.getReader();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(Buffer.from(value));
+      try {
+        const nodeStream = Readable.fromWeb(
+          upstreamRes.body as unknown as WebReadableStream
+        );
+        await pipeline(nodeStream, res);
+      } catch (streamErr: unknown) {
+        const err = streamErr as { code?: string; name?: string };
+        const isClientAbort =
+          err?.code === "ERR_STREAM_PREMATURE_CLOSE" ||
+          err?.code === "ECONNRESET" ||
+          err?.code === "EPIPE" ||
+          err?.name === "AbortError";
+        if (!isClientAbort) {
+          throw streamErr;
+        }
       }
+    } else if (!res.writableEnded && !res.destroyed) {
+      res.end();
     }
-    res.end();
     return;
   } catch {
-    res.status(502).json({ error: "Upstream stream fetch failed" });
+    if (!res.headersSent) {
+      res.status(502).json({ error: "Upstream stream fetch failed" });
+    } else if (!res.writableEnded && !res.destroyed) {
+      res.end();
+    }
     return;
   }
-}
+});

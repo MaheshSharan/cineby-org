@@ -1,7 +1,9 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 
 import type { PlayerMedia } from "./types";
 import { PlayerContainer } from "./PlayerContainer";
+import { saveHistory } from "@/lib/api/history";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface PlayerShellProps {
   title: string;
@@ -22,32 +24,49 @@ export function PlayerShell({
   onEnded,
   onNavigateEpisode,
 }: PlayerShellProps) {
+  const { user } = useAuth();
+  const lastSavedRef = useRef<{ time: number; seconds: number } | null>(null);
+
   const handleTimeUpdate = useCallback(
     (currentTime: number, duration: number, playback?: { seasonNumber?: number; episodeNumber?: number }) => {
       if (!media) return;
-      const calculatedPercent = Math.round((currentTime / Math.max(1, duration)) * 100);
-      const effectiveProgress = currentTime > 5 && calculatedPercent === 0 ? 1 : calculatedPercent;
 
-      // Persist history through the existing POST endpoint.
-      fetch("/api/history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mediaType: media.mediaType,
-          mediaId: media.mediaId,
-          title,
-          posterPath: media.posterPath ?? null,
-          backdropPath: media.backdropPath ?? null,
-          seasonNumber: playback?.seasonNumber ?? media.seasonNumber ?? null,
-          episodeNumber: playback?.episodeNumber ?? media.episodeNumber ?? null,
-          duration: media.duration ?? null,
-          progress: effectiveProgress,
-          progressSeconds: Math.floor(currentTime),
-        }),
-      }).catch(() => {});
+      // Playback Gating: Only record progress after at least 3 seconds of actual playback
+      if (currentTime < 3) {
+        onTimeUpdate?.(currentTime, duration);
+        return;
+      }
+
+      const now = Date.now();
+      const last = lastSavedRef.current;
+
+      // Throttle: Save at most once every 5 seconds (or on significant seek)
+      if (!last || now - last.time >= 5000 || Math.abs(currentTime - last.seconds) >= 10) {
+        lastSavedRef.current = { time: now, seconds: currentTime };
+
+        const calculatedPercent = Math.round((currentTime / Math.max(1, duration)) * 100);
+        const effectiveProgress = currentTime > 5 && calculatedPercent === 0 ? 1 : calculatedPercent;
+
+        saveHistory(
+          {
+            mediaType: media.mediaType,
+            mediaId: media.mediaId,
+            title,
+            posterPath: media.posterPath ?? null,
+            backdropPath: media.backdropPath ?? null,
+            seasonNumber: playback?.seasonNumber ?? media.seasonNumber ?? null,
+            episodeNumber: playback?.episodeNumber ?? media.episodeNumber ?? null,
+            duration: media.duration ?? null,
+            progress: effectiveProgress,
+            progressSeconds: Math.floor(currentTime),
+          },
+          Boolean(user)
+        ).catch(() => {});
+      }
+
       onTimeUpdate?.(currentTime, duration);
     },
-    [media, onTimeUpdate, title]
+    [media, onTimeUpdate, title, user]
   );
 
   return (

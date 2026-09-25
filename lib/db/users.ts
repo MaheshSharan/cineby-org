@@ -77,12 +77,13 @@ export async function deleteUser(userId: number): Promise<void> {
   await db.run("DELETE FROM users WHERE id = ?", [userId]);
 }
 
-export function toPublicUser(row: UserRow): User {
+export function toPublicUser(row: UserRow, hasProfiles?: boolean): User {
   return {
     id: row.id,
     email: row.email,
     displayName: row.display_name,
     avatarUrl: row.avatar_url ?? null,
     createdAt: row.created_at,
+    hasProfiles: typeof hasProfiles === "boolean" ? hasProfiles : undefined,
   };
 }

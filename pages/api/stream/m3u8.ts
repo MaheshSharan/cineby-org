@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { buildStreamProxyUrl } from "@/lib/providers/proxy";
+import { isPrivateHost } from "@/lib/providers/allowlist";
 
 /**
  * POST /api/stream/m3u8
@@ -52,12 +53,10 @@ function extractClientIp(req: NextApiRequest): string {
 }
 
 function getAppOrigin(req: NextApiRequest): string {
-  const forwardedProto = req.headers["x-forwarded-proto"];
-  const forwardedHost = req.headers["x-forwarded-host"];
-  const host = (typeof forwardedHost === "string" ? forwardedHost : req.headers.host) || "";
-
+  const host = req.headers.host || "";
   if (!host) return "";
 
+  const forwardedProto = req.headers["x-forwarded-proto"];
   const proto =
     typeof forwardedProto === "string"
       ? forwardedProto.split(",")[0].trim()
@@ -66,6 +65,55 @@ function getAppOrigin(req: NextApiRequest): string {
       : "https";
 
   return `${proto}://${host}`;
+}
+
+async function fetchWithSsrfProtection(
+  initialUrl: string,
+  options: RequestInit,
+  maxRedirects = 3
+): Promise<Response> {
+  let currentUrl = initialUrl;
+  let redirectsRemaining = maxRedirects;
+
+  while (true) {
+    let parsed: URL;
+    try {
+      parsed = new URL(currentUrl);
+    } catch {
+      const err = new Error("Invalid stream URL");
+      (err as { status?: number }).status = 400;
+      throw err;
+    }
+
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      const err = new Error("Unsupported stream URL protocol");
+      (err as { status?: number }).status = 400;
+      throw err;
+    }
+
+    if (isPrivateHost(parsed.hostname)) {
+      const err = new Error("Stream host is private or internal");
+      (err as { status?: number }).status = 403;
+      throw err;
+    }
+
+    const upstream = await fetch(currentUrl, {
+      ...options,
+      redirect: "manual",
+    });
+
+    if (upstream.status >= 300 && upstream.status < 400) {
+      const location = upstream.headers.get("location");
+      if (!location || redirectsRemaining <= 0) {
+        return upstream;
+      }
+      redirectsRemaining--;
+      currentUrl = new URL(location, currentUrl).toString();
+      continue;
+    }
+
+    return upstream;
+  }
 }
 
 export default async function handler(
@@ -100,46 +148,71 @@ export default async function handler(
   let baseUrl: string | null = null;
 
   if (targetUrl) {
+    let parsedTargetUrl: URL;
+    try {
+      parsedTargetUrl = new URL(targetUrl);
+    } catch {
+      res.status(400).json({ error: "Invalid stream URL" });
+      return;
+    }
+
+    if (parsedTargetUrl.protocol !== "https:" && parsedTargetUrl.protocol !== "http:") {
+      res.status(400).json({ error: "Unsupported stream URL protocol" });
+      return;
+    }
+
+    if (isPrivateHost(parsedTargetUrl.hostname)) {
+      res.status(403).json({ error: "Stream host is private or internal" });
+      return;
+    }
+
     baseUrl = targetUrl;
     try {
       const fetcherBase = getM3u8FetcherUrl().replace(/\/+$/, "");
-      let fetchUrl = targetUrl;
       const isVidyStream =
         targetUrl.includes("vidy") ||
         targetUrl.includes("quietridge") ||
         targetUrl.includes("rockyember") ||
+        targetUrl.includes("quietraven") ||
         targetUrl.includes("wecollege");
-
-      const defaultReferer = isVidyStream ? "https://www.vidy.st/" : "https://www.vidking.net/";
-      const defaultOrigin = isVidyStream ? "https://www.vidy.st" : "https://www.vidking.net";
-
       const fetchHeaders: Record<string, string> = {
-        Referer: headers["Referer"] ?? defaultReferer,
-        Origin: headers["Origin"] ?? defaultOrigin,
+        Referer: isVidyStream ? "https://www.vidy.st/" : "https://www.vidking.net/",
+        Origin: isVidyStream ? "https://www.vidy.st" : "https://www.vidking.net",
         "User-Agent": headers["User-Agent"] ?? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         Accept: "*/*",
       };
 
-      // If a dedicated serverless M3U8 fetcher (Vercel / Lambda) is configured, route through it
+      let upstream: Response;
       if (fetcherBase) {
         const params = new URLSearchParams({
           url: targetUrl,
           referer: fetchHeaders.Referer,
           origin: fetchHeaders.Origin,
         });
-        fetchUrl = `${fetcherBase}?${params.toString()}`;
+        const fetchUrl = `${fetcherBase}?${params.toString()}`;
+        upstream = await fetch(fetchUrl, { headers: { Accept: "*/*" } });
+      } else {
+        upstream = await fetchWithSsrfProtection(
+          targetUrl,
+          { headers: fetchHeaders }
+        );
       }
-
-      const upstream = await fetch(fetchUrl, {
-        headers: fetcherBase ? { Accept: "*/*" } : fetchHeaders,
-      });
 
       if (!upstream.ok) {
         res.status(502).json({ error: `Upstream returned ${upstream.status}` });
         return;
       }
       m3u8Text = await upstream.text();
-    } catch {
+    } catch (fetchErr: unknown) {
+      const status = (fetchErr as { status?: number })?.status;
+      if (status === 403) {
+        res.status(403).json({ error: "Stream host is private or internal" });
+        return;
+      }
+      if (status === 400) {
+        res.status(400).json({ error: (fetchErr as Error)?.message || "Invalid stream URL" });
+        return;
+      }
       res.status(502).json({ error: "Failed to fetch M3U8 from upstream" });
       return;
     }
@@ -147,6 +220,25 @@ export default async function handler(
     // Mode 2: caller provides raw text
     m3u8Text = body.m3u8Text;
     baseUrl = typeof body.baseUrl === "string" ? body.baseUrl : null;
+    if (baseUrl) {
+      let parsedBaseUrl: URL;
+      try {
+        parsedBaseUrl = new URL(baseUrl);
+      } catch {
+        res.status(400).json({ error: "Invalid baseUrl" });
+        return;
+      }
+
+      if (parsedBaseUrl.protocol !== "https:" && parsedBaseUrl.protocol !== "http:") {
+        res.status(400).json({ error: "Unsupported baseUrl protocol" });
+        return;
+      }
+
+      if (isPrivateHost(parsedBaseUrl.hostname)) {
+        res.status(403).json({ error: "Stream host is private or internal" });
+        return;
+      }
+    }
   }
 
   if (!m3u8Text) {
@@ -184,15 +276,18 @@ export default async function handler(
     fallbackUrl.includes("vidy") ||
     fallbackUrl.includes("quietridge") ||
     fallbackUrl.includes("rockyember") ||
+    fallbackUrl.includes("quietraven") ||
     fallbackUrl.includes("wecollege");
 
   const proxyHeaders: Record<string, string> = {
-    Referer: headers["Referer"] ?? (isVidyProxy ? "https://www.vidy.st/" : "https://www.vidking.net/"),
-    Origin: headers["Origin"] ?? (isVidyProxy ? "https://www.vidy.st" : "https://www.vidking.net"),
+    Referer: isVidyProxy ? "https://www.vidy.st/" : "https://www.vidking.net/",
+    Origin: isVidyProxy ? "https://www.vidy.st" : "https://www.vidking.net",
   };
 
   const lines = m3u8Text.split("\n");
   const rewritten: string[] = [];
+  let expectingSegment = false;
+  let expectingVariant = false;
 
   for (const line of lines) {
     const t = line.trim();
@@ -208,8 +303,12 @@ export default async function handler(
       if (match) {
         const uri = match[1];
         const abs = resolveUrl(uri);
-        const proxyUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
-        rewritten.push(t.replace(/URI="[^"]+"/, `URI="${proxyUrl}"`));
+        if (!isPrivateHost(abs)) {
+          const proxyUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
+          rewritten.push(t.replace(/URI="[^"]+"/, `URI="${proxyUrl}"`));
+        } else {
+          rewritten.push(line);
+        }
       } else {
         rewritten.push(line);
       }
@@ -222,34 +321,103 @@ export default async function handler(
       if (match) {
         const uri = match[1];
         const abs = resolveUrl(uri);
-        const mapUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
-        rewritten.push(t.replace(/URI="[^"]+"/, `URI="${mapUrl}"`));
+        if (!isPrivateHost(abs)) {
+          const mapUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
+          rewritten.push(t.replace(/URI="[^"]+"/, `URI="${mapUrl}"`));
+        } else {
+          rewritten.push(line);
+        }
         continue;
       }
     }
 
-    // Pass through all other tags unchanged
+    // Rewrite #EXT-X-MEDIA URI (alternate audio / subtitle renditions)
+    if (t.startsWith("#EXT-X-MEDIA:")) {
+      const match = /URI="([^"]+)"/.exec(t);
+      if (match) {
+        const uri = match[1];
+        const abs = resolveUrl(uri);
+        if (!isPrivateHost(abs)) {
+          const isMediaPlaylist = abs.includes(".m3u8");
+          const replacementUrl = isMediaPlaylist
+            ? toAbsolute(
+                `/api/stream/m3u8?${new URLSearchParams({
+                  url: abs,
+                  referer: proxyHeaders.Referer || "",
+                  origin: proxyHeaders.Origin || "",
+                }).toString()}`
+              )
+            : toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
+          rewritten.push(t.replace(/URI="[^"]+"/, `URI="${replacementUrl}"`));
+        } else {
+          rewritten.push(line);
+        }
+      } else {
+        rewritten.push(line);
+      }
+      continue;
+    }
+
+    // Track tag hints for next URI line
+    if (t.startsWith("#EXTINF:")) {
+      expectingSegment = true;
+      expectingVariant = false;
+      rewritten.push(line);
+      continue;
+    }
+
+    if (t.startsWith("#EXT-X-STREAM-INF:") || t.startsWith("#EXT-X-I-FRAME-STREAM-INF:")) {
+      expectingVariant = true;
+      expectingSegment = false;
+      rewritten.push(line);
+      continue;
+    }
+
+    // Pass through all other tags / comments
     if (t.startsWith("#")) {
       rewritten.push(line);
       continue;
     }
 
-    // Check if line is a child/variant M3U8 playlist
-    const isSubPlaylist = t.endsWith(".m3u8") || t.includes(".m3u8?");
-    if (isSubPlaylist) {
-      const abs = resolveUrl(t);
-      const params = new URLSearchParams({
-        url: abs,
-        referer: proxyHeaders.Referer || "",
-        origin: proxyHeaders.Origin || "",
-      });
-      rewritten.push(toAbsolute(`/api/stream/m3u8?${params.toString()}`));
-      continue;
+    const wasExpectingSegment = expectingSegment;
+    const wasExpectingVariant = expectingVariant;
+    expectingSegment = false;
+    expectingVariant = false;
+
+    const abs = resolveUrl(t);
+    let isSubPlaylist = false;
+
+    if (wasExpectingVariant) {
+      isSubPlaylist = true;
+    } else if (wasExpectingSegment) {
+      isSubPlaylist = false;
+    } else {
+      try {
+        const pathname = new URL(abs).pathname.toLowerCase();
+        isSubPlaylist = pathname.endsWith(".m3u8");
+      } catch {
+        isSubPlaylist = t.endsWith(".m3u8") || t.split("?")[0].endsWith(".m3u8");
+      }
     }
 
-    // Media segment URLs — route through signed stream proxy
-    const abs = resolveUrl(t);
-    rewritten.push(toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp)));
+    if (isSubPlaylist) {
+      if (!isPrivateHost(abs)) {
+        const params = new URLSearchParams({
+          url: abs,
+          referer: proxyHeaders.Referer || "",
+          origin: proxyHeaders.Origin || "",
+        });
+        rewritten.push(toAbsolute(`/api/stream/m3u8?${params.toString()}`));
+      } else {
+        rewritten.push(line);
+      }
+    } else {
+      if (!isPrivateHost(abs)) {
+        rewritten.push(toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp)));
+      } else {
+        rewritten.push(line);
+      }
+    }
   }
 
   res.setHeader("Content-Type", "text/plain; charset=utf-8");

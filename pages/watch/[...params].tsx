@@ -3,13 +3,12 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 
 import { getMovieDetails, getTvDetails } from "@/lib/tmdb/server";
-import type { TvDetails } from "@/lib/tmdb";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { listHistory } from "@/lib/db/history";
-import { formatRuntime, getEpisodeHref, getYear } from "@/lib/utils/media";
+import { formatRuntime, getEpisodeHref, getYear, toPlayerSeasons } from "@/lib/utils/media";
 
 import { PlayerShell } from "@/components/player/PlayerShell";
-import type { PlayerMedia, PlayerSeason } from "@/components/player/types";
+import type { PlayerMedia } from "@/components/player/types";
 
 interface WatchPageProps {
   title: string;
@@ -55,7 +54,7 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
       if (!season || !episode) {
         const user = await getCurrentUser(context.req);
         if (user) {
-          const historyList = await listHistory(user.id);
+          const historyList = await listHistory(user.id, user.activeProfileId ?? undefined);
           const match = historyList.find(
             (item) => item.mediaType === "tv" && item.mediaId === details.id
           );
@@ -125,18 +124,6 @@ function parseOptionalNumber(value: string | undefined): number | null {
   const parsed = Number.parseInt(value ?? "", 10);
 
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-}
-
-function toPlayerSeasons(seasons: TvDetails["seasons"]): PlayerSeason[] {
-  return seasons
-    .filter((season) => season.seasonNumber > 0 && season.episodeCount > 0)
-    .map((season) => ({
-      seasonNumber: season.seasonNumber,
-      name: season.name,
-      episodeCount: season.episodeCount,
-      overview: season.overview,
-    }))
-    .sort((a, b) => a.seasonNumber - b.seasonNumber);
 }
 
 export default WatchPage;

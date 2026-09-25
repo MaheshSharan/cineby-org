@@ -6,12 +6,8 @@ import Link from "next/link";
 import type { MediaSummary } from "@/lib/tmdb";
 import { deduplicateMediaPool, getMediaKey } from "@/lib/tmdb/deduplicate";
 import {
-  discoverMovies,
-  discoverTv,
   getGenres,
   getMediaLogo,
-  getTopRatedMovies,
-  getTopRatedTv,
   getTrending,
 } from "@/lib/tmdb/server";
 
@@ -23,18 +19,17 @@ import { OnlyOnRow } from "@/components/home/OnlyOnRow";
 import { TopTenRow } from "@/components/home/TopTenRow";
 
 const HERO_ITEMS = 12;
-const TOP_TEN_ITEMS = 10;
 const ROW_ITEMS = 20;
 
 interface HomePageProps {
   heroItems: MediaSummary[];
-  topTenItems: MediaSummary[];
-  onlyOnNetflix: MediaSummary[];
   trendingMovies: MediaSummary[];
-  trendingSeries: MediaSummary[];
-  topRatedMovies: MediaSummary[];
-  topRatedSeries: MediaSummary[];
   genreNames: Record<number, string>;
+  topTenItems?: MediaSummary[];
+  onlyOnNetflix?: MediaSummary[];
+  trendingSeries?: MediaSummary[];
+  topRatedMovies?: MediaSummary[];
+  topRatedSeries?: MediaSummary[];
 }
 
 const Home: NextPage<HomePageProps> = ({
@@ -51,23 +46,24 @@ const Home: NextPage<HomePageProps> = ({
 
   const excludeKeys = useMemo(() => {
     const keys: string[] = [];
-    const collect = (items: MediaSummary[]) => {
+    const collect = (items?: MediaSummary[]) => {
+      if (!items) return;
       for (const item of items) {
         keys.push(getMediaKey(item));
       }
     };
     collect(heroItems);
     collect(trendingMovies);
-    collect(trendingSeries);
     collect(topTenItems);
+    collect(trendingSeries);
     collect(topRatedMovies);
     collect(topRatedSeries);
     return keys;
-  }, [heroItems, trendingMovies, trendingSeries, topTenItems, topRatedMovies, topRatedSeries]);
+  }, [heroItems, trendingMovies, topTenItems, trendingSeries, topRatedMovies, topRatedSeries]);
 
   const viewAllMovieLink = (
     <Link
-      href="/category/movie/trending"
+      href="/browse/movie"
       className="flex items-center gap-1 text-sm font-medium text-white/50 hover:text-white transition-colors duration-200"
     >
       <span>View All</span>
@@ -90,7 +86,7 @@ const Home: NextPage<HomePageProps> = ({
 
   const viewAllTvLink = (
     <Link
-      href="/category/tv/trending"
+      href="/browse/tv"
       className="flex items-center gap-1 text-sm font-medium text-white/50 hover:text-white transition-colors duration-200"
     >
       <span>View All</span>
@@ -126,17 +122,18 @@ const Home: NextPage<HomePageProps> = ({
       <div className="relative z-10 mx-auto flex max-w-[1360px] flex-col gap-10 px-4 mt-1 sm:mt-2 md:mt-3 md:gap-14 pb-16">
         <ContinueWatchingRow />
 
-        <BrowseByProviderRow onSelectProvider={(id) => setActiveProviderId(id)} />
-
         <LazyContentRow
           title="Trending Movies"
           initialItems={trendingMovies}
           action={viewAllMovieLink}
         />
 
+        <BrowseByProviderRow onSelectProvider={(id) => setActiveProviderId(id)} />
+
         <LazyContentRow
           title="Trending Series"
           initialItems={trendingSeries}
+          fetchUrl="/api/tmdb/trending?mediaType=tv&timeWindow=day"
           action={viewAllTvLink}
         />
 
@@ -152,11 +149,13 @@ const Home: NextPage<HomePageProps> = ({
         <LazyContentRow
           title="Top Rated Movies"
           initialItems={topRatedMovies}
+          fetchUrl="/api/tmdb/browse?mediaType=movie&sortBy=vote_average.desc"
         />
 
         <LazyContentRow
           title="Top Rated Series"
           initialItems={topRatedSeries}
+          fetchUrl="/api/tmdb/browse?mediaType=tv&sortBy=vote_average.desc"
         />
       </div>
     </>
@@ -167,39 +166,15 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async () =>
   const [
     heroP1,
     heroP2,
-    topTenP1,
-    topTenP2,
     trendingMoviesP1,
     trendingMoviesP2,
-    trendingSeriesP1,
-    trendingSeriesP2,
-    netflixMoviesP1,
-    netflixMoviesP2,
-    netflixTvP1,
-    netflixTvP2,
-    topRatedMoviesP1,
-    topRatedMoviesP2,
-    topRatedTvP1,
-    topRatedTvP2,
     movieGenres,
     tvGenres,
   ] = await Promise.all([
     getTrending("all", "day", 1),
     getTrending("all", "day", 2),
-    getTrending("all", "week", 1),
-    getTrending("all", "week", 2),
     getTrending("movie", "day", 1),
     getTrending("movie", "day", 2),
-    getTrending("tv", "day", 1),
-    getTrending("tv", "day", 2),
-    discoverMovies({ providerId: 8, watchRegion: "US", sortBy: "popularity.desc", page: 1 }),
-    discoverMovies({ providerId: 8, watchRegion: "US", sortBy: "popularity.desc", page: 2 }),
-    discoverTv({ providerId: 8, watchRegion: "US", sortBy: "popularity.desc", page: 1 }),
-    discoverTv({ providerId: 8, watchRegion: "US", sortBy: "popularity.desc", page: 2 }),
-    getTopRatedMovies(1),
-    getTopRatedMovies(2),
-    getTopRatedTv(1),
-    getTopRatedTv(2),
     getGenres("movie"),
     getGenres("tv"),
   ]);
@@ -211,29 +186,6 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async () =>
 
   const trendingMoviesPool = [...trendingMoviesP1.results, ...trendingMoviesP2.results];
   const trendingMovies = deduplicateMediaPool(trendingMoviesPool, seenKeys, ROW_ITEMS);
-
-  const trendingSeriesPool = [...trendingSeriesP1.results, ...trendingSeriesP2.results];
-  const trendingSeries = deduplicateMediaPool(trendingSeriesPool, seenKeys, ROW_ITEMS);
-
-  const topTenPool = [...topTenP1.results, ...topTenP2.results];
-  const topTenItems = deduplicateMediaPool(topTenPool, seenKeys, TOP_TEN_ITEMS);
-
-  // Interleave Netflix movies & TV shows
-  const netflixPool: MediaSummary[] = [];
-  const allNetflixMovies = [...netflixMoviesP1.results, ...netflixMoviesP2.results];
-  const allNetflixTv = [...netflixTvP1.results, ...netflixTvP2.results];
-  const maxNetflixLen = Math.max(allNetflixMovies.length, allNetflixTv.length);
-  for (let i = 0; i < maxNetflixLen; i += 1) {
-    if (i < allNetflixMovies.length) netflixPool.push(allNetflixMovies[i]);
-    if (i < allNetflixTv.length) netflixPool.push(allNetflixTv[i]);
-  }
-  const onlyOnNetflix = deduplicateMediaPool(netflixPool, seenKeys, ROW_ITEMS);
-
-  const topRatedMoviesPool = [...topRatedMoviesP1.results, ...topRatedMoviesP2.results];
-  const topRatedMovies = deduplicateMediaPool(topRatedMoviesPool, seenKeys, ROW_ITEMS);
-
-  const topRatedSeriesPool = [...topRatedTvP1.results, ...topRatedTvP2.results];
-  const topRatedSeries = deduplicateMediaPool(topRatedSeriesPool, seenKeys, ROW_ITEMS);
 
   const genreNames: Record<number, string> = {};
   for (const genre of movieGenres.genres) {
@@ -251,12 +203,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async () =>
           logoPath: await getMediaLogo(item.mediaType, item.id),
         }))
       ),
-      topTenItems,
-      onlyOnNetflix,
       trendingMovies,
-      trendingSeries,
-      topRatedMovies,
-      topRatedSeries,
       genreNames,
     },
   };

@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { hashPassword } from "@/lib/auth/password";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
-import { deleteProfile, findProfile, listProfiles, updateProfile } from "@/lib/db/profiles";
+import { deleteProfile, findProfile, listProfiles, parseProfileGenres, updateProfile } from "@/lib/db/profiles";
 
 import { withApiContext, validate, sendValidationError } from "@/lib/validation";
 import { updateProfileSchema } from "@/lib/validation/profiles";
@@ -39,10 +39,25 @@ export default withApiContext("api/profiles/[id]", async (req: NextApiRequest, r
       name,
       avatarUrl,
       pinHash: hasPinInput ? (pin ? await hashPassword(pin) : null) : profile.pin_hash,
-      movieGenres: Array.isArray(rawBody.movieGenres) ? rawBody.movieGenres.filter((item): item is string => typeof item === "string") : [],
-      tvGenres: Array.isArray(rawBody.tvGenres) ? rawBody.tvGenres.filter((item): item is string => typeof item === "string") : [],
+      movieGenres: Array.isArray(rawBody.movieGenres)
+        ? rawBody.movieGenres.filter((item): item is string => typeof item === "string")
+        : parseProfileGenres(profile.movie_genres),
+      tvGenres: Array.isArray(rawBody.tvGenres)
+        ? rawBody.tvGenres.filter((item): item is string => typeof item === "string")
+        : parseProfileGenres(profile.tv_genres),
     });
-    res.status(200).json({ profile: updated ? { id: updated.id, name: updated.name, avatarUrl: updated.avatar_url, hasPin: Boolean(updated.pin_hash) } : null });
+    res.status(200).json({
+      profile: updated
+        ? {
+            id: updated.id,
+            name: updated.name,
+            avatarUrl: updated.avatar_url,
+            hasPin: Boolean(updated.pin_hash),
+            movieGenres: parseProfileGenres(updated.movie_genres),
+            tvGenres: parseProfileGenres(updated.tv_genres),
+          }
+        : null,
+    });
     return;
   }
 

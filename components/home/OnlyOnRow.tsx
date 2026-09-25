@@ -4,30 +4,8 @@ import type { MediaSummary } from "@/lib/tmdb";
 import { deduplicateMediaPool } from "@/lib/tmdb/deduplicate";
 import { ContentRow } from "@/components/content/ContentRow";
 import { MovieCard } from "@/components/movie/MovieCard";
-
-export interface StreamingProvider {
-  id: number;
-  name: string;
-  logo: string;
-}
-
-export const STREAMING_PROVIDERS: StreamingProvider[] = [
-  { id: 8, name: "Netflix", logo: "/assets/providers/netflix.png" },
-  { id: 9, name: "Prime Video", logo: "/assets/providers/prime.png" },
-  { id: 337, name: "Disney+", logo: "/assets/providers/disney.png" },
-  { id: 350, name: "Apple TV+", logo: "/assets/providers/apple.png" },
-  { id: 1899, name: "HBO Max", logo: "/assets/providers/max.png" },
-  { id: 15, name: "Hulu", logo: "/assets/providers/hulu.png" },
-  { id: 531, name: "Paramount+", logo: "/assets/providers/paramount.png" },
-  { id: 386, name: "Peacock", logo: "/assets/providers/peacock.png" },
-  { id: 283, name: "Crunchyroll", logo: "/assets/providers/crunchyroll.png" },
-  { id: 43, name: "Starz", logo: "/assets/providers/starz.png" },
-  { id: 526, name: "AMC+", logo: "/assets/providers/amc.png" },
-  { id: 34, name: "MGM+", logo: "/assets/providers/mgm.png" },
-  { id: 188, name: "YouTube Premium", logo: "/assets/providers/youtube_premium.png" },
-  { id: 73, name: "Tubi", logo: "/assets/providers/tubi.png" },
-  { id: 300, name: "Pluto TV", logo: "/assets/providers/pluto.png" },
-];
+import { useInView } from "@/hooks/useInView";
+import { STREAMING_PROVIDERS, type StreamingProvider } from "@/lib/constants/providers";
 
 interface OnlyOnRowProps {
   initialItems?: MediaSummary[];
@@ -46,10 +24,12 @@ export function OnlyOnRow({
     STREAMING_PROVIDERS.find((p) => p.id === activeProviderId) ?? STREAMING_PROVIDERS[0]
   );
   const [isOpen, setIsOpen] = useState(false);
+  const { ref: inViewRef, isInView } = useInView();
   const [items, setItems] = useState<MediaSummary[]>(initialItems);
   const [isLoading, setIsLoading] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const attemptedProviderRef = useRef<number | null>(initialItems.length > 0 ? (activeProviderId ?? 8) : null);
 
   const fetchProviderItems = useCallback(
     async (providerId: number) => {
@@ -83,9 +63,18 @@ export function OnlyOnRow({
     const match = STREAMING_PROVIDERS.find((p) => p.id === activeProviderId);
     if (match && match.id !== selectedProvider.id) {
       setSelectedProvider(match);
-      fetchProviderItems(match.id);
+      attemptedProviderRef.current = match.id;
+      void fetchProviderItems(match.id);
     }
   }, [activeProviderId, fetchProviderItems, selectedProvider.id]);
+
+  // Lazy load provider items when row enters viewport if items are not yet populated
+  useEffect(() => {
+    if (isInView && items.length === 0 && attemptedProviderRef.current !== selectedProvider.id) {
+      attemptedProviderRef.current = selectedProvider.id;
+      void fetchProviderItems(selectedProvider.id);
+    }
+  }, [isInView, items.length, selectedProvider.id, fetchProviderItems]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -104,7 +93,8 @@ export function OnlyOnRow({
       setSelectedProvider(provider);
       setIsOpen(false);
       onProviderChange?.(provider.id);
-      fetchProviderItems(provider.id);
+      attemptedProviderRef.current = provider.id;
+      void fetchProviderItems(provider.id);
     },
     [fetchProviderItems, onProviderChange]
   );
@@ -194,14 +184,21 @@ export function OnlyOnRow({
   const displayItems = Array.isArray(items) ? items : (Array.isArray(initialItems) ? initialItems : []);
 
   return (
-    <div id="only-on-section" className="scroll-mt-24">
+    <div id="only-on-section" className="scroll-mt-24" ref={inViewRef}>
       <ContentRow
         title={customTitle}
-        className={isLoading ? "opacity-50 transition-opacity duration-200" : "transition-opacity duration-200"}
+        className={isLoading && displayItems.length > 0 ? "opacity-50 transition-opacity duration-200" : "transition-opacity duration-200"}
       >
-        {displayItems.map((item) => (
-          <MovieCard key={item.id} media={item} variant="catalog" />
-        ))}
+        {isLoading && displayItems.length === 0
+          ? Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="aspect-[2/3] w-[140px] xs:w-[150px] md:w-[180px] lg:w-[200px] flex-shrink-0 animate-pulse rounded-xl bg-white/5"
+              />
+            ))
+          : displayItems.map((item) => (
+              <MovieCard key={`${item.mediaType || "movie"}-${item.id}`} media={item} variant="catalog" />
+            ))}
       </ContentRow>
     </div>
   );

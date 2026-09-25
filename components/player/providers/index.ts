@@ -273,34 +273,13 @@ async function buildFetchResponse(
   });
 }
 
-/**
- * Hosts that block Cloudflare Worker datacenter IPs but allow browser requests.
- * M3U8 playlists from these hosts must be fetched browser-side and rewritten
- * through /api/stream/m3u8 before being passed to HLS.js as a Blob URL.
- */
-const BROWSER_FETCH_M3U8_HOSTS = [
-  "peakstorm.top",
-  "moon.peakstorm",
-  "sun.peakstorm",
-  "quietridge.top",
-  "moon.quietridge",
-  "stillhaven.top",
-  "sun.stillhaven",
-  "rockyember.top",
-  "fastportal.top",
-  "solidmoon.top",
-  "echogate",
-  "mirrowcelo002.workers.dev",
-  "vidy.st",
-  "vidking.net",
-  "speedracelight.com",
-];
-
 function needsBrowserM3u8Fetch(url: string): boolean {
   if (!url) return false;
   return (
-    BROWSER_FETCH_M3U8_HOSTS.some((host) => url.includes(host)) ||
-    /\.(top|workers\.dev)\//i.test(url)
+    /\.(top|workers\.dev|st|cc)\//i.test(url) ||
+    url.includes("vidking.net") ||
+    url.includes("speedracelight.com") ||
+    url.includes("echogate")
   );
 }
 

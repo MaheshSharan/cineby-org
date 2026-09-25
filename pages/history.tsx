@@ -17,26 +17,34 @@ const HistoryPage: NextPage = () => {
   const [isClearing, setIsClearing] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setItems([]);
-      return;
-    }
-
     let isCurrent = true;
 
-    listHistory().then((result) => {
-      if (isCurrent) {
-        setItems(result);
-      }
-    });
+    const load = () => {
+      listHistory(Boolean(user)).then((result) => {
+        if (isCurrent) {
+          setItems(result);
+        }
+      });
+    };
+
+    load();
+
+    const handleHistoryChange = () => {
+      load();
+    };
+
+    window.addEventListener("cineby:history-change", handleHistoryChange);
+    window.addEventListener("cineby:profile-change", handleHistoryChange);
 
     return () => {
       isCurrent = false;
+      window.removeEventListener("cineby:history-change", handleHistoryChange);
+      window.removeEventListener("cineby:profile-change", handleHistoryChange);
     };
   }, [user]);
 
   const handleRemoveItem = async (entry: HistoryEntry) => {
-    const success = await removeFromHistory(entry.id);
+    const success = await removeFromHistory(entry.id, Boolean(user));
     if (success) {
       setItems((prev) => prev.filter((i) => i.id !== entry.id));
       showToast("Removed from history successfully");
@@ -46,7 +54,7 @@ const HistoryPage: NextPage = () => {
   const handleClearAll = async () => {
     setIsClearing(true);
     try {
-      const success = await clearAllHistory();
+      const success = await clearAllHistory(Boolean(user));
       if (success) {
         setItems([]);
         setShowClearConfirm(false);
@@ -88,7 +96,7 @@ const HistoryPage: NextPage = () => {
           <div className="flex min-h-[50vh] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
-        ) : !user ? (
+        ) : items.length === 0 ? (
           <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -99,29 +107,19 @@ const HistoryPage: NextPage = () => {
             />
             <h1 className="mb-1 text-xl font-semibold text-white md:text-2xl">No watch history found</h1>
             <p className="mb-6 max-w-sm text-sm text-gray-400">
-              Sign in to keep track of all the movies and TV shows you&apos;ve watched.
+              {user
+                ? "Keep track of all the movies and TV shows you've watched."
+                : "Watch movies and shows or sign in to sync your progress across devices."}
             </p>
-            <button
-              type="button"
-              onClick={() => openAuthModal("login")}
-              className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-primary/20 transition-all duration-200 hover:bg-primary/90 hover:scale-105"
-            >
-              Sign in
-            </button>
-          </div>
-        ) : items.length === 0 ? (
-          <div className="flex min-h-[55vh] flex-col items-center justify-center text-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/popcorn.svg"
-              alt=""
-              aria-hidden="true"
-              className="mb-4 h-36 w-36 select-none drop-shadow-2xl"
-            />
-            <h1 className="mb-1 text-xl font-semibold text-white">No watch history found</h1>
-            <p className="text-sm text-gray-400">
-              Keep track of all the movies and TV shows you&apos;ve watched
-            </p>
+            {!user ? (
+              <button
+                type="button"
+                onClick={() => openAuthModal("login")}
+                className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-primary/20 transition-all duration-200 hover:bg-primary/90 hover:scale-105"
+              >
+                Sign in
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="flex flex-col">
@@ -129,18 +127,48 @@ const HistoryPage: NextPage = () => {
               <div>
                 <h1 className="text-xl font-bold text-white md:text-2xl">Watch history</h1>
                 <p className="mt-1 text-xs text-text-mid md:text-sm">
-                  Keep track of all the movies and TV shows you&apos;ve watched
+                  {user
+                    ? "Keep track of all the movies and TV shows you've watched"
+                    : "Saved on this device. Sign in to sync across all your devices."}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowClearConfirm(true)}
-                className="inline-flex items-center gap-2 self-start rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-medium text-text-mid backdrop-blur-md transition-all duration-200 hover:border-primary/40 hover:bg-primary/15 hover:text-primary sm:self-auto"
-              >
-                <TrashIcon size={14} />
-                <span>Clear all history</span>
-              </button>
+              <div className="flex items-center gap-3">
+                {!user ? (
+                  <button
+                    type="button"
+                    onClick={() => openAuthModal("login")}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-primary/25 transition-all duration-200 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 cursor-pointer"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="shrink-0"
+                    >
+                      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                      <path d="M3 3v5h5" />
+                      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                      <path d="M16 21h5v-5" />
+                    </svg>
+                    <span>Sign in to sync</span>
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setShowClearConfirm(true)}
+                  className="inline-flex items-center gap-2 self-start rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-medium text-text-mid backdrop-blur-md transition-all duration-200 hover:border-primary/40 hover:bg-primary/15 hover:text-primary sm:self-auto"
+                >
+                  <TrashIcon size={14} />
+                  <span>Clear all history</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-3">

@@ -67,7 +67,8 @@ export function initializeSchema(database: DatabaseSync): void {
       duration TEXT,
       progress INTEGER,
       progress_seconds INTEGER,
-      watched_at TEXT NOT NULL
+      watched_at TEXT NOT NULL,
+      UNIQUE (profile_id, media_type, media_id)
     );
 
     CREATE TABLE IF NOT EXISTS user_settings (
@@ -80,6 +81,7 @@ export function initializeSchema(database: DatabaseSync): void {
     CREATE INDEX IF NOT EXISTS idx_profiles_user ON profiles(user_id);
     CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlist(user_id);
     CREATE INDEX IF NOT EXISTS idx_history_user ON watch_history(user_id, watched_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_history_profile_watched ON watch_history(user_id, profile_id, watched_at DESC);
   `);
 
   // Safe migration for existing databases: add avatar_url column if not present
@@ -121,6 +123,17 @@ export function initializeSchema(database: DatabaseSync): void {
     if (!sessionColumns.some((col) => col.name === "last_active_at")) {
       database.exec("ALTER TABLE sessions ADD COLUMN last_active_at TEXT;");
     }
+
+    database.exec(`
+      DELETE FROM watch_history
+      WHERE id NOT IN (
+        SELECT MAX(id)
+        FROM watch_history
+        GROUP BY profile_id, media_type, media_id
+      );
+    `);
+    database.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_watch_history_profile_media ON watch_history(profile_id, media_type, media_id);");
+    database.exec("CREATE INDEX IF NOT EXISTS idx_history_profile_watched ON watch_history(user_id, profile_id, watched_at DESC);");
   } catch {
     // Migration checks are best-effort during schema init
   }

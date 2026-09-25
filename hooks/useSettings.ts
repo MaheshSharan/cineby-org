@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -62,7 +63,6 @@ function writeSettingsToStorage(settings: CinebySettings): void {
   try {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     applyTheme(settings.appearance.theme);
-    window.dispatchEvent(new StorageEvent("storage", { key: SETTINGS_STORAGE_KEY }));
     window.dispatchEvent(new CustomEvent("cineby:settings-change", { detail: settings }));
   } catch {
     // Ignore quota or private browsing errors
@@ -92,11 +92,21 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<CinebySettings>(DEFAULT_SETTINGS);
   const [isLoaded, setIsLoaded] = useState(false);
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settingsRef = useRef<CinebySettings>(DEFAULT_SETTINGS);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  const userRef = useRef<User | null>(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   // Background debounce sync to DB if user is logged in
   const syncToServer = useCallback(
     (nextSettings: CinebySettings) => {
-      if (!user) return;
+      if (!userRef.current) return;
 
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
@@ -114,7 +124,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         }
       }, 400);
     },
-    [user]
+    []
   );
 
   // Clean up timer on unmount
@@ -129,6 +139,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Initial load from localStorage
   useEffect(() => {
     const initial = readSettingsFromStorage();
+    settingsRef.current = initial;
     setSettings(initial);
     applyTheme(initial.appearance.theme);
     setIsLoaded(true);
@@ -149,6 +160,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         const normalized = normalizeApiSettings(data);
 
         if (!isCancelled) {
+          settingsRef.current = normalized;
           setSettings(normalized);
           writeSettingsToStorage(normalized);
         }
@@ -169,6 +181,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === SETTINGS_STORAGE_KEY) {
         const next = readSettingsFromStorage();
+        settingsRef.current = next;
         setSettings(next);
         applyTheme(next.appearance.theme);
       }
@@ -177,10 +190,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const handleCustomEvent = (e: Event) => {
       const customEvent = e as CustomEvent<CinebySettings>;
       if (customEvent.detail) {
+        settingsRef.current = customEvent.detail;
         setSettings(customEvent.detail);
         applyTheme(customEvent.detail.appearance.theme);
       } else {
         const next = readSettingsFromStorage();
+        settingsRef.current = next;
         setSettings(next);
         applyTheme(next.appearance.theme);
       }
@@ -197,75 +212,88 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const updateAppearance = useCallback(
     (patch: Partial<AppearanceSettings>) => {
-      setSettings((prev) => {
-        const next: CinebySettings = {
-          ...prev,
-          appearance: {
-            ...prev.appearance,
-            ...patch,
-          },
-        };
-        writeSettingsToStorage(next);
-        syncToServer(next);
-        return next;
-      });
+      const current = settingsRef.current;
+      const next: CinebySettings = {
+        ...current,
+        appearance: {
+          ...current.appearance,
+          ...patch,
+        },
+      };
+      settingsRef.current = next;
+      setSettings(next);
+      writeSettingsToStorage(next);
+      syncToServer(next);
     },
     [syncToServer]
   );
 
   const updatePlayback = useCallback(
     (patch: Partial<PlaybackSettings>) => {
-      setSettings((prev) => {
-        const next: CinebySettings = {
-          ...prev,
-          playback: {
-            ...prev.playback,
-            ...patch,
-          },
-        };
-        writeSettingsToStorage(next);
-        syncToServer(next);
-        return next;
-      });
+      const current = settingsRef.current;
+      const next: CinebySettings = {
+        ...current,
+        playback: {
+          ...current.playback,
+          ...patch,
+        },
+      };
+      settingsRef.current = next;
+      setSettings(next);
+      writeSettingsToStorage(next);
+      syncToServer(next);
     },
     [syncToServer]
   );
 
   const updateSubtitles = useCallback(
     (patch: Partial<SubtitlesSettings>) => {
-      setSettings((prev) => {
-        const next: CinebySettings = {
-          ...prev,
-          subtitles: {
-            ...prev.subtitles,
-            ...patch,
-          },
-        };
-        writeSettingsToStorage(next);
-        syncToServer(next);
-        return next;
-      });
+      const current = settingsRef.current;
+      const next: CinebySettings = {
+        ...current,
+        subtitles: {
+          ...current.subtitles,
+          ...patch,
+        },
+      };
+      settingsRef.current = next;
+      setSettings(next);
+      writeSettingsToStorage(next);
+      syncToServer(next);
     },
     [syncToServer]
   );
 
   const resetSettings = useCallback(() => {
+    settingsRef.current = DEFAULT_SETTINGS;
     setSettings(DEFAULT_SETTINGS);
     writeSettingsToStorage(DEFAULT_SETTINGS);
     syncToServer(DEFAULT_SETTINGS);
   }, [syncToServer]);
 
+  const contextValue = useMemo<SettingsContextType>(
+    () => ({
+      settings,
+      isLoaded,
+      updateAppearance,
+      updatePlayback,
+      updateSubtitles,
+      resetSettings,
+    }),
+    [
+      settings,
+      isLoaded,
+      updateAppearance,
+      updatePlayback,
+      updateSubtitles,
+      resetSettings,
+    ]
+  );
+
   return createElement(
     SettingsContext.Provider,
     {
-      value: {
-        settings,
-        isLoaded,
-        updateAppearance,
-        updatePlayback,
-        updateSubtitles,
-        resetSettings,
-      },
+      value: contextValue,
     },
     children
   );

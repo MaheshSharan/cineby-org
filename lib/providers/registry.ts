@@ -3,7 +3,7 @@ import { isCircuitOpen, recordFailure, recordSuccess } from "./circuitBreaker";
 import { buildStreamProxyUrl } from "./proxy";
 import { ALL_PROVIDERS } from "./sources";
 import type { Provider, StreamRequest, StreamResponse, StreamSource, SubtitleTrack } from "./types";
-import { logError } from "@/lib/logger";
+import { logger, logError } from "@/lib/logger";
 
 function getEnvVar(name: string): string | undefined {
   if (process.env[name] !== undefined) {
@@ -123,7 +123,7 @@ export async function resolveAllStreams(
   const targetProviders = ALL_PROVIDERS.filter((p) => {
     const enabled = isProviderEnabled(p);
     const circuitOpen = isCircuitOpen(p.id);
-    console.log(`[registry] Provider ${p.id}: enabled=${enabled}, circuitOpen=${circuitOpen}`);
+    logger.debug(`[registry] Provider ${p.id}: enabled=${enabled}, circuitOpen=${circuitOpen}`);
 
     if (options?.targetProviderId && options.targetProviderId !== "default") {
       const isTarget = p.id === options.targetProviderId || options.targetProviderId.startsWith(`${p.id}-`);
@@ -134,10 +134,10 @@ export async function resolveAllStreams(
     return enabled && !circuitOpen;
   });
 
-  console.log(`[registry] Active targetProviders: [${targetProviders.map((p) => p.id).join(", ")}]`);
+  logger.debug(`[registry] Active targetProviders: [${targetProviders.map((p) => p.id).join(", ")}]`);
 
   if (targetProviders.length === 0) {
-    console.warn("[registry] No active providers found for request");
+    logger.warn("[registry] No active providers found for request");
     return { sources: [], subtitles: [] };
   }
 
@@ -147,34 +147,69 @@ export async function resolveAllStreams(
   // If a specific provider is targeted, run directly
   if (options?.targetProviderId && options.targetProviderId !== "default") {
     const provider = targetProviders[0];
-    console.log(`[registry] Running single target provider: ${provider.id}`);
+    logger.debug(`[registry] Running single target provider: ${provider.id}`);
     const res = await fetchWithTimeout(
       provider,
       { ...request, serverId: options.targetProviderId },
       timeoutMs
     );
     const processed = processProviderResponse(res, provider, options.clientIp);
-    console.log(`[registry] Provider ${provider.id} produced ${processed.sources.length} sources`);
+    logger.debug(`[registry] Provider ${provider.id} produced ${processed.sources.length} sources`);
     return processed;
   }
 
-  // Fastest-viable resolution across prioritized providers
-  for (const provider of targetProviders) {
-    console.log(`[registry] Querying provider: ${provider.id}`);
-    const res = await fetchWithTimeout(
-      provider,
-      { ...request, serverId: options?.targetProviderId },
-      timeoutMs
-    );
+  // Fastest-viable concurrent resolution across prioritized providers
+  return raceProviders(targetProviders, request, timeoutMs, options);
+}
 
-    if (res.sources.length > 0) {
-      console.log(`[registry] Provider ${provider.id} succeeded with ${res.sources.length} sources`);
-      return processProviderResponse(res, provider, options?.clientIp);
-    }
+export async function raceProviders(
+  providers: Provider[],
+  request: StreamRequest,
+  timeoutMs: number,
+  options?: { targetProviderId?: string; clientIp?: string }
+): Promise<StreamResponse> {
+  if (providers.length === 0 || request.signal?.aborted) {
+    return { sources: [], subtitles: [] };
   }
 
-  console.warn("[registry] All target providers returned 0 sources");
-  return { sources: [], subtitles: [] };
+  const raceController = new AbortController();
+  const onCallerAbort = () => raceController.abort();
+  if (request.signal) {
+    request.signal.addEventListener("abort", onCallerAbort);
+  }
+
+  try {
+    const providerPromises = providers.map(async (provider) => {
+      logger.debug(`[registry] Querying provider concurrently: ${provider.id}`);
+      const res = await fetchWithTimeout(
+        provider,
+        {
+          ...request,
+          serverId: options?.targetProviderId,
+          signal: raceController.signal,
+        },
+        timeoutMs
+      );
+
+      if (res.sources && res.sources.length > 0) {
+        logger.debug(`[registry] Provider ${provider.id} succeeded with ${res.sources.length} sources`);
+        return processProviderResponse(res, provider, options?.clientIp);
+      }
+
+      throw new Error(`Provider ${provider.id} returned no playable sources`);
+    });
+
+    const winner = await Promise.any(providerPromises);
+    raceController.abort();
+    return winner;
+  } catch {
+    logger.warn("[registry] All target providers returned 0 sources");
+    return { sources: [], subtitles: [] };
+  } finally {
+    if (request.signal) {
+      request.signal.removeEventListener("abort", onCallerAbort);
+    }
+  }
 }
 
 export function listAvailableProviders(): { id: string; name: string }[] {

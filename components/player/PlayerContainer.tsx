@@ -1,19 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 
-import type { Episode, MediaSegment, MediaSource, PlayerMedia, PlayerSeason, PlayerSettings, ServerGroup, ServerOption, SubtitleTrack } from "./types";
-import { HISTORY_SAVE_INTERVAL_MS, SERVERS, SERVER_GROUPS, preloadFlags } from "./constants";
-import { revokeAllBlobs, revokeBlob } from "./utils/blobPool";
+import type {
+  Episode,
+  MediaSegment,
+  PlayerMedia,
+  PlayerSeason,
+  PlayerSettings,
+} from "./types";
+import { HISTORY_SAVE_INTERVAL_MS } from "./constants";
 
-import { createMediaEngine, type MediaEngine } from "./media";
-import { resolveStream } from "./providers";
 import { getSeasonEpisodes } from "@/lib/api/episodes";
 import { formatRuntime } from "@/lib/utils/media";
-import { srtToVtt } from "@/lib/utils/srtToVtt";
 
 import { usePlayerControls } from "./hooks/usePlayerControls";
 import { usePlayerState } from "./hooks/usePlayerState";
 import { useSubtitles } from "./hooks/useSubtitles";
+import { usePlayerShortcuts } from "./hooks/usePlayerShortcuts";
+import { usePlayerSource } from "./hooks/usePlayerSource";
+import { useHlsPlayback } from "./hooks/useHlsPlayback";
 import { useSettings } from "@/hooks/useSettings";
 import { createSegmentByteCache } from "@/lib/player/media/segmentByteCache";
 
@@ -34,21 +39,6 @@ interface PlayerContainerProps {
   onNavigateEpisode?: (seasonNumber: number, episodeNumber: number) => void;
 }
 
-interface StreamState {
-  source: MediaSource | null;
-  isError: boolean;
-}
-
-function detectFormat(url: string): MediaSource["format"] {
-  const lower = url.toLowerCase();
-  if (lower.includes(".m3u8")) return "hls";
-  if (lower.includes(".mpd")) return "dash";
-  if (lower.includes(".mp4")) return "mp4";
-  if (lower.includes(".webm")) return "webm";
-  if (lower.includes(".mkv")) return "mkv";
-  return "unknown";
-}
-
 export function PlayerContainer({
   media,
   subtitle,
@@ -60,19 +50,10 @@ export function PlayerContainer({
   const { settings: appSettings, updatePlayback } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const mediaEngineRef = useRef<MediaEngine | null>(null);
-  const streamRequestControllerRef = useRef<AbortController | null>(null);
-  const requestIdRef = useRef(0);
-  // Deferred stream abort so React DEV StrictMode's synthetic unmount/remount
-  // does not kill the initial request. Cancelled on remount; a real unmount
-  // never remounts so the abort still fires.
-  const pendingStreamAbortRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const endedRef = useRef(false);
 
   const qualityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const audioTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const activeBlobUrlsRef = useRef<Set<string>>(new Set());
-  const customSubtitleUrlRef = useRef<string | null>(null);
 
   const [settings, setSettings] = useState<PlayerSettings>({
     volume: 0.8,
@@ -84,57 +65,10 @@ export function PlayerContainer({
     autoNext: true,
   });
 
-  const [activeServerId, setActiveServerId] = useState<string>("default");
-  const [pendingServerId, setPendingServerId] = useState<string | null>(null);
-  const [failedServerIds, setFailedServerIds] = useState<Record<string, boolean>>({});
-  const failedTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
-  const lastWorkingServerIdRef = useRef<string>("default");
-  const [stream, setStream] = useState<StreamState>({ source: null, isError: false });
-  const [isResolvingStream, setIsResolvingStream] = useState(true);
-  const [availableSources, setAvailableSources] = useState<MediaSource[]>([]);
-  const [availableSubtitles, setAvailableSubtitles] = useState<SubtitleTrack[]>([]);
-  const [activeAbrLevel, setActiveAbrLevel] = useState<string | null>(null);
-  const [activeProviders, setActiveProviders] = useState<{ id: string; name: string }[]>([]);
-
-  // Fetch enabled providers dynamically to respect ENABLE_VIDY, ENABLE_VIDKING, ENABLE_VIXSRC
-  useEffect(() => {
-    let isCurrent = true;
-    fetch("/api/stream/providers")
-      .then((res) => (res.ok ? res.json() : { providers: [] }))
-      .then((data: unknown) => {
-        if (!isCurrent) return;
-        if (data && typeof data === "object" && "providers" in data && Array.isArray((data as { providers: unknown }).providers)) {
-          setActiveProviders((data as { providers: { id: string; name: string }[] }).providers);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
-  // Preload server/subtitle flag icons centrally so they render instantly without pop-in
-  useEffect(() => {
-    preloadFlags(["us", "de", "fr", "in", "mx", "es", "ja", "ko", "it", "pt", "ru", "zh"]);
-  }, []);
-
-  // Subtitle lazy-fetch state: disabled by default until user opts in
-  const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
-  const [isSubtitlesFetching, setIsSubtitlesFetching] = useState(false);
-  // Cache flag: once fetched for a given media key, don't re-fetch on re-enable
-  const subtitlesFetchedRef = useRef(false);
-  // AbortController for in-flight subtitle fetch (cancelled on media change)
-  const subtitleFetchControllerRef = useRef<AbortController | null>(null);
-
   // Modals and Popovers state
   const [isQualityOpen, setIsQualityOpen] = useState(false);
   const [isAudioSubtitlesOpen, setIsAudioSubtitlesOpen] = useState(false);
   const [isEpisodesOpen, setIsEpisodesOpen] = useState(false);
-  const [seekFeedback, setSeekFeedback] = useState<{
-    side: "left" | "right";
-    seconds: number;
-    key: number;
-  } | null>(null);
 
   const isTv = media.mediaType === "tv";
   const seasons = useMemo<PlayerSeason[]>(() => media.seasons ?? [], [media.seasons]);
@@ -145,8 +79,150 @@ export function PlayerContainer({
   const [episodesBySeason, setEpisodesBySeason] = useState<Record<number, Episode[]>>({});
   const [isEpisodesLoading, setIsEpisodesLoading] = useState(false);
 
+  const currentMediaKey = `${media.mediaType}-${media.mediaId}-${isTv ? currentSeason : 0}-${isTv ? currentEpisode : 0}`;
+
+  // Domain Hook: Source & Server management
+  const {
+    stream,
+    isResolvingStream,
+    activeServerId,
+    pendingServerId,
+    failedServerIds,
+    serverOptions,
+    filteredServerGroups,
+    resumeTime,
+    handleServerChange,
+    handlePlaybackFailure,
+    setStream,
+    loadStream,
+    markServerSuccess,
+  } = usePlayerSource({
+    media,
+    currentSeason,
+    currentEpisode,
+    isTv,
+    videoRef,
+  });
+
+  const mediaKey = useMemo(() => {
+    if (isTv) {
+      return `${media.mediaId}:s${currentSeason}:e${currentEpisode}`;
+    }
+    return `${media.mediaId}`;
+  }, [isTv, media.mediaId, currentSeason, currentEpisode]);
+
+  const segmentByteCache = useMemo(() => {
+    return createSegmentByteCache();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset cache when active mediaKey changes
+  }, [mediaKey]);
+
+  const router = useRouter();
+  const initialSeekTime = useMemo(() => {
+    const rawT = router.query.t;
+    if (typeof rawT === "string") {
+      const parsed = Number.parseFloat(rawT);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+    return 0;
+  }, [router.query.t]);
+
+  const playerState = usePlayerState({
+    videoRef,
+    initialSeekTime,
+  });
+  const { setRate } = playerState;
+
+  // Domain Hook: Subtitles management
+  const subtitles = useSubtitles({
+    videoRef,
+    mediaId: media.mediaId,
+    mediaType: media.mediaType,
+    currentSeason,
+    currentEpisode,
+    isTv,
+    activeServerId,
+    sourceUrl: stream.source?.url,
+    autoSubtitles: appSettings.playback.autoSubtitles,
+    preferredLanguage: appSettings.playback.preferredLanguage,
+    subtitlesSettings: appSettings.subtitles,
+  });
+
+  // Domain Hook: Keyboard shortcuts & feedback indicators
+  const { seekFeedback, handleDoubleTapSeek } = usePlayerShortcuts({
+    isQualityOpen,
+    isAudioSubtitlesOpen,
+    isEpisodesOpen,
+    onClosePopovers: () => {
+      setIsQualityOpen(false);
+      setIsAudioSubtitlesOpen(false);
+      setIsEpisodesOpen(false);
+    },
+    onSeekBy: playerState.seekBy,
+  });
+
+  function toggleFullscreen() {
+    const element = containerRef.current;
+    if (!element) return;
+
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void element
+        .requestFullscreen()
+        .then(() => {
+          try {
+            const orientation = window.screen.orientation as {
+              lock?: (orientation: string) => Promise<void>;
+            };
+            if (typeof orientation?.lock === "function") {
+              void orientation.lock("landscape").catch(() => {});
+            }
+          } catch {
+            // Orientation lock may not be supported on this platform
+          }
+        })
+        .catch(() => {});
+    }
+  }
+
+  const controls = usePlayerControls({
+    containerRef,
+    seekTime: appSettings.playback.seekTime,
+    onTogglePlay: playerState.togglePlay,
+    onSeekBy: playerState.seekBy,
+    onDoubleTapSeek: handleDoubleTapSeek,
+    onToggleMute: playerState.toggleMute,
+    onToggleFullscreen: toggleFullscreen,
+    onToggleSettings: () => {
+      setIsAudioSubtitlesOpen(false);
+      setIsQualityOpen((open) => !open);
+    },
+    onToggleSubtitles: () => {
+      setIsQualityOpen(false);
+      setIsAudioSubtitlesOpen((open) => !open);
+    },
+  });
+
+  // Domain Hook: Media Engine & HLS Playback lifecycle
+  const { activeAbrLevel } = useHlsPlayback({
+    videoRef,
+    source: stream.source,
+    mediaKey,
+    cache: segmentByteCache,
+    quality: settings.quality,
+    resumeTime,
+    onPlaybackSuccess: () => {
+      if (stream.source) {
+        markServerSuccess(stream.source.id || activeServerId);
+      }
+    },
+    onPlaybackFailure: handlePlaybackFailure,
+  });
+
   const activeSeasonInfo = useMemo(
-    () => seasons.find((season) => season.seasonNumber === currentSeason) ?? null,
+    () => seasons.find((s) => s.seasonNumber === currentSeason) ?? null,
     [seasons, currentSeason]
   );
   const currentSeasonEpisodes = episodesBySeason[currentSeason] ?? [];
@@ -163,7 +239,7 @@ export function PlayerContainer({
     }
 
     const hasNextSeason = seasons.some(
-      (season) => season.seasonNumber > currentSeason && season.episodeCount > 0
+      (s) => s.seasonNumber > currentSeason && s.episodeCount > 0
     );
     return !hasNextSeason;
   }, [activeSeasonInfo, currentEpisode, currentSeason, seasons]);
@@ -283,69 +359,33 @@ export function PlayerContainer({
     subtitle,
   ]);
 
-  const router = useRouter();
-  const mediaKey = useMemo(() => {
-    if (isTv) {
-      return `${media.mediaId}:s${currentSeason}:e${currentEpisode}`;
+  // Initial stream load
+  const initialMediaKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (initialMediaKeyRef.current !== currentMediaKey) {
+      initialMediaKeyRef.current = currentMediaKey;
+      void loadStream(settings.serverId);
     }
-    return `${media.mediaId}`;
-  }, [isTv, media.mediaId, currentSeason, currentEpisode]);
+  }, [currentMediaKey, loadStream, settings.serverId]);
 
-  const segmentByteCache = useMemo(() => {
-    return createSegmentByteCache();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset cache when active mediaKey changes
-  }, [mediaKey]);
-
-  const initialSeekTime = useMemo(() => {
-    const rawT = router.query.t;
-    if (typeof rawT === "string") {
-      const parsed = Number.parseFloat(rawT);
-      if (Number.isFinite(parsed) && parsed > 0) {
-        return parsed;
-      }
+  // Watch history saving interval
+  useEffect(() => {
+    if (!stream.source) {
+      return;
     }
-    return 0;
-  }, [router.query.t]);
 
-  const playerState = usePlayerState({
-    videoRef,
-    initialSeekTime,
-  });
-  const { setRate, seekBy: playerSeekBy } = playerState;
+    const saveHistory = () => {
+      onTimeUpdate?.(videoRef.current?.currentTime ?? 0, videoRef.current?.duration ?? 0, {
+        seasonNumber: isTv ? currentSeason : undefined,
+        episodeNumber: isTv ? currentEpisode : undefined,
+      });
+    };
 
-  const handleDoubleTapSeek = useCallback(
-    (seconds: number, side: "left" | "right") => {
-      playerSeekBy(seconds);
-      setSeekFeedback({ side, seconds: Math.abs(seconds), key: Date.now() });
-    },
-    [playerSeekBy]
-  );
+    const interval = window.setInterval(saveHistory, HISTORY_SAVE_INTERVAL_MS);
+    return () => window.clearInterval(interval);
+  }, [currentEpisode, currentSeason, isTv, onTimeUpdate, stream.source]);
 
-  function toggleFullscreen() {
-    const element = containerRef.current;
-    if (!element) return;
-
-    if (document.fullscreenElement) {
-      void document.exitFullscreen();
-    } else {
-      void element
-        .requestFullscreen()
-        .then(() => {
-          try {
-            const orientation = window.screen.orientation as {
-              lock?: (orientation: string) => Promise<void>;
-            };
-            if (typeof orientation?.lock === "function") {
-              void orientation.lock("landscape").catch(() => {});
-            }
-          } catch {
-            // Orientation lock may not be supported on this platform
-          }
-        })
-        .catch(() => {});
-    }
-  }
-
+  // Popover hover listeners
   const isHoverSupported = () =>
     typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
@@ -381,476 +421,20 @@ export function PlayerContainer({
     }, 150);
   };
 
-  const controls = usePlayerControls({
-    containerRef,
-    seekTime: appSettings.playback.seekTime,
-    onTogglePlay: playerState.togglePlay,
-    onSeekBy: playerState.seekBy,
-    onDoubleTapSeek: handleDoubleTapSeek,
-    onToggleMute: playerState.toggleMute,
-    onToggleFullscreen: toggleFullscreen,
-    onToggleSettings: () => {
-      setIsAudioSubtitlesOpen(false);
-      setIsQualityOpen((open) => !open);
-    },
-    onToggleSubtitles: () => {
-      setIsQualityOpen(false);
-      setIsAudioSubtitlesOpen((open) => !open);
-    },
-  });
-
-  const subtitles = useSubtitles({ videoRef });
-
-  const currentMediaKey = `${media.mediaType}-${media.mediaId}-${isTv ? currentSeason : 0}-${isTv ? currentEpisode : 0}`;
-  const lastMediaKeyRef = useRef<string>(currentMediaKey);
-
-  const loadStreamRef = useRef<(serverId: string, options?: { forcedTime?: number; fallbackServerId?: string; isFallback?: boolean }) => Promise<void>>(() => Promise.resolve());
-
-  const triggerServerFailure = useCallback(
-    (failedServerId: string, fallbackServerId: string, resumeTime: number) => {
-      // Mark failed for 5 seconds
-      setFailedServerIds((prev) => ({ ...prev, [failedServerId]: true }));
-      const existingTimer = failedTimersRef.current.get(failedServerId);
-      if (existingTimer) clearTimeout(existingTimer);
-
-      const timer = setTimeout(() => {
-        setFailedServerIds((prev) => {
-          const next = { ...prev };
-          delete next[failedServerId];
-          return next;
-        });
-        failedTimersRef.current.delete(failedServerId);
-      }, 5000);
-      failedTimersRef.current.set(failedServerId, timer);
-
-      setPendingServerId(null);
-
-      // Revert automatically to the last healthy fallback server
-      if (fallbackServerId && fallbackServerId !== failedServerId) {
-        void loadStreamRef.current(fallbackServerId, { forcedTime: resumeTime, isFallback: true });
-      }
-    },
-    []
-  );
-
-  const loadStream = useCallback(
-    async (
-      serverId: string,
-      options?: { forcedTime?: number; fallbackServerId?: string; isFallback?: boolean }
-    ) => {
-      const element = videoRef.current;
-      if (!element) return;
-
-      const isSameMedia = lastMediaKeyRef.current === currentMediaKey;
-      lastMediaKeyRef.current = currentMediaKey;
-
-      // Remember current playback position so changing servers resumes from the exact spot
-      const previousTime =
-        typeof options?.forcedTime === "number"
-          ? options.forcedTime
-          : isSameMedia && element.currentTime > 0
-          ? element.currentTime
-          : 0;
-
-      const requestId = ++requestIdRef.current;
-      streamRequestControllerRef.current?.abort();
-      const controller = new AbortController();
-      streamRequestControllerRef.current = controller;
-      setIsResolvingStream(true);
-      setStream((current) => ({ ...current, isError: false }));
-
-      const request = {
-        mediaType: media.mediaType,
-        mediaId: media.mediaId,
-        seasonNumber: isTv ? currentSeason : undefined,
-        episodeNumber: isTv ? currentEpisode : undefined,
-        signal: controller.signal,
-      };
-
-      let result;
-      try {
-        result = await resolveStream(serverId, request);
-      } catch {
-        result = null;
-      }
-
-      // A canceled request is not a provider failure and must never surface
-      // as "Unable to play this source". Replacement requests bump
-      // requestIdRef; only the newest request may attach a result.
-      if (controller.signal.aborted || requestId !== requestIdRef.current) {
-        return;
-      }
-      setIsResolvingStream(false);
-
-      const source = result?.source ?? null;
-
-      // Source resolution failure handling
-      if (!source) {
-        if (options?.fallbackServerId) {
-          triggerServerFailure(serverId, options.fallbackServerId, previousTime);
-        } else {
-          setPendingServerId(null);
-          setStream({ source: null, isError: true });
-        }
-        return;
-      }
-
-      if (result?.sources && result.sources.length > 0) {
-        setAvailableSources(result.sources);
-      }
-
-      // Format detection
-      const format = source.format === "unknown" ? detectFormat(source.url) : source.format;
-
-      if (mediaEngineRef.current) {
-        mediaEngineRef.current.destroy();
-        mediaEngineRef.current = null;
-      }
-
-      setActiveAbrLevel(null);
-
-      // Flag to track if media played or failed
-      let hasCommitted = false;
-      const commitSuccess = () => {
-        if (hasCommitted) return;
-        hasCommitted = true;
-        setPendingServerId(null);
-        const playingServerId = source.id || serverId;
-        setActiveServerId(playingServerId);
-        lastWorkingServerIdRef.current = playingServerId;
-      };
-
-      const handlePlaybackFailure = () => {
-        if (hasCommitted) return;
-        hasCommitted = true;
-        if (options?.fallbackServerId) {
-          triggerServerFailure(serverId, options.fallbackServerId, previousTime);
-        } else {
-          setPendingServerId(null);
-          setStream({ source: null, isError: true });
-        }
-      };
-
-      const engine = createMediaEngine(element, source.url, format, {
-        onLevelSwitched: (levelHeight) => {
-          setActiveAbrLevel(`${levelHeight}p`);
-        },
-        onError: () => {
-          handlePlaybackFailure();
-        },
-        cache: segmentByteCache,
-        mediaKey,
-      });
-      mediaEngineRef.current = engine;
-
-      // Restore playback position seamlessly from the exact spot
-      if (previousTime > 0) {
-        const restoreTime = () => {
-          try {
-            if (element.duration && previousTime < element.duration) {
-              element.currentTime = previousTime;
-            } else if (!element.duration) {
-              element.currentTime = previousTime;
-            }
-          } catch {}
-        };
-
-        if (element.readyState >= 1) {
-          restoreTime();
-        } else {
-          element.addEventListener("loadedmetadata", restoreTime, { once: true });
-        }
-      }
-
-      // Mark successful playback once media is ready to play
-      const onCanPlay = () => {
-        commitSuccess();
-        element.removeEventListener("canplay", onCanPlay);
-        element.removeEventListener("error", onError);
-      };
-      const onError = () => {
-        handlePlaybackFailure();
-        element.removeEventListener("canplay", onCanPlay);
-        element.removeEventListener("error", onError);
-      };
-
-      element.addEventListener("canplay", onCanPlay, { once: true });
-      element.addEventListener("error", onError, { once: true });
-
-      endedRef.current = false;
-      setStream({ source, isError: false });
-      void element.play().catch(() => {});
-    },
-    [currentEpisode, currentMediaKey, currentSeason, isTv, media.mediaId, media.mediaType, mediaKey, segmentByteCache, triggerServerFailure]
-  );
-  loadStreamRef.current = loadStream;
-
-  // Reset subtitle state when navigating to a new media (episode/movie change)
-  const prevMediaKeyRef = useRef(currentMediaKey);
+  // Clean up popover hover timeouts on unmount
   useEffect(() => {
-    if (prevMediaKeyRef.current === currentMediaKey) return;
-    prevMediaKeyRef.current = currentMediaKey;
-    revokeAllBlobs();
-    subtitleFetchControllerRef.current?.abort();
-    subtitleFetchControllerRef.current = null;
-    setSubtitlesEnabled(false);
-    setIsSubtitlesFetching(false);
-    setAvailableSubtitles([]);
-    subtitlesFetchedRef.current = false;
-    subtitles.selectTrack(null);
-  }, [currentMediaKey, subtitles]);
-
-  const fetchSubtitles = useCallback(
-    (targetLang: string = appSettings.playback.preferredLanguage || "en") => {
-      if (subtitlesFetchedRef.current) {
-        return;
-      }
-
-      subtitlesFetchedRef.current = true;
-      setIsSubtitlesFetching(true);
-
-      const controller = new AbortController();
-      subtitleFetchControllerRef.current = controller;
-
-      const params = new URLSearchParams({
-        tmdbId: media.mediaId.toString(),
-        type: media.mediaType,
-        server: activeServerId,
-      });
-      if (isTv) {
-        params.set("season", currentSeason.toString());
-        params.set("episode", currentEpisode.toString());
-      }
-
-      fetch(`/api/stream/subtitles?${params.toString()}`, { signal: controller.signal })
-        .then((res) => (res.ok ? res.json() : { subtitles: [] }))
-        .then((data: unknown) => {
-          if (controller.signal.aborted) return;
-          const tracks =
-            data && typeof data === "object" && "subtitles" in data
-              ? (data as { subtitles: SubtitleTrack[] }).subtitles
-              : [];
-
-          if (tracks.length > 0) {
-            const normalizedLang = targetLang.toLowerCase();
-            const preferredTrack =
-              tracks.find((s) => {
-                const code = (s.lang || "").toLowerCase();
-                const label = (s.label || "").toLowerCase();
-                return code === normalizedLang || code.startsWith(normalizedLang) || label.includes(normalizedLang);
-              }) ??
-              tracks.find((s) => s.lang.toLowerCase() === "en" || s.label.toLowerCase().includes("english")) ??
-              tracks[0] ??
-              null;
-
-            if (preferredTrack) {
-              subtitles.selectTrack(preferredTrack);
-              const reordered = [preferredTrack, ...tracks.filter((t) => t.id !== preferredTrack.id)];
-              setAvailableSubtitles(reordered);
-              setSubtitlesEnabled(true);
-              return;
-            }
-          }
-
-          setAvailableSubtitles(tracks);
-        })
-        .catch(() => {
-          // Aborted or network error: leave list empty
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) {
-            setIsSubtitlesFetching(false);
-          }
-        });
-    },
-    [activeServerId, appSettings.playback.preferredLanguage, currentEpisode, currentSeason, isTv, media.mediaId, media.mediaType, subtitles]
-  );
-
-  const handleToggleSubtitles = useCallback(() => {
-    setSubtitlesEnabled((enabled) => {
-      const nextEnabled = !enabled;
-
-      if (!nextEnabled) {
-        subtitles.selectTrack(null);
-        return false;
-      }
-
-      if (subtitlesFetchedRef.current) {
-        if (!subtitles.activeTrack && availableSubtitles.length > 0) {
-          subtitles.selectTrack(availableSubtitles[0]);
-        }
-        return true;
-      }
-
-      fetchSubtitles();
-      return true;
-    });
-  }, [availableSubtitles, fetchSubtitles, subtitles]);
-
-  // Auto-fetch & select subtitles when autoSubtitles setting is enabled
-  useEffect(() => {
-    if (!appSettings.playback.autoSubtitles || !stream.source?.url) {
-      return;
-    }
-
-    if (!subtitlesFetchedRef.current) {
-      fetchSubtitles(appSettings.playback.preferredLanguage || "en");
-    }
-  }, [appSettings.playback.autoSubtitles, appSettings.playback.preferredLanguage, fetchSubtitles, stream.source?.url]);
-
-  // Stream load on initial mount or when media changes (episode/movie switch)
-  const initialMediaKeyRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (initialMediaKeyRef.current !== currentMediaKey) {
-      initialMediaKeyRef.current = currentMediaKey;
-      void loadStream(settings.serverId);
-    }
-  }, [currentMediaKey, loadStream, settings.serverId]);
-
-  useEffect(() => {
-    // StrictMode remount cancels the synthetic cleanup's deferred abort.
-    if (pendingStreamAbortRef.current) {
-      clearTimeout(pendingStreamAbortRef.current);
-      pendingStreamAbortRef.current = null;
-    }
-
-    const abortStreamSync = () => {
-      streamRequestControllerRef.current?.abort();
-      streamRequestControllerRef.current = null;
-    };
-
-    const scheduleStreamAbort = () => {
-      const controller = streamRequestControllerRef.current;
-      if (!controller) {
-        return;
-      }
-      pendingStreamAbortRef.current = setTimeout(() => {
-        controller.abort();
-        if (streamRequestControllerRef.current === controller) {
-          streamRequestControllerRef.current = null;
-        }
-        pendingStreamAbortRef.current = null;
-      }, 0);
-    };
-
-    const onUnmount = () => {
-      subtitleFetchControllerRef.current?.abort();
-      subtitleFetchControllerRef.current = null;
-      mediaEngineRef.current?.destroy();
-      mediaEngineRef.current = null;
-
+    return () => {
       if (qualityTimerRef.current) clearTimeout(qualityTimerRef.current);
       if (audioTimerRef.current) clearTimeout(audioTimerRef.current);
-
-      failedTimersRef.current.forEach((timer) => clearTimeout(timer));
-      failedTimersRef.current.clear();
-
-      revokeAllBlobs();
-      activeBlobUrlsRef.current.forEach((url) => {
-        revokeBlob(url);
-      });
-      activeBlobUrlsRef.current.clear();
-      customSubtitleUrlRef.current = null;
-
-      const video = videoRef.current;
-      if (video) {
-        video.removeAttribute("src");
-        video.load();
-      }
-    };
-
-    // Page unload has no remount, so abort the stream synchronously.
-    const handleBeforeUnload = () => {
-      onUnmount();
-      abortStreamSync();
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      onUnmount();
-      // Deferred: a StrictMode synthetic cleanup is immediately followed by
-      // this effect re-running, which cancels the pending abort. A real
-      // unmount never re-runs, so the abort fires and cancels the request.
-      scheduleStreamAbort();
     };
   }, []);
 
+  // Fetch subtitles if not yet fetched when user opens audio/subtitles popover
   useEffect(() => {
-    if (mediaEngineRef.current && "setQuality" in mediaEngineRef.current) {
-      mediaEngineRef.current.setQuality(settings.quality);
+    if (isAudioSubtitlesOpen) {
+      subtitles.fetchSubtitles();
     }
-  }, [settings.quality]);
-
-  useEffect(() => {
-    if (!stream.source) {
-      return;
-    }
-
-    const saveHistory = () => {
-      onTimeUpdate?.(videoRef.current?.currentTime ?? 0, videoRef.current?.duration ?? 0, {
-        seasonNumber: isTv ? currentSeason : undefined,
-        episodeNumber: isTv ? currentEpisode : undefined,
-      });
-    };
-
-    const interval = window.setInterval(saveHistory, HISTORY_SAVE_INTERVAL_MS);
-    return () => window.clearInterval(interval);
-  }, [currentEpisode, currentSeason, isTv, onTimeUpdate, stream.source]);
-
-  // Close open popovers with Escape
-  useEffect(() => {
-    if (!isQualityOpen && !isAudioSubtitlesOpen && !isEpisodesOpen) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsQualityOpen(false);
-        setIsAudioSubtitlesOpen(false);
-        setIsEpisodesOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isQualityOpen, isAudioSubtitlesOpen, isEpisodesOpen]);
-
-  // Unlock orientation when fullscreen exits (e.g. back gesture or button)
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
-        try {
-          const orientation = window.screen.orientation as {
-            unlock?: () => void;
-          };
-          if (typeof orientation?.unlock === "function") {
-            orientation.unlock();
-          }
-        } catch {
-          // Orientation unlock may not be supported
-        }
-      }
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
-  }, []);
-
-  // Auto-dismiss double-tap seek feedback indicator
-  useEffect(() => {
-    if (!seekFeedback) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setSeekFeedback(null);
-    }, 650);
-
-    return () => window.clearTimeout(timer);
-  }, [seekFeedback]);
+  }, [isAudioSubtitlesOpen, subtitles]);
 
   const handleToggleAutoNext = useCallback(() => {
     updatePlayback({ autoplay: !appSettings.playback.autoplay });
@@ -863,7 +447,6 @@ export function PlayerContainer({
   const [isNavigatingNext, setIsNavigatingNext] = useState(false);
   const fetchedSegmentKeyRef = useRef<string | null>(null);
 
-  // Reset dismiss and navigating states on episode/media switch
   useEffect(() => {
     setApiSegments([]);
     setDismissedIntro(false);
@@ -872,7 +455,6 @@ export function PlayerContainer({
     fetchedSegmentKeyRef.current = null;
   }, [currentMediaKey]);
 
-  // Fetch segments (IntroDB with SkipDB fallback) only after stream URL is resolved (zero interference during provider scraping)
   useEffect(() => {
     if (!stream.source?.url) {
       return;
@@ -912,9 +494,7 @@ export function PlayerContainer({
           setApiSegments(res.segments);
         }
       })
-      .catch(() => {
-        // Silently ignore aborted or failed requests
-      });
+      .catch(() => {});
 
     return () => {
       controller.abort();
@@ -955,7 +535,7 @@ export function PlayerContainer({
     }
 
     const nextSeason = seasons.find(
-      (season) => season.seasonNumber > currentSeason && season.episodeCount > 0
+      (s) => s.seasonNumber > currentSeason && s.episodeCount > 0
     );
     if (nextSeason) {
       handleNavigate(nextSeason.seasonNumber, 1);
@@ -982,7 +562,6 @@ export function PlayerContainer({
     playerState.seekTo(introSegment.end);
   }, [introSegment, playerState]);
 
-  // Auto-skip intro if enabled in user playback settings
   useEffect(() => {
     if (!appSettings.playback.autoSkipIntro || dismissedIntro || !introSegment) {
       return;
@@ -1033,24 +612,6 @@ export function PlayerContainer({
     [handleNavigate]
   );
 
-  const handleServerChange = useCallback(
-    (serverId: string) => {
-      if (serverId === activeServerId || serverId === pendingServerId) {
-        return;
-      }
-      const element = videoRef.current;
-      const currentTime = element && element.currentTime > 0 ? element.currentTime : 0;
-      const fallbackServerId = lastWorkingServerIdRef.current || activeServerId || "default";
-
-      setPendingServerId(serverId);
-      void loadStream(serverId, {
-        forcedTime: currentTime,
-        fallbackServerId,
-      });
-    },
-    [activeServerId, loadStream, pendingServerId]
-  );
-
   const handleQualityChange = useCallback((quality: PlayerSettings["quality"]) => {
     setSettings((current) => ({ ...current, quality }));
   }, []);
@@ -1063,156 +624,18 @@ export function PlayerContainer({
     [setRate]
   );
 
-  const handleUploadSubtitle = useCallback(
-    async (file: File) => {
-      const prevUrl = customSubtitleUrlRef.current;
-      if (prevUrl) {
-        revokeBlob(prevUrl);
-        activeBlobUrlsRef.current.delete(prevUrl);
-        customSubtitleUrlRef.current = null;
-      }
-
-      let url: string;
-      try {
-        const text = await file.text();
-        const vtt = srtToVtt(text);
-        const blob = new Blob([vtt], { type: "text/vtt;charset=utf-8" });
-        url = URL.createObjectURL(blob);
-      } catch {
-        url = URL.createObjectURL(file);
-      }
-
-      customSubtitleUrlRef.current = url;
-      activeBlobUrlsRef.current.add(url);
-
-      const customTrack: SubtitleTrack = {
-        id: `custom-${Date.now()}`,
-        lang: "custom",
-        label: file.name.replace(/\.[^/.]+$/, ""),
-        url,
-      };
-
-      setAvailableSubtitles((prev) => [
-        customTrack,
-        ...prev.filter(
-          (track) =>
-            track.id !== "custom" &&
-            !track.id.startsWith("custom-") &&
-            track.lang !== "custom" &&
-            track.url !== prevUrl
-        ),
-      ]);
-      // Uploading a file implicitly enables subtitles
-      subtitlesFetchedRef.current = true;
-      setSubtitlesEnabled(true);
-      subtitles.selectTrack(customTrack);
-    },
-    [subtitles]
-  );
-
-  const handleSubtitleChange = useCallback(
-    (track: SubtitleTrack | null) => {
-      subtitles.selectTrack(track);
-      if (track) {
-        setAvailableSubtitles((prev) => {
-          const exists = prev.some((t) => t.id === track.id);
-          if (!exists) {
-            return [track, ...prev];
-          }
-          return [track, ...prev.filter((t) => t.id !== track.id)];
-        });
-      }
-    },
-    [subtitles]
-  );
-
-  const serverOptions = useMemo<ServerOption[]>(() => {
-    const list = [...SERVERS];
-    for (const src of availableSources) {
-      const existingIndex = list.findIndex((server) => server.id === src.id);
-      const existingServer = existingIndex >= 0 ? list[existingIndex] : undefined;
-      const sourceOption: ServerOption = {
-        id: src.id,
-        name: src.name,
-        description: src.quality ? `${src.quality} stream` : "Direct source",
-        kind: src.kind,
-        flagUrl: existingServer?.flagUrl,
-      };
-
-      if (existingIndex >= 0) {
-        list[existingIndex] = sourceOption;
-      } else {
-        list.push(sourceOption);
-      }
-    }
-
-    if (activeProviders.length === 0) {
-      return list;
-    }
-
-    const enabledProviderIds = new Set(activeProviders.map((p) => p.id));
-    return list.filter((server) => {
-      if (server.id === "default") return true;
-      return Array.from(enabledProviderIds).some((provId) =>
-        server.id === provId || server.id.startsWith(`${provId}-`)
-      );
-    });
-  }, [availableSources, activeProviders]);
-
-  const filteredServerGroups = useMemo<ServerGroup[]>(() => {
-    if (activeProviders.length === 0) {
-      return SERVER_GROUPS;
-    }
-    const enabledProviderIds = new Set(activeProviders.map((p) => p.id));
-    const result: ServerGroup[] = SERVER_GROUPS.filter((g) => enabledProviderIds.has(g.id));
-    for (const provider of activeProviders) {
-      if (!result.some((g) => g.id === provider.id)) {
-        result.push({
-          id: provider.id,
-          name: provider.name,
-          children: [],
-        });
-      }
-    }
-    return result;
-  }, [activeProviders]);
-
   const isLoading = isResolvingStream && !stream.source;
-
-  const { font: subFont, textSize: subSize, textColor: subColor, backgroundBlur: subBlur } =
-    appSettings.subtitles;
-
-  const subtitleColorHex =
-    subColor === "yellow"
-      ? "#fef08a"
-      : subColor === "cyan"
-      ? "#67e8f9"
-      : subColor === "magenta"
-      ? "#f472b6"
-      : "#ffffff";
-
-  const subtitleFontFamily =
-    subFont === "netflix"
-      ? "'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif"
-      : subFont === "montserrat"
-      ? "'Montserrat', sans-serif"
-      : "'Inter', system-ui, -apple-system, sans-serif";
-
-  const subtitleFontSize = `${Math.round((subSize / 100) * 24)}px`;
-  const subtitleBgColor = subBlur ? "rgba(0, 0, 0, 0.75)" : "transparent";
 
   return (
     <div ref={containerRef} className="fixed inset-0 bg-black overflow-hidden select-none">
       {/* Subtitle Appearance Dynamic Cue Style */}
       <style jsx global>{`
         video::cue {
-          color: ${subtitleColorHex} !important;
-          background-color: ${subtitleBgColor} !important;
-          font-size: ${subtitleFontSize} !important;
-          font-family: ${subtitleFontFamily} !important;
-          text-shadow: ${subBlur
-            ? "2px 2px 4px rgba(0, 0, 0, 0.9)"
-            : "2px 2px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.8)"} !important;
+          color: ${subtitles.subtitleStyles.color} !important;
+          background-color: ${subtitles.subtitleStyles.backgroundColor} !important;
+          font-size: ${subtitles.subtitleStyles.fontSize} !important;
+          font-family: ${subtitles.subtitleStyles.fontFamily} !important;
+          text-shadow: ${subtitles.subtitleStyles.textShadow} !important;
         }
       `}</style>
 
@@ -1368,13 +791,13 @@ export function PlayerContainer({
 
                   <AudioSubtitlesPopover
                     open={isAudioSubtitlesOpen}
-                    subtitleTracks={availableSubtitles}
+                    subtitleTracks={subtitles.availableSubtitles}
                     activeSubtitleId={subtitles.activeTrack?.id}
-                    onSubtitleChange={handleSubtitleChange}
-                    onUploadSubtitle={handleUploadSubtitle}
-                    subtitlesEnabled={subtitlesEnabled}
-                    isSubtitlesFetching={isSubtitlesFetching}
-                    onToggleSubtitles={handleToggleSubtitles}
+                    onSubtitleChange={subtitles.handleSubtitleChange}
+                    onUploadSubtitle={subtitles.handleUploadSubtitle}
+                    subtitlesEnabled={subtitles.subtitlesEnabled}
+                    isSubtitlesFetching={subtitles.isSubtitlesFetching}
+                    onToggleSubtitles={subtitles.handleToggleSubtitles}
                   />
                 </div>
 

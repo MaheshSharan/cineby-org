@@ -1,3 +1,5 @@
+import { createProxyDescriptor } from "./signedProxy";
+
 export function buildStreamProxyUrl(
   targetUrl: string,
   headers?: Record<string, string>,
@@ -39,4 +41,3 @@ export function buildStreamProxyUrl(
 export function isStreamProxyConfigured(): boolean {
   return true;
 }
-import { createProxyDescriptor } from "./signedProxy";

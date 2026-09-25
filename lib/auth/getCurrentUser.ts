@@ -1,3 +1,4 @@
+import { findDefaultProfileId } from "@/lib/db/profiles";
 import { findValidSessionByToken, touchSessionActivity } from "@/lib/db/sessions";
 import type { User } from "@/lib/db/types";
 
@@ -18,6 +19,8 @@ export async function getCurrentUser(req: CookieRequest): Promise<User | null> {
 
   void touchSessionActivity(token, session.last_active_at);
 
+  const defaultProfileId = await findDefaultProfileId(session.user_id);
+
   return {
     id: session.user_id,
     email: session.email,
@@ -25,5 +28,6 @@ export async function getCurrentUser(req: CookieRequest): Promise<User | null> {
     avatarUrl: session.avatar_url ?? null,
     createdAt: session.user_created_at,
     activeProfileId: session.active_profile_id,
+    hasProfiles: defaultProfileId !== null,
   };
 }

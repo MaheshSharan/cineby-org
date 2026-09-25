@@ -53,7 +53,7 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
     if (isPlaying && (!seasonNumber || !episodeNumber)) {
       const user = await getCurrentUser(context.req);
       if (user) {
-        const historyList = await listHistory(user.id);
+        const historyList = await listHistory(user.id, user.activeProfileId ?? undefined);
         const match = historyList.find(
           (item) => item.mediaType === "tv" && item.mediaId === details.id
         );
