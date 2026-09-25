@@ -59,7 +59,7 @@ export function DetailModal() {
         </button>
 
         {/* Scrollable Body */}
-        <div className="overflow-y-auto scrollbar-hide flex-1 relative z-10 bg-neo-bg">
+        <div className="overflow-y-auto no-scrollbar scrollbar-hide flex-1 relative z-10 bg-neo-bg">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center min-h-[440px] w-full text-white/60">
               <div className="h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-primary" />

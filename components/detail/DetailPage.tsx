@@ -612,7 +612,6 @@ export function DetailPage({
                     onClick={onClose}
                     size="lg"
                     label={resumeLabel}
-                    className="bg-primary text-white shadow-glow hover:bg-primary/90"
                   />
                 );
               })() : null}
