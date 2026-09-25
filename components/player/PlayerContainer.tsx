@@ -293,6 +293,7 @@ export function PlayerContainer({
 
   const segmentByteCache = useMemo(() => {
     return createSegmentByteCache();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset cache when active mediaKey changes
   }, [mediaKey]);
 
   const initialSeekTime = useMemo(() => {
@@ -580,7 +581,7 @@ export function PlayerContainer({
       setStream({ source, isError: false });
       void element.play().catch(() => {});
     },
-    [currentEpisode, currentMediaKey, currentSeason, isTv, media.mediaId, media.mediaType, triggerServerFailure]
+    [currentEpisode, currentMediaKey, currentSeason, isTv, media.mediaId, media.mediaType, mediaKey, segmentByteCache, triggerServerFailure]
   );
   loadStreamRef.current = loadStream;
 

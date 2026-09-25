@@ -94,7 +94,7 @@ export function PlayerActionButton({
         cancelAnimationFrame(animFrameRef.current);
       }
     };
-  }, [durationMs, handleDismiss, isExiting, isHovered, isLoading]);
+  }, [durationMs, handleComplete, isExiting, isHovered, isLoading]);
 
   const progressPercent = Math.min(100, (elapsedMs / durationMs) * 100);
 
