@@ -1,39 +1,91 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { MediaSummary } from "@/lib/tmdb";
+import { deduplicateMediaPool } from "@/lib/tmdb/deduplicate";
 import { ContentRow } from "@/components/content/ContentRow";
 import { MovieCard } from "@/components/movie/MovieCard";
 
 export interface StreamingProvider {
   id: number;
   name: string;
-  shortName: string;
-  bgColor: string;
-  textColor: string;
-  fontSize?: string;
+  logo: string;
 }
 
 export const STREAMING_PROVIDERS: StreamingProvider[] = [
-  { id: 8, name: "Netflix", shortName: "N", bgColor: "#e50914", textColor: "#ffffff", fontSize: "11px" },
-  { id: 119, name: "Prime Video", shortName: "P", bgColor: "#00a8e1", textColor: "#0a1929", fontSize: "11px" },
-  { id: 384, name: "Max", shortName: "M", bgColor: "#0e0e0e", textColor: "#ffffff", fontSize: "11px" },
-  { id: 337, name: "Disney+", shortName: "D+", bgColor: "#113ccf", textColor: "#ffffff", fontSize: "8px" },
-  { id: 350, name: "Apple TV+", shortName: "tv", bgColor: "#000000", textColor: "#ffffff", fontSize: "8px" },
-  { id: 531, name: "Paramount+", shortName: "P+", bgColor: "#0064ff", textColor: "#ffffff", fontSize: "8px" },
-  { id: 15, name: "Hulu", shortName: "H", bgColor: "#1ce783", textColor: "#0a1a0f", fontSize: "11px" },
+  { id: 8, name: "Netflix", logo: "/assets/providers/netflix.png" },
+  { id: 9, name: "Prime Video", logo: "/assets/providers/prime.png" },
+  { id: 337, name: "Disney+", logo: "/assets/providers/disney.png" },
+  { id: 350, name: "Apple TV+", logo: "/assets/providers/apple.png" },
+  { id: 1899, name: "HBO Max", logo: "/assets/providers/max.png" },
+  { id: 15, name: "Hulu", logo: "/assets/providers/hulu.png" },
+  { id: 531, name: "Paramount+", logo: "/assets/providers/paramount.png" },
+  { id: 386, name: "Peacock", logo: "/assets/providers/peacock.png" },
+  { id: 283, name: "Crunchyroll", logo: "/assets/providers/crunchyroll.png" },
+  { id: 43, name: "Starz", logo: "/assets/providers/starz.png" },
+  { id: 526, name: "AMC+", logo: "/assets/providers/amc.png" },
+  { id: 34, name: "MGM+", logo: "/assets/providers/mgm.png" },
+  { id: 188, name: "YouTube Premium", logo: "/assets/providers/youtube_premium.png" },
+  { id: 73, name: "Tubi", logo: "/assets/providers/tubi.png" },
+  { id: 300, name: "Pluto TV", logo: "/assets/providers/pluto.png" },
 ];
 
 interface OnlyOnRowProps {
-  initialItems: MediaSummary[];
+  initialItems?: MediaSummary[];
+  activeProviderId?: number;
+  excludeMediaKeys?: string[];
+  onProviderChange?: (providerId: number) => void;
 }
 
-export function OnlyOnRow({ initialItems }: OnlyOnRowProps) {
-  const [selectedProvider, setSelectedProvider] = useState<StreamingProvider>(STREAMING_PROVIDERS[0]);
+export function OnlyOnRow({
+  initialItems = [],
+  activeProviderId,
+  excludeMediaKeys = [],
+  onProviderChange,
+}: OnlyOnRowProps) {
+  const [selectedProvider, setSelectedProvider] = useState<StreamingProvider>(
+    STREAMING_PROVIDERS.find((p) => p.id === activeProviderId) ?? STREAMING_PROVIDERS[0]
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [items, setItems] = useState<MediaSummary[]>(initialItems);
   const [isLoading, setIsLoading] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const fetchProviderItems = useCallback(
+    async (providerId: number) => {
+      if (providerId === 8 && initialItems.length > 0) {
+        setItems(initialItems);
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        const res = await fetch(`/api/discover/provider?providerId=${providerId}`);
+        if (res.ok) {
+          const data = (await res.json()) as { results: MediaSummary[] };
+          const seen = new Set<string>(excludeMediaKeys);
+          const uniqueItems = deduplicateMediaPool(data.results || [], seen, 20);
+          setItems(uniqueItems);
+        }
+      } catch {
+        // Keep existing items on failure
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [excludeMediaKeys, initialItems]
+  );
+
+  // Sync external provider selection from BrowseByProviderRow
+  useEffect(() => {
+    if (!activeProviderId) return;
+    const match = STREAMING_PROVIDERS.find((p) => p.id === activeProviderId);
+    if (match && match.id !== selectedProvider.id) {
+      setSelectedProvider(match);
+      fetchProviderItems(match.id);
+    }
+  }, [activeProviderId, fetchProviderItems, selectedProvider.id]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -47,30 +99,15 @@ export function OnlyOnRow({ initialItems }: OnlyOnRowProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSelectProvider = useCallback(async (provider: StreamingProvider) => {
-    setSelectedProvider(provider);
-    setIsOpen(false);
-
-    if (provider.id === 8 && initialItems.length > 0) {
-      setItems(initialItems);
-
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const res = await fetch(`/api/discover/provider?providerId=${provider.id}`);
-      if (res.ok) {
-        const data = (await res.json()) as { results: MediaSummary[] };
-        setItems(data.results);
-      }
-    } catch {
-      // Keep existing items on failure
-    } finally {
-      setIsLoading(false);
-    }
-  }, [initialItems]);
+  const handleSelectProvider = useCallback(
+    (provider: StreamingProvider) => {
+      setSelectedProvider(provider);
+      setIsOpen(false);
+      onProviderChange?.(provider.id);
+      fetchProviderItems(provider.id);
+    },
+    [fetchProviderItems, onProviderChange]
+  );
 
   const customTitle = (
     <div className="flex items-baseline gap-2 flex-wrap" ref={containerRef}>
@@ -82,13 +119,21 @@ export function OnlyOnRow({ initialItems }: OnlyOnRowProps) {
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           onClick={() => setIsOpen((prev) => !prev)}
-          className="group inline-flex items-baseline gap-1.5 text-inherit font-inherit cursor-pointer"
+          className="group inline-flex items-center gap-2 text-inherit font-inherit cursor-pointer hover:opacity-90 transition-opacity focus:outline-none"
         >
+          <span className="w-6 h-6 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex-shrink-0 inline-flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={selectedProvider.logo}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          </span>
           <span className="border-b-2 border-primary pb-0.5">{selectedProvider.name}</span>
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
+            width="18"
+            height="18"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -107,9 +152,9 @@ export function OnlyOnRow({ initialItems }: OnlyOnRowProps) {
           <div
             role="listbox"
             aria-label="Select streaming provider"
-            className="absolute left-0 top-full mt-2 z-[9999] min-w-[14rem] rounded-2xl shadow-2xl glass-card-dark backdrop-blur-xl border border-white/10 flex flex-col"
+            className="absolute left-0 top-full mt-2 z-[9999] min-w-[15rem] rounded-2xl shadow-2xl bg-[#12151c]/95 backdrop-blur-xl border border-white/10 flex flex-col overflow-hidden animate-in fade-in-50 zoom-in-95 duration-100"
           >
-            <ul className="no-scrollbar py-1 overflow-y-auto max-h-60">
+            <ul className="no-scrollbar py-1.5 overflow-y-auto max-h-72 divide-y divide-white/[0.04]">
               {STREAMING_PROVIDERS.map((provider) => {
                 const isSelected = provider.id === selectedProvider.id;
 
@@ -119,28 +164,20 @@ export function OnlyOnRow({ initialItems }: OnlyOnRowProps) {
                       type="button"
                       role="option"
                       aria-selected={isSelected}
-                      onClick={() => void handleSelectProvider(provider)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left text-[14px] transition-colors ${
+                      onClick={() => handleSelectProvider(provider)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left text-[13.5px] transition-colors ${
                         isSelected
-                          ? "text-primary font-semibold bg-white/[0.04]"
-                          : "text-text-hi hover:bg-white/[0.04]"
+                          ? "text-primary font-semibold bg-white/[0.06]"
+                          : "text-white/85 hover:bg-white/[0.04] hover:text-white"
                       }`}
                     >
-                      <span className="flex-shrink-0">
-                        <span
-                          aria-hidden="true"
-                          className="inline-flex items-center justify-center rounded-full font-bold leading-none ring-1 ring-white/10"
-                          style={{
-                            width: "22px",
-                            height: "22px",
-                            backgroundColor: provider.bgColor,
-                            color: provider.textColor,
-                            fontSize: provider.fontSize ?? "11px",
-                            letterSpacing: "-0.02em",
-                          }}
-                        >
-                          {provider.shortName}
-                        </span>
+                      <span className="flex-shrink-0 w-7 h-7 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={provider.logo}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
                       </span>
                       <span className="flex-1 truncate">{provider.name}</span>
                     </button>
@@ -157,10 +194,15 @@ export function OnlyOnRow({ initialItems }: OnlyOnRowProps) {
   const displayItems = Array.isArray(items) ? items : (Array.isArray(initialItems) ? initialItems : []);
 
   return (
-    <ContentRow title={customTitle} className={isLoading ? "opacity-50 transition-opacity duration-200" : "transition-opacity duration-200"}>
-      {displayItems.map((item) => (
-        <MovieCard key={item.id} media={item} variant="catalog" />
-      ))}
-    </ContentRow>
+    <div id="only-on-section" className="scroll-mt-24">
+      <ContentRow
+        title={customTitle}
+        className={isLoading ? "opacity-50 transition-opacity duration-200" : "transition-opacity duration-200"}
+      >
+        {displayItems.map((item) => (
+          <MovieCard key={item.id} media={item} variant="catalog" />
+        ))}
+      </ContentRow>
+    </div>
   );
 }

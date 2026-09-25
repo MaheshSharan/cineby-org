@@ -16,28 +16,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const providerId = typeof providerIdParam === "string" ? Number.parseInt(providerIdParam, 10) : 8;
 
   try {
-    const [moviesData, tvData] = await Promise.all([
-      discoverMovies({
-        providerId: Number.isNaN(providerId) ? 8 : providerId,
-        watchRegion: "IN",
-        sortBy: "popularity.desc",
-        page: 1,
-      }),
-      discoverTv({
-        providerId: Number.isNaN(providerId) ? 8 : providerId,
-        watchRegion: "IN",
-        sortBy: "popularity.desc",
-        page: 1,
-      }),
+    const validProviderId = Number.isNaN(providerId) ? 8 : providerId;
+
+    const [moviesPage1, moviesPage2, tvPage1, tvPage2] = await Promise.all([
+      discoverMovies({ providerId: validProviderId, watchRegion: "US", sortBy: "popularity.desc", page: 1 }),
+      discoverMovies({ providerId: validProviderId, watchRegion: "US", sortBy: "popularity.desc", page: 2 }),
+      discoverTv({ providerId: validProviderId, watchRegion: "US", sortBy: "popularity.desc", page: 1 }),
+      discoverTv({ providerId: validProviderId, watchRegion: "US", sortBy: "popularity.desc", page: 2 }),
     ]);
+
+    const allMovies = [...moviesPage1.results, ...moviesPage2.results];
+    const allTv = [...tvPage1.results, ...tvPage2.results];
 
     // Interleave movies and TV shows
     const results: MediaSummary[] = [];
-    const maxLen = Math.max(moviesData.results.length, tvData.results.length);
+    const maxLen = Math.max(allMovies.length, allTv.length);
 
     for (let i = 0; i < maxLen; i += 1) {
-      if (i < moviesData.results.length) results.push(moviesData.results[i]);
-      if (i < tvData.results.length) results.push(tvData.results[i]);
+      if (i < allMovies.length) results.push(allMovies[i]);
+      if (i < allTv.length) results.push(allTv[i]);
     }
 
     res.status(200).json({ results });
