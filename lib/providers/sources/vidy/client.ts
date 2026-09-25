@@ -4,7 +4,7 @@
  * Runs directly inside the user's browser using the client's residential IP.
  * Bypasses Cloudflare datacenter IP rate limits (HTTP 429) on api.wecollege.net.
  *
- * Same pattern as the Vidking client fetcher — browser fetches seed + ciphertext,
+ * Browser fetches seed + ciphertext,
  * POSTs the encrypted payload to /api/stream/resolve for server-side decryption.
  */
 

@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import { resolveAllStreams, fetchProviderSubtitles } from "@/lib/providers/registry";
-import { decryptVidkingClientSources } from "@/lib/providers/sources/vidking";
 import { parseVixsrcEmbedHtml } from "@/lib/providers/sources/vixsrc";
 import { decryptVidyClientSources } from "@/lib/providers/sources/vidy";
 import { buildStreamProxyUrl } from "@/lib/providers/proxy";
@@ -56,10 +55,6 @@ export default withApiContext(
     const episode = body.episode ?? query.episode;
     const server = body.server ?? query.server;
 
-    const clientCiphertext = typeof body.ciphertext === "string" ? body.ciphertext : typeof query.ciphertext === "string" ? query.ciphertext : undefined;
-    const clientSeed = typeof body.seed === "string" ? body.seed : typeof query.seed === "string" ? query.seed : undefined;
-    const clientServerId = typeof body.serverId === "string" ? body.serverId : typeof query.serverId === "string" ? query.serverId : "yoru";
-
     // Vixsrc client-assisted payload
     const vixsrcEmbedHtml = typeof body.embedHtml === "string" ? body.embedHtml : undefined;
 
@@ -80,42 +75,8 @@ export default withApiContext(
     const targetServer = typeof server === "string" && server.trim() ? server.trim() : undefined;
 
     try {
-      // 1. If client provided a browser-fetched encrypted payload, decrypt and sign immediately.
-      // Guard with ENABLE_VIDKING so toggling the env flag also disables the client-assisted path.
-      const isVidkingEnabled = process.env.ENABLE_VIDKING !== "false" && process.env.ENABLE_VIDKING !== "0";
-      if (clientCiphertext && clientSeed && isVidkingEnabled) {
-        logger.debug(`[resolve] Processing client-provided Vidking payload for tmdbId=${parsedTmdbId}`);
-        const rawSources = decryptVidkingClientSources(clientCiphertext, clientSeed, parsedTmdbId, clientServerId);
 
-        if (rawSources.length > 0) {
-          const finalSources = rawSources.map((src) => ({
-            ...src,
-            url: src.direct ? src.url : buildStreamProxyUrl(src.url, src.headers, clientIp),
-          }));
-
-          // Fetch subtitles
-          const subtitles = await fetchProviderSubtitles(
-            {
-              tmdbId: parsedTmdbId,
-              type: mediaType,
-              season: seasonNum,
-              episode: episodeNum,
-            },
-            targetServer || `vidking-${clientServerId}`,
-            clientIp
-          );
-
-          logger.debug(`[resolve] Client-assisted resolution succeeded: ${finalSources.length} sources, ${subtitles.length} subtitles`);
-          res.status(200).json({
-            sources: finalSources,
-            subtitles,
-          });
-          return;
-        }
-        logger.warn(`[resolve] Client-provided payload failed to decrypt any sources, falling back to server`);
-      }
-
-      // 2. If client provided a browser-fetched vixsrc embed HTML, parse and sign immediately.
+      // 1. If client provided a browser-fetched vixsrc embed HTML, parse and sign immediately.
       // Guard with ENABLE_VIXSRC so toggling the env flag also disables the client-assisted path.
       const isVixsrcEnabled = process.env.ENABLE_VIXSRC !== "false" && process.env.ENABLE_VIXSRC !== "0";
       if (vixsrcEmbedHtml && isVixsrcEnabled) {
@@ -135,7 +96,7 @@ export default withApiContext(
         logger.warn(`[resolve] Vixsrc client-provided embed HTML failed to parse, falling back to server`);
       }
 
-      // 3. If client provided a browser-fetched Vidy payload, decrypt and sign immediately.
+      // 2. If client provided a browser-fetched Vidy payload, decrypt and sign immediately.
       // Guard with ENABLE_VIDY so toggling the env flag also disables the client-assisted path.
       const isVidyEnabled = process.env.ENABLE_VIDY !== "false" && process.env.ENABLE_VIDY !== "0";
       if (vidyCiphertext && vidySeed && isVidyEnabled) {

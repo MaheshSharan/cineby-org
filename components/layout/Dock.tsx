@@ -6,7 +6,6 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useActiveProfile } from "@/hooks/useActiveProfile";
 import {
   ClapperboardIcon,
-  CodeIcon,
   GalleryVerticalEndIcon,
   Grid2x2Icon,
   HeartIcon,
@@ -173,20 +172,6 @@ export function Dock({ onOpenSearch, onOpenAccount }: DockProps) {
             <HomeIcon size={22} strokeWidth={1.6} />
           </div>
         </Link>
-
-        {/* API */}
-        <a
-          href="https://www.vidking.net/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={itemBaseClass}
-          aria-label="API"
-          title="API"
-        >
-          <div className="pointer-events-none flex items-center justify-center">
-            <CodeIcon size={20} />
-          </div>
-        </a>
 
         {/* Browse */}
         <button

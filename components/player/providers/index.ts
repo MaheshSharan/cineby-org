@@ -1,5 +1,4 @@
 import type { Quality, StreamResponse } from "@/lib/providers/types";
-import { fetchVidkingPayloadFromBrowser } from "@/lib/providers/sources/vidking/client";
 import { fetchVixsrcPayloadFromBrowser } from "@/lib/providers/sources/vixsrc/client";
 import { fetchVidyPayloadFromBrowser } from "@/lib/providers/sources/vidy/client";
 import type { MediaSource, QualityLabel, SubtitleTrack } from "../types";
@@ -18,15 +17,8 @@ function toQualityLabel(quality?: Quality | string): QualityLabel | null {
   }
 }
 
-function isVidkingServer(serverId: string): boolean {
-  return (
-    serverId === "vidking" ||
-    serverId.startsWith("vidking-") ||
-    serverId === "breach" ||
-    serverId === "yoru" ||
-    serverId === "cypher" ||
-    serverId === "neon"
-  );
+function isCinezoServer(serverId: string): boolean {
+  return serverId === "cinezo" || serverId.startsWith("cinezo-");
 }
 
 function isVixsrcServer(serverId: string): boolean {
@@ -134,68 +126,12 @@ async function buildFetchResponse(
           });
         }
       }
-
-      if (providerId === "vidking") {
-        const payload = await fetchVidkingPayloadFromBrowser({
-          tmdbId: request.mediaId,
-          type: request.mediaType,
-          season: request.seasonNumber ?? undefined,
-          episode: request.episodeNumber ?? undefined,
-          signal: request.signal,
-        });
-        if (payload) {
-          return fetch("/api/stream/resolve", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              tmdbId: request.mediaId,
-              type: request.mediaType,
-              season: request.seasonNumber,
-              episode: request.episodeNumber,
-              server: serverId,
-              ciphertext: payload.ciphertext,
-              seed: payload.seed,
-              serverId: payload.serverId,
-            }),
-            signal: request.signal,
-          });
-        }
-      }
     }
 
     // All client fetchers failed or no active providers — let server handle it
     return fetch(`/api/stream/resolve?${params.toString()}`, {
       signal: request.signal,
     });
-  }
-
-  if (isVidkingServer(serverId)) {
-    const payload = await fetchVidkingPayloadFromBrowser({
-      tmdbId: request.mediaId,
-      type: request.mediaType,
-      season: request.seasonNumber ?? undefined,
-      episode: request.episodeNumber ?? undefined,
-      targetServer: serverId,
-      signal: request.signal,
-    });
-
-    if (payload) {
-      return fetch("/api/stream/resolve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tmdbId: request.mediaId,
-          type: request.mediaType,
-          season: request.seasonNumber,
-          episode: request.episodeNumber,
-          server: serverId,
-          ciphertext: payload.ciphertext,
-          seed: payload.seed,
-          serverId: payload.serverId,
-        }),
-        signal: request.signal,
-      });
-    }
   }
 
   if (isVixsrcServer(serverId)) {
@@ -222,6 +158,13 @@ async function buildFetchResponse(
         signal: request.signal,
       });
     }
+  }
+
+  if (isCinezoServer(serverId)) {
+    // Cinezo stream resolution is handled cleanly server-side
+    return fetch(`/api/stream/resolve?${params.toString()}`, {
+      signal: request.signal,
+    });
   }
 
   if (isVidyServer(serverId)) {
@@ -259,8 +202,8 @@ async function buildFetchResponse(
     });
   }
 
-  // If specific Vidking or Vixsrc was targeted and failed, return empty directly
-  if (isVidkingServer(serverId) || isVixsrcServer(serverId)) {
+  // If specific Vixsrc was targeted and failed, return empty directly
+  if (isVixsrcServer(serverId)) {
     return new Response(JSON.stringify({ sources: [], subtitles: [] }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -273,38 +216,19 @@ async function buildFetchResponse(
   });
 }
 
-function needsBrowserM3u8Fetch(url: string): boolean {
-  if (!url) return false;
+function needsM3u8Rewrite(url: string): boolean {
+  if (!url || url.startsWith("data:") || url.startsWith("blob:")) return false;
+  // Vidy-style CDNs that block datacenter IPs or require residential fetch
   return (
     /\.(top|workers\.dev|st|cc)\//i.test(url) ||
-    url.includes("vidking.net") ||
-    url.includes("speedracelight.com") ||
     url.includes("echogate")
   );
 }
 
 /**
- * Fetch an M3U8 from a CDN that blocks datacenter IPs (like moon.peakstorm.top)
- * using the browser's own residential IP, rewrite all segment URLs through the
- * stream proxy, and return a Blob URL that HLS.js can load directly.
- *
- * Why browser-side:
- *   moon.peakstorm.top blocks Cloudflare Worker datacenter IPs (confirmed: server
- *   sends correct Referer but still gets 403). The browser's residential IP passes
- *   the CDN's IP allowlist.
- *
- * Why referrerPolicy "no-referrer":
- *   Browsers automatically attach the current page URL as Referer on cross-origin
- *   requests. The CDN blocks requests with Referer: cineby.maheworks.workers.dev.
- *   Setting referrerPolicy: "no-referrer" suppresses the header entirely so the
- *   CDN sees no Referer, which it accepts (token-signed URLs, not Referer-gated).
- *
- * Segment CDNs (fastportal.top, rockyember.top) serve access-control-allow-origin: *
- * so HLS.js loads them directly after the proxy rewrites their URLs.
- */
-/**
- * Fetch and rewrite an M3U8 playlist through /api/stream/m3u8, returning a Blob URL
- * that HLS.js loads directly. Direct CORS-open segments stream with zero proxying.
+ * Fetch and rewrite an M3U8 playlist through /api/stream/m3u8 (mode 1: server-side fetch).
+ * Used for CDNs (Vidy) that block browser-direct access. The Vercel M3U8 fetcher
+ * (M3U8_FETCHER_URL) is used server-side to bypass datacenter IP blocks.
  */
 async function rewriteM3u8ToBlobUrl(
   m3u8Url: string,
@@ -319,16 +243,13 @@ async function rewriteM3u8ToBlobUrl(
       signal,
     });
     if (!rewriteRes.ok) return null;
-
     const rewrittenText = await rewriteRes.text();
     if (!rewrittenText.trimStart().startsWith("#EXTM3U")) return null;
-
     return createPlaylistBlob(rewrittenText);
   } catch {
     return null;
   }
 }
-
 
 export async function resolveStream(
   serverId: string,
@@ -363,7 +284,8 @@ export async function resolveStream(
 
           // Only rewrite the primary active source (index 0) to avoid wasting network
           // requests and leaking orphaned Blobs for secondary sources.
-          if (i === 0 && src.type === "hls" && needsBrowserM3u8Fetch(src.url)) {
+          // Applies only to Vidy-style CDNs that block direct browser/datacenter access.
+          if (i === 0 && src.type === "hls" && needsM3u8Rewrite(src.url)) {
             const blobUrl = await rewriteM3u8ToBlobUrl(
               src.url,
               src.headers ?? {},

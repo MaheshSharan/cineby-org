@@ -26,7 +26,7 @@ const QUALITY_OPTIONS: { value: QualityLabel | null; label: string; badge?: stri
 ];
 
 function cleanId(id: string): string {
-  return id.replace(/^(vidy|vidking|vixsrc)-/, "");
+  return id.replace(/^(vidy|cinezo|vixsrc)-/, "");
 }
 
 function isServerActive(serverId: string, activeId: string, defaultFallbackId?: string): boolean {
@@ -34,7 +34,13 @@ function isServerActive(serverId: string, activeId: string, defaultFallbackId?: 
   if (activeId === "default" && defaultFallbackId && serverId === defaultFallbackId) return true;
   const cActive = cleanId(activeId);
   const cServer = cleanId(serverId);
-  return cActive.length > 0 && cActive === cServer;
+  if (cActive.length > 0 && cActive === cServer) {
+    const activeHasPrefix = /^(vidy|cinezo|vixsrc)-/.test(activeId);
+    const serverHasPrefix = /^(vidy|cinezo|vixsrc)-/.test(serverId);
+    if (activeHasPrefix && serverHasPrefix) return serverId === activeId;
+    return true;
+  }
+  return false;
 }
 
 function isServerPending(serverId: string, pendingId?: string | null): boolean {
@@ -42,7 +48,13 @@ function isServerPending(serverId: string, pendingId?: string | null): boolean {
   if (serverId === pendingId) return true;
   const cPending = cleanId(pendingId);
   const cServer = cleanId(serverId);
-  return cPending.length > 0 && cPending === cServer;
+  if (cPending.length > 0 && cPending === cServer) {
+    const pendingHasPrefix = /^(vidy|cinezo|vixsrc)-/.test(pendingId);
+    const serverHasPrefix = /^(vidy|cinezo|vixsrc)-/.test(serverId);
+    if (pendingHasPrefix && serverHasPrefix) return serverId === pendingId;
+    return true;
+  }
+  return false;
 }
 
 function isServerFailed(serverId: string, failedIds: Record<string, boolean>): boolean {
@@ -50,7 +62,7 @@ function isServerFailed(serverId: string, failedIds: Record<string, boolean>): b
   const cServer = cleanId(serverId);
   if (failedIds[cServer]) return true;
   if (failedIds[`vidy-${cServer}`]) return true;
-  if (failedIds[`vidking-${cServer}`]) return true;
+  if (failedIds[`cinezo-${cServer}`]) return true;
   return false;
 }
 
@@ -254,7 +266,7 @@ export function QualityPopover({
                     );
                   }
 
-                  // Group with children (e.g. Vidy, Vidking)
+                  // Group with children (e.g. Vidy)
                   const isExpanded = isGroupExpanded(group.id);
 
                   // Pin active playing child to the top of its group

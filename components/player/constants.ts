@@ -108,13 +108,14 @@ export const SERVER_GROUPS: ServerGroup[] = [
     ],
   },
   {
-    id: "vidking",
-    name: "Vidking",
+    id: "cinezo",
+    name: "Cinezo",
+    flagUrl: getFlagUrl("us"),
     children: [
-      { id: "vidking-yoru", name: "Yoru", flagUrl: getFlagUrl("us") },
-      { id: "vidking-breach", name: "Breach", flagUrl: getFlagUrl("us") },
-      { id: "vidking-cypher", name: "Cypher", flagUrl: getFlagUrl("us") },
-      { id: "vidking-neon", name: "Neon", flagUrl: getFlagUrl("us") },
+      { id: "cinezo-berlin", name: "Berlin", flagUrl: getFlagUrl("de") },
+      { id: "cinezo-zendaya", name: "Zendaya", flagUrl: getFlagUrl("us") },
+      { id: "cinezo-cinefreak", name: "Sadie", flagUrl: getFlagUrl("us") },
+      { id: "cinezo-jennifer", name: "Jennifer", flagUrl: getFlagUrl("us") },
     ],
   },
   {
