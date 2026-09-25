@@ -1,13 +1,16 @@
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { MediaSummary } from "@/lib/tmdb";
 import { getBackdropResponsiveUrls, getLogoUrl } from "@/lib/tmdb/image";
 import { getEpisodeHref, getMediaHref, getPlayHref, getYear } from "@/lib/utils/media";
 import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
+import { HeroSkeleton } from "@/components/skeleton/HeroSkeleton";
+import { PlayButton } from "@/components/ui/PlayButton";
+import { StarIcon } from "@/components/ui/icons";
 
-const HERO_AUTOPLAY_MS = 6000;
+const HERO_AUTOPLAY_MS = 6500;
 
 interface HeroCarouselProps {
   items: MediaSummary[];
@@ -23,69 +26,100 @@ function getGenreNames(item: MediaSummary, genreNames: Record<number, string>): 
 export function HeroCarousel({ items, genreNames }: HeroCarouselProps) {
   const length = items.length;
   const [index, setIndex] = useState(0);
-  const [animate, setAnimate] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
+  const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (length <= 1) {
+    if (length <= 1 || isPaused) {
+      if (autoplayTimerRef.current) clearInterval(autoplayTimerRef.current);
       return;
     }
 
-    const interval = setInterval(() => {
-      setIndex((current) => (current + 1) % (length * 2));
+    autoplayTimerRef.current = setInterval(() => {
+      setIndex((current) => (current + 1) % length);
     }, HERO_AUTOPLAY_MS);
 
-    return () => clearInterval(interval);
-  }, [length]);
-
-  useEffect(() => {
-    if (index >= length) {
-      setAnimate(false);
-      setIndex(index - length);
-    } else {
-      setAnimate(true);
-    }
-  }, [index, length]);
+    return () => {
+      if (autoplayTimerRef.current) clearInterval(autoplayTimerRef.current);
+    };
+  }, [length, isPaused]);
 
   if (length === 0) {
-    return null;
+    return <HeroSkeleton />;
   }
 
-  const track = [...items, ...items];
-
   return (
-    <div className="relative h-[80vh] min-h-[420px] overflow-hidden bg-neo-bg md:h-[85vh]">
-      <div
-        className="flex h-full"
-        style={{
-          transform: `translateX(-${index * 100}%)`,
-          transition: animate ? "transform 700ms ease-out" : "none",
-        }}
-      >
-        {track.map((item, slideIndex) => (
-          <HeroSlide
-            key={`${item.id}-${slideIndex}`}
-            item={item}
-            genreNames={genreNames}
-          />
-        ))}
+    <section
+      aria-label="Featured content"
+      className="group/carousel relative z-0 h-[85vh] w-full"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      {/* Slides Container */}
+      <div className="relative h-full w-full">
+        {items.map((item, slideIdx) => {
+          const isActive = slideIdx === index;
+          return (
+            <div
+              key={item.id}
+              aria-hidden={!isActive}
+              className={`absolute inset-0 h-full w-full transition-opacity duration-1000 ease-in-out ${
+                isActive ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0"
+              }`}
+            >
+              {isActive || Math.abs(slideIdx - index) <= 1 ? (
+                <HeroSlide item={item} genreNames={genreNames} isActive={isActive} />
+              ) : null}
+            </div>
+          );
+        })}
       </div>
-    </div>
+
+      {/* Carousel Navigation Indicators */}
+      {length > 1 ? (
+        <div
+          className="absolute bottom-20 right-6 z-20 hidden items-center gap-2 lg:bottom-24 lg:right-16 lg:flex"
+          aria-label="Carousel pagination"
+        >
+          {items.map((item, dotIdx) => {
+            const isCurrent = dotIdx === index;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-label={`Go to slide ${dotIdx + 1}: ${item.title}`}
+                aria-current={isCurrent ? "true" : "false"}
+                onClick={() => setIndex(dotIdx)}
+                className={`h-2 rounded-full cursor-pointer transition-all duration-300 ${
+                  isCurrent
+                    ? "w-8 bg-white shadow-[0_0_12px_rgba(255,255,255,0.6)]"
+                    : "w-2 bg-white/35 hover:bg-white/70"
+                }`}
+              />
+            );
+          })}
+        </div>
+      ) : null}
+    </section>
   );
 }
 
 interface HeroSlideProps {
   item: MediaSummary;
   genreNames: Record<number, string>;
+  isActive: boolean;
 }
 
-function HeroSlide({ item, genreNames }: HeroSlideProps) {
+function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
   const { settings } = useSettings();
   const { openDetailModal } = useDetailModal();
-  const isModalDetail = settings.appearance.detailViewType === "modal";
 
+  const isModalDetail = settings.appearance.detailViewType === "modal";
   const { mobile, desktop } = getBackdropResponsiveUrls(item.backdropPath);
   const year = getYear(item.releaseDate);
   const genres = getGenreNames(item, genreNames);
+  const rating = item.voteAverage ? item.voteAverage.toFixed(1) : null;
+
   const playHref =
     item.mediaType === "tv"
       ? getEpisodeHref(item.id, 1, 1)
@@ -103,94 +137,127 @@ function HeroSlide({ item, genreNames }: HeroSlideProps) {
   };
 
   return (
-    <div className="relative h-full w-full shrink-0 bg-neo-bg">
-      <div className="absolute inset-0 h-full w-full overflow-hidden will-change-transform">
+    <div className="relative h-full w-full">
+      {/* Backdrop Layer with 20vh Extension into Content Row (Cinejoy Style) */}
+      <div
+        className="absolute top-0 left-0 right-0 z-0 overflow-hidden pointer-events-none"
+        style={{
+          height: "calc(100% + 20vh)",
+          maskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
+        }}
+      >
+        {/* Ambient Blur Glow */}
+        {desktop || mobile ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={desktop || mobile || ""}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover scale-125 blur-[70px] saturate-150 opacity-40 transition-opacity duration-1000"
+            />
+          </div>
+        ) : null}
+
+        {/* Main Sharp Backdrop */}
         {mobile ? (
-          <picture>
+          <picture className="absolute inset-0 block h-full w-full">
             {desktop ? <source media="(min-width: 768px)" srcSet={desktop} /> : null}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={mobile}
               alt={item.title}
-              fetchPriority="high"
-              className="absolute inset-0 h-full w-full object-cover object-[center_28%]"
+              fetchPriority={isActive ? "high" : "low"}
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-700 ease-out"
             />
           </picture>
         ) : null}
+
+        {/* Top Header Shadow */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-[10%] -right-[10%] z-[1] h-[55%] w-1/2 bg-[radial-gradient(rgba(220,38,38,0.14)_0px,rgba(220,38,38,0.06)_30%,rgba(0,0,0,0)_60%)] blur-[40px]"
+          className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-32 bg-gradient-to-b from-[#05070a]/80 via-[#05070a]/35 to-transparent"
+        />
+
+        {/* Subtle Vignettes from Bottom and Left */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/40 via-transparent to-transparent"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 right-0 top-0 z-[2] h-[180px] bg-gradient-to-b from-[#05070a]/75 to-transparent"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-[2]"
-          style={{
-            background:
-              "linear-gradient(rgba(5, 7, 10, 0) 40%, rgba(5, 7, 10, 0.92) 88%, rgb(5, 7, 10) 100%), linear-gradient(90deg, rgba(5, 7, 10, 0.78) 0px, rgba(5, 7, 10, 0.35) 42%, rgba(5, 7, 10, 0) 65%), linear-gradient(rgba(5, 7, 10, 0.6) 0px, rgba(5, 7, 10, 0) 35%)",
-          }}
+          className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-r from-black/40 via-transparent to-transparent"
         />
       </div>
 
-      <div className="absolute inset-0 z-[3] flex items-end pb-20">
+      {/* Hero Content Overlay */}
+      <div className="absolute inset-0 z-[3] flex items-end pb-16 md:pb-20 lg:pb-24">
         <div className="layout-container w-full">
-          <div className="max-w-2xl translate-y-6">
+          <div className="max-w-2xl translate-y-4">
+            {/* Title / Logo */}
             {item.logoPath && settings.appearance.useImageLogos ? (
               <div className="mb-4 max-w-[280px] sm:max-w-[340px] md:max-w-[420px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getLogoUrl(item.logoPath) ?? undefined}
                   alt={item.title}
-                  className="max-h-24 w-auto object-contain object-left md:max-h-32"
+                  className="max-h-24 w-auto object-contain object-left drop-shadow-2xl md:max-h-32"
                 />
               </div>
             ) : (
-              <h2 className="font-sans text-2xl font-black uppercase leading-[0.95] tracking-[-0.03em] text-text-hi drop-shadow-[0_8px_24px_rgba(0,0,0,0.55)] md:text-4xl xl:text-5xl">
+              <h1 className="font-sans text-2xl font-black uppercase leading-[0.95] tracking-[-0.03em] text-text-hi drop-shadow-[0_8px_24px_rgba(0,0,0,0.65)] md:text-4xl xl:text-5xl">
                 {item.title}
-              </h2>
+              </h1>
             )}
-            <div className="mt-[18px] mb-[10px] inline-flex flex-wrap items-center gap-[10px_14px] text-[13px] leading-none text-text-hi">
-              {year ? <span className="tracking-[0.02em] text-[rgba(238,241,246,0.85)]">{year}</span> : null}
+
+            {/* Meta Tags: Rating, Year, Genres */}
+            <div className="mt-[18px] mb-[12px] inline-flex flex-wrap items-center gap-[10px_14px] text-[13px] leading-none text-text-hi md:text-sm">
+              {rating ? (
+                <div className="inline-flex items-center gap-1.5 drop-shadow">
+                  <StarIcon size={16} className="fill-white text-white shrink-0" />
+                  <span className="font-semibold text-white">
+                    {rating}
+                    <span className="text-white/70 font-normal">/10</span>
+                  </span>
+                </div>
+              ) : null}
+
+              {year ? (
+                <span className="inline-flex items-center gap-1.5 font-medium tracking-[0.02em] text-[rgba(238,241,246,0.9)]">
+                  {rating ? (
+                    <span aria-hidden="true" className="inline-block h-[3px] w-[3px] rounded-full bg-white/40" />
+                  ) : null}
+                  {year}
+                </span>
+              ) : null}
+
               {genres.map((genre, idx) => (
-                <span key={genre} className="inline-flex items-center gap-1.5 text-[rgba(238,241,246,0.85)]">
-                  {year || idx > 0 ? (
-                    <span aria-hidden="true" className="inline-block h-[3px] w-[3px] rounded-full bg-[rgba(238,241,246,0.35)]" />
+                <span key={genre} className="inline-flex items-center gap-1.5 font-medium text-[rgba(238,241,246,0.85)]">
+                  {year || rating || idx > 0 ? (
+                    <span aria-hidden="true" className="inline-block h-[3px] w-[3px] rounded-full bg-white/40" />
                   ) : null}
                   {genre}
                 </span>
               ))}
             </div>
 
-            <p className="line-clamp-3 max-w-[560px] text-[15px] leading-[1.55] tracking-[0.01em] text-[rgba(238,241,246,0.82)]">
+            {/* Overview description */}
+            <p className="line-clamp-3 max-w-[560px] text-[14px] leading-[1.6] tracking-[0.01em] text-[rgba(238,241,246,0.85)] drop-shadow md:text-[15px]">
               {item.overview}
             </p>
 
+            {/* Action Buttons: Play + See More */}
             <div className="mt-[22px] flex items-center gap-3">
-              <Link href={playHref}>
-                <button
-                  type="button"
-                  className="flex h-11 w-11 items-center justify-center rounded-full font-medium tracking-tight transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg active:scale-[0.98] md:h-auto md:w-auto md:gap-3 md:rounded-full md:px-7 md:py-2.5 bg-text-hi hover:bg-white hover:shadow-glow"
-                  style={{ color: "#05070a" }}
-                >
-                  <svg
-                    className="h-5 w-5 text-[#05070a] md:h-[22px] md:w-[22px]"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true"
-                  >
-                    <polygon points="5,3 19,12 5,21" />
-                  </svg>
-                  <span className="hidden md:inline">Play</span>
-                </button>
-              </Link>
+              <PlayButton href={playHref} size="lg" label="Play" />
+
               <Link href={mediaHref} onClick={handleSeeMoreClick}>
                 <button
                   type="button"
-                  className="flex items-center justify-center gap-2 rounded-full border border-text-hi/10 px-4 py-2 font-medium tracking-tight text-text-hi transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg active:scale-[0.98] hover:border-primary/40 hover:shadow-glow md:gap-3 md:px-6 md:py-2.5"
+                  className="flex h-[52px] items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-6 font-medium tracking-tight text-white backdrop-blur-[16px] transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:shadow-glow active:scale-[0.98]"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -202,7 +269,7 @@ function HeroSlide({ item, genreNames }: HeroSlideProps) {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="lucide lucide-info text-text-hi"
+                    className="lucide lucide-info text-white"
                     aria-hidden="true"
                   >
                     <circle cx="12" cy="12" r="10" />

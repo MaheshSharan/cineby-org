@@ -7,7 +7,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
 
 import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
-import { StarIcon } from "@/components/ui/icons";
+import { PlayIcon, StarIcon } from "@/components/ui/icons";
 
 type CardVariant = "poster" | "backdrop" | "grid" | "catalog";
 
@@ -163,9 +163,7 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
 
             <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center opacity-0 transition-opacity duration-normal group-hover:opacity-100">
               <span className="flex h-12 w-12 scale-90 items-center justify-center rounded-full bg-white text-[#05070a] shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-transform duration-normal group-hover:scale-100">
-                <svg className="ml-0.5 h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M8 5.14v13.72c0 .78.86 1.26 1.53.85l10.86-6.86a1 1 0 0 0 0-1.7L9.53 4.29A1 1 0 0 0 8 5.14Z" />
-                </svg>
+                <PlayIcon size={22} className="fill-[#05070a] text-[#05070a] ml-0.5" />
               </span>
             </div>
           </div>

@@ -22,10 +22,12 @@ import { RecommendationsRow } from "@/components/detail/RecommendationsRow";
 import { PlayerShell } from "@/components/player/PlayerShell";
 import type { PlayerSeason } from "@/components/player/types";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { PlayButton } from "@/components/ui/PlayButton";
 import {
   CheckIcon,
   ChevronLeftIcon,
   ListOrderedIcon,
+  PlayIcon,
   PlusIcon,
   SparklesIcon,
 } from "@/components/ui/icons";
@@ -605,51 +607,49 @@ export function DetailPage({
                     );
 
                 return (
-                  <Link
+                  <PlayButton
                     href={resumeHref}
                     onClick={onClose}
-                    className="flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-[13px] font-semibold text-white shadow-glow transition-all duration-200 hover:brightness-110 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 md:h-12 md:gap-3 md:px-7 md:text-[14px]"
-                  >
-                    <svg
-                      className="h-5 w-5 fill-current md:h-[22px] md:w-[22px]"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <polygon points="5,3 19,12 5,21" />
-                    </svg>
-                    <span>{resumeLabel}</span>
-                  </Link>
+                    size="lg"
+                    label={resumeLabel}
+                    className="bg-primary text-white shadow-glow hover:bg-primary/90"
+                  />
                 );
               })() : null}
 
-              <Link
-                href={
-                  isTv
-                    ? getEpisodeHref(
-                        details.id,
-                        seasonNumber ?? historyEpisode?.season ?? 1,
-                        episodeNumber ?? historyEpisode?.episode ?? 1
-                      )
-                    : getPlayHref(details.mediaType, details.id)
-                }
-                onClick={onClose}
-                className={`flex h-11 items-center justify-center rounded-full transition-all duration-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg ${
-                  historyEntry
-                    ? "border border-white/20 bg-white/10 text-white hover:bg-white/20 px-4 md:px-6 text-[13px] md:text-[14px]"
-                    : "w-11 bg-text-hi text-[#05070a] hover:bg-white hover:shadow-glow md:h-auto md:w-auto md:gap-3 md:px-7 md:py-2.5"
-                }`}
-              >
-                <svg
-                  className="h-5 w-5 fill-current md:h-[22px] md:w-[22px]"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
+              {historyEntry ? (
+                <Link
+                  href={
+                    isTv
+                      ? getEpisodeHref(
+                          details.id,
+                          seasonNumber ?? historyEpisode?.season ?? 1,
+                          episodeNumber ?? historyEpisode?.episode ?? 1
+                        )
+                      : getPlayHref(details.mediaType, details.id)
+                  }
+                  onClick={onClose}
+                  className="flex h-[52px] items-center justify-center gap-2.5 rounded-full border border-white/15 bg-white/10 px-6 text-sm font-semibold tracking-wide text-white backdrop-blur-[16px] shadow-lg shadow-black/10 transition-all duration-200 hover:scale-105 hover:border-white/30 hover:bg-white/15 active:scale-95"
                 >
-                  <polygon points="5,3 19,12 5,21" />
-                </svg>
-                <span className={historyEntry ? "inline" : "hidden md:inline"}>
-                  {historyEntry ? "Start Over" : "Play"}
-                </span>
-              </Link>
+                  <PlayIcon size={20} className="fill-current text-white shrink-0" />
+                  <span>Start Over</span>
+                </Link>
+              ) : (
+                <PlayButton
+                  href={
+                    isTv
+                      ? getEpisodeHref(
+                          details.id,
+                          seasonNumber ?? historyEpisode?.season ?? 1,
+                          episodeNumber ?? historyEpisode?.episode ?? 1
+                        )
+                      : getPlayHref(details.mediaType, details.id)
+                  }
+                  onClick={onClose}
+                  size="lg"
+                  label="Play"
+                />
+              )}
 
               <button
                 type="button"

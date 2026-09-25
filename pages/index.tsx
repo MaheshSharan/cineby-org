@@ -47,7 +47,7 @@ const Home: NextPage<HomePageProps> = ({
 
       <HeroCarousel items={heroItems} genreNames={genreNames} />
 
-      <div className="mx-auto flex max-w-[1360px] flex-col gap-12 px-4 mt-10 md:mt-14 md:gap-16">
+      <div className="relative z-10 mx-auto flex max-w-[1360px] flex-col gap-10 px-4 mt-1 sm:mt-2 md:mt-3 md:gap-14">
         <ContinueWatchingRow />
 
         <TopTenRow items={topTenItems} />

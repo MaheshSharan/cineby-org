@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { AUTOHIDE_CONTROLS_MS, FORWARD_MS, REWIND_MS } from "../constants";
+import { AUTOHIDE_CONTROLS_MS } from "../constants";
 
 interface UsePlayerControlsOptions {
   containerRef?: React.RefObject<HTMLDivElement | null>;
@@ -110,6 +110,9 @@ export function usePlayerControls({
   const onDoubleTapSeekRef = useRef(onDoubleTapSeek);
   onDoubleTapSeekRef.current = onDoubleTapSeek;
 
+  const seekTimeRef = useRef(seekTime);
+  seekTimeRef.current = seekTime;
+
   const showControlsRef = useRef(showControls);
   showControlsRef.current = showControls;
 
@@ -163,9 +166,9 @@ export function usePlayerControls({
 
           // Double tap: Left 40% -> rewind seekTime; Right 40% -> forward seekTime; Middle 20% -> regular play toggle
           if (ratio < 0.4) {
-            onDoubleTapSeekRef.current(-seekTime, "left");
+            onDoubleTapSeekRef.current(-seekTimeRef.current, "left");
           } else if (ratio > 0.6) {
-            onDoubleTapSeekRef.current(seekTime, "right");
+            onDoubleTapSeekRef.current(seekTimeRef.current, "right");
           } else {
             onTogglePlayRef.current();
           }

@@ -5,7 +5,7 @@ import { getBackdropResponsiveUrls, getPosterResponsiveUrls } from "@/lib/tmdb/i
 import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
 
-import { ClockIcon, StarIcon } from "@/components/ui/icons";
+import { ClockIcon, PlayIcon, StarIcon } from "@/components/ui/icons";
 
 type MediaPosterCardMode = "poster" | "continue";
 
@@ -145,11 +145,9 @@ export function MediaPosterCard({
             <Link
               href={href}
               aria-label={`Resume ${title}`}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-black shadow-lg hover:bg-white/90 transition-all active:scale-95 shrink-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#05070a] shadow-lg hover:bg-white/90 transition-all active:scale-95 shrink-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide-icon lucide lucide-play w-5 h-5 fill-black ml-0.5" aria-hidden="true">
-                <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
-              </svg>
+              <PlayIcon size={20} className="fill-[#05070a] text-[#05070a] ml-0.5" />
             </Link>
 
             {/* Action button (e.g. remove) */}
@@ -233,9 +231,7 @@ export function MediaPosterCard({
 
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center opacity-0 transition-opacity duration-normal group-hover:opacity-100">
             <span className="flex h-12 w-12 scale-90 items-center justify-center rounded-full bg-white text-[#05070a] shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-transform duration-normal group-hover:scale-100">
-              <svg className="ml-0.5 h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 5.14v13.72c0 .78.86 1.26 1.53.85l10.86-6.86a1 1 0 0 0 0-1.7L9.53 4.29A1 1 0 0 0 8 5.14Z" />
-              </svg>
+              <PlayIcon size={22} className="fill-[#05070a] text-[#05070a] ml-0.5" />
             </span>
           </div>
 

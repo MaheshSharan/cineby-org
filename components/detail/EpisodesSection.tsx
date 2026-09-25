@@ -9,7 +9,7 @@ import { getEpisodeHref } from "@/lib/utils/media";
 import { useSettings } from "@/hooks/useSettings";
 
 import { ContentRow } from "@/components/content/ContentRow";
-import { DownloadIcon } from "@/components/ui/icons";
+import { DownloadIcon, PlayIcon } from "@/components/ui/icons";
 
 interface EpisodesSectionProps {
   tvId: number;
@@ -325,7 +325,7 @@ function EpisodeCard({
   );
 
   return (
-    <div className="group relative w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-md transition-all duration-300 hover:border-primary/50 hover:bg-white/[0.06] hover:shadow-[0_0_24px_var(--primary-glow)]">
+    <div className="group relative w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-md transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]">
       <div className="flex cursor-pointer items-center gap-3 p-2.5 md:cursor-default md:gap-5 md:p-3.5">
         <button
           type="button"
@@ -379,7 +379,7 @@ function EpisodeCard({
           href={playHref}
           className="hidden min-w-0 flex-1 items-center gap-5 md:flex"
         >
-          <div className="relative aspect-video w-48 md:w-56 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/40 shadow-md">
+          <div className="relative aspect-video w-48 md:w-56 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/40 shadow-md transition-colors duration-200 group-hover:border-white/20">
             {still ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -407,10 +407,17 @@ function EpisodeCard({
                 {episode.runtime}m
               </span>
             ) : null}
+
+            {/* Center Play Icon on Hover */}
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <span className="flex h-11 w-11 scale-90 items-center justify-center rounded-full bg-white text-[#05070a] shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-transform duration-200 group-hover:scale-100">
+                <PlayIcon size={20} className="fill-[#05070a] text-[#05070a] ml-0.5" />
+              </span>
+            </div>
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col gap-1.5 py-1">
-            <h4 className="line-clamp-1 text-base font-semibold leading-snug text-text-hi transition-colors duration-200 group-hover:text-primary">
+            <h4 className="line-clamp-1 text-base font-semibold leading-snug text-text-hi transition-colors duration-200">
               {episode.name}
             </h4>
             <p className="line-clamp-2 text-[13px] leading-relaxed text-text-mid">
@@ -423,7 +430,7 @@ function EpisodeCard({
           <button
             type="button"
             aria-label={`Download ${episode.name}`}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-text-mid transition-all duration-200 hover:border-primary/40 hover:bg-white/[0.08] hover:text-primary"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-text-mid transition-all duration-200 hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
           >
             <DownloadIcon size={15} />
           </button>
@@ -448,21 +455,13 @@ function EpisodeCard({
               href={playHref}
               className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-[12px] font-semibold text-white shadow-[0_0_16px_var(--primary-glow)] transition-all hover:brightness-110 active:scale-95"
             >
-              <svg
-                viewBox="0 0 24 24"
-                width="13"
-                height="13"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <polygon points="6 4 20 12 6 20 6 4" />
-              </svg>
-              Play
+              <PlayIcon size={13} className="fill-current text-white shrink-0" />
+              <span>Play</span>
             </Link>
             <button
               type="button"
               aria-label={`Download ${episode.name}`}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-text-mid transition-colors duration-200 hover:border-primary/40 hover:text-primary"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-text-mid transition-colors duration-200 hover:border-white/20 hover:text-white"
             >
               <DownloadIcon size={14} />
             </button>
@@ -491,7 +490,7 @@ function EpisodeCarouselCard({ tvId, episode }: EpisodeCarouselCardProps) {
       href={playHref}
       className="group/epcard flex w-72 md:w-80 flex-none flex-col gap-3 cursor-pointer transition-transform duration-200 active:scale-[0.98]"
     >
-      <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/40 transition-all duration-300 group-hover/epcard:scale-[1.03] group-hover/epcard:border-primary/50 group-hover/epcard:ring-1 group-hover/epcard:ring-primary/40 group-hover/epcard:shadow-[0_0_24px_var(--primary-glow)]">
+      <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/40 transition-all duration-300 group-hover/epcard:scale-[1.02] group-hover/epcard:border-white/20">
         {still ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -500,7 +499,7 @@ function EpisodeCarouselCard({ tvId, episode }: EpisodeCarouselCardProps) {
             title={episode.name}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover transition-all duration-500 group-hover/epcard:brightness-110"
+            className="h-full w-full object-cover transition-all duration-300 group-hover/epcard:brightness-95"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-white/[0.03] text-text-mid text-xs">
@@ -519,10 +518,17 @@ function EpisodeCarouselCard({ tvId, episode }: EpisodeCarouselCardProps) {
             {episode.runtime}m
           </div>
         ) : null}
+
+        {/* Center Play Icon on Hover */}
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/epcard:opacity-100">
+          <span className="flex h-11 w-11 scale-90 items-center justify-center rounded-full bg-white text-[#05070a] shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-transform duration-200 group-hover/epcard:scale-100">
+            <PlayIcon size={20} className="fill-[#05070a] text-[#05070a] ml-0.5" />
+          </span>
+        </div>
       </div>
 
       <div className="space-y-1 px-1">
-        <h3 className="line-clamp-1 text-[15px] font-semibold text-text-hi transition-colors duration-200 group-hover/epcard:text-primary">
+        <h3 className="line-clamp-1 text-[15px] font-semibold text-text-hi transition-colors duration-200">
           {episode.name}
         </h3>
         <p className="line-clamp-2 text-xs leading-relaxed text-text-mid">
