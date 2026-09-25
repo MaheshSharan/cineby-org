@@ -17,7 +17,7 @@ export function SkeletonCard({ variant = "row", className = "" }: SkeletonCardPr
   return (
     <div className={`block ${variant === "grid" ? "w-full" : VARIANT_WIDTHS[variant]} ${className}`}>
       <Skeleton
-        className={`w-full rounded-[10px] ${variant === "grid" ? "aspect-[16/9]" : "aspect-[2/3]"}`}
+        className={`w-full rounded-xl ${variant === "grid" ? "aspect-[16/9]" : "aspect-[2/3]"}`}
       />
     </div>
   );

@@ -28,7 +28,7 @@ export function CastRow({ cast }: CastRowProps) {
             key={member.id}
             className="group flex w-28 md:w-32 flex-none flex-col items-center gap-3 text-center transition-transform duration-200"
           >
-            <div className="relative h-24 w-24 md:h-28 md:w-28 flex-shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/5 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:border-primary/50 group-hover:shadow-[0_0_20px_var(--primary-glow)]">
+            <div className="relative h-24 w-24 md:h-28 md:w-28 flex-shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/5 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:border-white/30 group-hover:shadow-xl group-hover:shadow-black/60">
               {member.profilePath ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -47,7 +47,7 @@ export function CastRow({ cast }: CastRowProps) {
             </div>
 
             <div className="space-y-0.5 px-0.5 transition-transform duration-300 group-hover:translate-y-0.5">
-              <p className="line-clamp-1 text-sm font-medium text-white/90 transition-colors duration-200 group-hover:text-primary">
+              <p className="line-clamp-1 text-sm font-medium text-white/90 transition-colors duration-200 group-hover:text-white">
                 {member.name}
               </p>
               {member.character ? (

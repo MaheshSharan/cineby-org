@@ -112,7 +112,8 @@ export function EpisodesSection({ tvId, seasons, onReady }: EpisodesSectionProps
           onValueChange={(value) => setSelectedSeasonNumber(Number(value))}
         >
           <Select.Trigger
-            className="flex h-9 min-w-[140px] items-center justify-between gap-2.5 rounded-[12px] border border-white/[0.08] bg-white/[0.04] px-3.5 text-[12.5px] font-medium text-text-hi backdrop-blur-md transition-all hover:border-primary/30 hover:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background data-[state=open]:border-primary/40"
+            className="flex h-9 min-w-[140px] items-center justify-between gap-2.5 rounded-[12px] border border-white/[0.07] px-3.5 text-[12.5px] font-medium text-text-hi outline-none focus:outline-none focus-visible:outline-none focus:ring-0 transition-colors hover:border-white/20 hover:bg-white/[0.07]"
+            style={CONTROL_SURFACE_STYLE}
             aria-label="Select season"
           >
             <span className="line-clamp-1 font-medium">
@@ -138,7 +139,7 @@ export function EpisodesSection({ tvId, seasons, onReady }: EpisodesSectionProps
             <Select.Content
               position="popper"
               sideOffset={6}
-              className="relative z-50 w-72 max-h-80 overflow-y-auto rounded-xl border border-white/10 bg-[#16181d]/95 p-1.5 text-text-hi shadow-2xl backdrop-blur-xl animate-in fade-in-50 zoom-in-95 duration-100"
+              className="relative z-50 w-72 max-h-80 overflow-y-auto rounded-xl border border-white/10 bg-[#16181d]/95 p-1.5 text-text-hi shadow-2xl backdrop-blur-xl outline-none focus:outline-none animate-in fade-in-50 zoom-in-95 duration-100"
             >
               <Select.Viewport className="p-0.5">
                 {seasons.map((season) => {
@@ -149,7 +150,7 @@ export function EpisodesSection({ tvId, seasons, onReady }: EpisodesSectionProps
                       key={season.id}
                       value={String(season.seasonNumber)}
                       className={`relative my-1 flex w-full cursor-pointer select-none items-center gap-3 rounded-lg p-2 text-left outline-none transition-colors data-[highlighted]:bg-white/10 ${
-                        isSelected ? "bg-white/10 ring-1 ring-white/15" : "hover:bg-white/5"
+                        isSelected ? "bg-white/10" : "hover:bg-white/5"
                       }`}
                     >
                       <span className="shrink-0 w-9 h-[54px] rounded-md overflow-hidden bg-white/[0.06] border border-white/10 flex items-center justify-center">
@@ -209,7 +210,7 @@ export function EpisodesSection({ tvId, seasons, onReady }: EpisodesSectionProps
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search episode…"
             aria-label="Search episodes"
-            className="h-9 w-full rounded-[12px] border border-white/[0.07] pl-9 pr-3 text-[12.5px] font-medium text-text-hi outline-none transition-colors placeholder:text-text-mid focus:border-primary/40"
+            className="h-9 w-full rounded-[12px] border border-white/[0.07] pl-9 pr-3 text-[12.5px] font-medium text-text-hi outline-none transition-colors placeholder:text-text-mid focus:border-white/20"
             style={CONTROL_SURFACE_STYLE}
           />
         </div>
@@ -219,7 +220,7 @@ export function EpisodesSection({ tvId, seasons, onReady }: EpisodesSectionProps
           title={sortDescending ? "Sort A-Z" : "Sort Z-A"}
           aria-label="Toggle episode sort order"
           onClick={() => setSortDescending((descending) => !descending)}
-          className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-white/[0.07] text-text-mid transition-colors hover:border-primary/30 hover:text-primary"
+          className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-white/[0.07] text-text-mid outline-none focus:outline-none focus-visible:outline-none focus:ring-0 transition-colors hover:border-white/20 hover:text-white"
           style={CONTROL_SURFACE_STYLE}
         >
           <svg

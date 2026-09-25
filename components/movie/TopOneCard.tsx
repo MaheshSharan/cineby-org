@@ -55,7 +55,7 @@ export function TopOneCard({ media, className = "" }: TopOneCardProps) {
   return (
     <div className={`group w-[280px] xs:w-[340px] md:w-[480px] lg:w-[616px] flex-shrink-0 ${className}`}>
       <div className="w-full">
-        <div className="relative h-[220px] xs:h-[240px] md:h-[270px] lg:h-[300px] w-full overflow-hidden rounded-[10px] border border-white/10 bg-[#0b0f14]">
+        <div className="relative h-[220px] xs:h-[240px] md:h-[270px] lg:h-[300px] w-full overflow-hidden rounded-xl bg-white/5 shadow-xl shadow-black/40">
           {/* Backdrop Image */}
           {backdrop.mobile ? (
             <picture>

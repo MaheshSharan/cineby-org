@@ -26,6 +26,7 @@ interface MediaPosterCardProps {
   infoHref?: string;
   actions?: ReactNode;
   mode?: MediaPosterCardMode;
+  rank?: number;
   className?: string;
 }
 
@@ -40,12 +41,12 @@ export function MediaPosterCard({
   subtitle,
   rating,
   year,
-  typeLabel,
   progress,
   duration,
   infoHref,
   actions,
   mode = "poster",
+  rank,
   className = "",
 }: MediaPosterCardProps) {
   const { settings } = useSettings();
@@ -71,34 +72,10 @@ export function MediaPosterCard({
   const backdrop = getBackdropResponsiveUrls(backdropPath ?? posterPath);
   const progressValue = progress == null ? 0 : Math.min(100, Math.max(0, progress));
 
-  const metadata = (
-    <div className="flex items-center gap-1.5 truncate text-[10px] leading-none text-white/75">
-      {rating != null ? (
-        <span className="inline-flex items-center gap-1">
-          <StarIcon size={10} className="fill-primary text-primary" />
-          <span className="tabular-nums text-white/90">{rating.toFixed(1)}</span>
-        </span>
-      ) : null}
-      {year ? (
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className="text-white/30">·</span>
-          <span className="tabular-nums">{year}</span>
-        </span>
-      ) : null}
-      {typeLabel ? (
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className="text-white/30">·</span>
-          <span>{typeLabel}</span>
-        </span>
-      ) : null}
-      {subtitle ? <span className="truncate">{subtitle}</span> : null}
-    </div>
-  );
-
   if (isContinue) {
     return (
       <div className={`group relative w-60 md:w-72 flex-none snap-start transition-all duration-300 ease-out group-hover:z-30 ${className}`}>
-        <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-[#1a1a1a] shadow-lg shadow-black/40 border border-white/5 transition-all duration-300 ease-out group-hover:scale-[1.06] group-hover:shadow-2xl group-hover:shadow-black/70 group-hover:border-white/10 active:scale-95 cursor-pointer">
+        <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-[#1a1a1a] shadow-lg shadow-black/40 transition-all duration-300 ease-out group-hover:scale-[1.06] group-hover:shadow-2xl group-hover:shadow-black/70 active:scale-95 cursor-pointer">
           <Link
             href={href}
             aria-label={`Resume ${title}`}
@@ -195,16 +172,16 @@ export function MediaPosterCard({
   }
 
   return (
-      <div className={`group relative flex min-w-0 flex-col ${className}`}>
+    <div className={`group/card relative flex min-w-0 flex-col transition-transform duration-500 ease-out hover:scale-105 hover:z-30 origin-center cursor-pointer ${className}`}>
       {actions ? <div className="absolute right-2 top-2 z-20">{actions}</div> : null}
 
       <Link
         href={href}
         onClick={handleDetailClick}
         aria-label={title}
-        className="block rounded-[10px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
+        className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
       >
-        <div className="relative aspect-[2/3] w-full overflow-hidden rounded-[10px] border border-white/10 bg-surface-1 transition-all duration-normal ease-out group-hover:border-white/20">
+        <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-white/5 shadow-xl shadow-black/40 isolate">
           {poster.mobile ? (
             <picture>
               {poster.desktop ? <source media="(min-width: 768px)" srcSet={poster.desktop} /> : null}
@@ -214,7 +191,7 @@ export function MediaPosterCard({
                 alt={title}
                 loading="lazy"
                 decoding="async"
-                className="h-full w-full object-cover object-top transition-transform duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06]"
+                className="block h-full w-full object-cover transition-all duration-300 lg:group-hover/card:brightness-50"
               />
             </picture>
           ) : (
@@ -223,23 +200,69 @@ export function MediaPosterCard({
             </div>
           )}
 
-          <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-[#05070a]/[0.96] via-[#05070a]/35 to-transparent opacity-0 transition-opacity duration-normal group-hover:opacity-100" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-3 pb-3 pt-12 text-left opacity-0 transition-opacity duration-normal group-hover:opacity-100">
-            <h3 className="line-clamp-2 text-[13px] font-semibold leading-tight text-white">{title}</h3>
-            <div className="mt-1.5">{metadata}</div>
-          </div>
+          {rank ? (
+            <div
+              aria-hidden="true"
+              className="absolute left-0 top-0 z-[15] flex flex-col items-center justify-center overflow-hidden bg-primary font-bold text-white shadow-[0_4px_10px_var(--accent-glow)]"
+              style={{
+                width: "30px",
+                height: "38px",
+                padding: "5px 2px 7px",
+                clipPath: "polygon(0px 0px, 100% 0px, 100% 100%, 50% 85%, 0px 100%)",
+              }}
+            >
+              <span className="text-[9px] uppercase leading-tight tracking-wide">Top</span>
+              <span className="-mt-0.5 text-[11px] tabular-nums leading-none">
+                {String(rank).padStart(2, "0")}
+              </span>
+            </div>
+          ) : null}
 
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center opacity-0 transition-opacity duration-normal group-hover:opacity-100">
-            <span className="flex h-12 w-12 scale-90 items-center justify-center rounded-full bg-white text-[#05070a] shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-transform duration-normal group-hover:scale-100">
-              <PlayIcon size={22} className="fill-[#05070a] text-[#05070a] ml-0.5" />
+          {/* Card hover veil */}
+          <div className="card-hover-veil pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 transition-opacity duration-500 lg:group-hover/card:opacity-100" />
+
+          {/* Desktop Hover Overlay */}
+          <div className="hidden lg:flex absolute inset-0 flex-col items-center justify-center p-4 transition-all duration-300 transform opacity-0 translate-y-4 group-hover/card:opacity-100 group-hover/card:translate-y-0">
+            <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white text-black shadow-lg shadow-white/20 transition-transform group-hover/card:scale-110" aria-hidden="true">
+              <PlayIcon size={20} className="fill-current text-black ml-0.5" />
             </span>
+            <div className="w-full space-y-1 text-center">
+              <h3 className="line-clamp-2 text-sm font-bold leading-tight text-white drop-shadow-md">
+                {title}
+              </h3>
+              <div className="flex items-center justify-center gap-2 text-xs font-medium text-white/80">
+                {year ? <span>{year}</span> : null}
+                {rating != null && rating > 0 ? (
+                  <span className="flex items-center gap-0.5">
+                    <StarIcon size={12} className="fill-current text-white" />
+                    <span>{rating.toFixed(1)}</span>
+                  </span>
+                ) : null}
+              </div>
+            </div>
           </div>
 
           {progress != null ? (
-            <div className="absolute bottom-0 left-0 z-20 h-[3px] w-full bg-[#05070a]/60">
-              <div className="h-full bg-primary" style={{ width: `${progressValue}%` }} />
+            <div className="absolute bottom-0 left-0 z-20 h-[3px] w-full bg-white/20">
+              <div className="h-full bg-white rounded-r-full" style={{ width: `${progressValue}%` }} />
             </div>
           ) : null}
+        </div>
+
+        {/* Mobile Bottom Info */}
+        <div className="mt-2 pb-1 space-y-1 lg:hidden">
+          <h3 className="line-clamp-1 text-xs font-medium leading-tight text-white">
+            {title}
+          </h3>
+          <div className="flex items-center gap-2 text-[10px] text-white/60">
+            {rating != null && rating > 0 ? (
+              <span className="flex items-center gap-0.5">
+                <StarIcon size={10} className="fill-current text-white" />
+                <span>{rating.toFixed(1)}</span>
+              </span>
+            ) : null}
+            {year ? <span>{year}</span> : null}
+          </div>
         </div>
       </Link>
     </div>

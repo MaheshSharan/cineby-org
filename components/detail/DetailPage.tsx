@@ -12,7 +12,7 @@ import {
   removeFromWatchlist,
 } from "@/lib/api/watchlist";
 import { calculateResumeSeconds, getEpisodeHref, getMediaHref, getPlayHref, getYear, formatRuntime, formatPlaybackTime } from "@/lib/utils/media";
-import { getMovyRatings, getMovyTrailerUrl, type MovyRatings } from "@/lib/services/movy";
+import { getTrailerUrl } from "@/lib/services/trailer";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useSettings } from "@/hooks/useSettings";
@@ -44,14 +44,6 @@ interface DetailPageProps {
 }
 
 const TRAILER_DELAY_MS = 5000;
-const GRADIENT_TOP_BOTTOM =
-  "linear-gradient(180deg, rgba(5, 7, 10, 0.55) 0%, rgba(5, 7, 10, 0) 25%, rgba(5, 7, 10, 0) 65%, rgb(5, 7, 10) 100%)";
-const TRAILER_GRADIENT_TOP_BOTTOM =
-  "linear-gradient(180deg, rgba(5, 7, 10, 0.4) 0%, rgba(5, 7, 10, 0) 25%, rgba(5, 7, 10, 0) 60%, rgb(5, 7, 10) 100%)";
-const GRADIENT_LEFT_RIGHT =
-  "linear-gradient(90deg, rgba(5, 7, 10, 0.82) 0%, rgba(5, 7, 10, 0.45) 45%, rgba(5, 7, 10, 0) 70%)";
-const TRAILER_GRADIENT_LEFT_RIGHT =
-  "linear-gradient(90deg, rgba(5, 7, 10, 0.78) 0%, rgba(5, 7, 10, 0.35) 50%, rgba(5, 7, 10, 0) 75%)";
 
 export function DetailPage({
   details,
@@ -68,13 +60,10 @@ export function DetailPage({
   const [isMuted, setIsMuted] = useState(true);
   const [inWatchlist, setInWatchlist] = useState(false);
   const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
-  const [hasEntered, setHasEntered] = useState(false);
-  const [showOverview, setShowOverview] = useState(false);
   const [showTrailer, setShowTrailer] = useState(false);
   const [trailerReady, setTrailerReady] = useState(false);
   const [isPageReady, setIsPageReady] = useState(false);
   const [historyEpisode, setHistoryEpisode] = useState<{ season: number; episode: number } | null>(null);
-  const [ratings, setRatings] = useState<MovyRatings | null>(null);
   const [directTrailerUrl, setDirectTrailerUrl] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -143,31 +132,6 @@ export function DetailPage({
     return () => window.cancelAnimationFrame(id);
   }, [isTv]);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setHasEntered(true), 150);
-
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    let isCurrent = true;
-
-    getMovyRatings({
-      id: details.id,
-      title: details.title,
-      year: details.releaseDate ? getYear(details.releaseDate) : null,
-      type: details.mediaType,
-    }).then((data) => {
-      if (isCurrent && data) {
-        setRatings(data);
-      }
-    });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [details.id, details.title, details.releaseDate, details.mediaType]);
-
   const isTrailerEnabled = settings.appearance.trailers;
 
   useEffect(() => {
@@ -180,7 +144,7 @@ export function DetailPage({
 
     let isCurrent = true;
 
-    getMovyTrailerUrl(details.imdbId).then((url) => {
+    getTrailerUrl(details.imdbId).then((url) => {
       if (isCurrent && url) {
         setDirectTrailerUrl(url);
       }
@@ -308,49 +272,79 @@ export function DetailPage({
   }
 
   return (
-    <div className="relative w-full bg-neo-bg text-white">
+    <div className="relative min-h-screen w-full bg-[#050505] text-white overflow-x-hidden">
       {!isModal && !isPageReady ? <PageLoader /> : null}
+
+      {/* Fixed Ambient Background (matches Cinejoy) */}
+      {!isModal && heroBackdrop ? (
+        <div
+          className="fixed inset-0 z-0 pointer-events-none bg-[#050505]"
+          style={{ contain: "strict", willChange: "transform" }}
+        >
+          <div className="absolute inset-0 w-full h-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="w-full h-full object-cover scale-[1.2] blur-[80px] saturate-100 opacity-50"
+              alt=""
+              src={heroBackdrop}
+            />
+            <div className="absolute top-0 left-0 w-full h-[40vh] mix-blend-screen opacity-20 hidden lg:block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="w-full h-full object-cover scale-[1.2] blur-[50px] saturate-100"
+                alt=""
+                style={{
+                  maskImage: "linear-gradient(to bottom, black 0%, transparent 100%)",
+                  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 100%)",
+                }}
+                src={heroBackdrop}
+              />
+            </div>
+            {/* Dark gradient overlay under hero section */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: "linear-gradient(to bottom, transparent 0%, transparent 30%, rgba(5, 5, 5, 0.75) 60%, #050505 100%)",
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
       {!isModal ? (
         <div className="pointer-events-none absolute inset-x-0 top-0 z-50 px-6 py-5 md:px-8 md:py-6">
           <Link
             href="/"
             aria-label="Go back"
-            className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.07] text-text-hi backdrop-blur-xl transition-all duration-200 hover:border-primary/40 hover:text-primary hover:scale-[1.04]"
+            className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/40 text-text-hi backdrop-blur-xl transition-all duration-200 hover:border-white/20 hover:scale-105"
           >
             <ChevronLeftIcon className="h-5 w-5" />
           </Link>
         </div>
       ) : null}
 
-      <div
-        className={`relative w-full ${
-          isModal
-            ? "min-h-[380px] md:min-h-[460px]"
-            : "min-h-[60vh] md:min-h-[75vh] lg:min-h-[85vh]"
-        }`}
-      >
-        <div className="absolute inset-0 overflow-hidden">
+      {/* Hero Backdrop Section */}
+      <div className="relative w-full">
+        <div
+          className={`relative w-full overflow-hidden ${
+            isModal ? "h-[50vh] md:h-[60vh]" : "h-[65vh] lg:h-[75vh]"
+          }`}
+          style={{
+            maskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
+            WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
+          }}
+        >
           {heroBackdrop ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={heroBackdrop}
               alt=""
               aria-hidden="true"
-              className="h-full w-full object-cover object-center"
+              className="h-full w-full object-cover object-top"
             />
           ) : (
             <div className="h-full w-full bg-surface-1" />
           )}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            style={{ background: GRADIENT_LEFT_RIGHT }}
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            style={{ background: GRADIENT_TOP_BOTTOM }}
-          />
 
           {directTrailerUrl && showTrailer && isTrailerEnabled ? (
             <div
@@ -369,20 +363,14 @@ export function DetailPage({
                   setShowTrailer(false);
                   setTrailerReady(false);
                 }}
-                className="h-full w-full object-cover object-center pointer-events-none"
-              />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0"
-                style={{ background: TRAILER_GRADIENT_LEFT_RIGHT }}
-              />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0"
-                style={{ background: TRAILER_GRADIENT_TOP_BOTTOM }}
+                className="h-full w-full object-cover object-top pointer-events-none"
               />
             </div>
           ) : null}
+
+          {/* Gradients matching Cinejoy */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-transparent pointer-events-none hidden lg:block" />
         </div>
 
         {directTrailerUrl && showTrailer && trailerReady && isTrailerEnabled ? (
@@ -398,7 +386,7 @@ export function DetailPage({
               });
             }}
             aria-label={isMuted ? "Unmute trailer" : "Mute trailer"}
-            className="absolute bottom-6 right-6 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:bg-black/70 md:bottom-8 md:right-8 cursor-pointer"
+            className="absolute bottom-6 right-6 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:bg-black/70 md:bottom-8 md:right-8 cursor-pointer"
           >
             {isMuted ? (
               <svg
@@ -437,148 +425,68 @@ export function DetailPage({
           </button>
         ) : null}
 
+        {/* Content Info Section */}
         <div
-          className={`relative z-10 flex flex-col justify-end ${
+          className={`relative z-20 ${
             isModal
-              ? "min-h-[380px] md:min-h-[460px] px-6 pb-8 pt-16 md:px-10 md:pb-10 md:pt-20"
-              : "min-h-[60vh] md:min-h-[75vh] lg:min-h-[85vh] px-8 pb-12 pt-28 md:px-16 md:pb-16 lg:px-24"
+              ? "-mt-32 md:-mt-40 px-6 pb-8 md:px-10"
+              : "-mt-44 lg:-mt-[22rem] lg:flex lg:items-start lg:justify-between lg:gap-10 px-6 lg:px-16"
           }`}
         >
-          <div
-            className="w-full max-w-2xl text-left"
-            onMouseEnter={() => setShowOverview(true)}
-            onMouseLeave={() => setShowOverview(false)}
-          >
+          <div className="w-full max-w-[700px] lg:max-w-[650px] lg:min-w-0 flex flex-col items-center lg:items-start text-center lg:text-left">
+            {/* Title / Logo */}
             {details.logoPath && settings.appearance.useImageLogos ? (
-              <div className="mb-4 max-w-[280px] sm:max-w-[340px] md:max-w-[420px]">
+              <div className="mb-2 max-w-[280px] sm:max-w-[340px] md:max-w-[420px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getLogoUrl(details.logoPath) ?? undefined}
                   alt={details.title}
-                  className="max-h-24 w-auto object-contain object-left md:max-h-32"
+                  className="max-h-20 lg:max-h-36 max-w-[75%] lg:max-w-[500px] object-contain drop-shadow-2xl"
                 />
               </div>
             ) : (
-              <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
+              <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl drop-shadow-2xl">
                 {details.title}
               </h1>
             )}
 
-            <div
-              className={`mb-4 overflow-hidden transition-all duration-500 ease-out ${
-                hasEntered ? "max-h-[120px] opacity-100" : "max-h-0 opacity-0"
-              }`}
-              style={{ textShadow: "rgba(0,0,0,0.65) 0px 1px 4px" }}
-            >
-              {/* Attributes (Year • Runtime • Genres) */}
-              <div className="flex flex-wrap items-center text-[15px] font-medium text-white/90">
-                {details.releaseDate ? (
+            {/* Stats Line (Rating • Year • Runtime • Genres) */}
+            <div className="mt-3 lg:mt-4 flex flex-wrap items-center gap-2 text-sm lg:text-base font-medium text-white/90 justify-center lg:justify-start">
+              {details.voteAverage > 0 ? (
+                <span className="inline-flex items-center gap-1.5 font-medium text-white/90">
+                  <span>★</span>
+                  <span>{details.voteAverage.toFixed(1)}/10</span>
+                </span>
+              ) : null}
+
+              {details.releaseDate ? (
+                <span className="inline-flex items-center gap-2">
+                  {details.voteAverage > 0 ? <span className="text-white/40 select-none">•</span> : null}
                   <span className="tabular-nums">{getYear(details.releaseDate)}</span>
-                ) : null}
-                {"runtime" in details && details.runtime ? (
-                  <span className="inline-flex items-center">
-                    <span className="mx-2 select-none text-white/55" aria-hidden="true">
-                      •
-                    </span>
-                    <span className="tabular-nums">{formatRuntime(details.runtime)}</span>
-                  </span>
-                ) : null}
-                {details.genres.map((genre) => (
-                  <span key={genre.id} className="inline-flex items-center">
-                    <span className="mx-2 select-none text-white/55" aria-hidden="true">
-                      •
-                    </span>
-                    <span>{genre.name}</span>
-                  </span>
-                ))}
-              </div>
+                </span>
+              ) : null}
 
-              {/* Ratings Badges (TMDB, IMDb, Rotten Tomatoes Critics & Audience) */}
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px] font-semibold text-white/90">
-                {details.voteAverage > 0 ? (
-                  <span
-                    className="inline-flex items-center gap-2 cursor-help"
-                    title="TMDB · Rated by users"
-                  >
-                    <span className="inline-flex items-center justify-center h-[18px] px-1.5 rounded-[3px] bg-[#01b4e4] text-[#0d253f] text-[9px] font-black tracking-tight leading-none [text-shadow:none]">
-                      TMDB
-                    </span>
-                    <span className="tabular-nums leading-none">
-                      {details.voteAverage.toFixed(1)}
-                    </span>
-                  </span>
-                ) : null}
+              {"runtime" in details && details.runtime ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="text-white/40 select-none">•</span>
+                  <span className="tabular-nums">{formatRuntime(details.runtime)}</span>
+                </span>
+              ) : null}
 
-                {ratings?.imdb ? (
-                  <span
-                    className="inline-flex items-center gap-2 cursor-help"
-                    title="IMDb · Rated by users"
-                  >
-                    <span className="inline-flex items-center justify-center h-[18px] px-1.5 rounded-[3px] bg-[#f5c518] text-[#0d0d0d] text-[9px] font-black tracking-tight leading-none [text-shadow:none]">
-                      IMDb
+              {details.genres && details.genres.length > 0 ? (
+                <>
+                  {details.genres.map((genre) => (
+                    <span key={genre.id} className="inline-flex items-center gap-2">
+                      <span className="text-white/40 select-none">•</span>
+                      <span>{genre.name}</span>
                     </span>
-                    <span className="tabular-nums leading-none">
-                      {ratings.imdb.toFixed(1)}
-                    </span>
-                  </span>
-                ) : null}
-
-                {ratings?.rottenTomatoes ? (
-                  <span
-                    className="inline-flex items-center gap-1.5 cursor-help"
-                    title="Rotten Tomatoes · Rated by critics"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="block h-5 w-5 shrink-0"
-                      aria-hidden="true"
-                    >
-                      <path fill="#fa320a" d="M12 7.2c4.6 0 8.2 3.4 8.2 7.4S16.6 22 12 22 3.8 18.6 3.8 14.6 7.4 7.2 12 7.2Z" />
-                      <path fill="#1f8a2e" d="M12.1 3c.2 1.6-.6 2.8-1.8 3.4 1.6.1 3.1-.8 4-2.3.4 1.6-.2 3.1-1.4 4.1 1.3-.2 2.4-1 3.1-2.2-.2 1.5-1.2 2.7-2.6 3.2.2-2.2-1.4-4.1-3.6-4.6.8.1 1.4-.4 1.6-1.2.1-.2.4-.5.7-.4Z" />
-                    </svg>
-                    <span className="tabular-nums leading-none">{ratings.rottenTomatoes}%</span>
-                  </span>
-                ) : null}
-
-                {ratings?.rottenTomatoesAudience ? (
-                  <span
-                    className="inline-flex items-center gap-1.5 cursor-help"
-                    title="Rotten Tomatoes · Rated by users"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="block h-5 w-5 shrink-0"
-                      aria-hidden="true"
-                    >
-                      <path fill="#f3c14a" d="M8.2 6.2c.4-1.3 1.8-1.8 2.7-1.1.3-1.2 1.7-1.7 2.6-.8.5-1 1.9-1.1 2.6-.1.8-.6 2 .1 2.1 1.2.9.2 1.4 1.4.9 2.1H6.8c-.6-.8 0-2.1 1.4-2.3Z" />
-                      <path fill="#f2a11a" d="M9.4 5.4c.2.8.8 1.3 1.5 1.4-.4-1-.2-1.8.4-2.3-.9.1-1.6.4-1.9.9Z" />
-                      <path fill="#e23b32" d="M6.4 10.2h11.2l-1.1 10.2c-.1.8-.8 1.4-1.6 1.4H9.1c-.8 0-1.5-.6-1.6-1.4L6.4 10.2Z" />
-                      <path fill="#fff" d="M9.2 10.2h1.7l-.7 11.6H9.1c-.3 0-.6-.1-.8-.3l.9-11.3Zm4 0h1.7l.8 11.6h-1.8L13.2 10.2Z" />
-                    </svg>
-                    <span className="tabular-nums leading-none">{ratings.rottenTomatoesAudience}%</span>
-                  </span>
-                ) : null}
-              </div>
+                  ))}
+                </>
+              ) : null}
             </div>
 
-            {details.overview ? (
-              <p
-                className={`max-w-xl overflow-hidden text-[14px] leading-relaxed text-white/85 transition-all duration-500 ease-out md:text-[15px] ${
-                  showOverview
-                    ? "mb-7 max-h-[140px] opacity-100 line-clamp-3"
-                    : "mb-0 max-h-0 opacity-0"
-                }`}
-                style={{ textShadow: "rgba(0,0,0,0.65) 0px 1px 4px" }}
-              >
-                {details.overview}
-              </p>
-            ) : null}
-
-            <div className="mb-4 flex flex-wrap items-center gap-2 md:gap-3">
+            {/* Action Buttons Row */}
+            <div className="mt-5 lg:mt-6 flex items-center gap-3 flex-wrap justify-center lg:justify-start">
               {historyEntry ? (() => {
                 const totalMinutes = isTv
                   ? ("episodeRunTime" in details && details.episodeRunTime?.[0]
@@ -610,7 +518,7 @@ export function DetailPage({
                   <PlayButton
                     href={resumeHref}
                     onClick={onClose}
-                    size="lg"
+                    size="md"
                     label={resumeLabel}
                   />
                 );
@@ -628,9 +536,9 @@ export function DetailPage({
                       : getPlayHref(details.mediaType, details.id)
                   }
                   onClick={onClose}
-                  className="flex h-[52px] items-center justify-center gap-2.5 rounded-full border border-white/15 bg-white/10 px-6 text-sm font-semibold tracking-wide text-white backdrop-blur-[16px] shadow-lg shadow-black/10 transition-all duration-200 hover:scale-105 hover:border-white/30 hover:bg-white/15 active:scale-95"
+                  className="flex h-[44px] items-center justify-center gap-2 rounded-full border border-white/10 bg-white/10 px-5 text-sm font-semibold tracking-wide text-white backdrop-blur-[20px] shadow-lg shadow-black/5 transition-all duration-200 hover:scale-105 hover:border-white/20 active:scale-95"
                 >
-                  <PlayIcon size={20} className="fill-current text-white shrink-0" />
+                  <PlayIcon size={18} className="fill-current text-white shrink-0" />
                   <span>Start Over</span>
                 </Link>
               ) : (
@@ -645,53 +553,130 @@ export function DetailPage({
                       : getPlayHref(details.mediaType, details.id)
                   }
                   onClick={onClose}
-                  size="lg"
+                  size="md"
                   label="Play"
                 />
               )}
 
+              {/* Add to Watchlist button */}
               <button
                 type="button"
                 aria-label={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
                 aria-pressed={inWatchlist}
                 onClick={handleWatchlist}
                 disabled={isWatchlistLoading}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white shadow-lg transition-all duration-200 hover:scale-105 hover:bg-white/20 active:scale-95 focus:outline-none disabled:opacity-60 md:h-12 md:w-12"
+                className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-[20px] shadow-lg shadow-black/5 transition-all duration-200 hover:scale-105 hover:border-white/20 active:scale-95 focus:outline-none disabled:opacity-50"
               >
                 {inWatchlist ? (
-                  <CheckIcon size={20} className="stroke-[2.5]" />
+                  <CheckIcon size={19} className="stroke-[2.5]" />
                 ) : (
-                  <PlusIcon size={20} className="stroke-[2]" />
+                  <PlusIcon size={19} className="stroke-[2]" />
                 )}
               </button>
 
               {isTv ? (
                 <a
                   href="#episodes-section"
-                  className="flex h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 text-[12px] font-medium text-white backdrop-blur-xl transition-all duration-200 hover:bg-white/20 md:px-4 md:text-[13px]"
+                  className="flex h-[44px] items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 text-[13px] font-semibold text-white backdrop-blur-[20px] shadow-lg shadow-black/5 transition-all duration-200 hover:scale-105 hover:border-white/20 active:scale-95"
                 >
                   <ListOrderedIcon size={16} />
-                  <span className="truncate">Episodes</span>
+                  <span>Episodes</span>
                 </a>
               ) : null}
 
               <a
                 href="#recommendations-section"
-                className="flex h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 text-[12px] font-medium text-white backdrop-blur-xl transition-all duration-200 hover:bg-white/20 md:px-4 md:text-[13px]"
+                className="flex h-[44px] items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 text-[13px] font-semibold text-white backdrop-blur-[20px] shadow-lg shadow-black/5 transition-all duration-200 hover:scale-105 hover:border-white/20 active:scale-95"
               >
                 <SparklesIcon size={16} />
-                <span className="truncate">Similars</span>
+                <span>Similars</span>
               </a>
             </div>
+
+            {/* Overview Description */}
+            {details.overview ? (
+              <div className="mt-5 lg:mt-6 w-full">
+                <p className="text-sm lg:text-base text-white/70 leading-relaxed line-clamp-3 lg:line-clamp-4">
+                  {details.overview}
+                </p>
+              </div>
+            ) : null}
+
+            {/* Mobile Meta Details Box (Runtime, Language, Release Date) */}
+            <div className="mt-6 w-full lg:hidden">
+              <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] overflow-hidden">
+                <div className="divide-y divide-white/[0.06]">
+                  {"runtime" in details && details.runtime ? (
+                    <div className="flex items-center justify-between px-3.5 py-2.5">
+                      <span className="text-xs text-white/40">Runtime</span>
+                      <span className="text-xs text-white/80">{formatRuntime(details.runtime)}</span>
+                    </div>
+                  ) : null}
+                  {details.originalLanguage ? (
+                    <div className="flex items-center justify-between px-3.5 py-2.5">
+                      <span className="text-xs text-white/40">Language</span>
+                      <span className="text-xs text-white/80 uppercase">{details.originalLanguage}</span>
+                    </div>
+                  ) : null}
+                  {details.releaseDate ? (
+                    <div className="flex items-center justify-between px-3.5 py-2.5">
+                      <span className="text-xs text-white/40">Release Date</span>
+                      <span className="text-xs text-white/80">
+                        {new Date(details.releaseDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Desktop Right Meta Card */}
+          {!isModal ? (
+            <div className="hidden lg:block w-[280px] shrink-0 mt-36 xl:mt-40">
+              <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] overflow-hidden backdrop-blur-sm">
+                <div className="divide-y divide-white/[0.06]">
+                  {"runtime" in details && details.runtime ? (
+                    <div className="flex items-center justify-between px-4 py-2.5">
+                      <span className="text-xs text-white/40">Runtime</span>
+                      <span className="text-xs text-white/80">{formatRuntime(details.runtime)}</span>
+                    </div>
+                  ) : null}
+                  {details.originalLanguage ? (
+                    <div className="flex items-center justify-between px-4 py-2.5">
+                      <span className="text-xs text-white/40">Language</span>
+                      <span className="text-xs text-white/80 uppercase">{details.originalLanguage}</span>
+                    </div>
+                  ) : null}
+                  {details.releaseDate ? (
+                    <div className="flex items-center justify-between px-4 py-2.5">
+                      <span className="text-xs text-white/40">Release Date</span>
+                      <span className="text-xs text-white/80">
+                        {new Date(details.releaseDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
+      {/* Lower Section (Cast, Episodes, Recommendations) */}
       <div
-        className={`z-[1] w-full ${
+        className={`relative z-20 ${
           isModal
             ? "px-6 pb-8 md:px-10 md:pb-12"
-            : "px-8 pb-4 md:px-16 lg:px-24 lg:pb-20"
+            : "mt-10 lg:mt-14 px-6 lg:px-16 space-y-10 lg:space-y-14 pb-16"
         }`}
       >
         {isTv && "seasons" in details ? (
@@ -701,10 +686,10 @@ export function DetailPage({
             onReady={handleEpisodeReady}
           />
         ) : null}
-        <div className="mt-14">
+        <div>
           <CastRow cast={details.cast} />
         </div>
-        <div id="recommendations-section" className="mt-14 scroll-mt-24">
+        <div id="recommendations-section" className="scroll-mt-24">
           <RecommendationsRow
             title="You may like"
             items={
