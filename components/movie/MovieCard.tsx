@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import type { MediaSummary } from "@/lib/tmdb";
-import { getBackdropResponsiveUrls, getPosterResponsiveUrls } from "@/lib/tmdb/image";
+import { getBackdropResponsiveUrls } from "@/lib/tmdb/image";
 import { getMediaHref, getMediaTypeLabel, getYear } from "@/lib/utils/media";
 import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
@@ -15,7 +15,7 @@ const VARIANT_WIDTH: Record<CardVariant, string> = {
   poster: "w-[140px] xs:w-[150px] md:w-[180px] lg:w-[200px] flex-shrink-0",
   backdrop: "w-[240px] xs:w-[260px] md:w-[280px] lg:w-[320px] flex-shrink-0",
   grid: "w-full",
-  catalog: "w-[120px] xs:w-[132px] sm:w-[150px] md:w-[170px] lg:w-[188px] flex-shrink-0",
+  catalog: "w-[140px] xs:w-[150px] md:w-[180px] lg:w-[200px] flex-shrink-0",
 };
 
 interface MovieCardProps {
@@ -30,14 +30,11 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
   const { openDetailModal } = useDetailModal();
   const isModalDetail = settings.appearance.detailViewType === "modal";
 
-  const poster = getPosterResponsiveUrls(media.posterPath);
   const backdrop = getBackdropResponsiveUrls(media.backdropPath || media.posterPath);
   const href = getMediaHref(media.mediaType, media.id);
   const year = getYear(media.releaseDate);
   const typeLabel = getMediaTypeLabel(media.mediaType);
   const widthClass = VARIANT_WIDTH[variant];
-
-  const isBackdrop = variant === "backdrop";
 
   const handleCardClick = (e: React.MouseEvent) => {
     if (isModalDetail) {
@@ -49,11 +46,12 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
     }
   };
 
-  if (variant === "catalog") {
+  if (variant !== "backdrop") {
     return (
       <MediaPosterCard
         title={media.title}
         posterPath={media.posterPath}
+        backdropPath={media.backdropPath}
         href={href}
         mediaType={media.mediaType}
         mediaId={media.id}
@@ -61,114 +59,98 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
         rating={media.voteAverage}
         year={year}
         typeLabel={typeLabel}
-        className="w-[120px] xs:w-[132px] sm:w-[150px] md:w-[170px] lg:w-[188px] flex-shrink-0 snap-start"
+        rank={rank}
+        className={`${widthClass} snap-start ${className}`}
       />
     );
   }
 
   return (
-    <div className={`group ${widthClass} snap-start ${className}`}>
-      <div className="media-card media-card-vertical w-full">
-        <Link
-          href={href}
-          onClick={handleCardClick}
-          aria-label={media.title}
-          className="block rounded-[10px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
-        >
-          <div
-            className={`relative w-full overflow-hidden rounded-[10px] border border-white/10 bg-surface-1 transition-all duration-normal ease-out group-hover:border-white/20 ${
-              isBackdrop ? "aspect-[16/9]" : "aspect-[2/3]"
-            }`}
-          >
-            <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-[#05070a]/[0.92] via-[#05070a]/30 to-transparent opacity-0 transition-opacity duration-normal group-hover:opacity-100" />
-
-            {isBackdrop ? (
-              backdrop.mobile ? (
-                <picture>
-                  {backdrop.desktop ? (
-                    <source media="(min-width: 768px)" srcSet={backdrop.desktop} />
-                  ) : null}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={backdrop.mobile}
-                    alt={media.title}
-                    loading="lazy"
-                    decoding="async"
-                    className="aspect-[16/9] h-full w-full object-cover object-center transition-transform duration-normal ease-out group-hover:scale-[1.03]"
-                  />
-                </picture>
-              ) : (
-                <div className="flex aspect-[16/9] h-full w-full items-center justify-center p-3 text-center text-[11px] font-medium text-text-mid">
-                  {media.title}
-                </div>
-              )
-            ) : poster.mobile ? (
-              <picture>
-                {poster.desktop ? <source media="(min-width: 768px)" srcSet={poster.desktop} /> : null}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={poster.mobile}
-                  alt={media.title}
-                  loading="lazy"
-                  decoding="async"
-                  className="aspect-[2/3] h-full w-full object-cover object-top transition-transform duration-normal ease-out group-hover:scale-[1.03]"
-                />
-              </picture>
-            ) : (
-              <div className="flex aspect-[2/3] h-full w-full items-center justify-center p-3 text-center text-[11px] font-medium text-text-mid">
-                {media.title}
-              </div>
-            )}
-
-            {rank ? (
-              <div
-                aria-hidden="true"
-                className="absolute left-0 top-0 z-[15] flex flex-col items-center justify-center overflow-hidden bg-primary font-bold text-white shadow-[0_4px_10px_var(--accent-glow)]"
-                style={{
-                  width: "30px",
-                  height: "38px",
-                  padding: "5px 2px 7px",
-                  clipPath: "polygon(0px 0px, 100% 0px, 100% 100%, 50% 85%, 0px 100%)",
-                }}
-              >
-                <span className="text-[9px] uppercase leading-tight tracking-wide">Top</span>
-                <span className="-mt-0.5 text-[11px] tabular-nums leading-none">
-                  {String(rank).padStart(2, "0")}
-                </span>
-              </div>
-            ) : null}
-
-            <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-[#05070a]/[0.96] via-[#05070a]/35 to-transparent opacity-0 transition-opacity duration-normal group-hover:opacity-100" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-3 pb-3 pt-12 text-left opacity-0 transition-opacity duration-normal group-hover:opacity-100">
-              <h3 className="line-clamp-2 text-[13px] font-semibold leading-tight text-white">{media.title}</h3>
-              <div className="mt-1.5 flex items-center gap-1.5 truncate text-[10px] leading-none text-white/75">
-                {media.voteAverage > 0 ? (
-                  <span className="inline-flex items-center gap-1">
-                    <StarIcon size={10} className="fill-primary text-primary" />
-                    <span className="tabular-nums text-white/90">{media.voteAverage.toFixed(1)}</span>
-                  </span>
-                ) : null}
-                {year ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span aria-hidden="true" className="text-white/30">·</span>
-                    <span className="tabular-nums">{year}</span>
-                  </span>
-                ) : null}
-                <span className="inline-flex items-center gap-1.5">
-                  <span aria-hidden="true" className="text-white/30">·</span>
-                  <span>{typeLabel}</span>
-                </span>
-              </div>
+    <div className={`group/card relative flex min-w-0 flex-col transition-transform duration-500 ease-out hover:scale-105 hover:z-30 origin-center cursor-pointer ${widthClass} snap-start ${className}`}>
+      <Link
+        href={href}
+        onClick={handleCardClick}
+        aria-label={media.title}
+        className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
+      >
+        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-white/5 shadow-xl shadow-black/40 isolate">
+          {backdrop.mobile ? (
+            <picture>
+              {backdrop.desktop ? <source media="(min-width: 768px)" srcSet={backdrop.desktop} /> : null}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={backdrop.mobile}
+                alt={media.title}
+                loading="lazy"
+                decoding="async"
+                className="block h-full w-full object-cover transition-all duration-300 lg:group-hover/card:brightness-50"
+              />
+            </picture>
+          ) : (
+            <div className="flex h-full w-full items-center justify-center p-3 text-center text-[11px] font-medium text-text-mid">
+              {media.title}
             </div>
+          )}
 
-            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center opacity-0 transition-opacity duration-normal group-hover:opacity-100">
-              <span className="flex h-12 w-12 scale-90 items-center justify-center rounded-full bg-white text-[#05070a] shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-transform duration-normal group-hover:scale-100">
-                <PlayIcon size={22} className="fill-[#05070a] text-[#05070a] ml-0.5" />
+          {rank ? (
+            <div
+              aria-hidden="true"
+              className="absolute left-0 top-0 z-[15] flex flex-col items-center justify-center overflow-hidden bg-primary font-bold text-white shadow-[0_4px_10px_var(--accent-glow)]"
+              style={{
+                width: "30px",
+                height: "38px",
+                padding: "5px 2px 7px",
+                clipPath: "polygon(0px 0px, 100% 0px, 100% 100%, 50% 85%, 0px 100%)",
+              }}
+            >
+              <span className="text-[9px] uppercase leading-tight tracking-wide">Top</span>
+              <span className="-mt-0.5 text-[11px] tabular-nums leading-none">
+                {String(rank).padStart(2, "0")}
               </span>
             </div>
+          ) : null}
+
+          {/* Card hover veil */}
+          <div className="card-hover-veil pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 transition-opacity duration-500 lg:group-hover/card:opacity-100" />
+
+          {/* Desktop Hover Overlay */}
+          <div className="hidden lg:flex absolute inset-0 flex-col items-center justify-center p-4 transition-all duration-300 transform opacity-0 translate-y-4 group-hover/card:opacity-100 group-hover/card:translate-y-0">
+            <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white text-black shadow-lg shadow-white/20 transition-transform group-hover/card:scale-110" aria-hidden="true">
+              <PlayIcon size={20} className="fill-current text-black ml-0.5" />
+            </span>
+            <div className="w-full space-y-1 text-center">
+              <h3 className="line-clamp-2 text-sm font-bold leading-tight text-white drop-shadow-md">
+                {media.title}
+              </h3>
+              <div className="flex items-center justify-center gap-2 text-xs font-medium text-white/80">
+                {year ? <span>{year}</span> : null}
+                {media.voteAverage > 0 ? (
+                  <span className="flex items-center gap-0.5">
+                    <StarIcon size={12} className="fill-current text-white" />
+                    <span>{media.voteAverage.toFixed(1)}</span>
+                  </span>
+                ) : null}
+              </div>
+            </div>
           </div>
-        </Link>
-      </div>
+        </div>
+
+        {/* Mobile Bottom Info */}
+        <div className="mt-2 pb-1 space-y-1 lg:hidden">
+          <h3 className="line-clamp-1 text-xs font-medium leading-tight text-white">
+            {media.title}
+          </h3>
+          <div className="flex items-center gap-2 text-[10px] text-white/60">
+            {media.voteAverage > 0 ? (
+              <span className="flex items-center gap-0.5">
+                <StarIcon size={10} className="fill-current text-white" />
+                <span>{media.voteAverage.toFixed(1)}</span>
+              </span>
+            ) : null}
+            {year ? <span>{year}</span> : null}
+          </div>
+        </div>
+      </Link>
     </div>
   );
 }
