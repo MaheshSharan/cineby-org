@@ -142,7 +142,7 @@ export function PlayerContainer({
     currentSeason,
     currentEpisode,
     isTv,
-    activeServerId,
+    activeServerId: stream.source?.id || activeServerId,
     sourceUrl: stream.source?.url,
     autoSubtitles: appSettings.playback.autoSubtitles,
     preferredLanguage: appSettings.playback.preferredLanguage,

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
 import { DetailPage } from "@/components/detail/DetailPage";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { XIcon } from "@/components/ui/icons";
 
 export function DetailModal() {
@@ -61,12 +62,7 @@ export function DetailModal() {
         {/* Scrollable Body */}
         <div className="overflow-y-auto no-scrollbar scrollbar-hide flex-1 relative z-10 bg-neo-bg">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center min-h-[440px] w-full text-white/60">
-              <div className="h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-primary" />
-              <span className="mt-4 text-xs font-medium tracking-wide text-white/50">
-                Loading details...
-              </span>
-            </div>
+            <PageLoader fullScreen={false} />
           ) : error ? (
             <div className="flex flex-col items-center justify-center min-h-[380px] w-full p-8 text-center text-white/80">
               <p className="text-sm font-medium">{error}</p>

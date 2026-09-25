@@ -1,11 +1,16 @@
 interface PageLoaderProps {
   className?: string;
+  fullScreen?: boolean;
 }
 
-export function PageLoader({ className = "" }: PageLoaderProps) {
+export function PageLoader({ className = "", fullScreen = true }: PageLoaderProps) {
+  const containerClasses = fullScreen
+    ? `fixed inset-0 z-[100] flex items-center justify-center bg-neo-bg ${className}`
+    : `flex items-center justify-center min-h-[440px] w-full bg-neo-bg ${className}`;
+
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-neo-bg ${className}`}
+      className={containerClasses}
       role="status"
       aria-live="polite"
       aria-label="Loading"

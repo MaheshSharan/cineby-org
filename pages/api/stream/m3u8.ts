@@ -169,16 +169,18 @@ export default async function handler(
     baseUrl = targetUrl;
     try {
       const fetcherBase = getM3u8FetcherUrl().replace(/\/+$/, "");
-      const isVidyStream =
-        targetUrl.includes("vidy") ||
-        targetUrl.includes("quietridge") ||
-        targetUrl.includes("rockyember") ||
-        targetUrl.includes("quietraven") ||
-        targetUrl.includes("wecollege");
+      const explicitReferer = headers.Referer || headers.referer || refererQuery;
+      const explicitOrigin = headers.Origin || headers.origin || originQuery;
+      const targetOrigin = parsedTargetUrl ? parsedTargetUrl.origin : "";
+      const fetchReferer = explicitReferer || (targetOrigin ? `${targetOrigin}/` : "");
+      const fetchOrigin = explicitOrigin || targetOrigin;
+
       const fetchHeaders: Record<string, string> = {
-        Referer: isVidyStream ? "https://www.vidy.st/" : "https://www.vidking.net/",
-        Origin: isVidyStream ? "https://www.vidy.st" : "https://www.vidking.net",
-        "User-Agent": headers["User-Agent"] ?? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        ...(fetchReferer ? { Referer: fetchReferer } : {}),
+        ...(fetchOrigin ? { Origin: fetchOrigin } : {}),
+        "User-Agent":
+          headers["User-Agent"] ??
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         Accept: "*/*",
       };
 
@@ -186,8 +188,8 @@ export default async function handler(
       if (fetcherBase) {
         const params = new URLSearchParams({
           url: targetUrl,
-          referer: fetchHeaders.Referer,
-          origin: fetchHeaders.Origin,
+          ...(fetchHeaders.Referer ? { referer: fetchHeaders.Referer } : {}),
+          ...(fetchHeaders.Origin ? { origin: fetchHeaders.Origin } : {}),
         });
         const fetchUrl = `${fetcherBase}?${params.toString()}`;
         upstream = await fetch(fetchUrl, { headers: { Accept: "*/*" } });
@@ -271,17 +273,17 @@ export default async function handler(
     return urlOrPath;
   };
 
-  const fallbackUrl = baseUrl ?? targetUrl ?? "";
-  const isVidyProxy =
-    fallbackUrl.includes("vidy") ||
-    fallbackUrl.includes("quietridge") ||
-    fallbackUrl.includes("rockyember") ||
-    fallbackUrl.includes("quietraven") ||
-    fallbackUrl.includes("wecollege");
+  const explicitReferer = headers.Referer || headers.referer || refererQuery;
+  const explicitOrigin = headers.Origin || headers.origin || originQuery;
+  let fallbackOrigin = "";
+  try {
+    const fallbackUrl = baseUrl ?? targetUrl ?? "";
+    if (fallbackUrl) fallbackOrigin = new URL(fallbackUrl).origin;
+  } catch {}
 
   const proxyHeaders: Record<string, string> = {
-    Referer: isVidyProxy ? "https://www.vidy.st/" : "https://www.vidking.net/",
-    Origin: isVidyProxy ? "https://www.vidy.st" : "https://www.vidking.net",
+    Referer: explicitReferer || (fallbackOrigin ? `${fallbackOrigin}/` : ""),
+    Origin: explicitOrigin || fallbackOrigin,
   };
 
   const lines = m3u8Text.split("\n");
