@@ -40,9 +40,9 @@ export function getProfileUrl(path: string | null | undefined): string | null {
 }
 
 export function getStillThumbUrl(path: string | null | undefined): string | null {
-  const tmdbUrl = buildImageUrl(path, "w300");
+  const tmdbUrl = buildImageUrl(path, isImageProxyEnabled() ? "original" : "w300");
 
-  return tmdbUrl ? optimizeImageUrl(tmdbUrl, 50) : null;
+  return tmdbUrl ? optimizeImageUrl(tmdbUrl, 75, 640) : null;
 }
 
 export function getSeasonPosterThumbUrl(path: string | null | undefined): string | null {
@@ -51,13 +51,14 @@ export function getSeasonPosterThumbUrl(path: string | null | undefined): string
   return tmdbUrl ? optimizeImageUrl(tmdbUrl, 60) : null;
 }
 
-function optimizeImageUrl(rawUrl: string, quality: number): string {
+function optimizeImageUrl(rawUrl: string, quality: number, width?: number): string {
   if (!isImageProxyEnabled()) {
     return rawUrl;
   }
 
   const proxyBase = getImageProxyUrl();
-  return `${proxyBase}/?url=${encodeURIComponent(rawUrl)}&output=webp&q=${quality}&n=-1`;
+  const widthParam = width ? `&w=${width}` : "";
+  return `${proxyBase}/?url=${encodeURIComponent(rawUrl)}${widthParam}&output=webp&q=${quality}&n=-1`;
 }
 
 export interface PosterResponsiveUrls {
@@ -85,11 +86,11 @@ export interface BackdropResponsiveUrls {
 export function getBackdropResponsiveUrls(
   path: string | null | undefined
 ): BackdropResponsiveUrls {
-  const mobileTmdb = buildImageUrl(path, "w780");
+  const mobileTmdb = buildImageUrl(path, "w1280");
   const desktopTmdb = buildImageUrl(path, "original");
 
   return {
-    mobile: mobileTmdb ? optimizeImageUrl(mobileTmdb, 70) : null,
-    desktop: desktopTmdb ? optimizeImageUrl(desktopTmdb, 80) : null,
+    mobile: mobileTmdb ? optimizeImageUrl(mobileTmdb, 80) : null,
+    desktop: desktopTmdb ? optimizeImageUrl(desktopTmdb, 85) : null,
   };
 }
