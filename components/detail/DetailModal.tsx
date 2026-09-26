@@ -3,9 +3,12 @@ import { useDetailModal } from "@/components/detail/DetailModalContext";
 import { DetailPage } from "@/components/detail/DetailPage";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { XIcon } from "@/components/ui/icons";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 export function DetailModal() {
   const { isOpen, details, isLoading, error, closeDetailModal } = useDetailModal();
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -16,14 +19,8 @@ export function DetailModal() {
       }
     };
 
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, closeDetailModal]);
 
   if (!isOpen) {

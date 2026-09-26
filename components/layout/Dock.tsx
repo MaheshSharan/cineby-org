@@ -6,9 +6,9 @@ import { useActiveProfile } from "@/hooks/useActiveProfile";
 import {
   ClapperboardIcon,
   HomeIcon,
-  LogInIcon,
   SearchIcon,
   TvIcon,
+  UserRoundIcon,
 } from "@/components/ui/icons";
 
 interface DockProps {
@@ -19,7 +19,7 @@ interface DockProps {
 
 export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: DockProps) {
   const router = useRouter();
-  const { user, openAuthModal } = useAuth();
+  const { user } = useAuth();
   const { activeProfile } = useActiveProfile();
 
   const pathname = router.pathname;
@@ -34,11 +34,7 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
     pathname.startsWith("/watchlist");
 
   const handleAccountClick = () => {
-    if (user) {
-      onOpenAccount();
-    } else {
-      openAuthModal("login");
-    }
+    onOpenAccount();
   };
 
   const navButtonBase =
@@ -73,9 +69,6 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
                 isHome ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] scale-105" : ""
               }`}
             />
-            {isHome && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-accent-hi shadow-[0_0_8px_#f87171]" />
-            )}
           </div>
           <span
             className={`mt-1 text-[10px] tracking-tight leading-none transition-colors duration-200 ${
@@ -105,9 +98,6 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
                 isMovies ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] scale-105" : ""
               }`}
             />
-            {isMovies && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-accent-hi shadow-[0_0_8px_#f87171]" />
-            )}
           </div>
           <span
             className={`mt-1 text-[10px] tracking-tight leading-none transition-colors duration-200 ${
@@ -137,9 +127,6 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
                 isTv ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] scale-105" : ""
               }`}
             />
-            {isTv && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-accent-hi shadow-[0_0_8px_#f87171]" />
-            )}
           </div>
           <span
             className={`mt-1 text-[10px] tracking-tight leading-none transition-colors duration-200 ${
@@ -174,7 +161,7 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
               ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
               : "text-white/50 hover:text-white/85 hover:bg-white/[0.04]"
           }`}
-          aria-label={user ? "My account" : "Log in"}
+          aria-label={user ? "My account" : "Account"}
           aria-haspopup="true"
           aria-expanded={isAccountOpen}
         >
@@ -189,14 +176,13 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
                 />
               </span>
             ) : (
-              <LogInIcon
+              <UserRoundIcon
                 size={20}
                 strokeWidth={isAccount ? 2.2 : 1.8}
-                className={isAccount ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]" : ""}
+                className={`transition-transform duration-200 ${
+                  isAccount ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] scale-105" : ""
+                }`}
               />
-            )}
-            {isAccount && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-accent-hi shadow-[0_0_8px_#f87171]" />
             )}
           </div>
           <span
@@ -204,7 +190,7 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
               isAccount ? "font-semibold text-white" : "font-medium text-white/50"
             }`}
           >
-            {user ? (activeProfile?.name ? activeProfile.name.split(" ")[0] : "You") : "Log In"}
+            {user ? (activeProfile?.name ? activeProfile.name.split(" ")[0] : "Account") : "Account"}
           </span>
         </button>
       </div>

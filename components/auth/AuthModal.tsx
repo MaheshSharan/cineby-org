@@ -10,6 +10,7 @@ import {
   UserRoundIcon,
 } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/Spinner";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import type { AuthModalProps, AuthMode } from "@/components/auth/types";
 
 export type { AuthMode } from "@/components/auth/types";
@@ -44,6 +45,8 @@ export function AuthModal({
       router.push("/", undefined, { shallow: true });
     }
   }, [activeMode, onClose, router]);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) {
@@ -172,7 +175,7 @@ export function AuthModal({
 
 
         {/* Left Side: Auth Form Area */}
-        <div className="relative z-20 flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-12 sm:px-12 lg:px-16">
+        <div className="relative z-20 flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto no-scrollbar px-6 py-12 sm:px-12 lg:px-16">
           <div className="w-full max-w-[400px]">
             {/* Header Titles */}
             <div className="text-center mb-6">

@@ -25,7 +25,7 @@ interface NavItem {
 
 export function Header() {
   const router = useRouter();
-  const { user, openAuthModal } = useAuth();
+  const { user } = useAuth();
   const { activeProfile } = useActiveProfile();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -171,13 +171,7 @@ export function Header() {
       <Dock
         isAccountOpen={isProfileDropdownOpen}
         onOpenSearch={() => setIsSearchOpen(true)}
-        onOpenAccount={() => {
-          if (user) {
-            setIsProfileDropdownOpen((prev) => !prev);
-          } else {
-            openAuthModal("login");
-          }
-        }}
+        onOpenAccount={() => setIsProfileDropdownOpen((prev) => !prev)}
       />
 
       {/* Mobile Profile Dropdown (anchored above dock) */}
