@@ -169,6 +169,7 @@ export function Header() {
 
       {/* Mobile Dock Navigation */}
       <Dock
+        isAccountOpen={isProfileDropdownOpen}
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenAccount={() => {
           if (user) {

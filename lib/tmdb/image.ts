@@ -86,7 +86,7 @@ export interface BackdropResponsiveUrls {
 export function getBackdropResponsiveUrls(
   path: string | null | undefined
 ): BackdropResponsiveUrls {
-  const mobileTmdb = buildImageUrl(path, "w1280");
+  const mobileTmdb = buildImageUrl(path, "original");
   const desktopTmdb = buildImageUrl(path, "original");
 
   return {

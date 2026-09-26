@@ -1,66 +1,37 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useActiveProfile } from "@/hooks/useActiveProfile";
 import {
   ClapperboardIcon,
-  GalleryVerticalEndIcon,
-  Grid2x2Icon,
-  HeartIcon,
   HomeIcon,
   LogInIcon,
-  PartyPopperIcon,
   SearchIcon,
   TvIcon,
-  UserRoundIcon,
 } from "@/components/ui/icons";
 
 interface DockProps {
   onOpenSearch: () => void;
   onOpenAccount: () => void;
+  isAccountOpen?: boolean;
 }
 
-const CONTENT_LINKS = [
-  { label: "Movies", href: "/browse/movie", Icon: ClapperboardIcon },
-  { label: "TV Shows", href: "/browse/tv", Icon: TvIcon },
-];
-
-export function Dock({ onOpenSearch, onOpenAccount }: DockProps) {
+export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: DockProps) {
   const router = useRouter();
   const { user, openAuthModal } = useAuth();
   const { activeProfile } = useActiveProfile();
-  const [isBrowseOpen, setIsBrowseOpen] = useState(false);
-  const browseRef = useRef<HTMLDivElement>(null);
 
-  const isHome = router.pathname === "/";
-
-  useEffect(() => {
-    if (!isBrowseOpen) {
-      return;
-    }
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (browseRef.current && !browseRef.current.contains(event.target as Node)) {
-        setIsBrowseOpen(false);
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsBrowseOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isBrowseOpen]);
+  const pathname = router.pathname;
+  const isHome = pathname === "/";
+  const isMovies = pathname.startsWith("/browse/movie") || pathname.startsWith("/movie");
+  const isTv = pathname.startsWith("/browse/tv") || pathname.startsWith("/tv");
+  const isAccount =
+    isAccountOpen ||
+    pathname.startsWith("/profiles") ||
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/history") ||
+    pathname.startsWith("/watchlist");
 
   const handleAccountClick = () => {
     if (user) {
@@ -70,163 +41,173 @@ export function Dock({ onOpenSearch, onOpenAccount }: DockProps) {
     }
   };
 
-  const itemBaseClass =
-    "relative inline-flex h-[46px] w-[46px] items-center justify-center rounded-[14px] bg-[#05070a] border border-white/10 text-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_6px_14px_-6px_rgba(0,0,0,0.55)] transition-all duration-200 hover:border-primary/50 hover:text-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
+  const navButtonBase =
+    "group relative flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-200 select-none touch-manipulation active:scale-[0.88] hover:scale-105";
 
   return (
-    <div className="md:hidden">
-      {/* Browse Popup for Mobile Dock */}
-      {isBrowseOpen ? (
-        <div
-          ref={browseRef}
-          role="dialog"
-          aria-label="Browse menu"
-          className="fixed bottom-[76px] left-1/2 -translate-x-1/2 z-50 w-[300px] select-none"
-        >
-          <div className="overflow-hidden rounded-[20px] border border-white/10 bg-[#05070a]/90 p-3 shadow-2xl backdrop-blur-2xl">
-            <div className="mb-2 text-center">
-              <h3 className="text-sm font-semibold text-text-hi">Browse</h3>
-            </div>
-
-            <div className="space-y-2.5">
-              <section className="space-y-1">
-                <h4 className="px-1 text-[10px] font-medium uppercase tracking-[0.08em] text-text-mid">
-                  Content
-                </h4>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {CONTENT_LINKS.map(({ label, href, Icon }) => (
-                    <Link
-                      key={href}
-                      href={href}
-                      onClick={() => setIsBrowseOpen(false)}
-                      className="group flex flex-col items-center rounded-lg p-1.5 transition-all duration-200 hover:bg-white/10"
-                    >
-                      <div className="glass-card-subtle mb-1 rounded-lg border border-primary/20 p-2 group-hover:border-primary/40">
-                        <Icon size={18} className="text-primary" />
-                      </div>
-                      <span className="text-[9px] font-medium text-white">{label}</span>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-
-              <section className="space-y-1">
-                <h4 className="px-1 text-[10px] font-medium uppercase tracking-[0.08em] text-text-mid">
-                  Features
-                </h4>
-                <div className="grid grid-cols-3 gap-1.5">
-                  <button
-                    type="button"
-                    className="group flex flex-col items-center rounded-lg p-1.5 transition-all duration-200 hover:bg-white/10"
-                  >
-                    <div className="glass-card-subtle mb-1 rounded-lg border border-yellow-400/20 p-2 group-hover:border-yellow-400/40">
-                      <PartyPopperIcon size={18} className="text-yellow-400" />
-                    </div>
-                    <span className="truncate text-[9px] font-medium text-white">Watch Party</span>
-                  </button>
-                </div>
-              </section>
-
-              <section className="space-y-1">
-                <h4 className="px-1 text-[10px] font-medium uppercase tracking-[0.08em] text-text-mid">
-                  Personal
-                </h4>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <Link
-                    href="/history"
-                    onClick={() => setIsBrowseOpen(false)}
-                    className="glass-card-subtle flex h-14 w-full flex-col items-center justify-center rounded-lg border border-gray-400/20 p-1 text-gray-400 transition-all duration-200 hover:text-primary"
-                  >
-                    <GalleryVerticalEndIcon size={16} className="mb-0.5" />
-                    <span className="text-[10px]">History</span>
-                  </Link>
-                  <Link
-                    href="/watchlist"
-                    onClick={() => setIsBrowseOpen(false)}
-                    className="glass-card-subtle flex h-14 w-full flex-col items-center justify-center rounded-lg border border-gray-400/20 p-1 text-gray-400 transition-all duration-200 hover:text-primary"
-                  >
-                    <HeartIcon size={16} className="mb-0.5" />
-                    <span className="text-[10px]">Watchlist</span>
-                  </Link>
-                </div>
-              </section>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {/* Dock Panel */}
-      <div
-        className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex h-16 items-end gap-3 rounded-[20px] border border-white/10 bg-[#0b0f14]/85 px-2.5 pb-2.5 shadow-[0_24px_56px_-24px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl backdrop-saturate-150"
-        role="toolbar"
-        aria-label="Primary navigation dock"
-      >
+    <nav
+      aria-label="Mobile Navigation Dock"
+      className="md:hidden fixed bottom-3 inset-x-3 mx-auto w-auto max-w-[380px] z-40 rounded-2xl border border-white/[0.12] bg-[#07090e]/85 backdrop-blur-2xl backdrop-saturate-150 p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.12)]"
+      style={{
+        paddingBottom: "max(0.375rem, env(safe-area-inset-bottom, 0px))",
+        WebkitTapHighlightColor: "transparent",
+      }}
+    >
+      <div className="grid grid-cols-5 items-center gap-1">
         {/* Home */}
         <Link
           href="/"
-          className={`${itemBaseClass} ${isHome ? "text-white after:absolute after:-bottom-2 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-primary after:shadow-[0_0_10px_var(--primary-glow)]" : ""}`}
+          className={`${navButtonBase} ${
+            isHome
+              ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+              : "text-white/50 hover:text-white/85 hover:bg-white/[0.04]"
+          }`}
           aria-label="Home"
-          title="Home"
+          aria-current={isHome ? "page" : undefined}
         >
-          <div className="pointer-events-none flex items-center justify-center">
-            <HomeIcon size={22} strokeWidth={1.6} />
+          <div className="relative flex items-center justify-center">
+            <HomeIcon
+              size={20}
+              strokeWidth={isHome ? 2.2 : 1.8}
+              className={`transition-transform duration-200 ${
+                isHome ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] scale-105" : ""
+              }`}
+            />
+            {isHome && (
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-accent-hi shadow-[0_0_8px_#f87171]" />
+            )}
           </div>
+          <span
+            className={`mt-1 text-[10px] tracking-tight leading-none transition-colors duration-200 ${
+              isHome ? "font-semibold text-white" : "font-medium text-white/50"
+            }`}
+          >
+            Home
+          </span>
         </Link>
 
-        {/* Browse */}
-        <button
-          type="button"
-          onClick={() => setIsBrowseOpen((prev) => !prev)}
-          className={itemBaseClass}
-          aria-label="Browse"
-          aria-haspopup="true"
-          aria-expanded={isBrowseOpen}
-          title="Browse"
+        {/* Movies */}
+        <Link
+          href="/browse/movie"
+          className={`${navButtonBase} ${
+            isMovies
+              ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+              : "text-white/50 hover:text-white/85 hover:bg-white/[0.04]"
+          }`}
+          aria-label="Movies"
+          aria-current={isMovies ? "page" : undefined}
         >
-          <div className="pointer-events-none flex items-center justify-center">
-            <Grid2x2Icon size={22} strokeWidth={1.6} />
+          <div className="relative flex items-center justify-center">
+            <ClapperboardIcon
+              size={20}
+              strokeWidth={isMovies ? 2.2 : 1.8}
+              className={`transition-transform duration-200 ${
+                isMovies ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] scale-105" : ""
+              }`}
+            />
+            {isMovies && (
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-accent-hi shadow-[0_0_8px_#f87171]" />
+            )}
           </div>
-        </button>
+          <span
+            className={`mt-1 text-[10px] tracking-tight leading-none transition-colors duration-200 ${
+              isMovies ? "font-semibold text-white" : "font-medium text-white/50"
+            }`}
+          >
+            Movies
+          </span>
+        </Link>
+
+        {/* TV Shows */}
+        <Link
+          href="/browse/tv"
+          className={`${navButtonBase} ${
+            isTv
+              ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+              : "text-white/50 hover:text-white/85 hover:bg-white/[0.04]"
+          }`}
+          aria-label="TV Shows"
+          aria-current={isTv ? "page" : undefined}
+        >
+          <div className="relative flex items-center justify-center">
+            <TvIcon
+              size={20}
+              strokeWidth={isTv ? 2.2 : 1.8}
+              className={`transition-transform duration-200 ${
+                isTv ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] scale-105" : ""
+              }`}
+            />
+            {isTv && (
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-accent-hi shadow-[0_0_8px_#f87171]" />
+            )}
+          </div>
+          <span
+            className={`mt-1 text-[10px] tracking-tight leading-none transition-colors duration-200 ${
+              isTv ? "font-semibold text-white" : "font-medium text-white/50"
+            }`}
+          >
+            TV Series
+          </span>
+        </Link>
 
         {/* Search */}
         <button
           type="button"
           onClick={onOpenSearch}
-          className={itemBaseClass}
+          className={`${navButtonBase} text-white/50 hover:text-white/85 hover:bg-white/[0.04]`}
           aria-label="Search"
-          title="Search"
         >
-          <div className="pointer-events-none flex items-center justify-center">
-            <SearchIcon size={20} />
+          <div className="relative flex items-center justify-center">
+            <SearchIcon size={20} strokeWidth={1.8} className="transition-transform duration-200 group-hover:scale-105" />
           </div>
+          <span className="mt-1 text-[10px] font-medium tracking-tight leading-none text-white/50">
+            Search
+          </span>
         </button>
 
-        {/* Account / Login */}
+        {/* Account / Profile */}
         <button
           type="button"
           onClick={handleAccountClick}
-          className={itemBaseClass}
-          aria-label={user ? "Open account" : "Login"}
-          title={user ? "Account" : "Login"}
+          className={`${navButtonBase} ${
+            isAccount
+              ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+              : "text-white/50 hover:text-white/85 hover:bg-white/[0.04]"
+          }`}
+          aria-label={user ? "My account" : "Log in"}
+          aria-haspopup="true"
+          aria-expanded={isAccountOpen}
         >
-          <div className="pointer-events-none flex items-center justify-center">
+          <div className="relative flex items-center justify-center">
             {user ? (
-              (activeProfile?.avatarUrl || user.avatarUrl) ? (
-                // eslint-disable-next-line @next/next/no-img-element
+              <span className="relative flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full transition-all duration-200">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={activeProfile?.avatarUrl || user.avatarUrl || "/avatar/classic-1.png"}
                   alt={activeProfile?.name || user.displayName || user.email}
-                  className="h-6 w-6 rounded-full object-cover"
+                  className="h-full w-full object-cover"
                 />
-              ) : (
-                <UserRoundIcon size={20} />
-              )
+              </span>
             ) : (
-              <LogInIcon size={20} strokeWidth={1.6} />
+              <LogInIcon
+                size={20}
+                strokeWidth={isAccount ? 2.2 : 1.8}
+                className={isAccount ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]" : ""}
+              />
+            )}
+            {isAccount && (
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-accent-hi shadow-[0_0_8px_#f87171]" />
             )}
           </div>
+          <span
+            className={`mt-1 text-[10px] tracking-tight leading-none transition-colors duration-200 ${
+              isAccount ? "font-semibold text-white" : "font-medium text-white/50"
+            }`}
+          >
+            {user ? (activeProfile?.name ? activeProfile.name.split(" ")[0] : "You") : "Log In"}
+          </span>
         </button>
       </div>
-    </div>
+    </nav>
   );
 }
