@@ -7,7 +7,7 @@ import { attachNative, type NativeController } from "./native";
 export type MediaEngine = HlsController | DashController | NativeController;
 
 export interface MediaEngineOptions {
-  onLevelSwitched?: (levelHeight: number) => void;
+  onLevelSwitched?: (levelHeight: number, levelWidth?: number) => void;
   onError?: (error: unknown) => void;
   cache?: SegmentByteCache;
   mediaKey?: string;

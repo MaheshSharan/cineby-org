@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { MediaSource, PlayerSettings } from "../types";
 import { createMediaEngine, type MediaEngine } from "../media";
 import type { SegmentByteCache } from "@/lib/player/media/segmentByteCache";
+import { normalizeResolutionToQuality } from "../utils/resolution";
 
 export function detectFormat(url: string): MediaSource["format"] {
   const lower = url.toLowerCase();
@@ -84,8 +85,9 @@ export function useHlsPlayback({
     };
 
     const engine = createMediaEngine(element, source.url, format, {
-      onLevelSwitched: (levelHeight) => {
-        setActiveAbrLevel(`${levelHeight}p`);
+      onLevelSwitched: (levelHeight, levelWidth) => {
+        const normalized = normalizeResolutionToQuality(levelHeight, levelWidth);
+        setActiveAbrLevel(normalized);
       },
       onError: () => {
         handleFailure();

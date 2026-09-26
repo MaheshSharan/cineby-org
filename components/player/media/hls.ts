@@ -3,6 +3,7 @@ import Hls from "hls.js";
 import { createCachingLoader } from "@/lib/player/media/cachingHlsLoader";
 import type { SegmentByteCache } from "@/lib/player/media/segmentByteCache";
 import type { QualityLabel } from "../types";
+import { normalizeResolutionToQuality } from "../utils/resolution";
 
 export interface HlsController {
   destroy: () => void;
@@ -26,7 +27,7 @@ function getHlsQualityCap(quality: QualityLabel | null): number {
 }
 
 export interface HlsOptions {
-  onLevelSwitched?: (levelHeight: number) => void;
+  onLevelSwitched?: (levelHeight: number, levelWidth?: number) => void;
   onError?: (error: unknown) => void;
   cache?: SegmentByteCache;
   mediaKey?: string;
@@ -59,7 +60,7 @@ export function attachHls(
   const notifyLevel = (levelIndex: number) => {
     const level = hls.levels[levelIndex];
     if (level?.height) {
-      options?.onLevelSwitched?.(level.height);
+      options?.onLevelSwitched?.(level.height, level.width);
     }
   };
 
@@ -87,14 +88,17 @@ export function attachHls(
       }
     },
     setQuality: (quality) => {
-      const cap = getHlsQualityCap(quality);
-
-      if (cap === 0) {
+      if (!quality) {
         hls.currentLevel = -1;
         return;
       }
 
-      const target = hls.levels.findLastIndex((level) => level.height <= cap);
+      const cap = getHlsQualityCap(quality);
+      const target = hls.levels.findLastIndex((level) => {
+        const levelQuality = normalizeResolutionToQuality(level.height, level.width);
+        return level.height <= cap || levelQuality === quality;
+      });
+
       hls.currentLevel = target >= 0 ? target : hls.levels.length - 1;
     },
     getLevels: () =>
