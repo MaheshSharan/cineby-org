@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
 
 import { AuthBackdrop, AuthMobileBanner } from "@/components/auth/AuthBackdrop";
 import {
+  CheckIcon,
   EyeIcon,
   EyeOffIcon,
   LockIcon,
@@ -30,6 +32,7 @@ export function AuthModal({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +57,7 @@ export function AuthModal({
       setEmail("");
       setPassword("");
       setShowPassword(false);
+      setAgreedToTerms(false);
       setError(null);
       setIsSubmitting(false);
     }
@@ -86,6 +90,10 @@ export function AuthModal({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (activeMode === "register" && !agreedToTerms) {
+      setError("Please agree to the Terms of Service to create an account.");
+      return;
+    }
     setIsSubmitting(true);
     setError(null);
 
@@ -289,6 +297,49 @@ export function AuthModal({
                 </button>
               </div>
 
+              {/* Terms of Service Checkbox (Register mode) */}
+              {activeMode === "register" && (
+                <div className="mt-3.5 flex items-start gap-2.5 px-0.5 text-left">
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={agreedToTerms}
+                    onClick={() => setAgreedToTerms((prev) => !prev)}
+                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors cursor-pointer ${
+                      agreedToTerms
+                        ? "bg-white border-white text-black"
+                        : "border-white/25 bg-white/[0.04] hover:border-white/50"
+                    }`}
+                  >
+                    {agreedToTerms && <CheckIcon size={12} strokeWidth={3} />}
+                  </button>
+                  <label
+                    onClick={() => setAgreedToTerms((prev) => !prev)}
+                    className="text-[12px] leading-tight text-white/60 select-none cursor-pointer"
+                  >
+                    I agree to the{" "}
+                    <Link
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-white underline underline-offset-2 hover:text-white/90"
+                    >
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-white underline underline-offset-2 hover:text-white/90"
+                    >
+                      Privacy Policy
+                    </Link>
+                  </label>
+                </div>
+              )}
 
               {/* Error display */}
               {error && (
@@ -300,7 +351,7 @@ export function AuthModal({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (activeMode === "register" && !agreedToTerms)}
                 className="mt-4 h-10 md:h-11 w-full rounded-xl bg-white text-[13px] font-semibold text-[#0b0f14] transition-colors hover:bg-white/90 disabled:opacity-50 cursor-pointer flex items-center justify-center"
               >
                 {isSubmitting ? (

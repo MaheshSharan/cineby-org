@@ -32,12 +32,26 @@ export function Footer() {
             Cineby does not host, store, or distribute any media files. All content is sourced from third-party providers.
           </p>
 
-          <a
-            href="mailto:contact@cineby.at"
-            className="text-xs text-white/30 underline underline-offset-2 transition-colors duration-200 hover:text-white/60"
-          >
-            contact@cineby.at
-          </a>
+          <div className="flex items-center gap-6 text-xs text-white/50">
+            <Link
+              href="/privacy"
+              className="transition-colors duration-200 hover:text-white"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/terms"
+              className="transition-colors duration-200 hover:text-white"
+            >
+              Terms of Service
+            </Link>
+            <a
+              href="mailto:maheshsharan28@gmail.com"
+              className="transition-colors duration-200 hover:text-white"
+            >
+              Contact
+            </a>
+          </div>
         </div>
       </div>
     </footer>
