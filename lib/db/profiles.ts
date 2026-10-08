@@ -69,6 +69,11 @@ export async function findProfile(userId: number, profileId: number): Promise<Pr
 }
 
 export async function createProfile(userId: number, input: ProfileInput): Promise<ProfileRow> {
+  const existing = await listProfiles(userId);
+  if (existing.length >= 5) {
+    throw new Error("Maximum of 5 profiles per account reached");
+  }
+
   let pinHash = input.pinHash ?? null;
   if (input.pin && !pinHash) {
     pinHash = await hashPassword(input.pin);
@@ -76,7 +81,9 @@ export async function createProfile(userId: number, input: ProfileInput): Promis
 
   const now = new Date().toISOString();
   const result = await getDb().run(
-    "INSERT INTO profiles (user_id, name, avatar_url, pin_hash, movie_genres, tv_genres, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    `INSERT INTO profiles (user_id, name, avatar_url, pin_hash, movie_genres, tv_genres, created_at, updated_at)
+     SELECT ?, ?, ?, ?, ?, ?, ?, ?
+     WHERE (SELECT COUNT(*) FROM profiles WHERE user_id = ?) < 5`,
     [
       userId,
       input.name,
@@ -86,10 +93,17 @@ export async function createProfile(userId: number, input: ProfileInput): Promis
       JSON.stringify(input.tvGenres ?? []),
       now,
       now,
+      userId,
     ]
   );
-  const profile = await findProfile(userId, Number(result.lastInsertRowid));
-  if (!profile) throw new Error("Failed to create profile");
+
+  const profile = Number(result.lastInsertRowid) > 0
+    ? await findProfile(userId, Number(result.lastInsertRowid))
+    : null;
+
+  if (!profile) {
+    throw new Error("Maximum of 5 profiles per account reached");
+  }
 
   if (input.autoSelect && input.sessionToken) {
     await setActiveProfile(input.sessionToken, profile.id);

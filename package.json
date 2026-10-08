@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "cf-typegen": "bunx wrangler types --env-interface CloudflareEnv",
     "deploy:proxy": "bunx wrangler deploy --config workers/stream-proxy/wrangler.jsonc",
     "build:worker": "bunx opennextjs-cloudflare build",
@@ -31,7 +32,8 @@
     "eslint-config-next": "^15",
     "postcss": "^8",
     "tailwindcss": "^3.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.3"
   },
   "packageManager": "bun@1.3.14",
   "trustedDependencies": [
