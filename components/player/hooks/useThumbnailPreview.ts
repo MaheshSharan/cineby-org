@@ -30,7 +30,9 @@ export function useThumbnailPreview({
   const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
   const thumbnailHlsRef = useRef<ThumbnailHlsController | null>(null);
   const frameCacheRef = useRef<Map<number, ImageBitmap>>(new Map());
+  const inFlightPromiseRef = useRef<{ bucketTime: number; promise: Promise<ImageBitmap | null> } | null>(null);
   const inFlightAbortRef = useRef<AbortController | null>(null);
+  const inFlightBucketRef = useRef<number | null>(null);
   const lastBucketRef = useRef<number | null>(null);
   const predictiveTimerRef = useRef<number | null>(null);
 
@@ -44,6 +46,8 @@ export function useThumbnailPreview({
       inFlightAbortRef.current.abort();
       inFlightAbortRef.current = null;
     }
+    inFlightPromiseRef.current = null;
+    inFlightBucketRef.current = null;
 
     if (thumbnailHlsRef.current) {
       thumbnailHlsRef.current.destroy();
@@ -118,160 +122,163 @@ export function useThumbnailPreview({
         return cached;
       }
 
+      // If already decoding this exact bucket, return active promise
+      if (inFlightPromiseRef.current && inFlightPromiseRef.current.bucketTime === bucketTime) {
+        return inFlightPromiseRef.current.promise;
+      }
+
       const video = initDecoderIfNeeded();
       if (!video) {
         return null;
       }
 
-      // Cancel previous in-flight user request or prefetch
-      if (inFlightAbortRef.current) {
+      // Cancel previous in-flight user request or prefetch only if target bucket changed
+      if (inFlightAbortRef.current && inFlightBucketRef.current !== bucketTime) {
         inFlightAbortRef.current.abort();
       }
 
       const abortController = new AbortController();
       inFlightAbortRef.current = abortController;
+      inFlightBucketRef.current = bucketTime;
 
-      try {
-        const caps = detectPlayerCapabilities();
+      const decodePromise = (async (): Promise<ImageBitmap | null> => {
+        try {
+          const caps = detectPlayerCapabilities();
 
-        await new Promise<void>((resolve, reject) => {
-          let timer: number | null = null;
-          let rvfcHandle: number | null = null;
+          await new Promise<void>((resolve, reject) => {
+            let timer: number | null = null;
+            let rvfcHandle: number | null = null;
 
-          const cleanup = () => {
-            if (timer !== null) window.clearTimeout(timer);
-            video.removeEventListener("seeked", onFrameReady);
-            video.removeEventListener("error", onError);
-            abortController.signal.removeEventListener("abort", onAbort);
-            if (rvfcHandle !== null && "cancelVideoFrameCallback" in video) {
-              (
+            const cleanup = () => {
+              if (timer !== null) window.clearTimeout(timer);
+              video.removeEventListener("seeked", onFrameReady);
+              video.removeEventListener("error", onError);
+              abortController.signal.removeEventListener("abort", onAbort);
+              if (rvfcHandle !== null && "cancelVideoFrameCallback" in video) {
+                (
+                  video as HTMLVideoElement & {
+                    cancelVideoFrameCallback: (id: number) => void;
+                  }
+                ).cancelVideoFrameCallback(rvfcHandle);
+              }
+            };
+
+            const onFrameReady = () => {
+              cleanup();
+              resolve();
+            };
+
+            const onError = () => {
+              cleanup();
+              reject(new Error("Thumbnail decode error"));
+            };
+
+            const onAbort = () => {
+              cleanup();
+              reject(new Error("Aborted"));
+            };
+
+            abortController.signal.addEventListener("abort", onAbort, { once: true });
+
+            timer = window.setTimeout(() => {
+              cleanup();
+              reject(new Error("Seek timeout"));
+            }, SEEK_TIMEOUT_MS);
+
+            // Direct GPU presentation hook (requestVideoFrameCallback) fires significantly faster than seeked
+            if (caps.hasRVFC && "requestVideoFrameCallback" in video) {
+              rvfcHandle = (
                 video as HTMLVideoElement & {
-                  cancelVideoFrameCallback: (id: number) => void;
+                  requestVideoFrameCallback: (cb: () => void) => number;
                 }
-              ).cancelVideoFrameCallback(rvfcHandle);
+              ).requestVideoFrameCallback(onFrameReady);
             }
-          };
 
-          const onFrameReady = () => {
-            cleanup();
-            resolve();
-          };
+            video.addEventListener("seeked", onFrameReady, { once: true });
+            video.addEventListener("error", onError, { once: true });
 
-          const onError = () => {
-            cleanup();
-            reject(new Error("Thumbnail decode error"));
-          };
-
-          const onAbort = () => {
-            cleanup();
-            reject(new Error("Aborted"));
-          };
-
-          abortController.signal.addEventListener("abort", onAbort, { once: true });
-
-          timer = window.setTimeout(() => {
-            cleanup();
-            reject(new Error("Seek timeout"));
-          }, SEEK_TIMEOUT_MS);
-
-          // Direct GPU presentation hook (requestVideoFrameCallback) fires significantly faster than seeked
-          if (caps.hasRVFC && "requestVideoFrameCallback" in video) {
-            rvfcHandle = (
-              video as HTMLVideoElement & {
-                requestVideoFrameCallback: (cb: () => void) => number;
-              }
-            ).requestVideoFrameCallback(onFrameReady);
-          }
-
-          video.addEventListener("seeked", onFrameReady, { once: true });
-          video.addEventListener("error", onError, { once: true });
-
-          try {
-            // Use fastSeek if supported to directly jump to nearest sync keyframe
-            if (
-              caps.hasFastSeek &&
-              "fastSeek" in video &&
-              typeof (
-                video as HTMLVideoElement & { fastSeek: (t: number) => void }
-              ).fastSeek === "function"
-            ) {
-              (
-                video as HTMLVideoElement & { fastSeek: (t: number) => void }
-              ).fastSeek(bucketTime);
-            } else {
-              video.currentTime = bucketTime;
-            }
-          } catch (err) {
-            cleanup();
-            reject(err);
-          }
-        });
-
-        if (abortController.signal.aborted) {
-          return null;
-        }
-
-        // Draw frame to OffscreenCanvas / Canvas -> ImageBitmap
-        let bitmap: ImageBitmap;
-        if (typeof OffscreenCanvas !== "undefined") {
-          const offscreen = new OffscreenCanvas(THUMB_WIDTH, THUMB_HEIGHT);
-          const ctx = offscreen.getContext("2d");
-          if (!ctx) return null;
-          ctx.drawImage(video, 0, 0, THUMB_WIDTH, THUMB_HEIGHT);
-          bitmap = offscreen.transferToImageBitmap();
-        } else {
-          const canvas = document.createElement("canvas");
-          canvas.width = THUMB_WIDTH;
-          canvas.height = THUMB_HEIGHT;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return null;
-          ctx.drawImage(video, 0, 0, THUMB_WIDTH, THUMB_HEIGHT);
-          bitmap = await createImageBitmap(canvas);
-        }
-
-        // Cache eviction policy
-        if (frameCacheRef.current.size >= MAX_DECODED_FRAMES) {
-          const oldest = frameCacheRef.current.entries().next();
-          if (!oldest.done) {
-            const [oldKey, oldBitmap] = oldest.value;
-            frameCacheRef.current.delete(oldKey);
             try {
-              oldBitmap.close();
-            } catch {
-              // ignore
+              // Standardize seeking to currentTime to ensure MediaSource buffer synchronization
+              video.currentTime = bucketTime;
+            } catch (err) {
+              cleanup();
+              reject(err);
             }
+          });
+
+          if (abortController.signal.aborted) {
+            return null;
           }
-        }
 
-        frameCacheRef.current.set(bucketTime, bitmap);
+          // Draw frame to OffscreenCanvas / Canvas -> ImageBitmap
+          let bitmap: ImageBitmap;
+          if (typeof OffscreenCanvas !== "undefined") {
+            const offscreen = new OffscreenCanvas(THUMB_WIDTH, THUMB_HEIGHT);
+            const ctx = offscreen.getContext("2d");
+            if (!ctx) return null;
+            ctx.drawImage(video, 0, 0, THUMB_WIDTH, THUMB_HEIGHT);
+            bitmap = offscreen.transferToImageBitmap();
+          } else {
+            const canvas = document.createElement("canvas");
+            canvas.width = THUMB_WIDTH;
+            canvas.height = THUMB_HEIGHT;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return null;
+            ctx.drawImage(video, 0, 0, THUMB_WIDTH, THUMB_HEIGHT);
+            bitmap = await createImageBitmap(canvas);
+          }
 
-        // Schedule predictive pre-caching for next adjacent bucket while idle (0ms hit)
-        if (!isPrefetch) {
-          const prev = lastBucketRef.current;
-          lastBucketRef.current = bucketTime;
-          const direction = prev !== null && prev <= bucketTime ? 5 : -5;
-          const predictedBucket = Math.max(0, bucketTime + direction);
-
-          if (!frameCacheRef.current.has(predictedBucket)) {
-            if (predictiveTimerRef.current !== null) {
-              window.clearTimeout(predictiveTimerRef.current);
-            }
-            predictiveTimerRef.current = window.setTimeout(() => {
-              if (!inFlightAbortRef.current) {
-                void decodeFrameAtBucket(predictedBucket, true);
+          // Cache eviction policy
+          if (frameCacheRef.current.size >= MAX_DECODED_FRAMES) {
+            const oldest = frameCacheRef.current.entries().next();
+            if (!oldest.done) {
+              const [oldKey, oldBitmap] = oldest.value;
+              frameCacheRef.current.delete(oldKey);
+              try {
+                oldBitmap.close();
+              } catch {
+                // ignore
               }
-            }, 45);
+            }
+          }
+
+          frameCacheRef.current.set(bucketTime, bitmap);
+
+          // Schedule predictive pre-caching for next adjacent bucket while idle (0ms hit)
+          if (!isPrefetch) {
+            const prev = lastBucketRef.current;
+            lastBucketRef.current = bucketTime;
+            const direction = prev !== null && prev <= bucketTime ? 5 : -5;
+            const predictedBucket = Math.max(0, bucketTime + direction);
+
+            if (!frameCacheRef.current.has(predictedBucket)) {
+              if (predictiveTimerRef.current !== null) {
+                window.clearTimeout(predictiveTimerRef.current);
+              }
+              predictiveTimerRef.current = window.setTimeout(() => {
+                if (!inFlightAbortRef.current) {
+                  void decodeFrameAtBucket(predictedBucket, true);
+                }
+              }, 45);
+            }
+          }
+
+          return bitmap;
+        } catch {
+          return null;
+        } finally {
+          if (inFlightAbortRef.current === abortController) {
+            inFlightAbortRef.current = null;
+            inFlightBucketRef.current = null;
+          }
+          if (inFlightPromiseRef.current?.bucketTime === bucketTime) {
+            inFlightPromiseRef.current = null;
           }
         }
+      })();
 
-        return bitmap;
-      } catch {
-        return null;
-      } finally {
-        if (inFlightAbortRef.current === abortController) {
-          inFlightAbortRef.current = null;
-        }
-      }
+      inFlightPromiseRef.current = { bucketTime, promise: decodePromise };
+      return decodePromise;
     },
     [cache, enabled, initDecoderIfNeeded, src]
   );

@@ -8,6 +8,8 @@ interface ProgressBarThumbnailProps {
 
 const DEBOUNCE_MS = 100;
 
+const TIME_BUCKET_SECONDS = 5;
+
 export function ProgressBarThumbnail({
   hoverTime,
   hoverProgress,
@@ -15,29 +17,35 @@ export function ProgressBarThumbnail({
 }: ProgressBarThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [hasBitmap, setHasBitmap] = useState(false);
-  const activeHoverTimeRef = useRef<number | null>(null);
+  const activeBucketRef = useRef<number | null>(null);
+
+  const currentBucket =
+    hoverTime !== null
+      ? Math.max(0, Math.floor(hoverTime / TIME_BUCKET_SECONDS) * TIME_BUCKET_SECONDS)
+      : null;
 
   useEffect(() => {
-    activeHoverTimeRef.current = hoverTime;
+    activeBucketRef.current = currentBucket;
 
-    if (hoverTime === null) {
+    if (currentBucket === null) {
       setHasBitmap(false);
       return;
     }
 
     const timer = window.setTimeout(async () => {
-      // If hover changed before debounce elapsed, ignore
-      if (activeHoverTimeRef.current !== hoverTime) return;
+      if (activeBucketRef.current !== currentBucket) return;
 
-      const bitmap = await requestFrame(hoverTime);
-      if (activeHoverTimeRef.current !== hoverTime || !bitmap) {
-        setHasBitmap(false);
+      const bitmap = await requestFrame(currentBucket);
+      if (activeBucketRef.current !== currentBucket) {
+        return;
+      }
+
+      if (!bitmap) {
         return;
       }
 
       const canvas = canvasRef.current;
       if (!canvas) {
-        setHasBitmap(false);
         return;
       }
 
@@ -52,19 +60,17 @@ export function ProgressBarThumbnail({
           if (ctx2d) {
             ctx2d.drawImage(bitmap, 0, 0, 160, 90);
             setHasBitmap(true);
-          } else {
-            setHasBitmap(false);
           }
         }
       } catch {
-        setHasBitmap(false);
+        // Keep existing frame if transfer fails
       }
     }, DEBOUNCE_MS);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [hoverTime, requestFrame]);
+  }, [currentBucket, requestFrame]);
 
   if (hoverTime === null) {
     return null;
