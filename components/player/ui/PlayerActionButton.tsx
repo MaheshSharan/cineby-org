@@ -27,8 +27,8 @@ export function PlayerActionButton({
   label,
   onClick,
   icon,
-  durationMs = 8000,
-  showProgress,
+  durationMs = 5000,
+  showProgress = true,
   onDismiss,
   onExpire,
   className = "",
@@ -41,7 +41,7 @@ export function PlayerActionButton({
   const animFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
 
-  const shouldShowProgress = showProgress ?? Boolean(onExpire);
+  const shouldShowProgress = showProgress;
 
   const handleDismiss = useCallback(() => {
     setIsExiting(true);

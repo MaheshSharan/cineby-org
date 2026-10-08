@@ -6,6 +6,7 @@ import { AuthModal, type AuthMode } from "@/components/auth/AuthModal";
 import { Toast } from "@/components/ui/Toast";
 
 import { syncGuestHistoryToServer } from "@/lib/api/history";
+import { GoogleOneTap } from "@/components/auth/GoogleOneTap";
 
 interface AuthContextValue {
   user: User | null;
@@ -152,6 +153,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={contextValue}>
       {children}
       <Toast message={toastMessage} onClose={clearToast} />
+      <GoogleOneTap
+        disabled={Boolean(user) || isLoading}
+        onSuccess={(redirectTo) => {
+          showToast("Signed in with Google");
+          void refresh();
+          if (redirectTo) {
+            void router.push(redirectTo);
+          }
+        }}
+        onError={(err) => {
+          showToast(err);
+        }}
+      />
       <AuthModal
         open={authModalOpen}
         mode={authModalMode}

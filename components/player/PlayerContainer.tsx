@@ -578,15 +578,10 @@ export function PlayerContainer({
     }
 
     const isWithinIntro = time >= minStart && time < introSegment.end - 1;
-    if (!isWithinIntro) return false;
-
-    // If auto-dismiss timer completed, keep button accessible while controls are visible
-    if (dismissedIntro && !controls.areControlsVisible) {
-      return false;
-    }
+    if (!isWithinIntro || dismissedIntro) return false;
 
     return true;
-  }, [controls.areControlsVisible, dismissedIntro, hasSkippedIntro, introSegment, playerState.currentTime]);
+  }, [dismissedIntro, hasSkippedIntro, introSegment, playerState.currentTime]);
 
   const handleSkipIntro = useCallback(() => {
     if (!introSegment) return;
@@ -921,7 +916,7 @@ export function PlayerContainer({
           {isIntroActive ? (
             <PlayerActionButton
               label="Skip Intro"
-              durationMs={8000}
+              durationMs={5000}
               onClick={handleSkipIntro}
               onDismiss={() => setDismissedIntro(true)}
               isControlsVisible={controls.areControlsVisible}
@@ -935,7 +930,7 @@ export function PlayerContainer({
           ) : isNextEpisodeActive ? (
             <PlayerActionButton
               label="Next Episode"
-              durationMs={8000}
+              durationMs={5000}
               isLoading={isNavigatingNext}
               onClick={() => {
                 if (isNavigatingNext) return;
