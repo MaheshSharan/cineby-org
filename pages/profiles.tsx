@@ -7,6 +7,7 @@ import { AvatarModal } from "@/components/profile/AvatarModal";
 import { PinUnlockModal } from "@/components/profile/PinUnlockModal";
 import { ProfileEditor } from "@/components/profile/ProfileEditor";
 import { ProfileGrid } from "@/components/profile/ProfileGrid";
+import { ProfileGridSkeleton } from "@/components/profile/ProfileGridSkeleton";
 import { ProfileWizard } from "@/components/profile/ProfileWizard";
 import type { Profile, ProfileListResponse } from "@/components/profile/types";
 import { LogOutIcon } from "@/components/ui/icons";
@@ -18,6 +19,7 @@ export default function ProfilesPage() {
   const { user, isLoading, showToast, refresh, logout } = useAuth();
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [isProfilesLoading, setIsProfilesLoading] = useState(true);
   const [isManaging, setIsManaging] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
@@ -72,6 +74,8 @@ export default function ProfilesPage() {
       }
     } catch {
       // ignore network errors
+    } finally {
+      setIsProfilesLoading(false);
     }
   }, [user]);
 
@@ -379,6 +383,8 @@ export default function ProfilesPage() {
               onSave={handleSaveEditProfile}
               onDelete={handleDeleteProfile}
             />
+          ) : isProfilesLoading ? (
+            <ProfileGridSkeleton />
           ) : !isCreating ? (
             <ProfileGrid
               profiles={profiles}

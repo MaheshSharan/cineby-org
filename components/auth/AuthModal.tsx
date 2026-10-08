@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AuthBackdrop, AuthMobileBanner } from "@/components/auth/AuthBackdrop";
 import {
@@ -14,6 +14,7 @@ import {
 import { Spinner } from "@/components/ui/Spinner";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import type { AuthModalProps, AuthMode } from "@/components/auth/types";
+import { handleGoogleCredentialResponse } from "@/components/auth/GoogleOneTap";
 
 export type { AuthMode } from "@/components/auth/types";
 
@@ -35,6 +36,7 @@ export function AuthModal({
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const googleBtnContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setInternalMode(mode);
@@ -50,6 +52,78 @@ export function AuthModal({
   }, [activeMode, onClose, router]);
 
   useBodyScrollLock(open);
+
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+
+    const setupGoogleBtn = () => {
+      if (cancelled || !googleBtnContainerRef.current || typeof window === "undefined" || !window.google?.accounts?.id) return;
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (!clientId) return;
+
+      try {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response: { credential?: string }) => {
+            if (response.credential) {
+              handleGoogleCredentialResponse(
+                response.credential,
+                async (redirectTo) => {
+                  showToast("Signed in with Google");
+                  await onAuthenticated(username, activeMode);
+                  await router.push(redirectTo || "/profiles");
+                  onClose(activeMode);
+                },
+                (err) => {
+                  setError(err);
+                }
+              );
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          itp_support: true,
+        });
+
+        if (googleBtnContainerRef.current) {
+          googleBtnContainerRef.current.innerHTML = "";
+          window.google.accounts.id.renderButton(googleBtnContainerRef.current, {
+            type: "standard",
+            theme: "filled_black",
+            size: "large",
+            width: 380,
+          });
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    if (window.google?.accounts?.id) {
+      setupGoogleBtn();
+    } else {
+      const interval = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(interval);
+          setupGoogleBtn();
+        }
+      }, 100);
+      const timer = setTimeout(() => clearInterval(interval), 4000);
+      return () => {
+        cancelled = true;
+        clearInterval(interval);
+        clearTimeout(timer);
+      };
+    }
+
+    const timer = setTimeout(setupGoogleBtn, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [open, activeMode, handleClose, onAuthenticated, onClose, router, showToast, username]);
 
   useEffect(() => {
     if (!open) {
@@ -110,7 +184,7 @@ export function AuthModal({
         body: JSON.stringify(payload),
       });
 
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { error?: string; redirectTo?: string };
 
       if (!response.ok) {
         setError(data.error ?? "Something went wrong. Please try again.");
@@ -123,11 +197,12 @@ export function AuthModal({
         showToast("Registered successfully!");
         // Navigate while the full-screen modal still covers the page, then
         // close it — closing first would flash the home page underneath.
-        await router.push("/profiles?create=true");
+        await router.push(data.redirectTo || "/profiles?create=true");
         onClose(activeMode);
       } else {
         showToast(`${username}, welcome back!`);
-        handleClose();
+        await router.push(data.redirectTo || "/profiles");
+        onClose(activeMode);
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -195,36 +270,38 @@ export function AuthModal({
               </p>
             </div>
 
-            {/* Google One Tap Trigger Button */}
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== "undefined" && window.google?.accounts?.id) {
-                  window.google.accounts.id.prompt();
-                }
-              }}
-              className="mb-4 h-10 md:h-11 w-full rounded-xl border border-white/[0.12] bg-white/[0.05] hover:bg-white/[0.10] text-[13px] font-semibold text-white transition-colors cursor-pointer flex items-center justify-center gap-2.5 shadow-sm"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                />
-              </svg>
-              <span>Continue with Google</span>
-            </button>
+            {/* Google Custom Button with invisible native click target */}
+            <div className="relative mb-4">
+              <div
+                className="h-10 md:h-11 w-full rounded-xl border border-white/[0.12] bg-white/[0.05] hover:bg-white/[0.10] text-[13px] font-semibold text-white transition-colors flex items-center justify-center gap-2.5 shadow-sm pointer-events-none"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    fill="#4285F4"
+                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </div>
+
+              {/* Invisible Google GIS rendered button directly receiving user clicks */}
+              <div
+                ref={googleBtnContainerRef}
+                className="absolute inset-0 opacity-[0.0001] overflow-hidden cursor-pointer flex items-center justify-center [&_iframe]:w-full [&_iframe]:h-full"
+              />
+            </div>
 
             {/* Divider */}
             <div className="relative mb-5 flex items-center justify-center">

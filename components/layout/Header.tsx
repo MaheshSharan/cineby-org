@@ -142,12 +142,12 @@ export function Header() {
                   className="flex items-center justify-center h-8 w-8 rounded-[8px] text-white/75 hover:text-white hover:bg-white/[0.07] transition-colors duration-200 cursor-pointer"
                 >
                   {user ? (
-                    <span className="relative flex items-center justify-center w-5 h-5 rounded-full overflow-hidden ring-1 ring-white/25">
+                    <span className="relative flex items-center justify-center w-5 h-5 rounded-full overflow-hidden ring-1 ring-white/25 bg-white/10">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={activeProfile?.avatarUrl || user.avatarUrl || "/avatar/classic-1.png"}
                         alt={activeProfile?.name || user.displayName || user.email}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-opacity duration-200"
                       />
                     </span>
                   ) : (

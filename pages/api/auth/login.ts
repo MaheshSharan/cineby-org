@@ -7,7 +7,7 @@ import {
   SESSION_TTL_MS,
 } from "@/lib/auth/session";
 import { createSession } from "@/lib/db/sessions";
-import { ensureDefaultProfile } from "@/lib/db/profiles";
+import { findDefaultProfileId } from "@/lib/db/profiles";
 import { findUserByIdentifier, toPublicUser } from "@/lib/db/users";
 import { allowAuthAttempt, authClientKey } from "@/lib/auth/rateLimit";
 import { withApiContext, validate, sendValidationError } from "@/lib/validation";
@@ -55,11 +55,13 @@ export default withApiContext("api/auth/login", async (req: NextApiRequest, res:
   const userAgent = typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"].slice(0, 500) : null;
   await createSession(user.id, token, new Date(Date.now() + SESSION_TTL_MS).toISOString(), userAgent);
 
-  // Fallback for users who abandoned onboarding: they must end up with at
-  // least one profile, but never while the signup wizard is still in flight.
-  await ensureDefaultProfile(user.id, user.display_name ?? user.email.split("@")[0]);
+  const existingDefault = await findDefaultProfileId(user.id);
+  const hasProfiles = existingDefault !== null;
 
   res.setHeader("Set-Cookie", buildSessionCookie(token));
-  res.status(200).json({ user: toPublicUser(user, true) });
+  res.status(200).json({
+    user: toPublicUser(user, hasProfiles),
+    redirectTo: hasProfiles ? "/profiles" : "/profiles?create=true",
+  });
 });
 

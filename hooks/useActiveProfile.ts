@@ -40,13 +40,54 @@ export function useActiveProfile() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
-  const [activeProfile, setActiveProfile] = useState<ActiveProfile | null>(null);
+  const [activeProfile, setActiveProfile] = useState<ActiveProfile | null>(() => {
+    if (typeof window === "undefined" || userId === null) return null;
+    try {
+      const cached = localStorage.getItem(`cineby_active_profile_${userId}`);
+      return cached ? (JSON.parse(cached) as ActiveProfile) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
 
   const refreshProfile = useCallback(() => {
-    if (userId === null) { setActiveProfile(null); return; }
+    if (userId === null) {
+      setActiveProfile(null);
+      setIsLoadingProfile(false);
+      return;
+    }
+
+    // Try reading cached profile synchronously if not set
+    try {
+      const cached = localStorage.getItem(`cineby_active_profile_${userId}`);
+      if (cached) {
+        const parsed = JSON.parse(cached) as ActiveProfile;
+        setActiveProfile((prev) => prev ?? parsed);
+      }
+    } catch {
+      // Ignore localStorage parse error
+    }
+
     void fetchProfilesDeduplicated(userId)
-      .then((data) => setActiveProfile(data?.profiles.find((profile) => profile.id === data.activeProfileId) ?? data?.profiles[0] ?? null))
-      .catch(() => setActiveProfile(null));
+      .then((data) => {
+        const active =
+          data?.profiles.find((profile) => profile.id === data.activeProfileId) ??
+          data?.profiles[0] ??
+          null;
+        setActiveProfile(active);
+        if (active && typeof window !== "undefined") {
+          try {
+            localStorage.setItem(`cineby_active_profile_${userId}`, JSON.stringify(active));
+          } catch {
+            // Ignore storage write error
+          }
+        }
+      })
+      .catch(() => setActiveProfile(null))
+      .finally(() => {
+        setIsLoadingProfile(false);
+      });
   }, [userId]);
 
   // Re-read when user changes (login/logout/switch account)
@@ -74,5 +115,6 @@ export function useActiveProfile() {
     };
   }, [refreshProfile, userId]);
 
-  return { activeProfile, refreshProfile };
+  return { activeProfile, isLoadingProfile, refreshProfile };
 }
+

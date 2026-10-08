@@ -167,12 +167,12 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
         >
           <div className="relative flex items-center justify-center">
             {user ? (
-              <span className="relative flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full transition-all duration-200">
+              <span className="relative flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-white/20 bg-white/10 transition-all duration-200">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={activeProfile?.avatarUrl || user.avatarUrl || "/avatar/classic-1.png"}
                   alt={activeProfile?.name || user.displayName || user.email}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-opacity duration-200"
                 />
               </span>
             ) : (

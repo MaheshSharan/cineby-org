@@ -8,23 +8,32 @@ import { addToWatchlist } from "@/lib/api/watchlist";
 import { getEpisodeHref, getPlayHref } from "@/lib/utils/media";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
+import { SkeletonCardGrid } from "@/components/skeleton/SkeletonCard";
 import { BookmarkIcon, TrashIcon, XIcon } from "@/components/ui/icons";
 
 const HistoryPage: NextPage = () => {
   const { user, isLoading, openAuthModal, showToast } = useAuth();
   const [items, setItems] = useState<HistoryEntry[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
 
   useEffect(() => {
     let isCurrent = true;
+    setIsHistoryLoading(true);
 
     const load = () => {
-      listHistory(Boolean(user)).then((result) => {
-        if (isCurrent) {
-          setItems(result);
-        }
-      });
+      listHistory(Boolean(user))
+        .then((result) => {
+          if (isCurrent) {
+            setItems(result);
+          }
+        })
+        .finally(() => {
+          if (isCurrent) {
+            setIsHistoryLoading(false);
+          }
+        });
     };
 
     load();
@@ -92,9 +101,9 @@ const HistoryPage: NextPage = () => {
       </Head>
 
       <main className="mx-auto max-w-[1360px] min-h-[calc(100vh-88px)] md:min-h-[calc(100vh-90px)] px-4 pb-16 pt-28 md:px-8 md:pt-36">
-        {isLoading ? (
-          <div className="flex min-h-[50vh] items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        {isLoading || isHistoryLoading ? (
+          <div className="py-4">
+            <SkeletonCardGrid />
           </div>
         ) : items.length === 0 ? (
           <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">

@@ -6,6 +6,7 @@ import { SettingsProvider } from "@/hooks/useSettings";
 import { DetailModalProvider } from "@/components/detail/DetailModalContext";
 import { Layout } from "@/components/layout/Layout";
 import { ScrollEdgeButton } from "@/components/ui/ScrollEdgeButton";
+import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
 
 import "../styles/globals.css";
 
@@ -19,6 +20,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <AuthProvider>
       <SettingsProvider>
         <DetailModalProvider>
+          <RouteProgressBar />
           <Layout>
             <Component {...pageProps} />
           </Layout>
@@ -29,4 +31,5 @@ export default function App({ Component, pageProps }: AppProps) {
     </AuthProvider>
   );
 }
+
 

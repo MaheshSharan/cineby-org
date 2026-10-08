@@ -7,27 +7,37 @@ import { clearAllWatchlist, listWatchlist, removeFromWatchlist } from "@/lib/api
 import { getMediaHref } from "@/lib/utils/media";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
+import { SkeletonCardGrid } from "@/components/skeleton/SkeletonCard";
 import { TrashIcon, XIcon } from "@/components/ui/icons";
 
 const WatchlistPage: NextPage = () => {
   const { user, isLoading, openAuthModal, showToast } = useAuth();
   const [items, setItems] = useState<WatchlistItem[]>([]);
+  const [isWatchlistLoading, setIsWatchlistLoading] = useState(true);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
 
   useEffect(() => {
     if (!user) {
       setItems([]);
+      setIsWatchlistLoading(false);
       return;
     }
 
     let isCurrent = true;
+    setIsWatchlistLoading(true);
 
-    listWatchlist().then((result) => {
-      if (isCurrent) {
-        setItems(result);
-      }
-    });
+    listWatchlist()
+      .then((result) => {
+        if (isCurrent) {
+          setItems(result);
+        }
+      })
+      .finally(() => {
+        if (isCurrent) {
+          setIsWatchlistLoading(false);
+        }
+      });
 
     return () => {
       isCurrent = false;
@@ -64,9 +74,9 @@ const WatchlistPage: NextPage = () => {
       </Head>
 
       <main className="mx-auto max-w-[1360px] min-h-[calc(100vh-88px)] md:min-h-[calc(100vh-90px)] px-4 pb-16 pt-28 md:px-8 md:pt-36">
-        {isLoading ? (
-          <div className="flex min-h-[50vh] items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        {isLoading || (user && isWatchlistLoading) ? (
+          <div className="py-4">
+            <SkeletonCardGrid />
           </div>
         ) : !user ? (
           <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">

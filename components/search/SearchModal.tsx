@@ -252,8 +252,19 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
               style={{ scrollbarWidth: "none" }}
             >
               {isLoading ? (
-                <div className="flex items-center justify-center py-10 text-sm text-gray-400">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <div className="flex flex-col gap-1 px-2 py-2">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 rounded-xl p-2 bg-white/[0.02]"
+                    >
+                      <div className="h-14 w-10 shrink-0 rounded-lg bg-white/[0.06] animate-pulse" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 w-2/5 rounded bg-white/[0.08] animate-pulse" />
+                        <div className="h-2.5 w-1/4 rounded bg-white/[0.04] animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : hasSearched && filteredResults.length === 0 ? (
                 <div className="py-8 text-center text-sm text-gray-400">
