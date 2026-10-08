@@ -55,7 +55,7 @@ export function PlayerControls({
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
       }`}
     >
-      <div className="w-full flex flex-col items-stretch pb-3 sm:pb-4 pt-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+      <div className="w-full flex flex-col items-stretch pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:pb-4 pt-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
         <div className="px-2 sm:px-4 md:px-10">
           {/* Seek row */}
           <div className="flex items-center gap-x-2 sm:gap-x-3">

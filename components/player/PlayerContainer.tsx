@@ -8,7 +8,11 @@ import type {
   PlayerSeason,
   PlayerSettings,
 } from "./types";
-import { HISTORY_SAVE_INTERVAL_MS } from "./constants";
+import {
+  HISTORY_SAVE_INTERVAL_MS,
+  MIN_INTRO_START_TIME_SEC,
+  MIN_REMAINING_INTRO_TIME_SEC,
+} from "./constants";
 
 import { getSeasonEpisodes } from "@/lib/api/episodes";
 import { formatRuntime } from "@/lib/utils/media";
@@ -443,6 +447,7 @@ export function PlayerContainer({
   // Segment resolution (Skip Intro / Next Episode via SkipDB)
   const [apiSegments, setApiSegments] = useState<MediaSegment[]>([]);
   const [dismissedIntro, setDismissedIntro] = useState(false);
+  const [hasSkippedIntro, setHasSkippedIntro] = useState(false);
   const [dismissedNext, setDismissedNext] = useState(false);
   const [isNavigatingNext, setIsNavigatingNext] = useState(false);
   const fetchedSegmentKeyRef = useRef<string | null>(null);
@@ -450,6 +455,7 @@ export function PlayerContainer({
   useEffect(() => {
     setApiSegments([]);
     setDismissedIntro(false);
+    setHasSkippedIntro(false);
     setDismissedNext(false);
     setIsNavigatingNext(false);
     fetchedSegmentKeyRef.current = null;
@@ -550,29 +556,62 @@ export function PlayerContainer({
   const introSegment = resolvedSegments.find(
     (s) => s.type === "intro" || s.type === "recap"
   );
+
+  // If user seeks backwards before the intro start threshold, reset skip states
+  useEffect(() => {
+    if (!introSegment) return;
+    const minStart = Math.max(introSegment.start, MIN_INTRO_START_TIME_SEC);
+    if (playerState.currentTime < minStart) {
+      setDismissedIntro(false);
+      setHasSkippedIntro(false);
+    }
+  }, [introSegment, playerState.currentTime]);
+
   const isIntroActive = useMemo(() => {
-    if (dismissedIntro || !introSegment) return false;
+    if (hasSkippedIntro || !introSegment) return false;
     const time = playerState.currentTime;
-    return time >= introSegment.start && time < introSegment.end;
-  }, [dismissedIntro, introSegment, playerState.currentTime]);
+    const minStart = Math.max(introSegment.start, MIN_INTRO_START_TIME_SEC);
+
+    // Skip segments shorter than the start delay + minimum remaining time
+    if (introSegment.end - minStart < MIN_REMAINING_INTRO_TIME_SEC) {
+      return false;
+    }
+
+    const isWithinIntro = time >= minStart && time < introSegment.end - 1;
+    if (!isWithinIntro) return false;
+
+    // If auto-dismiss timer completed, keep button accessible while controls are visible
+    if (dismissedIntro && !controls.areControlsVisible) {
+      return false;
+    }
+
+    return true;
+  }, [controls.areControlsVisible, dismissedIntro, hasSkippedIntro, introSegment, playerState.currentTime]);
 
   const handleSkipIntro = useCallback(() => {
     if (!introSegment) return;
+    setHasSkippedIntro(true);
     setDismissedIntro(true);
     playerState.seekTo(introSegment.end);
   }, [introSegment, playerState]);
 
   useEffect(() => {
-    if (!appSettings.playback.autoSkipIntro || dismissedIntro || !introSegment) {
+    if (!appSettings.playback.autoSkipIntro || hasSkippedIntro || !introSegment) {
       return;
     }
 
     const time = playerState.currentTime;
-    if (time >= introSegment.start && time < introSegment.end) {
+    const minStart = Math.max(introSegment.start, MIN_INTRO_START_TIME_SEC);
+    if (introSegment.end - minStart < MIN_REMAINING_INTRO_TIME_SEC) {
+      return;
+    }
+
+    if (time >= minStart && time < introSegment.end) {
+      setHasSkippedIntro(true);
       setDismissedIntro(true);
       playerState.seekTo(introSegment.end);
     }
-  }, [appSettings.playback.autoSkipIntro, dismissedIntro, introSegment, playerState]);
+  }, [appSettings.playback.autoSkipIntro, hasSkippedIntro, introSegment, playerState]);
 
   const outroSegment = resolvedSegments.find((s) => s.type === "outro");
   const isNextEpisodeActive = useMemo(() => {
@@ -882,6 +921,7 @@ export function PlayerContainer({
           {isIntroActive ? (
             <PlayerActionButton
               label="Skip Intro"
+              durationMs={8000}
               onClick={handleSkipIntro}
               onDismiss={() => setDismissedIntro(true)}
               isControlsVisible={controls.areControlsVisible}
@@ -895,6 +935,7 @@ export function PlayerContainer({
           ) : isNextEpisodeActive ? (
             <PlayerActionButton
               label="Next Episode"
+              durationMs={8000}
               isLoading={isNavigatingNext}
               onClick={() => {
                 if (isNavigatingNext) return;

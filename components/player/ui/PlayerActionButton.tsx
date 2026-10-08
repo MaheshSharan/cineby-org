@@ -6,6 +6,7 @@ interface PlayerActionButtonProps {
   onClick: () => void;
   icon?: ReactNode;
   durationMs?: number;
+  showProgress?: boolean;
   onDismiss?: () => void;
   onExpire?: () => void;
   className?: string;
@@ -17,16 +18,17 @@ interface PlayerActionButtonProps {
  * Netflix-style floating player action button (Skip Intro / Next Episode).
  *
  * Features:
- * - Positioned on the bottom-right above the seek bar.
- * - Smooth background progress fill sweeping from left to right over durationMs (default 5s).
- * - Timer pauses on hover so users have comfortable time to click.
+ * - Positioned on the bottom-right above the seek bar with consistent spacing on mobile and desktop.
+ * - Smooth background progress fill sweeping from left to right when an expire action is present.
+ * - Timer pauses on hover/touch so users have comfortable time to interact.
  * - Auto-dismisses with smooth fade/scale transition once timer completes, or triggers onExpire if provided.
  */
 export function PlayerActionButton({
   label,
   onClick,
   icon,
-  durationMs = 5000,
+  durationMs = 8000,
+  showProgress,
   onDismiss,
   onExpire,
   className = "",
@@ -38,6 +40,8 @@ export function PlayerActionButton({
   const [isExiting, setIsExiting] = useState(false);
   const animFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
+
+  const shouldShowProgress = showProgress ?? Boolean(onExpire);
 
   const handleDismiss = useCallback(() => {
     setIsExiting(true);
@@ -101,10 +105,10 @@ export function PlayerActionButton({
   return (
     <div
       data-player-ui
-      className={`absolute right-4 sm:right-8 md:right-12 z-40 transition-all duration-300 pointer-events-auto ${
+      className={`absolute right-[calc(1rem+env(safe-area-inset-right,0px))] sm:right-8 md:right-12 z-40 transition-all duration-300 pointer-events-auto ${
         isControlsVisible
-          ? "bottom-20 sm:bottom-24 md:bottom-28"
-          : "bottom-6 sm:bottom-8 md:bottom-10"
+          ? "bottom-[calc(7.75rem+env(safe-area-inset-bottom,0px))] sm:bottom-32 md:bottom-32"
+          : "bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:bottom-8 md:bottom-10"
       } ${
         isExiting
           ? "opacity-0 scale-90 pointer-events-none"
@@ -117,6 +121,9 @@ export function PlayerActionButton({
         onClick={isLoading ? undefined : onClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        onTouchStart={() => setIsHovered(true)}
+        onTouchEnd={() => setIsHovered(false)}
+        onTouchCancel={() => setIsHovered(false)}
         aria-label={label}
         aria-disabled={isLoading}
         aria-busy={isLoading}
@@ -127,7 +134,7 @@ export function PlayerActionButton({
         }`}
       >
         {/* Animated Progress Fill Background (moves left to right) */}
-        {!isLoading ? (
+        {!isLoading && shouldShowProgress ? (
           <div
             className="pointer-events-none absolute inset-y-0 left-0 bg-black/15 transition-[width] duration-75 ease-linear rounded-l-md"
             style={{ width: `${progressPercent}%` }}
