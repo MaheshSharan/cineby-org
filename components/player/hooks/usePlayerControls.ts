@@ -5,6 +5,7 @@ import { AUTOHIDE_CONTROLS_MS } from "../constants";
 interface UsePlayerControlsOptions {
   containerRef?: React.RefObject<HTMLDivElement | null>;
   seekTime?: number;
+  isLocked?: boolean;
   onTogglePlay: () => void;
   onSeekBy: (seconds: number) => void;
   onDoubleTapSeek?: (seconds: number, side: "left" | "right") => void;
@@ -25,6 +26,7 @@ const EVENT_TARGETS = new Set(["BUTTON", "INPUT", "SELECT", "TEXTAREA"]);
 export function usePlayerControls({
   containerRef,
   seekTime = 10,
+  isLocked = false,
   onTogglePlay,
   onSeekBy,
   onDoubleTapSeek,
@@ -59,6 +61,10 @@ export function usePlayerControls({
   }, [scheduleHide]);
 
   useEffect(() => {
+    if (isLocked) {
+      return;
+    }
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) {
         return;
@@ -101,7 +107,7 @@ export function usePlayerControls({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onTogglePlay, onSeekBy, onToggleMute, onToggleFullscreen, onToggleSettings, onToggleSubtitles, seekTime]);
+  }, [isLocked, onTogglePlay, onSeekBy, onToggleMute, onToggleFullscreen, onToggleSettings, onToggleSubtitles, seekTime]);
 
   // Keep callbacks fresh in refs so pointerdown/up listeners NEVER re-subscribe on re-renders
   const onTogglePlayRef = useRef(onTogglePlay);
@@ -117,6 +123,11 @@ export function usePlayerControls({
   showControlsRef.current = showControls;
 
   useEffect(() => {
+    // Cleanup of the previous run also cancels any pending single-tap play toggle when locking.
+    if (isLocked) {
+      return;
+    }
+
     const onPointerMove = () => showControlsRef.current();
     const onPointerDown = (event: PointerEvent) => {
       mouseDownAtRef.current = Date.now();
@@ -207,7 +218,7 @@ export function usePlayerControls({
         window.clearTimeout(singleTapTimerRef.current);
       }
     };
-  }, [containerRef]);
+  }, [containerRef, isLocked]);
 
   useEffect(() => {
     scheduleHide();

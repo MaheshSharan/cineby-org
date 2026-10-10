@@ -29,6 +29,8 @@ import { createSegmentByteCache } from "@/lib/player/media/segmentByteCache";
 import { AudioSubtitlesPopover } from "./ui/AudioSubtitlesPopover";
 import { EpisodesDrawer } from "./ui/EpisodesDrawer";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
+import { LockButton } from "./ui/LockButton";
+import { LockOverlay } from "./ui/LockOverlay";
 import { PlayerActionButton } from "./ui/PlayerActionButton";
 import { PlayerControls } from "./ui/PlayerControls";
 import { PlayerHeader } from "./ui/PlayerHeader";
@@ -73,6 +75,7 @@ export function PlayerContainer({
   const [isQualityOpen, setIsQualityOpen] = useState(false);
   const [isAudioSubtitlesOpen, setIsAudioSubtitlesOpen] = useState(false);
   const [isEpisodesOpen, setIsEpisodesOpen] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
 
   const isTv = media.mediaType === "tv";
   const seasons = useMemo<PlayerSeason[]>(() => media.seasons ?? [], [media.seasons]);
@@ -153,16 +156,18 @@ export function PlayerContainer({
     subtitlesSettings: appSettings.subtitles,
   });
 
+  function closePopovers() {
+    setIsQualityOpen(false);
+    setIsAudioSubtitlesOpen(false);
+    setIsEpisodesOpen(false);
+  }
+
   // Domain Hook: Keyboard shortcuts & feedback indicators
   const { seekFeedback, handleDoubleTapSeek } = usePlayerShortcuts({
     isQualityOpen,
     isAudioSubtitlesOpen,
     isEpisodesOpen,
-    onClosePopovers: () => {
-      setIsQualityOpen(false);
-      setIsAudioSubtitlesOpen(false);
-      setIsEpisodesOpen(false);
-    },
+    onClosePopovers: closePopovers,
     onSeekBy: playerState.seekBy,
   });
 
@@ -194,6 +199,7 @@ export function PlayerContainer({
   const controls = usePlayerControls({
     containerRef,
     seekTime: appSettings.playback.seekTime,
+    isLocked,
     onTogglePlay: playerState.togglePlay,
     onSeekBy: playerState.seekBy,
     onDoubleTapSeek: handleDoubleTapSeek,
@@ -208,6 +214,16 @@ export function PlayerContainer({
       setIsAudioSubtitlesOpen((open) => !open);
     },
   });
+
+  function handleLock() {
+    closePopovers();
+    setIsLocked(true);
+  }
+
+  function handleUnlock() {
+    setIsLocked(false);
+    controls.showControls();
+  }
 
   // Domain Hook: Media Engine & HLS Playback lifecycle
   const { activeAbrLevel } = useHlsPlayback({
@@ -715,7 +731,8 @@ export function PlayerContainer({
             title={media.title}
             subtitle={computedHeaderSubtitle}
             onBack={onBack}
-            visible={controls.areControlsVisible}
+            visible={controls.areControlsVisible && !isLocked}
+            inert={isLocked}
             rightSlot={
               <div className="flex items-center gap-1 md:gap-4 flex-shrink-0 relative">
                 {/* Quality Button with Hover/Click Popover */}
@@ -880,7 +897,7 @@ export function PlayerContainer({
           ) : null}
 
           {/* Stream Error Toast */}
-          {stream.isError ? (
+          {stream.isError && !isLocked ? (
             <div
               data-player-ui
               className="absolute bottom-28 left-1/2 -translate-x-1/2 z-[60] player-surface rounded-2xl px-6 py-4 shadow-2xl flex items-center gap-4 max-w-md w-[calc(100%-2rem)] animate-in fade-in slide-in-from-bottom-4 duration-300"
@@ -913,7 +930,7 @@ export function PlayerContainer({
           ) : null}
 
           {/* Skip Intro / Next Episode Floating Action Button */}
-          {isIntroActive ? (
+          {isLocked ? null : isIntroActive ? (
             <PlayerActionButton
               label="Skip Intro"
               durationMs={5000}
@@ -959,7 +976,8 @@ export function PlayerContainer({
 
           {/* Bottom Controls Bar */}
           <PlayerControls
-            visible={controls.areControlsVisible}
+            visible={controls.areControlsVisible && !isLocked}
+            inert={isLocked}
             isPlaying={playerState.isPlaying}
             currentTime={playerState.currentTime}
             duration={playerState.duration}
@@ -1001,6 +1019,13 @@ export function PlayerContainer({
               ) : null
             }
           />
+
+          {/* Screen lock: left-center button while unlocked, input-swallowing overlay while locked */}
+          {isLocked ? (
+            <LockOverlay onUnlock={handleUnlock} />
+          ) : (
+            <LockButton visible={controls.areControlsVisible} onLock={handleLock} />
+          )}
 
           {/* Episodes Modal (TV only) */}
           {isTv ? (

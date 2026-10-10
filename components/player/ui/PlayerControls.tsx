@@ -7,6 +7,7 @@ import type { SegmentByteCache } from "@/lib/player/media/segmentByteCache";
 
 interface PlayerControlsProps {
   visible: boolean;
+  inert?: boolean;
   isPlaying: boolean;
   currentTime: number;
   duration: number;
@@ -29,6 +30,7 @@ interface PlayerControlsProps {
 
 export function PlayerControls({
   visible,
+  inert,
   isPlaying,
   currentTime,
   duration,
@@ -51,6 +53,7 @@ export function PlayerControls({
   return (
     <div
       data-player-ui
+      inert={inert}
       className={`absolute bottom-0 left-0 right-0 z-30 h-44 flex items-end pointer-events-auto transition-[opacity,transform] duration-300 ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
       }`}

@@ -4,6 +4,8 @@ export const HISTORY_SAVE_INTERVAL_MS = 30_000;
 
 export const AUTOHIDE_CONTROLS_MS = 3000;
 
+export const UNLOCK_BUTTON_VISIBLE_MS = 3000;
+
 export const MIN_INTRO_START_TIME_SEC = 5;
 export const MIN_REMAINING_INTRO_TIME_SEC = 3;
 
