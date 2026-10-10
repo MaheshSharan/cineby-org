@@ -23,6 +23,7 @@ import { useSubtitles } from "./hooks/useSubtitles";
 import { usePlayerShortcuts } from "./hooks/usePlayerShortcuts";
 import { usePlayerSource } from "./hooks/usePlayerSource";
 import { useHlsPlayback } from "./hooks/useHlsPlayback";
+import { useIsTouchDevice } from "./hooks/useIsTouchDevice";
 import { useSettings } from "@/hooks/useSettings";
 import { createSegmentByteCache } from "@/lib/player/media/segmentByteCache";
 
@@ -35,6 +36,8 @@ import { PlayerActionButton } from "./ui/PlayerActionButton";
 import { PlayerControls } from "./ui/PlayerControls";
 import { PlayerHeader } from "./ui/PlayerHeader";
 import { QualityPopover } from "./ui/QualityPopover";
+import { TouchPlaybackControls } from "./ui/TouchPlaybackControls";
+import { TouchVolumeControl } from "./ui/TouchVolumeControl";
 
 interface PlayerContainerProps {
   media: PlayerMedia;
@@ -675,6 +678,10 @@ export function PlayerContainer({
   );
 
   const isLoading = isResolvingStream && !stream.source;
+  const isTouchDevice = useIsTouchDevice();
+  const isSpinnerActive = isLoading || playerState.isBuffering;
+  // On touch devices the center buttons show the buffering spinner themselves while visible.
+  const areTouchControlsShown = isTouchDevice && controls.areControlsVisible && !isLocked;
 
   return (
     <div ref={containerRef} className="fixed inset-0 bg-black overflow-hidden select-none">
@@ -890,7 +897,7 @@ export function PlayerContainer({
           />
 
           {/* Buffering Indicator */}
-          {isLoading || playerState.isBuffering ? (
+          {isSpinnerActive && !areTouchControlsShown ? (
             <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
               <LoadingSpinner className="[&>svg]:h-7 [&>svg]:w-7" />
             </div>
@@ -978,6 +985,7 @@ export function PlayerContainer({
           <PlayerControls
             visible={controls.areControlsVisible && !isLocked}
             inert={isLocked}
+            showPlaybackControls={!isTouchDevice}
             isPlaying={playerState.isPlaying}
             currentTime={playerState.currentTime}
             duration={playerState.duration}
@@ -1019,6 +1027,27 @@ export function PlayerContainer({
               ) : null
             }
           />
+
+          {/* Touch devices: playback buttons in the center, volume on the right */}
+          {isTouchDevice && !isLocked ? (
+            <>
+              <TouchPlaybackControls
+                visible={controls.areControlsVisible}
+                isPlaying={playerState.isPlaying}
+                isBuffering={isSpinnerActive}
+                seekTime={appSettings.playback.seekTime}
+                onTogglePlay={playerState.togglePlay}
+                onSeekBy={playerState.seekBy}
+              />
+              <TouchVolumeControl
+                visible={controls.areControlsVisible}
+                volume={playerState.volume}
+                muted={playerState.muted}
+                onVolumeChange={playerState.setVolume}
+                onToggleMute={playerState.toggleMute}
+              />
+            </>
+          ) : null}
 
           {/* Screen lock: left-center button while unlocked, input-swallowing overlay while locked */}
           {isLocked ? (

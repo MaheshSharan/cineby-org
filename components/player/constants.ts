@@ -6,6 +6,9 @@ export const AUTOHIDE_CONTROLS_MS = 3000;
 
 export const UNLOCK_BUTTON_VISIBLE_MS = 3000;
 
+// Primary input is a finger: phones and tablets, in any orientation or window size.
+export const TOUCH_DEVICE_QUERY = "(hover: none) and (pointer: coarse)";
+
 export const MIN_INTRO_START_TIME_SEC = 5;
 export const MIN_REMAINING_INTRO_TIME_SEC = 3;
 
