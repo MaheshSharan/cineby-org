@@ -1,3 +1,4 @@
+import { getEnvVar } from "@/lib/env";
 import { createProxyDescriptor } from "./signedProxy";
 
 export function buildStreamProxyUrl(
@@ -10,8 +11,8 @@ export function buildStreamProxyUrl(
   }
 
   const proxyBase =
-    process.env.STREAM_PROXY_URL?.trim() ||
-    process.env.NEXT_PUBLIC_STREAM_PROXY_URL?.trim() ||
+    getEnvVar("STREAM_PROXY_URL")?.trim() ||
+    getEnvVar("NEXT_PUBLIC_STREAM_PROXY_URL")?.trim() ||
     "/api/stream/proxy";
 
   const cleanBase = proxyBase.replace(/\/+$/, "");

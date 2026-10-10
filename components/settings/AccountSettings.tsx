@@ -270,7 +270,7 @@ export function AccountSettings() {
         </div>
 
         {/* Security / Password row */}
-        <div className="py-5 flex items-center justify-between gap-4">
+        <div className="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <p className="text-[15px] font-medium text-white">Password</p>
             <p className="text-[13px] text-white/50 mt-0.5">
@@ -280,15 +280,15 @@ export function AccountSettings() {
           <button
             type="button"
             onClick={() => setIsChangePasswordOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto shrink-0"
           >
-            <LockIcon size={13} className="text-white/60" />
+            <LockIcon size={14} className="text-white/80" />
             <span>Change Password</span>
           </button>
         </div>
 
         {/* Sign out row */}
-        <div className="pt-5 flex items-center justify-between gap-4">
+        <div className="pt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <p className="text-[15px] font-medium text-white">Sign Out</p>
             <p className="text-[13px] text-white/50 mt-0.5">
@@ -298,7 +298,7 @@ export function AccountSettings() {
           <button
             type="button"
             onClick={() => logout()}
-            className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto shrink-0"
           >
             Sign Out
           </button>
@@ -306,11 +306,11 @@ export function AccountSettings() {
       </div>
 
       {/* Danger Zone: Delete Account */}
-      <div className="rounded-2xl border border-red-500/20 bg-red-950/10 p-6 md:p-8 backdrop-blur-md">
+      <div className="rounded-2xl border border-white/10 bg-[rgba(18,18,20,0.7)] p-6 md:p-8 backdrop-blur-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h3 className="text-base font-semibold text-red-400">Delete Account</h3>
-            <p className="mt-1 text-sm text-red-300/60 max-w-lg">
+            <h3 className="text-base font-semibold text-white">Delete Account</h3>
+            <p className="mt-1 text-sm text-white/50 max-w-lg">
               Permanently delete your account, saved watchlist items, and watch progress. This action cannot be undone.
             </p>
           </div>
@@ -321,7 +321,7 @@ export function AccountSettings() {
               setDeleteError(null);
               setIsDeleteAccountOpen(true);
             }}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/25 hover:border-red-500/50 text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto shrink-0"
           >
             <TrashIcon size={14} />
             <span>Delete Account</span>

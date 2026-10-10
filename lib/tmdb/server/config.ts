@@ -1,3 +1,5 @@
+import { getEnvVar } from "@/lib/env";
+
 export interface TmdbConfig {
   apiUrl: string;
   apiKey: string;
@@ -5,7 +7,7 @@ export interface TmdbConfig {
 }
 
 function getRequiredEnv(name: string): string {
-  const value = process.env[name];
+  const value = getEnvVar(name);
 
   if (!value || value.trim() === "") {
     throw new Error(`Missing required environment variable: ${name}`);
