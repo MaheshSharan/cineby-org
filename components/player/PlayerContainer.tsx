@@ -24,6 +24,8 @@ import { usePlayerShortcuts } from "./hooks/usePlayerShortcuts";
 import { usePlayerSource } from "./hooks/usePlayerSource";
 import { useHlsPlayback } from "./hooks/useHlsPlayback";
 import { useIsTouchDevice } from "./hooks/useIsTouchDevice";
+import { useIsFullscreen } from "./hooks/useIsFullscreen";
+import { useIsLandscape } from "./hooks/useIsLandscape";
 import { useSettings } from "@/hooks/useSettings";
 import { createSegmentByteCache } from "@/lib/player/media/segmentByteCache";
 
@@ -679,6 +681,9 @@ export function PlayerContainer({
 
   const isLoading = isResolvingStream && !stream.source;
   const isTouchDevice = useIsTouchDevice();
+  const isFullscreen = useIsFullscreen();
+  const isLandscape = useIsLandscape();
+  const shouldShowTouchVolume = isTouchDevice && isFullscreen && isLandscape;
   const isSpinnerActive = isLoading || playerState.isBuffering;
   // On touch devices the center buttons show the buffering spinner themselves while visible.
   const areTouchControlsShown = isTouchDevice && controls.areControlsVisible && !isLocked;
@@ -1007,7 +1012,7 @@ export function PlayerContainer({
             }
           />
 
-          {/* Touch devices: playback buttons in the center, volume on the right */}
+          {/* Touch devices: playback buttons in the center, volume on the right (landscape fullscreen only) */}
           {isTouchDevice && !isLocked ? (
             <>
               <TouchPlaybackControls
@@ -1019,22 +1024,24 @@ export function PlayerContainer({
                 onTogglePlay={playerState.togglePlay}
                 onSeekBy={playerState.seekBy}
               />
-              <TouchVolumeControl
-                visible={controls.areControlsVisible}
-                volume={playerState.volume}
-                muted={playerState.muted}
-                onVolumeChange={playerState.setVolume}
-                onToggleMute={playerState.toggleMute}
-              />
+              {shouldShowTouchVolume ? (
+                <TouchVolumeControl
+                  visible={controls.areControlsVisible}
+                  volume={playerState.volume}
+                  muted={playerState.muted}
+                  onVolumeChange={playerState.setVolume}
+                  onToggleMute={playerState.toggleMute}
+                />
+              ) : null}
             </>
           ) : null}
 
-          {/* Screen lock: left-center button while unlocked, input-swallowing overlay while locked */}
+          {/* Screen lock: left-center button while unlocked (hidden in portrait on touch), input-swallowing overlay while locked */}
           {isLocked ? (
             <LockOverlay onUnlock={handleUnlock} />
-          ) : (
+          ) : !isTouchDevice || isLandscape ? (
             <LockButton visible={controls.areControlsVisible} onLock={handleLock} />
-          )}
+          ) : null}
 
           {/* Episodes Modal (TV only) */}
           {isTv ? (
