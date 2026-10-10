@@ -223,11 +223,37 @@ export function PlayerContainer({
   function handleLock() {
     closePopovers();
     setIsLocked(true);
+    try {
+      const orientation = window.screen.orientation as {
+        type?: string;
+        lock?: (orientation: string) => Promise<void>;
+      };
+      if (typeof orientation?.lock === "function") {
+        const currentType = orientation.type;
+        const targetOrientation =
+          currentType === "landscape-secondary" ? "landscape-secondary" : "landscape-primary";
+        void orientation.lock(targetOrientation).catch(() => {
+          void orientation.lock?.("landscape").catch(() => {});
+        });
+      }
+    } catch {
+      // Orientation lock may not be supported on this platform
+    }
   }
 
   function handleUnlock() {
     setIsLocked(false);
     controls.showControls();
+    try {
+      const orientation = window.screen.orientation as {
+        lock?: (orientation: string) => Promise<void>;
+      };
+      if (typeof orientation?.lock === "function") {
+        void orientation.lock("landscape").catch(() => {});
+      }
+    } catch {
+      // Orientation lock may not be supported on this platform
+    }
   }
 
   // Domain Hook: Media Engine & HLS Playback lifecycle
