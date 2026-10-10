@@ -7,12 +7,13 @@ interface PlaybackButtonsProps {
   seekTime: number;
   size?: PlaybackButtonsSize;
   isBuffering?: boolean;
+  activeSeekSide?: "left" | "right" | null;
   onTogglePlay: () => void;
   onSeekBy: (seconds: number) => void;
 }
 
 const BUTTON_CLASSES =
-  "tabbable rounded-full hover:bg-white/20 transition-transform duration-100 flex items-center gap-3 active:scale-110 active:bg-white/30 active:text-white";
+  "tabbable rounded-full hover:bg-white/20 transition-all duration-150 flex items-center justify-center active:scale-110 active:bg-white/30 active:text-white";
 
 const ICON_CLASSES = "flex items-center justify-center w-[1em] h-[1em]";
 
@@ -23,9 +24,9 @@ const SIZE_CLASSES: Record<PlaybackButtonsSize, { button: string; playIcon: stri
     seekIcon: "text-3xl md:text-2xl",
   },
   large: {
-    button: "p-3",
-    playIcon: "text-5xl",
-    seekIcon: "text-4xl",
+    button: "p-4 sm:p-5",
+    playIcon: "text-5xl sm:text-6xl",
+    seekIcon: "text-3xl sm:text-4xl",
   },
 };
 
@@ -34,6 +35,7 @@ export function PlaybackButtons({
   seekTime,
   size = "default",
   isBuffering = false,
+  activeSeekSide = null,
   onTogglePlay,
   onSeekBy,
 }: PlaybackButtonsProps) {
@@ -41,46 +43,15 @@ export function PlaybackButtons({
 
   return (
     <>
-      {/* Play / Pause */}
-      <button
-        type="button"
-        id="ButtonPlay"
-        onClick={onTogglePlay}
-        aria-label={isPlaying ? "Pause" : "Play"}
-        title={isPlaying ? "Pause (space)" : "Play (space)"}
-        className={`${BUTTON_CLASSES} ${sizeClasses.button}`}
-      >
-        <span className={`${sizeClasses.playIcon} ${ICON_CLASSES}`}>
-          {isBuffering ? (
-            <LoadingSpinner className="[&>svg]:h-[0.75em] [&>svg]:w-[0.75em]" />
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="1em"
-              height="1em"
-              viewBox="0 0 384 512"
-              aria-hidden="true"
-            >
-              <path
-                fill="currentColor"
-                d={
-                  isPlaying
-                    ? "M0 448V64c0-17.7 14.3-32 32-32s32 14.3 32 32V448c0 17.7-14.3 32-32 32S0 465.7 0 448zM256 64c0-17.7 14.3-32 32-32s32 14.3 32 32V448c0 17.7-14.3 32-32 32s-32-14.3-32-32V64z"
-                    : "M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"
-                }
-              />
-            </svg>
-          )}
-        </span>
-      </button>
-
       {/* Rewind */}
       <button
         type="button"
         onClick={() => onSeekBy(-seekTime)}
         aria-label={`Rewind ${seekTime} seconds`}
         title={`Rewind ${seekTime} seconds (←)`}
-        className={`${BUTTON_CLASSES} ${sizeClasses.button}`}
+        className={`${BUTTON_CLASSES} ${sizeClasses.button} ${
+          activeSeekSide === "left" ? "scale-125 bg-white/30 text-white animate-pulse" : ""
+        }`}
       >
         <span className={`${sizeClasses.seekIcon} ${ICON_CLASSES}`}>
           <svg
@@ -113,13 +84,48 @@ export function PlaybackButtons({
         </span>
       </button>
 
+      {/* Play / Pause / Loading Spinner */}
+      <button
+        type="button"
+        id="ButtonPlay"
+        onClick={onTogglePlay}
+        aria-label={isPlaying ? "Pause" : "Play"}
+        title={isPlaying ? "Pause (space)" : "Play (space)"}
+        className={`${BUTTON_CLASSES} ${sizeClasses.button}`}
+      >
+        <span className={`${sizeClasses.playIcon} ${ICON_CLASSES}`}>
+          {isBuffering ? (
+            <LoadingSpinner className="[&>svg]:h-[0.75em] [&>svg]:w-[0.75em]" />
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="1em"
+              height="1em"
+              viewBox="0 0 384 512"
+              aria-hidden="true"
+            >
+              <path
+                fill="currentColor"
+                d={
+                  isPlaying
+                    ? "M0 448V64c0-17.7 14.3-32 32-32s32 14.3 32 32V448c0 17.7-14.3 32-32 32S0 465.7 0 448zM256 64c0-17.7 14.3-32 32-32s32 14.3 32 32V448c0 17.7-14.3 32-32 32s-32-14.3-32-32V64z"
+                    : "M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"
+                }
+              />
+            </svg>
+          )}
+        </span>
+      </button>
+
       {/* Forward */}
       <button
         type="button"
         onClick={() => onSeekBy(seekTime)}
         aria-label={`Forward ${seekTime} seconds`}
         title={`Forward ${seekTime} seconds (→)`}
-        className={`${BUTTON_CLASSES} ${sizeClasses.button}`}
+        className={`${BUTTON_CLASSES} ${sizeClasses.button} ${
+          activeSeekSide === "right" ? "scale-125 bg-white/30 text-white animate-pulse" : ""
+        }`}
       >
         <span className={`${sizeClasses.seekIcon} ${ICON_CLASSES}`}>
           <svg

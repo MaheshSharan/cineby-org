@@ -710,28 +710,7 @@ export function PlayerContainer({
             />
           </div>
 
-          {/* Double-tap Seek Feedback Indicator */}
-          {seekFeedback ? (
-            <div
-              key={seekFeedback.key}
-              className={`pointer-events-none absolute top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1 w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/20 text-white animate-in fade-in zoom-in-75 duration-200 ${
-                seekFeedback.side === "left" ? "left-[15%]" : "right-[15%]"
-              }`}
-            >
-              {seekFeedback.side === "left" ? (
-                <svg className="w-8 h-8 sm:w-9 sm:h-9" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
-                </svg>
-              ) : (
-                <svg className="w-8 h-8 sm:w-9 sm:h-9" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z" />
-                </svg>
-              )}
-              <span className="text-xs sm:text-sm font-bold tracking-wide">
-                {seekFeedback.side === "left" ? `-${seekFeedback.seconds}s` : `+${seekFeedback.seconds}s`}
-              </span>
-            </div>
-          ) : null}
+
 
           {/* Top Header Bar */}
           <PlayerHeader
@@ -1036,6 +1015,7 @@ export function PlayerContainer({
                 isPlaying={playerState.isPlaying}
                 isBuffering={isSpinnerActive}
                 seekTime={appSettings.playback.seekTime}
+                activeSeekSide={seekFeedback?.side}
                 onTogglePlay={playerState.togglePlay}
                 onSeekBy={playerState.seekBy}
               />

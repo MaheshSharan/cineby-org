@@ -5,6 +5,7 @@ interface TouchPlaybackControlsProps {
   isPlaying: boolean;
   isBuffering: boolean;
   seekTime: number;
+  activeSeekSide?: "left" | "right" | null;
   onTogglePlay: () => void;
   onSeekBy: (seconds: number) => void;
 }
@@ -14,13 +15,14 @@ export function TouchPlaybackControls({
   isPlaying,
   isBuffering,
   seekTime,
+  activeSeekSide = null,
   onTogglePlay,
   onSeekBy,
 }: TouchPlaybackControlsProps) {
   return (
     <div
       data-player-ui
-      className={`absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 items-center gap-6 transition-opacity duration-300 ${
+      className={`absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-8 sm:gap-12 transition-opacity duration-300 ${
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
@@ -29,6 +31,7 @@ export function TouchPlaybackControls({
         isPlaying={isPlaying}
         isBuffering={isBuffering}
         seekTime={seekTime}
+        activeSeekSide={activeSeekSide}
         onTogglePlay={onTogglePlay}
         onSeekBy={onSeekBy}
       />

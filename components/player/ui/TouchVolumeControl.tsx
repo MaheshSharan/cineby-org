@@ -83,15 +83,15 @@ export function TouchVolumeControl({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onKeyDown={handleKeyDown}
-        className="flex h-28 w-11 cursor-pointer touch-none justify-center py-2"
+        className="flex h-36 w-8 cursor-pointer touch-none items-center justify-center py-2"
       >
-        <div className="relative h-full w-1.5 rounded-full bg-white/25">
+        <div className="relative h-full w-1 rounded-full bg-white/20">
           <div
-            className="absolute bottom-0 left-0 w-full rounded-full bg-primary"
+            className="absolute bottom-0 left-0 w-full rounded-full bg-white"
             style={{ height: `${progress}%` }}
           />
           <div
-            className="absolute left-1/2 h-3.5 w-3.5 -translate-x-1/2 translate-y-1/2 rounded-full bg-white shadow-md"
+            className="absolute left-1/2 h-2.5 w-2.5 -translate-x-1/2 translate-y-1/2 rounded-full bg-white shadow-sm"
             style={{ bottom: `${progress}%` }}
           />
         </div>
@@ -101,9 +101,9 @@ export function TouchVolumeControl({
         type="button"
         onClick={onToggleMute}
         aria-label={muted ? "Unmute" : "Mute"}
-        className="tabbable rounded-full p-2 text-2xl text-white/90 transition-transform duration-100 hover:bg-white/20 active:scale-110 active:bg-white/30"
+        className="tabbable rounded-full p-1 text-white/80 transition-colors hover:text-white active:scale-95"
       >
-        <VolumeIcon muted={muted} />
+        <VolumeIcon muted={muted} className="w-4 h-4" />
       </button>
     </div>
   );
