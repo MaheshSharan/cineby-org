@@ -146,7 +146,7 @@ export function PlayerContainer({
   });
   const { setRate } = playerState;
 
-  // Domain Hook: Subtitles management
+  // Subtitles management
   const subtitles = useSubtitles({
     videoRef,
     mediaId: media.mediaId,
@@ -167,7 +167,7 @@ export function PlayerContainer({
     setIsEpisodesOpen(false);
   }
 
-  // Domain Hook: Keyboard shortcuts & feedback indicators
+  // Keyboard shortcuts and feedback indicators
   const { seekFeedback, handleDoubleTapSeek } = usePlayerShortcuts({
     isQualityOpen,
     isAudioSubtitlesOpen,
@@ -256,7 +256,7 @@ export function PlayerContainer({
     }
   }
 
-  // Domain Hook: Media Engine & HLS Playback lifecycle
+  // Media Engine & HLS Playback lifecycle
   const { activeAbrLevel } = useHlsPlayback({
     videoRef,
     source: stream.source,

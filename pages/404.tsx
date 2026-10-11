@@ -1,7 +1,6 @@
 import Link from "next/link";
-import type { NextPage } from "next";
 
-const NotFoundPage: NextPage = () => {
+export default function NotFoundPage() {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
       <p className="text-7xl font-black leading-none text-primary">404</p>
@@ -19,6 +18,4 @@ const NotFoundPage: NextPage = () => {
       </Link>
     </div>
   );
-};
-
-export default NotFoundPage;
+}

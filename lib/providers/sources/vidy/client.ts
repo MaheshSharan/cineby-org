@@ -52,7 +52,7 @@ export async function fetchVidyPayloadFromBrowser(params: {
   const { tmdbId, type, title, year, imdbId, season, episode, targetServer, signal } = params;
 
   try {
-    // Step 1: fetch seed from residential IP
+    // Fetch seed token from residential IP
     const seedRes = await fetch(`${API_BASE}/seed?mediaId=${tmdbId}`, {
       headers: {
         "User-Agent": BROWSER_UA,
@@ -67,7 +67,7 @@ export async function fetchVidyPayloadFromBrowser(params: {
     const seed = seedData?.seed;
     if (!seed || typeof seed !== "string") return null;
 
-    // Step 2: select server to try.
+    // Target server selection:
     // If targetServer is specified, only query that exact server.
     // If "default", query "miami" first (no multi-server storms).
     const normalizedTarget = targetServer?.replace(/^vidy-/, "") ?? "miami";

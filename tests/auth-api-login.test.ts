@@ -7,10 +7,27 @@ import { findValidSessionByToken } from "@/lib/db/sessions";
 import { createProfile } from "@/lib/db/profiles";
 import loginHandler from "@/pages/api/auth/login";
 
+interface LoginResponsePayload {
+  user?: {
+    email?: string;
+    hasProfiles?: boolean;
+    [key: string]: unknown;
+  };
+  redirectTo?: string;
+  error?: string;
+  [key: string]: unknown;
+}
+
+interface MockResponse {
+  status: number;
+  data: LoginResponsePayload | null;
+  headers: Record<string, string>;
+}
+
 // Lightweight real HTTP mock wrapper without external network overhead
 function createMockHttp(body: Record<string, unknown>, headers: Record<string, string> = {}) {
   let statusCode = 200;
-  let responseData: any = null;
+  let responseData: LoginResponsePayload | null = null;
   const responseHeaders: Record<string, string> = {};
 
   const req = {
@@ -28,8 +45,8 @@ function createMockHttp(body: Record<string, unknown>, headers: Record<string, s
       statusCode = code;
       return res;
     },
-    json(data: any) {
-      responseData = data;
+    json(data: unknown) {
+      responseData = data as LoginResponsePayload | null;
       return res;
     },
     setHeader(name: string, value: string) {
@@ -41,7 +58,7 @@ function createMockHttp(body: Record<string, unknown>, headers: Record<string, s
   return {
     req,
     res,
-    getResponse: () => ({ status: statusCode, data: responseData, headers: responseHeaders }),
+    getResponse: (): MockResponse => ({ status: statusCode, data: responseData, headers: responseHeaders }),
   };
 }
 

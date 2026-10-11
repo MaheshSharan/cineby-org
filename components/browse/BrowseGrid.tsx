@@ -37,7 +37,6 @@ export function BrowseGrid({ mediaType, genres, initialItems }: BrowseGridProps)
   const requestInFlightRef = useRef(false);
   const moreDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Reset state when mediaType or initialItems change (e.g. client-side routing between /browse/movie & /browse/tv)
   useEffect(() => {
     setFilters({ sortKey: "popular" });
     setItems(initialItems);
@@ -45,7 +44,6 @@ export function BrowseGrid({ mediaType, genres, initialItems }: BrowseGridProps)
     setTotalPages(1);
   }, [mediaType, initialItems]);
 
-  // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (moreDropdownRef.current && !moreDropdownRef.current.contains(event.target as Node)) {
@@ -141,13 +139,11 @@ export function BrowseGrid({ mediaType, genres, initialItems }: BrowseGridProps)
     return () => observer.disconnect();
   }, [loadMore]);
 
-  // Main visible tabs & remaining overflow genres
   const visibleGenres = genres.slice(0, 12);
   const overflowGenres = genres.slice(12);
 
   return (
     <section className="mx-auto max-w-[1360px] px-4 pt-24 pb-12 md:pt-28">
-      {/* Category & Genre Navigation Bar */}
       <div className={`no-scrollbar mb-8 flex items-center gap-6 border-b border-white/10 pb-3 ${isMoreOpen ? "overflow-visible" : "overflow-x-auto"}`}>
         {SORT_OPTIONS.map((option) => (
           <TabOptionBtn

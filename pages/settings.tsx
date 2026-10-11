@@ -1,4 +1,3 @@
-import type { NextPage } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -12,11 +11,10 @@ import { SubtitlesSettings } from "@/components/settings/SubtitlesSettings";
 
 const VALID_TABS: SettingsTabId[] = ["account", "appearance", "playback", "subtitles"];
 
-const SettingsPage: NextPage = () => {
+export default function SettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<SettingsTabId>("account");
 
-  // Sync tab from router query on mount or navigation
   useEffect(() => {
     const tabQuery = router.query.tab;
     if (typeof tabQuery === "string" && VALID_TABS.includes(tabQuery as SettingsTabId)) {
@@ -70,6 +68,4 @@ const SettingsPage: NextPage = () => {
       </div>
     </>
   );
-};
-
-export default SettingsPage;
+}

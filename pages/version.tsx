@@ -1,4 +1,3 @@
-import type { NextPage } from "next";
 import Head from "next/head";
 
 import packageJson from "../package.json";
@@ -8,7 +7,7 @@ interface VersionRow {
   value: string;
 }
 
-const VersionPage: NextPage = () => {
+export default function VersionPage() {
   const rows: VersionRow[] = [
     { label: "Version", value: packageJson.version },
     { label: "Next.js", value: packageJson.dependencies.next },
@@ -41,6 +40,4 @@ const VersionPage: NextPage = () => {
       </div>
     </>
   );
-};
-
-export default VersionPage;
+}

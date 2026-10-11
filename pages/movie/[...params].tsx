@@ -1,4 +1,4 @@
-import type { GetServerSideProps, NextPage } from "next";
+import type { GetServerSideProps } from "next";
 import Head from "next/head";
 
 import type { MovieDetails } from "@/lib/tmdb";
@@ -11,7 +11,7 @@ interface MoviePageProps {
   isPlaying: boolean;
 }
 
-const MoviePage: NextPage<MoviePageProps> = ({ details, isPlaying }) => {
+export default function MoviePage({ details, isPlaying }: MoviePageProps) {
   return (
     <>
       <Head>
@@ -21,7 +21,7 @@ const MoviePage: NextPage<MoviePageProps> = ({ details, isPlaying }) => {
       <DetailPage details={details} isPlaying={isPlaying} />
     </>
   );
-};
+}
 
 export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (context) => {
   const id = context.params?.params?.[0];
@@ -43,5 +43,3 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (con
     return { notFound: true };
   }
 };
-
-export default MoviePage;

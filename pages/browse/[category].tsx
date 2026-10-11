@@ -1,4 +1,4 @@
-import type { GetServerSideProps, NextPage } from "next";
+import type { GetServerSideProps } from "next";
 import Head from "next/head";
 
 import type { Genre, MediaSummary, MediaType } from "@/lib/tmdb";
@@ -18,12 +18,12 @@ const CATEGORY_TITLES: Record<string, string> = {
   tv: "Browse TV Shows",
 };
 
-const BrowsePage: NextPage<BrowsePageProps> = ({
+export default function BrowsePage({
   category,
   mediaType,
   genres,
   initialItems,
-}) => {
+}: BrowsePageProps) {
   return (
     <>
       <Head>
@@ -33,7 +33,7 @@ const BrowsePage: NextPage<BrowsePageProps> = ({
       <BrowseGrid mediaType={mediaType} genres={genres} initialItems={initialItems} />
     </>
   );
-};
+}
 
 export const getServerSideProps: GetServerSideProps<BrowsePageProps> = async (context) => {
   const category = context.params?.category;
@@ -64,5 +64,3 @@ export const getServerSideProps: GetServerSideProps<BrowsePageProps> = async (co
     return { notFound: true };
   }
 };
-
-export default BrowsePage;

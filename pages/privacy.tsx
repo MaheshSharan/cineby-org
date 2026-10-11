@@ -1,8 +1,7 @@
-import type { NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
 
-const PrivacyPolicyPage: NextPage = () => {
+export default function PrivacyPolicyPage() {
   return (
     <>
       <Head>
@@ -108,6 +107,4 @@ const PrivacyPolicyPage: NextPage = () => {
       </main>
     </>
   );
-};
-
-export default PrivacyPolicyPage;
+}

@@ -1,7 +1,6 @@
-import type { NextPage } from "next";
 import Head from "next/head";
 
-const TermsOfServicePage: NextPage = () => {
+export default function TermsOfServicePage() {
   return (
     <>
       <Head>
@@ -81,6 +80,4 @@ const TermsOfServicePage: NextPage = () => {
       </main>
     </>
   );
-};
-
-export default TermsOfServicePage;
+}

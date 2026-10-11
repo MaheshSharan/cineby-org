@@ -1,4 +1,4 @@
-import type { GetServerSideProps, NextPage } from "next";
+import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 
@@ -16,7 +16,7 @@ interface WatchPageProps {
   media: PlayerMedia;
 }
 
-const WatchPage: NextPage<WatchPageProps> = ({ title, subtitle, media }) => {
+export default function WatchPage({ title, subtitle, media }: WatchPageProps) {
   const router = useRouter();
 
   return (
@@ -34,7 +34,7 @@ const WatchPage: NextPage<WatchPageProps> = ({ title, subtitle, media }) => {
       />
     </>
   );
-};
+}
 
 export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (context) => {
   const params = context.params?.params ?? [];
@@ -125,5 +125,3 @@ function parseOptionalNumber(value: string | undefined): number | null {
 
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
-
-export default WatchPage;

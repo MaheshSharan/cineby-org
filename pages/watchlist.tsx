@@ -1,4 +1,3 @@
-import type { NextPage } from "next";
 import Head from "next/head";
 import { useEffect, useState } from "react";
 
@@ -10,7 +9,7 @@ import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
 import { SkeletonCardGrid } from "@/components/skeleton/SkeletonCard";
 import { TrashIcon, XIcon } from "@/components/ui/icons";
 
-const WatchlistPage: NextPage = () => {
+export default function WatchlistPage() {
   const { user, isLoading, openAuthModal, showToast } = useAuth();
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [isWatchlistLoading, setIsWatchlistLoading] = useState(true);
@@ -185,7 +184,7 @@ const WatchlistPage: NextPage = () => {
       ) : null}
     </>
   );
-};
+}
 
 interface WatchlistCardProps {
   item: WatchlistItem;
@@ -222,5 +221,3 @@ function WatchlistCard({ item, onRemove }: WatchlistCardProps) {
     />
   );
 }
-
-export default WatchlistPage;

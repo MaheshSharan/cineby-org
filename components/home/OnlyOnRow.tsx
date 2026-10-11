@@ -57,7 +57,6 @@ export function OnlyOnRow({
     [excludeMediaKeys, initialItems]
   );
 
-  // Sync external provider selection from BrowseByProviderRow
   useEffect(() => {
     if (!activeProviderId) return;
     const match = STREAMING_PROVIDERS.find((p) => p.id === activeProviderId);
@@ -68,7 +67,6 @@ export function OnlyOnRow({
     }
   }, [activeProviderId, fetchProviderItems, selectedProvider.id]);
 
-  // Lazy load provider items when row enters viewport if items are not yet populated
   useEffect(() => {
     if (isInView && items.length === 0 && attemptedProviderRef.current !== selectedProvider.id) {
       attemptedProviderRef.current = selectedProvider.id;
@@ -76,7 +74,6 @@ export function OnlyOnRow({
     }
   }, [isInView, items.length, selectedProvider.id, fetchProviderItems]);
 
-  // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {

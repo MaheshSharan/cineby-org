@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { GetServerSideProps, NextPage } from "next";
+import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import Link from "next/link";
 
@@ -32,7 +32,7 @@ interface HomePageProps {
   topRatedSeries?: MediaSummary[];
 }
 
-const Home: NextPage<HomePageProps> = ({
+export default function Home({
   heroItems,
   topTenItems,
   onlyOnNetflix,
@@ -41,7 +41,7 @@ const Home: NextPage<HomePageProps> = ({
   topRatedMovies,
   topRatedSeries,
   genreNames,
-}) => {
+}: HomePageProps) {
   const [activeProviderId, setActiveProviderId] = useState<number>(8);
 
   const excludeKeys = useMemo(() => {
@@ -160,7 +160,7 @@ const Home: NextPage<HomePageProps> = ({
       </div>
     </>
   );
-};
+}
 
 export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ res }) => {
   res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
@@ -210,5 +210,3 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
     },
   };
 };
-
-export default Home;

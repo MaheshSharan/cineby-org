@@ -14,7 +14,6 @@ export function BrowseByProviderRow({ onSelectProvider }: BrowseByProviderRowPro
     (provider: StreamingProvider) => {
       onSelectProvider?.(provider.id);
 
-      // Scroll smoothly to the Only On section
       const target = document.getElementById("only-on-section");
       if (target) {
         target.scrollIntoView({ behavior: "smooth", block: "center" });

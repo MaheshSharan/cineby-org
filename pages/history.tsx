@@ -1,4 +1,3 @@
-import type { NextPage } from "next";
 import Head from "next/head";
 import { useEffect, useState } from "react";
 
@@ -11,7 +10,7 @@ import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
 import { SkeletonCardGrid } from "@/components/skeleton/SkeletonCard";
 import { BookmarkIcon, TrashIcon, XIcon } from "@/components/ui/icons";
 
-const HistoryPage: NextPage = () => {
+export default function HistoryPage() {
   const { user, isLoading, openAuthModal, showToast } = useAuth();
   const [items, setItems] = useState<HistoryEntry[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
@@ -233,7 +232,7 @@ const HistoryPage: NextPage = () => {
       ) : null}
     </>
   );
-};
+}
 
 interface HistoryCardProps {
   entry: HistoryEntry;
@@ -293,5 +292,3 @@ function HistoryCard({ entry, onRemove, onAddToWatchlist }: HistoryCardProps) {
     />
   );
 }
-
-export default HistoryPage;

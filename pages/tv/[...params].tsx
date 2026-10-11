@@ -1,4 +1,4 @@
-import type { GetServerSideProps, NextPage } from "next";
+import type { GetServerSideProps } from "next";
 import Head from "next/head";
 
 import type { TvDetails } from "@/lib/tmdb";
@@ -15,7 +15,7 @@ interface TvPageProps {
   episodeNumber?: number | null;
 }
 
-const TvPage: NextPage<TvPageProps> = ({ details, isPlaying, seasonNumber, episodeNumber }) => {
+export default function TvPage({ details, isPlaying, seasonNumber, episodeNumber }: TvPageProps) {
   return (
     <>
       <Head>
@@ -30,7 +30,7 @@ const TvPage: NextPage<TvPageProps> = ({ details, isPlaying, seasonNumber, episo
       />
     </>
   );
-};
+}
 
 export const getServerSideProps: GetServerSideProps<TvPageProps> = async (context) => {
   const params = context.params?.params;
@@ -80,5 +80,3 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
     return { notFound: true };
   }
 };
-
-export default TvPage;

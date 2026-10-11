@@ -48,10 +48,7 @@ export async function fetchVixsrcPayloadFromBrowser(params: {
   const { tmdbId, type, season, episode, signal } = params;
 
   try {
-    // Step 1: hit the vixsrc API to get the embed path.
-    // IMPORTANT: Do NOT set Origin or a cross-origin Referer here.
-    // The request must look same-origin to pass Cloudflare's sec-fetch-site check.
-    // The browser will automatically attach the cf_clearance cookie.
+    // Vixsrc API lookup to obtain embed path. Must look same-origin without cross-origin Referer.
     const apiPath =
       type === "tv"
         ? `/api/tv/${tmdbId}/${season ?? 1}/${episode ?? 1}`
@@ -87,7 +84,7 @@ export async function fetchVixsrcPayloadFromBrowser(params: {
 
     const embedUrl = `${BASE_URL}${src}`;
 
-    // Step 2: fetch the embed page HTML (contains window.masterPlaylist).
+    // Fetch embed page HTML containing window.masterPlaylist.
     // Referer is the vixsrc.to page — same-origin again.
     const embedRes = await fetch(embedUrl, {
       headers: {

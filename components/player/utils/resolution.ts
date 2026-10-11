@@ -19,21 +19,17 @@ export function normalizeResolutionToQuality(
     return "1080p";
   }
 
-  // 4K (2160p UHD)
   if ((width && width >= 3840) || height >= 1600) {
     return "2160p";
   }
 
-  // 1080p (Full HD)
   if ((width && width >= 1920) || height >= 800) {
     return "1080p";
   }
 
-  // 720p (HD)
   if ((width && width >= 1280) || height >= 500) {
     return "720p";
   }
 
-  // 480p (SD)
   return "480p";
 }

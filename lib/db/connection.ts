@@ -18,7 +18,7 @@ export function getDb(): DbClient {
     return clientInstance;
   }
 
-  // 1. Check OpenNext Cloudflare ALS context (stored under Symbol.for("__cloudflare-context__"))
+  // OpenNext Cloudflare ALS context (stored under Symbol.for("__cloudflare-context__"))
   try {
     const cfContext = (globalThis as unknown as Record<symbol, { env?: { DB?: D1DatabaseBinding } }>)[
       Symbol.for("__cloudflare-context__")
@@ -32,7 +32,7 @@ export function getDb(): DbClient {
     // Continue to fallback checks
   }
 
-  // 3. Check for Cloudflare D1 binding on global context or process.env
+  // Cloudflare D1 binding on global context or process.env
   const globalWithD1 = globalThis as unknown as {
     __D1_DB?: D1DatabaseBinding;
     env?: { DB?: D1DatabaseBinding };
@@ -50,7 +50,7 @@ export function getDb(): DbClient {
     return clientInstance;
   }
 
-  // 4. Fallback to Local SQLite for Node / Bun development
+  // Fallback to Local SQLite for Node / Bun development.
   // Never attempt DatabaseSync if running on Cloudflare Workers / Edge
   if (typeof navigator !== "undefined" && navigator.userAgent === "CloudFlare-Workers") {
     throw new Error("[DB] D1 Database binding 'DB' was not found in Cloudflare Worker context.");

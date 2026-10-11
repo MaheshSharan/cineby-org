@@ -8,16 +8,12 @@ const BASE_URL = "https://vixsrc.to";
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
-// ---------------------------------------------------------------------------
-// Pure HTML parser — no network calls, no side effects
 // Extracts window.masterPlaylist from embed page HTML and returns a StreamSource
-//
 // Actual masterPlaylist shape observed from vixsrc.to embed pages:
 //   window.masterPlaylist = {
 //     params: { 'token': '...', 'expires': '...', 'asn': '' },
 //     url: 'https://vixsrc.to/playlist/305248',
 //   }
-// ---------------------------------------------------------------------------
 
 export function parseVixsrcEmbedHtml(embedHtml: string): StreamSource | null {
   const playlistMatch =
@@ -78,12 +74,8 @@ export function parseVixsrcEmbedHtml(embedHtml: string): StreamSource | null {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Server-side scrape — only runs in non-Cloudflare environments (local dev
-// without client-assisted payloads, or non-CF deploys). In production on
-// Cloudflare Workers, vixsrc.to blocks datacenter IPs with a 403, so the
-// client-assisted path in components/player/providers/index.ts is used instead.
-// ---------------------------------------------------------------------------
+// Server-side scrape runs in non-Cloudflare environments. In production on Cloudflare Workers,
+// vixsrc.to blocks datacenter IPs, so the client-assisted browser path is used instead.
 
 async function fetchApiEmbed(req: StreamRequest): Promise<string | null> {
   const { tmdbId, type, season, episode, signal } = req;
