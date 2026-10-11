@@ -1,5 +1,7 @@
 import { Head, Html, Main, NextScript } from "next/document";
 
+import { PWA_BACKGROUND_COLOR } from "@/lib/constants/pwa";
+
 export default function Document() {
   return (
     <Html lang="en" className="dark">
@@ -11,7 +13,11 @@ export default function Document() {
           rel="stylesheet"
         />
         <link rel="icon" href="/logo.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/logo.png" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content={PWA_BACKGROUND_COLOR} />
+        <meta name="color-scheme" content="dark" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </Head>
       <body className="bg-background">
         <script

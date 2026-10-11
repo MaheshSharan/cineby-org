@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { SettingsProvider } from "@/hooks/useSettings";
+import { useServiceWorker } from "@/hooks/useServiceWorker";
 import { DetailModalProvider } from "@/components/detail/DetailModalContext";
 import { Layout } from "@/components/layout/Layout";
 import { ScrollEdgeButton } from "@/components/ui/ScrollEdgeButton";
@@ -16,6 +17,8 @@ const DetailModal = dynamic(
 );
 
 export default function App({ Component, pageProps }: AppProps) {
+  useServiceWorker();
+
   return (
     <AuthProvider>
       <SettingsProvider>
