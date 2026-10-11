@@ -64,7 +64,11 @@ export function GoogleOneTap({
   disabled = false,
 }: GoogleOneTapProps) {
   useEffect(() => {
-    if (disabled || !clientId) {
+    // Fast check: If user already has an active session cookie or is marked disabled, do not prompt
+    const hasSessionCookie =
+      typeof document !== "undefined" && document.cookie.includes("cineby_session=");
+
+    if (disabled || !clientId || hasSessionCookie) {
       if (typeof window !== "undefined" && window.google?.accounts?.id) {
         window.google.accounts.id.cancel();
       }
@@ -79,6 +83,10 @@ export function GoogleOneTap({
 
     const initializeOneTap = () => {
       if (!window.google?.accounts?.id) return;
+      if (typeof document !== "undefined" && document.cookie.includes("cineby_session=")) {
+        window.google.accounts.id.cancel();
+        return;
+      }
 
       window.google.accounts.id.initialize({
         client_id: clientId,
@@ -109,8 +117,17 @@ export function GoogleOneTap({
       return () => {
         clearInterval(interval);
         clearTimeout(timeout);
+        if (typeof window !== "undefined" && window.google?.accounts?.id) {
+          window.google.accounts.id.cancel();
+        }
       };
     }
+
+    return () => {
+      if (typeof window !== "undefined" && window.google?.accounts?.id) {
+        window.google.accounts.id.cancel();
+      }
+    };
   }, [clientId, disabled, onError, onSuccess]);
 
   if (disabled || !clientId) {
