@@ -114,7 +114,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user.hasProfiles === false && !router.pathname.startsWith("/profiles")) {
       void router.replace("/profiles?create=true");
     }
-  }, [isLoading, user, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-evaluate only when user, loading state, or pathname changes, not on shallow query changes
+  }, [isLoading, user, router.pathname]);
 
   const contextValue = useMemo<AuthContextValue>(
     () => ({
