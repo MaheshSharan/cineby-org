@@ -1,4 +1,5 @@
 import type { MediaSegment, SegmentFetchParams, SegmentType } from "./types";
+import { getEnvVar } from "@/lib/env";
 
 export function parseTimeValue(value: unknown): number | null {
   if (typeof value === "number") {
@@ -165,7 +166,7 @@ export function parseIntroDbSegments(data: unknown, durationSec?: number): Media
 }
 
 export function buildIntroDbUrl(params: SegmentFetchParams): URL | null {
-  const baseUrl = process.env.INTRODB_API_URL?.replace(/\/+$/, "");
+  const baseUrl = getEnvVar("INTRODB_API_URL")?.replace(/\/+$/, "");
   if (!baseUrl) {
     return null;
   }
@@ -202,7 +203,7 @@ export async function fetchIntroDbSegments(
       "User-Agent": "Cineby/1.0",
     };
 
-    const apiKey = process.env.INTRODB_API_KEY?.trim();
+    const apiKey = getEnvVar("INTRODB_API_KEY")?.trim();
     if (apiKey) {
       headers["X-API-Key"] = apiKey;
     }

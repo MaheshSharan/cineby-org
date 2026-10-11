@@ -128,15 +128,18 @@ async function verifySignature(payload: string, signature: string, secret: strin
   return crypto.subtle.verify("HMAC", key, sigBytes, encoder.encode(payload));
 }
 
-async function signPayload(payload: string, secret: string): Promise<string> {
+async function signPayload(payload: string, secretOrKey: string | CryptoKey): Promise<string> {
   const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
+  const key =
+    typeof secretOrKey === "string"
+      ? await crypto.subtle.importKey(
+          "raw",
+          encoder.encode(secretOrKey),
+          { name: "HMAC", hash: "SHA-256" },
+          false,
+          ["sign"]
+        )
+      : secretOrKey;
 
   const sigBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
   const sigArray = Array.from(new Uint8Array(sigBuffer));
@@ -173,7 +176,7 @@ async function readDescriptor(token: string, secret: string): Promise<Descriptor
 async function createDescriptorToken(
   url: string,
   headers: Record<string, string>,
-  secret: string,
+  secretOrKey: string | CryptoKey,
   clientIp?: string
 ): Promise<string> {
   const descriptor: Descriptor = {
@@ -184,7 +187,7 @@ async function createDescriptorToken(
   };
   const payloadJson = JSON.stringify(descriptor);
   const base64 = btoa(payloadJson).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  const signature = await signPayload(base64, secret);
+  const signature = await signPayload(base64, secretOrKey);
   return `${base64}.${signature}`;
 }
 
@@ -405,6 +408,13 @@ export default {
 
       const lines = text.split("\n");
       const rewrittenLines: string[] = [];
+      const signingKey = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(secret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
 
       for (const line of lines) {
         const trimmed = line.trim();
@@ -419,7 +429,7 @@ export default {
             const uri = match[1];
             const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
             if (!isPrivateHost(abs)) {
-              const token = await createDescriptorToken(abs, activeHeaders, secret, descriptor.ip);
+              const token = await createDescriptorToken(abs, activeHeaders, signingKey, descriptor.ip);
               rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
             } else {
               rewrittenLines.push(line);
@@ -436,7 +446,7 @@ export default {
             const uri = match[1];
             const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
             if (!isPrivateHost(abs)) {
-              const token = await createDescriptorToken(abs, activeHeaders, secret, descriptor.ip);
+              const token = await createDescriptorToken(abs, activeHeaders, signingKey, descriptor.ip);
               rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
             } else {
               rewrittenLines.push(line);
@@ -451,7 +461,7 @@ export default {
             const uri = match[1];
             const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
             if (!isPrivateHost(abs)) {
-              const token = await createDescriptorToken(abs, activeHeaders, secret, descriptor.ip);
+              const token = await createDescriptorToken(abs, activeHeaders, signingKey, descriptor.ip);
               rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
             } else {
               rewrittenLines.push(line);
@@ -467,7 +477,7 @@ export default {
 
         const absUrl = trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : new URL(trimmed, targetBase).toString();
         if (!isPrivateHost(absUrl)) {
-          const token = await createDescriptorToken(absUrl, activeHeaders, secret, descriptor.ip);
+          const token = await createDescriptorToken(absUrl, activeHeaders, signingKey, descriptor.ip);
           rewrittenLines.push(`${workerOrigin}/?token=${encodeURIComponent(token)}`);
         } else {
           rewrittenLines.push(line);

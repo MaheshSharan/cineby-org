@@ -1,4 +1,5 @@
 import type { MediaSegment, SegmentFetchParams } from "./types";
+import { getEnvVar } from "@/lib/env";
 
 interface SkipDbSegmentRaw {
   start_ms: number;
@@ -23,7 +24,7 @@ interface SkipDbApiResponse {
 }
 
 export function buildSkipDbUrl(params: SegmentFetchParams): URL | null {
-  const baseUrl = process.env.SKIPDB_API_URL?.replace(/\/+$/, "");
+  const baseUrl = getEnvVar("SKIPDB_API_URL")?.replace(/\/+$/, "");
   if (!baseUrl) {
     return null;
   }
@@ -96,7 +97,7 @@ export async function fetchSkipDbSegments(
       "User-Agent": "Cineby/1.0",
     };
 
-    const apiKey = process.env.SKIPDB_API_KEY?.trim();
+    const apiKey = getEnvVar("SKIPDB_API_KEY")?.trim();
     if (apiKey) {
       headers["X-API-Key"] = apiKey;
     }

@@ -9,6 +9,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:smoke:auth": "bun run scripts/dev-auth-smoke.ts",
+    "test:smoke:tmdb": "bun run scripts/smoke-test.tmdb.ts",
     "cf-typegen": "bunx wrangler types --env-interface CloudflareEnv",
     "deploy:proxy": "bunx wrangler deploy --config workers/stream-proxy/wrangler.jsonc",
     "build:worker": "bunx opennextjs-cloudflare build",

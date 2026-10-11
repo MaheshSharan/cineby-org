@@ -68,13 +68,24 @@ export async function updateUserDisplayName(userId: number, displayName: string)
 
 export async function deleteUser(userId: number): Promise<void> {
   const db = getDb();
-  // Delete related records explicitly to guarantee cleanup across both D1 and SQLite
-  await db.run("DELETE FROM watch_history WHERE user_id = ?", [userId]);
-  await db.run("DELETE FROM watchlist WHERE user_id = ?", [userId]);
-  await db.run("DELETE FROM profiles WHERE user_id = ?", [userId]);
-  await db.run("DELETE FROM sessions WHERE user_id = ?", [userId]);
-  await db.run("DELETE FROM user_settings WHERE user_id = ?", [userId]);
-  await db.run("DELETE FROM users WHERE id = ?", [userId]);
+  await db.exec("BEGIN TRANSACTION;");
+  try {
+    // Delete related records explicitly to guarantee cleanup across both D1 and SQLite
+    await db.run("DELETE FROM watch_history WHERE user_id = ?", [userId]);
+    await db.run("DELETE FROM watchlist WHERE user_id = ?", [userId]);
+    await db.run("DELETE FROM profiles WHERE user_id = ?", [userId]);
+    await db.run("DELETE FROM sessions WHERE user_id = ?", [userId]);
+    await db.run("DELETE FROM user_settings WHERE user_id = ?", [userId]);
+    await db.run("DELETE FROM users WHERE id = ?", [userId]);
+    await db.exec("COMMIT;");
+  } catch (error) {
+    try {
+      await db.exec("ROLLBACK;");
+    } catch {
+      // Ignore rollback failure if transaction already terminated
+    }
+    throw error;
+  }
 }
 
 export function toPublicUser(row: UserRow, hasProfiles?: boolean): User {

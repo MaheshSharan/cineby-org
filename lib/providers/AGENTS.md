@@ -257,9 +257,9 @@ export const myProvider: Provider = {
 When streaming providers enforce anti-hotlinking and IP blocking, Cineby uses a **Split-Proxy Architecture** to keep playback fast, reliable, and free of browser extensions:
 
 ### The Problem
-Upstream streaming CDNs (such as Vidking's `moon.peakstorm.top`) enforce two security layers:
+Upstream streaming CDNs (such as those used by streaming sources) enforce two security layers:
 1. **IP Datacenter Firewall:** OpenResty blocks Cloudflare Workers datacenter IP subnets with HTTP 403.
-2. **Anti-Hotlinking Header Check:** Requests must include `Referer: https://www.vidking.net/` or `Origin: https://www.vidking.net`. Browsers strictly forbid client-side JavaScript (`fetch`) from setting or overriding `Referer`/`Origin` headers.
+2. **Anti-Hotlinking Header Check:** Requests must include `Referer` or `Origin` headers (e.g. `https://vidy.st/` or `https://vixsrc.to`). Browsers strictly forbid client-side JavaScript (`fetch`) from setting or overriding `Referer`/`Origin` headers.
 
 ### The Solution: Split-Proxy Pipeline
 
@@ -272,7 +272,7 @@ Upstream streaming CDNs (such as Vidking's `moon.peakstorm.top`) enforce two sec
       │
       │ 2. Fetch playlist via clean AWS IP (~5 KB)
       ▼
-[Vercel Serverless Function] ──────► [moon.peakstorm.top] (CDN accepts clean IP)
+[Vercel Serverless Function] ──────► [Upstream CDN] (CDN accepts clean IP)
       │                                       │
       │ 3. Raw M3U8 Playlist                  │ 200 OK
       ◄───────────────────────────────────────┘
@@ -286,7 +286,7 @@ Upstream streaming CDNs (such as Vidking's `moon.peakstorm.top`) enforce two sec
       │
       │ 5. Requests video chunks (1.3 MB each)
       ▼
-[Cloudflare Stream Proxy Worker] ────► [solidmoon.top] (Fetches with Referer)
+[Cloudflare Stream Proxy Worker] ────► [Media Storage CDN] (Fetches with Referer)
       │                                      │
       │ 6. Fast video chunk streaming        │ 200 OK (video/mp4)
       ◄──────────────────────────────────────┘
@@ -298,7 +298,7 @@ Upstream streaming CDNs (such as Vidking's `moon.peakstorm.top`) enforce two sec
 1. **Vercel Serverless Egress Function (`M3U8_FETCHER_URL`):**
    - Fetches **only** the initial small M3U8 manifest text file (~5 KB).
    - Egresses from clean AWS Lambda IPs not blocked by CDN firewalls.
-   - Sets required `Referer: https://www.vidking.net/` and `Origin: https://www.vidking.net`.
+   - Sets required provider headers (such as `Referer` and `Origin`).
    - Never carries video segment traffic (zero high-bandwidth consumption).
 
 2. **Cineby API Route (`pages/api/stream/m3u8.ts`):**
@@ -308,6 +308,6 @@ Upstream streaming CDNs (such as Vidking's `moon.peakstorm.top`) enforce two sec
 
 3. **Cloudflare Stream Proxy Worker (`workers/stream-proxy/`):**
    - Handles 100% of high-volume video chunks (`.m4s`, `.ts`) and init maps (`.mp4`).
-   - Autonomously verifies the HMAC-SHA256 token, validates SSRF/private host safety, and forwards the stamped provider headers (`vidking.net`, `vidy.st`, `vixsrc.to`) directly to upstream CDNs.
+   - Autonomously verifies the HMAC-SHA256 token, validates SSRF/private host safety, and forwards the stamped provider headers (`vidy.st`, `vixsrc.to`, `cinezo.net`) directly to upstream CDNs.
    - Streams media directly through Cloudflare Edge with zero domain allowlist maintenance.
 

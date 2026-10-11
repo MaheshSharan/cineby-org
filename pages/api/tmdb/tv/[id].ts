@@ -1,11 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getTvDetails } from "@/lib/tmdb/server";
-import { logError } from "@/lib/logger";
+import { withApiContext } from "@/lib/validation";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default withApiContext("api/tmdb/tv/[id]", async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     res.status(405).json({ error: "Method not allowed" });
@@ -19,11 +16,6 @@ export default async function handler(
     return;
   }
 
-  try {
-    const result = await getTvDetails(id);
-    res.status(200).json(result);
-  } catch (error) {
-    logError("api/tmdb/tv", error);
-    res.status(500).json({ error: "Failed to fetch tv details" });
-  }
-}
+  const result = await getTvDetails(id);
+  res.status(200).json(result);
+});

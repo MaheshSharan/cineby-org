@@ -2,8 +2,9 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { isInWatchlist, removeFromWatchlist } from "@/lib/db/watchlist";
+import { withApiContext } from "@/lib/validation";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default withApiContext("api/watchlist/[mediaType]/[mediaId]", async (req: NextApiRequest, res: NextApiResponse) => {
   const user = await getCurrentUser(req);
 
   if (!user) {
@@ -35,4 +36,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   res.setHeader("Allow", "GET, DELETE");
   res.status(405).json({ error: "Method not allowed" });
-}
+});

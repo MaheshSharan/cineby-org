@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { findUserById, toPublicUser, updateUserAvatar } from "@/lib/db/users";
-import { logError } from "@/lib/logger";
+import { withApiContext } from "@/lib/validation";
 
 const MAX_AVATAR_SIZE_BYTES = 3 * 1024 * 1024; // 3MB
 
@@ -18,7 +18,7 @@ export const config = {
   },
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default withApiContext("api/auth/avatar", async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     res.status(405).json({ error: "Method not allowed" });
@@ -49,21 +49,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  try {
-    await updateUserAvatar(currentUser.id, avatar);
-    const updatedUserRow = await findUserById(currentUser.id);
+  await updateUserAvatar(currentUser.id, avatar);
+  const updatedUserRow = await findUserById(currentUser.id);
 
-    if (!updatedUserRow) {
-      res.status(500).json({ error: "Failed to load updated user." });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      user: toPublicUser(updatedUserRow),
-    });
-  } catch (error) {
-    logError("api/auth/avatar", error);
-    res.status(500).json({ error: "Unable to update avatar." });
+  if (!updatedUserRow) {
+    res.status(500).json({ error: "Failed to load updated user." });
+    return;
   }
-}
+
+  res.status(200).json({
+    success: true,
+    user: toPublicUser(updatedUserRow),
+  });
+});

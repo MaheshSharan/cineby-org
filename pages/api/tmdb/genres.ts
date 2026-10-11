@@ -1,12 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getGenres } from "@/lib/tmdb/server";
-import { logError } from "@/lib/logger";
+import { withApiContext } from "@/lib/validation";
 import type { MediaType } from "@/lib/tmdb";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default withApiContext("api/tmdb/genres", async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     res.status(405).json({ error: "Method not allowed" });
@@ -14,15 +11,9 @@ export default async function handler(
   }
 
   const mediaType = parseMediaType(req.query.mediaType);
-
-  try {
-    const result = await getGenres(mediaType);
-    res.status(200).json(result);
-  } catch (error) {
-    logError("api/tmdb/genres", error);
-    res.status(500).json({ error: "Failed to fetch genres" });
-  }
-}
+  const result = await getGenres(mediaType);
+  res.status(200).json(result);
+});
 
 function parseMediaType(value: unknown): MediaType {
   if (value === "tv") {

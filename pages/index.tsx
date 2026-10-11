@@ -162,7 +162,9 @@ const Home: NextPage<HomePageProps> = ({
   );
 };
 
-export const getServerSideProps: GetServerSideProps<HomePageProps> = async () => {
+export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ res }) => {
+  res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+
   const [
     heroP1,
     heroP2,

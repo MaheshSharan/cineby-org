@@ -80,6 +80,7 @@ export function initializeSchema(database: DatabaseSync): void {
     CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_profiles_user ON profiles(user_id);
     CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlist(user_id);
+    CREATE INDEX IF NOT EXISTS idx_watchlist_user_profile_added ON watchlist(user_id, profile_id, added_at DESC);
     CREATE INDEX IF NOT EXISTS idx_history_user ON watch_history(user_id, watched_at DESC);
     CREATE INDEX IF NOT EXISTS idx_history_profile_watched ON watch_history(user_id, profile_id, watched_at DESC);
   `);
@@ -133,7 +134,7 @@ export function initializeSchema(database: DatabaseSync): void {
       );
     `);
     database.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_watch_history_profile_media ON watch_history(profile_id, media_type, media_id);");
-    database.exec("CREATE INDEX IF NOT EXISTS idx_history_profile_watched ON watch_history(user_id, profile_id, watched_at DESC);");
+    database.exec("CREATE INDEX IF NOT EXISTS idx_watchlist_user_profile_added ON watchlist(user_id, profile_id, added_at DESC);");
   } catch {
     // Migration checks are best-effort during schema init
   }

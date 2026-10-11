@@ -20,20 +20,10 @@ import { isPrivateHost } from "@/lib/providers/allowlist";
  *
  * The client creates a Blob URL from the response and passes it to HLS.js.
  */
+import { getEnvVar } from "@/lib/env";
+
 function getM3u8FetcherUrl(): string {
-  if (process.env.M3U8_FETCHER_URL?.trim()) {
-    return process.env.M3U8_FETCHER_URL.trim();
-  }
-  try {
-    const cfContext = (globalThis as unknown as Record<symbol, { env?: Record<string, unknown> }>)[
-      Symbol.for("__cloudflare-context__")
-    ];
-    const cfUrl = cfContext?.env?.M3U8_FETCHER_URL;
-    if (typeof cfUrl === "string" && cfUrl.trim()) {
-      return cfUrl.trim();
-    }
-  } catch {}
-  return "";
+  return getEnvVar("M3U8_FETCHER_URL")?.trim() || "";
 }
 
 function extractClientIp(req: NextApiRequest): string {
@@ -116,11 +106,12 @@ async function fetchWithSsrfProtection(
   }
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<string | { error: string }>
-) {
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+import { withApiContext } from "@/lib/validation";
+
+export default withApiContext(
+  "api/stream/m3u8",
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
 
   if (req.method !== "GET" && req.method !== "POST") {
     res.setHeader("Allow", ["GET", "POST"]);
@@ -424,4 +415,4 @@ export default async function handler(
 
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
   res.status(200).send(rewritten.join("\n"));
-}
+});

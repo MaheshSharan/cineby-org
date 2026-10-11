@@ -1,4 +1,5 @@
 import type { MediaSegment, SegmentFetchParams, SegmentProviderName, SegmentProviderResult } from "./types";
+import { getEnvVar } from "@/lib/env";
 import { fetchIntroDbSegments } from "./introdb";
 import { fetchSkipDbSegments } from "./skipdb";
 
@@ -18,7 +19,7 @@ export const DEFAULT_SEGMENT_PROVIDER_PRIORITY: readonly SegmentProviderName[] =
 ];
 
 export function getSegmentProviderPriority(): SegmentProviderName[] {
-  const envPriority = process.env.SEGMENT_PROVIDER_PRIORITY?.trim();
+  const envPriority = getEnvVar("SEGMENT_PROVIDER_PRIORITY")?.trim();
   if (!envPriority) {
     return [...DEFAULT_SEGMENT_PROVIDER_PRIORITY];
   }

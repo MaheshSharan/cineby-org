@@ -1,11 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getSeasonEpisodes } from "@/lib/tmdb/server";
-import { logError } from "@/lib/logger";
+import { withApiContext } from "@/lib/validation";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default withApiContext("api/tmdb/tv/[id]/season/[season]", async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     res.status(405).json({ error: "Method not allowed" });
@@ -20,14 +17,9 @@ export default async function handler(
     return;
   }
 
-  try {
-    const result = await getSeasonEpisodes(id, seasonNumber);
-    res.status(200).json(result);
-  } catch (error) {
-    logError("api/tmdb/tv/season", error);
-    res.status(500).json({ error: "Failed to fetch season episodes" });
-  }
-}
+  const result = await getSeasonEpisodes(id, seasonNumber);
+  res.status(200).json(result);
+});
 
 function parseId(value: unknown): number | null {
   const parsed = typeof value === "string" ? Number.parseInt(value, 10) : NaN;

@@ -13,8 +13,9 @@ import { getDb } from "@/lib/db/connection";
 import { createUser, findUserByEmail, findUserByIdentifier, toPublicUser } from "@/lib/db/users";
 import { allowAuthAttempt, authClientKey } from "@/lib/auth/rateLimit";
 import { withApiContext } from "@/lib/validation";
+import { getEnvVar } from "@/lib/env";
 
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = getEnvVar("NEXT_PUBLIC_GOOGLE_CLIENT_ID");
 
 export default withApiContext(
   "api/auth/google",

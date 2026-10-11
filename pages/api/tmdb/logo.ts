@@ -1,12 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getMediaLogo } from "@/lib/tmdb/server";
-import { logError } from "@/lib/logger";
+import { withApiContext } from "@/lib/validation";
 import type { MediaType } from "@/lib/tmdb/types";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default withApiContext("api/tmdb/logo", async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     res.status(405).json({ error: "Method not allowed" });
@@ -25,12 +22,7 @@ export default async function handler(
     return;
   }
 
-  try {
-    const logoPath = await getMediaLogo(mediaType as MediaType, id);
-    res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=43200");
-    res.status(200).json({ logoPath });
-  } catch (error) {
-    logError("api/tmdb/logo", error);
-    res.status(500).json({ error: "Failed to fetch media logo" });
-  }
-}
+  const logoPath = await getMediaLogo(mediaType as MediaType, id);
+  res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=43200");
+  res.status(200).json({ logoPath });
+});
