@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 
 interface PlayerHeaderProps {
   title?: string;
@@ -9,7 +9,7 @@ interface PlayerHeaderProps {
   rightSlot?: ReactNode;
 }
 
-export function PlayerHeader({
+export const PlayerHeader = React.memo(function PlayerHeader({
   title,
   subtitle,
   onBack,
@@ -74,4 +74,4 @@ export function PlayerHeader({
       </div>
     </div>
   );
-}
+});

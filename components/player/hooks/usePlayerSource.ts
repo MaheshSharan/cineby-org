@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MediaSource, PlayerMedia, ServerGroup, ServerOption } from "../types";
 import { SERVERS, SERVER_GROUPS, preloadFlags } from "../constants";
 import { resolveStream } from "../providers";
+import { getMediaKey } from "@/lib/utils/media";
 
 export interface StreamState {
   source: MediaSource | null;
@@ -57,7 +58,7 @@ export function usePlayerSource({
   const pendingStreamAbortRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
 
-  const currentMediaKey = `${media.mediaType}-${media.mediaId}-${isTv ? currentSeason : 0}-${isTv ? currentEpisode : 0}`;
+  const currentMediaKey = getMediaKey(media.mediaType, media.mediaId, currentSeason, currentEpisode);
   const lastMediaKeyRef = useRef<string>(currentMediaKey);
 
   // Preload server/subtitle flag icons centrally

@@ -44,6 +44,22 @@ export function getMediaTypeLabel(mediaType: MediaType): string {
   return mediaType === "tv" ? "TV Show" : "Movie";
 }
 
+/**
+ * Builds the canonical identity key for a media playback session.
+ * Used for stream selection, subtitle tracking, and player segment caching.
+ */
+export function getMediaKey(
+  mediaType: string,
+  mediaId: number | string,
+  seasonNumber?: number | null,
+  episodeNumber?: number | null
+): string {
+  const isTv = mediaType === "tv";
+  const season = isTv ? (seasonNumber ?? 0) : 0;
+  const episode = isTv ? (episodeNumber ?? 0) : 0;
+  return `${mediaType}-${mediaId}-${season}-${episode}`;
+}
+
 export function formatRuntime(minutes: number | null): string {
   if (!minutes || minutes <= 0) {
     return "";

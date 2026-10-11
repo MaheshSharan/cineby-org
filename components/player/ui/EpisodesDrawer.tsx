@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import type { Episode } from "../types";
 import { formatRuntime } from "@/lib/utils/media";
 
@@ -25,7 +25,7 @@ interface EpisodesDrawerProps {
   onToggleAutoNext: () => void;
 }
 
-export function EpisodesDrawer({
+export const EpisodesDrawer = React.memo(function EpisodesDrawer({
   open,
   onClose,
   title,
@@ -246,4 +246,4 @@ export function EpisodesDrawer({
       </div>
     </div>
   );
-}
+});

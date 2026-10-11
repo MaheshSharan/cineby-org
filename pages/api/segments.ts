@@ -5,6 +5,7 @@ import { fetchSegmentsWithFallback, type SegmentProviderName } from "@/lib/segme
 import { getCacheStore, SingleFlight } from "@/lib/cache";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
+import { logger } from "@/lib/logger";
 
 interface SegmentsResponse {
   segments: MediaSegment[];
@@ -66,8 +67,8 @@ export default withApiContext(
               await store.set(tmdbCacheKey, ext.imdb_id, TMDB_IMDB_TTL_SEC);
               return ext.imdb_id;
             }
-          } catch {
-            // Fall through
+          } catch (tmdbErr) {
+            logger.warn("api/segments:tmdbExternalIdsFailed", undefined, tmdbErr);
           }
           return undefined;
         })) ?? undefined;
@@ -120,7 +121,8 @@ export default withApiContext(
 
       res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
       res.status(200).json({ segments: result.segments, provider: result.provider });
-    } catch {
+    } catch (error) {
+      logger.error("api/segments:fetchFailed", error);
       res.status(200).json({ segments: [] });
     }
   }

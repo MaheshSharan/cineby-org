@@ -270,7 +270,9 @@ export default withApiContext(
   try {
     const fallbackUrl = baseUrl ?? targetUrl ?? "";
     if (fallbackUrl) fallbackOrigin = new URL(fallbackUrl).origin;
-  } catch {}
+  } catch {
+    // Relative or invalid stream URLs cannot supply origin header; fallback remains empty string per §16
+  }
 
   const proxyHeaders: Record<string, string> = {
     Referer: explicitReferer || (fallbackOrigin ? `${fallbackOrigin}/` : ""),

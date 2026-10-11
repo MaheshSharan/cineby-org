@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { logger } from "@/lib/logger";
 
 export interface Descriptor {
   url: string;
@@ -51,7 +52,7 @@ function secret(): string {
   }
 
   if (!devFallbackSecret) {
-    console.warn(
+    logger.warn(
       "[signedProxy] No STREAM_PROXY_SECRET found. Generated an ephemeral in-memory secret for local development."
     );
     // Ephemeral random secret for local development (not a static guessable string)

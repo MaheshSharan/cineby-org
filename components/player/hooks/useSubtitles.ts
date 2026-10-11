@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { SubtitleTrack } from "../types";
 import { srtToVtt } from "@/lib/utils/srtToVtt";
+import { getMediaKey } from "@/lib/utils/media";
 import { revokeBlob, revokeAllBlobs } from "../utils/blobPool";
 
 export interface SubtitleStyleSettings {
@@ -78,7 +79,7 @@ export function useSubtitles({
   const subtitleFetchControllerRef = useRef<AbortController | null>(null);
   const subtitlesFetchedRef = useRef(false);
 
-  const currentMediaKey = `${mediaType ?? "movie"}-${mediaId ?? 0}-${isTv ? currentSeason ?? 0 : 0}-${isTv ? currentEpisode ?? 0 : 0}`;
+  const currentMediaKey = getMediaKey(mediaType ?? "movie", mediaId ?? 0, currentSeason, currentEpisode);
   const prevMediaKeyRef = useRef(currentMediaKey);
 
   // Cleanup on unmount

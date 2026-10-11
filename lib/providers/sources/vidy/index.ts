@@ -463,7 +463,7 @@ export function decryptVidyClientSources(
 
     return sources;
   } catch (err) {
-    console.error("[vidy] Failed to decrypt client-provided ciphertext:", err);
+    logError("vidy:decryptClientCiphertext", err);
     return [];
   }
 }

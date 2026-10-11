@@ -17,6 +17,11 @@ export function getImageProxyUrl(): string {
   return imageProxyUrl.replace(/\/+$/, "");
 }
 
+export function getFlagsApiBaseUrl(): string {
+  const flagsUrl = process.env.NEXT_PUBLIC_FLAGS_API_BASE_URL || "https://flagsapi.com";
+  return flagsUrl.replace(/\/+$/, "");
+}
+
 export function getEnvVar(name: string): string | undefined {
   if (process.env[name] !== undefined) {
     return process.env[name];
@@ -27,7 +32,9 @@ export function getEnvVar(name: string): string | undefined {
     ];
     const val = cfContext?.env?.[name];
     if (typeof val === "string") return val;
-  } catch {}
+  } catch {
+    // Non-Cloudflare environments may throw when accessing global context symbol; safely ignored per §16
+  }
   return undefined;
 }
 

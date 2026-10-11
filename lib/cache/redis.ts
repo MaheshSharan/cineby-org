@@ -116,7 +116,9 @@ function resolveRedisCredentials(
         return { url: `https://${parsed.hostname}`, token: explicitToken };
       }
     }
-  } catch {}
+  } catch {
+    // Malformed Redis URLs fall through to memory cache; safely ignored per §16
+  }
 
   return null;
 }
@@ -207,7 +209,9 @@ export class RedisCacheStore implements CacheStore {
     }
     try {
       await this.fallbackStore.set(key, value, ttlSeconds, staleSeconds);
-    } catch {}
+    } catch (fallbackError) {
+      logger.warn(`[RedisCacheStore] Failed to write key ${key} to fallback memory store`, undefined, fallbackError);
+    }
   }
 
   async delete(key: string): Promise<boolean> {

@@ -1,4 +1,5 @@
 import type { PlaybackRate, QualityLabel, ServerGroup, ServerOption } from "./types";
+import { getFlagsApiBaseUrl } from "@/lib/env";
 
 export const HISTORY_SAVE_INTERVAL_MS = 30_000;
 
@@ -71,7 +72,7 @@ export function getFlagUrl(codeOrUrl?: string | null): string {
 
   const countryCode = (CODE_MAP[clean] || clean).toUpperCase();
   if (/^[A-Z]{2}$/.test(countryCode)) {
-    return `https://flagsapi.com/${countryCode}/flat/24.png`;
+    return `${getFlagsApiBaseUrl()}/${countryCode}/flat/24.png`;
   }
 
   return FALLBACK_FLAG_URL;

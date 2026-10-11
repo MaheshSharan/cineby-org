@@ -19,6 +19,8 @@ export interface UsePlayerStateResult {
   rate: PlaybackRate;
   quality: QualityLabel | null;
   subtitleLang: string | null;
+  play: () => void;
+  pause: () => void;
   togglePlay: () => void;
   seekTo: (time: number) => void;
   seekBy: (seconds: number) => void;
@@ -160,6 +162,18 @@ export function usePlayerState({
     };
   }, [initialSeekTime, syncFromVideo, videoRef]);
 
+  const play = useCallback(() => {
+    const element = videoRef.current;
+    if (!element) return;
+    void element.play().catch(() => {});
+  }, [videoRef]);
+
+  const pause = useCallback(() => {
+    const element = videoRef.current;
+    if (!element) return;
+    element.pause();
+  }, [videoRef]);
+
   const togglePlay = useCallback(() => {
     const element = videoRef.current;
     if (!element) return;
@@ -239,6 +253,8 @@ export function usePlayerState({
     rate,
     quality,
     subtitleLang,
+    play,
+    pause,
     togglePlay,
     seekTo,
     seekBy,

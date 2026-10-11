@@ -4,6 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 
 import { initializeSchema } from "./schema";
 import { type DbClient, D1DbAdapter, LocalSqliteAdapter, type D1DatabaseBinding } from "./adapter";
+import { logger } from "@/lib/logger";
 
 const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "cineby.db");
 
@@ -29,7 +30,7 @@ export function getDb(): DbClient {
       return clientInstance;
     }
   } catch {
-    // Continue to fallback checks
+    // OpenNext ALS context not available outside Cloudflare runtime; safely continue to fallback checks per §16
   }
 
   // Cloudflare D1 binding on global context or process.env
@@ -68,7 +69,7 @@ export function getDb(): DbClient {
     clientInstance = new LocalSqliteAdapter(rawDb);
     return clientInstance;
   } catch (err) {
-    console.error("[DB] Failed to initialize local SQLite database:", err);
+    logger.error("[DB] Failed to initialize local SQLite database", err);
     throw new Error("[DB] Database initialization failed: local filesystem unavailable and no D1 binding provided.");
   }
 }
