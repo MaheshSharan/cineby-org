@@ -14,7 +14,7 @@ export default function Document() {
         />
         <link rel="icon" href="/logo.png" type="image/png" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="manifest" href="/manifest.webmanifest" crossOrigin="use-credentials" />
         <meta name="theme-color" content={PWA_BACKGROUND_COLOR} />
         <meta name="color-scheme" content="dark" />
         <meta name="mobile-web-app-capable" content="yes" />
