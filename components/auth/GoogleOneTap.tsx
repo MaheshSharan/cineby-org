@@ -86,6 +86,7 @@ export function GoogleOneTap({
         auto_select: false,
         cancel_on_tap_outside: true,
         itp_support: true,
+        prompt_parent_id: "google-one-tap-anchor",
       });
 
       window.google.accounts.id.prompt();
@@ -117,9 +118,15 @@ export function GoogleOneTap({
   }
 
   return (
-    <Script
-      src="https://accounts.google.com/gsi/client"
-      strategy="afterInteractive"
-    />
+    <>
+      <div
+        id="google-one-tap-anchor"
+        className="fixed top-[84px] md:top-[96px] right-4 md:right-8 z-[90] pointer-events-auto"
+      />
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+      />
+    </>
   );
 }
