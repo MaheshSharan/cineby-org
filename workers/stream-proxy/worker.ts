@@ -491,6 +491,58 @@ export default {
       });
     }
 
+    // WebVTT Storyboard Thumbnails rewriting
+    const isVtt =
+      rawTargetUrl.includes(".vtt") ||
+      contentType.includes("text/vtt");
+
+    if (isVtt) {
+      const text = await upstreamRes.text();
+      const targetBase = rawTargetUrl.substring(0, rawTargetUrl.lastIndexOf("/") + 1);
+      const workerOrigin = url.origin;
+      const signingKey = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(secret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+
+      const lines = text.split("\n");
+      const rewrittenLines: string[] = [];
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("WEBVTT") || trimmed.startsWith("NOTE") || trimmed.includes("-->")) {
+          rewrittenLines.push(line);
+          continue;
+        }
+
+        const hashIdx = trimmed.indexOf("#xywh=");
+        const rawUrl = hashIdx !== -1 ? trimmed.slice(0, hashIdx) : trimmed;
+        const fragment = hashIdx !== -1 ? trimmed.slice(hashIdx) : "";
+
+        if (/\.(jpe?g|png|webp)($|\?)/i.test(rawUrl) || hashIdx !== -1) {
+          const absUrl = rawUrl.startsWith("http://") || rawUrl.startsWith("https://")
+            ? rawUrl
+            : new URL(rawUrl, targetBase).toString();
+
+          if (!isPrivateHost(absUrl)) {
+            const token = await createDescriptorToken(absUrl, activeHeaders, signingKey, descriptor.ip);
+            rewrittenLines.push(`${workerOrigin}/?token=${encodeURIComponent(token)}${fragment}`);
+            continue;
+          }
+        }
+        rewrittenLines.push(line);
+      }
+
+      responseHeaders.set("Content-Type", "text/vtt; charset=utf-8");
+      return new Response(rewrittenLines.join("\n"), {
+        status: upstreamRes.status,
+        headers: responseHeaders,
+      });
+    }
+
     // SRT to WebVTT
     const isSrt =
       rawTargetUrl.includes(".srt") ||
