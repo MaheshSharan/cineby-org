@@ -179,25 +179,28 @@ export function SeekBar({
       aria-valuetext={`${formatTime(activeTime)} of ${formatTime(duration)}`}
       tabIndex={0}
     >
-      {/* Hover Thumbnail Preview (Gated by settings) */}
-      {hoverThumbnails && hoverTime !== null && duration > 0 && (
-        <ProgressBarThumbnail
-          hoverTime={hoverTime}
-          hoverProgress={hoverProgress}
-          providerThumbnail={hasProviderThumbnails ? getThumbnail(hoverTime) : null}
-          requestFrame={hasProviderThumbnails ? undefined : requestFrame}
-        />
-      )}
-
-      {/* Hover Time Tooltip (Seek Preview) */}
+      {/* Unified Hover Preview Container (Thumbnail + Time Tooltip) */}
       {hoverTime !== null && duration > 0 && (
         <div
-          className="pointer-events-none absolute -top-3 -translate-y-full -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/75 px-2.5 py-1 text-xs font-medium tracking-wide text-white shadow-xl backdrop-blur-xl z-40"
+          className="pointer-events-none absolute bottom-5 -translate-x-1/2 flex flex-col items-center z-40 will-change-transform motion-reduce:transition-none"
           style={{
-            left: `clamp(30px, ${hoverProgress}%, calc(100% - 30px))`,
+            left: `clamp(85px, ${hoverProgress}%, calc(100% - 85px))`,
           }}
         >
-          {formatTime(hoverTime)}
+          {/* Hover Thumbnail Preview (Gated by settings) */}
+          {hoverThumbnails && (
+            <ProgressBarThumbnail
+              hoverTime={hoverTime}
+              hoverProgress={hoverProgress}
+              providerThumbnail={hasProviderThumbnails ? getThumbnail(hoverTime) : null}
+              requestFrame={hasProviderThumbnails ? undefined : requestFrame}
+            />
+          )}
+
+          {/* Hover Time Tooltip (Seek Preview) */}
+          <div className="whitespace-nowrap rounded-full border border-white/10 bg-black/85 px-2.5 py-1 text-xs font-medium tracking-wide text-white shadow-xl backdrop-blur-xl">
+            {formatTime(hoverTime)}
+          </div>
         </div>
       )}
 

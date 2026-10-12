@@ -103,12 +103,7 @@ export function ProgressBarThumbnail({
         };
 
     return (
-      <div
-        className="pointer-events-none absolute -top-11 -translate-y-full -translate-x-1/2 overflow-hidden rounded-xl border border-white/20 bg-black/85 p-1 shadow-2xl backdrop-blur-md z-40 transition-opacity duration-150 opacity-100"
-        style={{
-          left: `clamp(85px, ${hoverProgress}%, calc(100% - 85px))`,
-        }}
-      >
+      <div className="overflow-hidden rounded-xl border border-white/20 bg-black/85 p-1 shadow-2xl backdrop-blur-md mb-2 transition-opacity duration-150 opacity-100">
         <div
           style={style}
           className="block rounded-lg bg-black/80 shadow-inner"
@@ -124,12 +119,9 @@ export function ProgressBarThumbnail({
 
   return (
     <div
-      className={`pointer-events-none absolute -top-11 -translate-y-full -translate-x-1/2 overflow-hidden rounded-xl border border-white/20 bg-black/85 p-1 shadow-2xl backdrop-blur-md z-40 transition-opacity duration-150 ${
+      className={`overflow-hidden rounded-xl border border-white/20 bg-black/85 p-1 shadow-2xl backdrop-blur-md mb-2 transition-opacity duration-150 ${
         hasBitmap ? "opacity-100" : "opacity-0"
       }`}
-      style={{
-        left: `clamp(85px, ${hoverProgress}%, calc(100% - 85px))`,
-      }}
     >
       <canvas
         ref={canvasRef}
