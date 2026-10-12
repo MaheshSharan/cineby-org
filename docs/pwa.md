@@ -19,9 +19,9 @@ Cineby installs as a standalone app from Chrome (Android and desktop) and from S
 - **Install banner** (`components/pwa/InstallBanner.tsx`, `hooks/useInstallPrompt.ts`): shown on touch devices after `INSTALL_BANNER_DELAY_MS`, never in standalone mode or on player/auth routes, and hidden for `INSTALL_DISMISS_DAYS` after a dismissal. Chrome gets the native dialog through `beforeinstallprompt`; iOS gets an "Add to Home Screen" hint because Safari has no install API.
 - **Update toast** (`components/pwa/UpdateToast.tsx`): `useServiceWorker` reports when a new worker takes control of an already-controlled page, and re-checks for updates when the app is resumed.
 - **iOS launch images**: `lib/pwa/iosSplash.ts` lists the devices; `public/icons/splash/` holds one flat `#050505` PNG with the logo centered (about 28% of the short side) per entry. Add a device by adding both.
+- **Screenshots**: intentionally omitted from the manifest so Chrome on mobile uses its clean compact native install dialog rather than a squished, narrow preview card.
 - **Shortcuts**: the manifest's Search shortcut opens `/?search=1`, which `Header` consumes to open the search modal.
 - **Safe areas**: `viewport-fit=cover` is set in `_app.tsx`; the header, dock and `.layout-container` pad with `env(safe-area-inset-*)`.
-- **Screenshots**: `public/screenshots/` holds one narrow and one wide capture for Chrome's richer install dialog. Chrome rejects images whose long side is more than 2.3x the short side; `tests/pwa.test.ts` checks this. Replace them when the home page design changes.
 
 ## Rules
 
