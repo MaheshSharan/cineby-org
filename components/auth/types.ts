@@ -5,6 +5,7 @@ export interface AuthModalProps {
   mode: AuthMode;
   onClose: (mode: AuthMode) => void;
   onModeChange: (mode: AuthMode) => void;
-  onAuthenticated: (username: string, mode: AuthMode) => Promise<void>;
+  /** Refreshes the session and navigates to the destination while the transition overlay is shown. */
+  onAuthenticated: (redirectTo: string) => Promise<void>;
   showToast: (msg: string) => void;
 }

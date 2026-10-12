@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 
 import type { User } from "@/lib/db/types";
 import { AuthModal, type AuthMode } from "@/components/auth/AuthModal";
+import { AuthTransitionOverlay } from "@/components/auth/AuthTransitionOverlay";
 import { Toast } from "@/components/ui/Toast";
 
 import { syncGuestHistoryToServer } from "@/lib/api/history";
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<AuthMode>("login");
+  const [isCompletingAuth, setIsCompletingAuth] = useState(false);
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -71,6 +73,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
     }
   }, [showToast]);
+
+  // The session must be loaded before routing, otherwise the destination page mounts with no user and flashes.
+  const completeAuthentication = useCallback(
+    async (redirectTo: string) => {
+      setIsCompletingAuth(true);
+      try {
+        await refresh();
+        await router.push(redirectTo);
+      } finally {
+        setIsCompletingAuth(false);
+      }
+    },
+    [refresh, router]
+  );
+
+  const handleGoogleOneTapSuccess = useCallback(
+    (redirectTo?: string) => {
+      showToast("Signed in with Google");
+      void completeAuthentication(redirectTo ?? "/profiles");
+    },
+    [completeAuthentication, showToast]
+  );
 
   const openAuthModal = useCallback((mode: AuthMode = "login") => {
     setAuthModalMode(mode);
@@ -155,24 +179,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {children}
       <Toast message={toastMessage} onClose={clearToast} />
       <GoogleOneTap
-        disabled={Boolean(user) || isLoading}
-        onSuccess={(redirectTo) => {
-          showToast("Signed in with Google");
-          void refresh();
-          if (redirectTo) {
-            void router.push(redirectTo);
-          }
-        }}
-        onError={(err) => {
-          showToast(err);
-        }}
+        disabled={Boolean(user) || isLoading || isCompletingAuth}
+        onSuccess={handleGoogleOneTapSuccess}
+        onError={showToast}
       />
+      <AuthTransitionOverlay isVisible={isCompletingAuth} />
       <AuthModal
         open={authModalOpen}
         mode={authModalMode}
         onClose={closeAuthModal}
         onModeChange={setAuthModalMode}
-        onAuthenticated={refresh}
+        onAuthenticated={completeAuthentication}
         showToast={showToast}
       />
     </AuthContext.Provider>

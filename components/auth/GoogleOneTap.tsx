@@ -1,5 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Script from "next/script";
+
+const GOOGLE_SCRIPT_WAIT_MS = 5000;
 
 interface GoogleOneTapProps {
   clientId?: string;
@@ -63,32 +65,34 @@ export function GoogleOneTap({
   onError,
   disabled = false,
 }: GoogleOneTapProps) {
+  // Callbacks change identity on every parent render; keeping them in a ref stops the prompt from re-initializing.
+  const callbacksRef = useRef({ onSuccess, onError });
   useEffect(() => {
-    // Fast check: If user already has an active session cookie or is marked disabled, do not prompt
-    const hasSessionCookie =
-      typeof document !== "undefined" && document.cookie.includes("cineby_session=");
+    callbacksRef.current = { onSuccess, onError };
+  }, [onSuccess, onError]);
 
-    if (disabled || !clientId || hasSessionCookie) {
-      if (typeof window !== "undefined" && window.google?.accounts?.id) {
-        window.google.accounts.id.cancel();
-      }
+  useEffect(() => {
+    if (disabled || !clientId) {
       return;
     }
 
-    const handleCallback = (response: CredentialResponse) => {
-      if (response.credential) {
-        handleGoogleCredentialResponse(response.credential, onSuccess, onError);
-      }
-    };
+    function handleCallback(response: CredentialResponse) {
+      if (!response.credential) return;
 
-    const initializeOneTap = () => {
-      if (!window.google?.accounts?.id) return;
-      if (typeof document !== "undefined" && document.cookie.includes("cineby_session=")) {
-        window.google.accounts.id.cancel();
-        return;
-      }
+      // Dismiss the prompt right away so it cannot linger while the sign in request is in flight.
+      window.google?.accounts?.id?.cancel();
+      handleGoogleCredentialResponse(
+        response.credential,
+        (redirectTo) => callbacksRef.current.onSuccess?.(redirectTo),
+        (error) => callbacksRef.current.onError?.(error)
+      );
+    }
 
-      window.google.accounts.id.initialize({
+    function showPrompt() {
+      const googleId = window.google?.accounts?.id;
+      if (!googleId) return false;
+
+      googleId.initialize({
         client_id: clientId,
         callback: handleCallback,
         auto_select: false,
@@ -96,39 +100,22 @@ export function GoogleOneTap({
         itp_support: true,
         prompt_parent_id: "google-one-tap-anchor",
       });
-
-      window.google.accounts.id.prompt();
-    };
-
-    if (window.google?.accounts?.id) {
-      initializeOneTap();
-    } else {
-      const interval = setInterval(() => {
-        if (window.google?.accounts?.id) {
-          clearInterval(interval);
-          initializeOneTap();
-        }
-      }, 200);
-
-      const timeout = setTimeout(() => {
-        clearInterval(interval);
-      }, 5000);
-
-      return () => {
-        clearInterval(interval);
-        clearTimeout(timeout);
-        if (typeof window !== "undefined" && window.google?.accounts?.id) {
-          window.google.accounts.id.cancel();
-        }
-      };
+      googleId.prompt();
+      return true;
     }
 
+    // The Google script loads asynchronously, so poll briefly until it is ready.
+    const interval = showPrompt() ? undefined : setInterval(() => {
+      if (showPrompt()) clearInterval(interval);
+    }, 200);
+    const timeout = setTimeout(() => clearInterval(interval), GOOGLE_SCRIPT_WAIT_MS);
+
     return () => {
-      if (typeof window !== "undefined" && window.google?.accounts?.id) {
-        window.google.accounts.id.cancel();
-      }
+      clearInterval(interval);
+      clearTimeout(timeout);
+      window.google?.accounts?.id?.cancel();
     };
-  }, [clientId, disabled, onError, onSuccess]);
+  }, [clientId, disabled]);
 
   if (disabled || !clientId) {
     return null;

@@ -77,8 +77,7 @@ export function AuthModal({
                 response.credential,
                 async (redirectTo) => {
                   showToast("Signed in with Google");
-                  await onAuthenticatedRef.current("Google User", activeMode);
-                  await router.push(redirectTo || "/profiles");
+                  await onAuthenticatedRef.current(redirectTo || "/profiles");
                   onClose(activeMode);
                 },
                 (err) => {
@@ -198,19 +197,16 @@ export function AuthModal({
         return;
       }
 
-      await onAuthenticated(username, activeMode);
-
       if (activeMode === "register") {
         showToast("Registered successfully!");
         // Navigate while the full-screen modal still covers the page, then
         // close it — closing first would flash the home page underneath.
-        await router.push(data.redirectTo || "/profiles?create=true");
-        onClose(activeMode);
+        await onAuthenticated(data.redirectTo || "/profiles?create=true");
       } else {
         showToast(`${username}, welcome back!`);
-        await router.push(data.redirectTo || "/profiles");
-        onClose(activeMode);
+        await onAuthenticated(data.redirectTo || "/profiles");
       }
+      onClose(activeMode);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
