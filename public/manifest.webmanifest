@@ -14,6 +14,10 @@
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
+  "screenshots": [
+    { "src": "/screenshots/home-narrow.png", "sizes": "1080x2156", "type": "image/png", "form_factor": "narrow", "label": "Browse trending movies and series" },
+    { "src": "/screenshots/home-wide.png", "sizes": "1360x592", "type": "image/png", "form_factor": "wide", "label": "Browse trending movies and series" }
+  ],
   "shortcuts": [
     {
       "name": "Search",

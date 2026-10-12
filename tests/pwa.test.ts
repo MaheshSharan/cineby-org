@@ -181,6 +181,25 @@ describe("service worker", () => {
   });
 });
 
+describe("install dialog screenshots", () => {
+  const MAX_ASPECT_RATIO = 2.3;
+  const screenshots = (
+    manifest as WebManifest & { screenshots: { src: string; sizes: string; form_factor: string }[] }
+  ).screenshots;
+
+  it("have the declared size and an aspect ratio Chrome accepts", () => {
+    for (const screenshot of screenshots) {
+      expect(readPngSize(screenshot.src.slice(1))).toBe(screenshot.sizes);
+      const [width, height] = screenshot.sizes.split("x").map(Number);
+      expect(Math.max(width, height) / Math.min(width, height)).toBeLessThanOrEqual(MAX_ASPECT_RATIO);
+    }
+  });
+
+  it("include a narrow and a wide form factor", () => {
+    expect(screenshots.map((screenshot) => screenshot.form_factor).sort()).toEqual(["narrow", "wide"]);
+  });
+});
+
 describe("home screen shortcuts", () => {
   const shortcuts = (manifest as WebManifest & { shortcuts: { url: string }[] }).shortcuts;
 

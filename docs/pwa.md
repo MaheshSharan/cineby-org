@@ -21,7 +21,7 @@ Cineby installs as a standalone app from Chrome (Android and desktop) and from S
 - **iOS launch images**: `lib/pwa/iosSplash.ts` lists the devices; `public/icons/splash/` holds one flat `#050505` PNG with the logo centered (about 28% of the short side) per entry. Add a device by adding both.
 - **Shortcuts**: the manifest's Search shortcut opens `/?search=1`, which `Header` consumes to open the search modal.
 - **Safe areas**: `viewport-fit=cover` is set in `_app.tsx`; the header, dock and `.layout-container` pad with `env(safe-area-inset-*)`.
-- **Screenshots** are not in the manifest yet. Add `screenshots` (one `form_factor: "narrow"` and one `"wide"` PNG) from the real app to get Chrome's richer install dialog.
+- **Screenshots**: `public/screenshots/` holds one narrow and one wide capture for Chrome's richer install dialog. Chrome rejects images whose long side is more than 2.3x the short side; `tests/pwa.test.ts` checks this. Replace them when the home page design changes.
 
 ## Rules
 
