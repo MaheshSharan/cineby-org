@@ -1,6 +1,7 @@
 import { Head, Html, Main, NextScript } from "next/document";
 
 import { PWA_BACKGROUND_COLOR } from "@/lib/constants/pwa";
+import { getIosSplashImagePath, getIosSplashMedia, IOS_SPLASH_SCREENS } from "@/lib/pwa/iosSplash";
 
 export default function Document() {
   return (
@@ -18,6 +19,17 @@ export default function Document() {
         <meta name="theme-color" content={PWA_BACKGROUND_COLOR} />
         <meta name="color-scheme" content="dark" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Cineby" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        {IOS_SPLASH_SCREENS.map((screen) => (
+          <link
+            key={getIosSplashImagePath(screen) + screen.pixelRatio}
+            rel="apple-touch-startup-image"
+            href={getIosSplashImagePath(screen)}
+            media={getIosSplashMedia(screen)}
+          />
+        ))}
       </Head>
       <body className="bg-background">
         <script

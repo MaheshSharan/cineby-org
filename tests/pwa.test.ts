@@ -3,7 +3,9 @@ import path from "node:path";
 import vm from "node:vm";
 import { describe, it, expect, vi } from "vitest";
 
-import { PWA_BACKGROUND_COLOR } from "@/lib/constants/pwa";
+import { INSTALL_DISMISS_DAYS, PWA_BACKGROUND_COLOR } from "@/lib/constants/pwa";
+import { isDismissalActive } from "@/lib/pwa/installDismissal";
+import { getIosSplashImagePath, getIosSplashMedia, IOS_SPLASH_SCREENS } from "@/lib/pwa/iosSplash";
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const PNG_COLOR_TYPE_OFFSET = 25;
@@ -176,5 +178,39 @@ describe("service worker", () => {
     expect(url).toBe("/offline.html");
     expect(stored.redirected).toBe(false);
     expect(await stored.text()).toBe("<html>offline</html>");
+  });
+});
+
+describe("home screen shortcuts", () => {
+  const shortcuts = (manifest as WebManifest & { shortcuts: { url: string }[] }).shortcuts;
+
+  it("link to the search deep link and the watchlist page", () => {
+    expect(shortcuts.map((shortcut) => shortcut.url)).toEqual(["/?search=1", "/watchlist"]);
+    expect(fs.existsSync(path.join(process.cwd(), "pages/watchlist.tsx"))).toBe(true);
+  });
+});
+
+describe("iOS launch images", () => {
+  it("ship one image per device with the exact pixel size", () => {
+    for (const screen of IOS_SPLASH_SCREENS) {
+      const expected = `${screen.width * screen.pixelRatio}x${screen.height * screen.pixelRatio}`;
+      expect(readPngSize(getIosSplashImagePath(screen).slice(1))).toBe(expected);
+    }
+  });
+
+  it("never declare the same device query twice", () => {
+    const queries = IOS_SPLASH_SCREENS.map(getIosSplashMedia);
+    expect(new Set(queries).size).toBe(queries.length);
+  });
+});
+
+describe("install banner dismissal", () => {
+  const now = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  it("stays hidden until the dismissal period ends", () => {
+    expect(isDismissalActive(null, now)).toBe(false);
+    expect(isDismissalActive(now - DAY_MS, now)).toBe(true);
+    expect(isDismissalActive(now - (INSTALL_DISMISS_DAYS + 1) * DAY_MS, now)).toBe(false);
   });
 });

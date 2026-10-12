@@ -14,6 +14,15 @@ Cineby installs as a standalone app from Chrome (Android and desktop) and from S
 | `lib/constants/pwa.ts` | `PWA_BACKGROUND_COLOR`, used by the `theme-color` meta tag. |
 | `tests/pwa.test.ts` | Guards the manifest, icons, colors and worker behavior. |
 
+## Mobile app feel
+
+- **Install banner** (`components/pwa/InstallBanner.tsx`, `hooks/useInstallPrompt.ts`): shown on touch devices after `INSTALL_BANNER_DELAY_MS`, never in standalone mode or on player/auth routes, and hidden for `INSTALL_DISMISS_DAYS` after a dismissal. Chrome gets the native dialog through `beforeinstallprompt`; iOS gets an "Add to Home Screen" hint because Safari has no install API.
+- **Update toast** (`components/pwa/UpdateToast.tsx`): `useServiceWorker` reports when a new worker takes control of an already-controlled page, and re-checks for updates when the app is resumed.
+- **iOS launch images**: `lib/pwa/iosSplash.ts` lists the devices; `public/icons/splash/` holds one flat `#050505` PNG with the logo centered (about 28% of the short side) per entry. Add a device by adding both.
+- **Shortcuts**: the manifest's Search shortcut opens `/?search=1`, which `Header` consumes to open the search modal.
+- **Safe areas**: `viewport-fit=cover` is set in `_app.tsx`; the header, dock and `.layout-container` pad with `env(safe-area-inset-*)`.
+- **Screenshots** are not in the manifest yet. Add `screenshots` (one `form_factor: "narrow"` and one `"wide"` PNG) from the real app to get Chrome's richer install dialog.
+
 ## Rules
 
 - **The worker must stay network-only.** It handles page navigations only. Never cache or intercept `/api/*`, auth, HLS segments or the stream proxy: stale responses, range requests and auth state break playback.

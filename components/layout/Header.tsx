@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useActiveProfile } from "@/hooks/useActiveProfile";
 
@@ -30,6 +30,15 @@ export function Header() {
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+
+  const shouldOpenSearchFromLink = router.isReady && router.query.search === "1";
+
+  useEffect(() => {
+    // The installed app's Search shortcut opens the site with ?search=1; consume it so a refresh doesn't reopen search.
+    if (!shouldOpenSearchFromLink) return;
+    setIsSearchOpen(true);
+    void router.replace(router.pathname, undefined, { shallow: true });
+  }, [shouldOpenSearchFromLink, router]);
 
   const currentPath = router.asPath;
   const isHome = router.pathname === "/";
@@ -63,7 +72,7 @@ export function Header() {
 
   return (
     <>
-      <header className="pointer-events-none absolute left-0 right-0 top-0 z-30">
+      <header className="pointer-events-none absolute left-0 right-0 top-0 z-30 pt-[env(safe-area-inset-top,0px)]">
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-20 md:h-24"
           aria-hidden="true"
