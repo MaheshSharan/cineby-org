@@ -194,6 +194,21 @@ describe("manifest localization and behavior", () => {
   });
 });
 
+describe("install dialog screenshots", () => {
+  const screenshots = (
+    manifest as WebManifest & { screenshots: { src: string; sizes: string; form_factor: string }[] }
+  ).screenshots;
+
+  it("points to the real landscape home-wide capture for both form factors", () => {
+    expect(screenshots.length).toBe(2);
+    for (const screenshot of screenshots) {
+      expect(screenshot.src).toBe("/screenshots/home-wide.png");
+      expect(readPngSize(screenshot.src.slice(1))).toBe(screenshot.sizes);
+    }
+    expect(screenshots.map((s) => s.form_factor).sort()).toEqual(["narrow", "wide"]);
+  });
+});
+
 describe("home screen shortcuts", () => {
   const shortcuts = (manifest as WebManifest & { shortcuts: { url: string }[] }).shortcuts;
 
