@@ -483,6 +483,8 @@ export function PlayerContainer({
 
   useEffect(() => {
     if (!playerState.isEnded) {
+      // Re-arm autoplay so the next episode's ending can advance again.
+      endedRef.current = false;
       return;
     }
 
