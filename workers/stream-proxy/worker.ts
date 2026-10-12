@@ -523,9 +523,14 @@ export default {
         const fragment = hashIdx !== -1 ? trimmed.slice(hashIdx) : "";
 
         if (/\.(jpe?g|png|webp)($|\?)/i.test(rawUrl) || hashIdx !== -1) {
+          const effectiveBase =
+            rawUrl.startsWith("thumbs/") && targetBase.endsWith("/thumbs/")
+              ? targetBase.slice(0, -7)
+              : targetBase;
+
           const absUrl = rawUrl.startsWith("http://") || rawUrl.startsWith("https://")
             ? rawUrl
-            : new URL(rawUrl, targetBase).toString();
+            : new URL(rawUrl, effectiveBase).toString();
 
           if (!isPrivateHost(absUrl)) {
             const token = await createDescriptorToken(absUrl, activeHeaders, signingKey, descriptor.ip);
