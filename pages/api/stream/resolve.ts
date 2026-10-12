@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { resolveAllStreams, fetchProviderSubtitles } from "@/lib/providers/registry";
 import { parseVixsrcEmbedHtml } from "@/lib/providers/sources/vixsrc";
-import { decryptVidyClientSources } from "@/lib/providers/sources/vidy";
+import { decryptVidyClientPayload } from "@/lib/providers/sources/vidy";
 import { buildStreamProxyUrl } from "@/lib/providers/proxy";
 import type { MediaType, StreamResponse } from "@/lib/providers/types";
 import { logger } from "@/lib/logger";
@@ -104,12 +104,18 @@ export default withApiContext(
       const isVidyEnabled = vidyEnv !== "false" && vidyEnv !== "0";
       if (vidyCiphertext && vidySeed && isVidyEnabled) {
         logger.debug(`[resolve] Processing client-provided Vidy payload for tmdbId=${parsedTmdbId}`);
-        const rawSources = decryptVidyClientSources(vidyCiphertext, vidySeed, parsedTmdbId, vidyServerId);
+        const decrypted = decryptVidyClientPayload(vidyCiphertext, vidySeed, parsedTmdbId, vidyServerId);
+        const rawSources = decrypted.sources;
 
         if (rawSources.length > 0) {
           const finalSources = rawSources.map((src) => ({
             ...src,
             url: src.direct ? src.url : buildStreamProxyUrl(src.url, src.headers, clientIp),
+          }));
+
+          const finalThumbnails = decrypted.thumbnails.map((thumb) => ({
+            ...thumb,
+            url: buildStreamProxyUrl(thumb.url, thumb.headers, clientIp),
           }));
 
           const subtitles = await fetchProviderSubtitles(
@@ -123,8 +129,8 @@ export default withApiContext(
             clientIp
           );
 
-          logger.debug(`[resolve] Vidy client-assisted resolution succeeded: ${finalSources.length} sources, ${subtitles.length} subtitles`);
-          res.status(200).json({ sources: finalSources, subtitles });
+          logger.debug(`[resolve] Vidy client-assisted resolution succeeded: ${finalSources.length} sources, ${subtitles.length} subtitles, ${finalThumbnails.length} thumbnails`);
+          res.status(200).json({ sources: finalSources, subtitles, thumbnails: finalThumbnails });
           return;
         }
         logger.warn(`[resolve] Vidy client-provided payload failed to decrypt any sources, falling back to server`);

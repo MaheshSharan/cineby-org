@@ -278,6 +278,8 @@ export async function resolveStream(
         const sources = payload.sources ?? [];
         const mappedSources: MediaSource[] = [];
 
+        const mappedThumbnails = (payload.thumbnails ?? []).filter((t) => Boolean(t.url));
+
         for (let i = 0; i < sources.length; i++) {
           const src = sources[i];
           let finalUrl = src.url;
@@ -302,6 +304,8 @@ export async function resolveStream(
             format: src.type === "unknown" ? "hls" : src.type,
             quality: toQualityLabel(src.quality),
             headers: src.headers,
+            thumbnail: mappedThumbnails[0]?.url ?? null,
+            thumbnails: mappedThumbnails,
           });
         }
 
@@ -317,6 +321,7 @@ export async function resolveStream(
           source: mappedSources[0] ?? null,
           sources: mappedSources,
           subtitles: mappedSubtitles,
+          thumbnails: mappedThumbnails,
         };
       }
     }
@@ -324,5 +329,5 @@ export async function resolveStream(
     // Network error or client abort — return empty
   }
 
-  return { source: null, sources: [], subtitles: [] };
+  return { source: null, sources: [], subtitles: [], thumbnails: [] };
 }

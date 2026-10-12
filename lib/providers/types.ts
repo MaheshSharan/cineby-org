@@ -41,9 +41,15 @@ export interface SubtitleTrack {
   headers?: Record<string, string>;
 }
 
+export interface ThumbnailTrack {
+  url: string;
+  headers?: Record<string, string>;
+}
+
 export interface StreamResponse {
   sources: StreamSource[];
   subtitles: SubtitleTrack[];
+  thumbnails?: ThumbnailTrack[];
 }
 
 export interface Provider {

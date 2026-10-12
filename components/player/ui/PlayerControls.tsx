@@ -18,6 +18,7 @@ interface PlayerControlsProps {
   mediaKey?: string;
   cache?: SegmentByteCache | null;
   hoverThumbnails?: boolean;
+  thumbnailTrack?: string | null;
   volume: number;
   muted: boolean;
   seekTime?: number;
@@ -42,6 +43,7 @@ export function PlayerControls({
   mediaKey,
   cache,
   hoverThumbnails,
+  thumbnailTrack,
   volume,
   muted,
   seekTime = 10,
@@ -74,6 +76,7 @@ export function PlayerControls({
                 mediaKey={mediaKey}
                 cache={cache}
                 hoverThumbnails={hoverThumbnails}
+                thumbnailTrack={thumbnailTrack}
                 onSeek={onSeek}
               />
             </div>

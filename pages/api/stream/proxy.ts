@@ -204,6 +204,47 @@ export default withApiContext("api/stream/proxy", async (req: NextApiRequest, re
       return;
     }
 
+    const isVtt =
+      rawTargetUrl.includes(".vtt") ||
+      contentType.includes("text/vtt");
+
+    if (isVtt) {
+      const text = await upstreamRes.text();
+      const targetBase = rawTargetUrl.substring(0, rawTargetUrl.lastIndexOf("/") + 1);
+
+      // Rewrite image URLs in WebVTT storyboard cues so image requests route through the stream proxy
+      const rewritten = text
+        .split("\n")
+        .map((line) => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith("WEBVTT") || trimmed.startsWith("NOTE") || trimmed.includes("-->")) {
+            return line;
+          }
+
+          const hashIdx = trimmed.indexOf("#xywh=");
+          const rawUrl = hashIdx !== -1 ? trimmed.slice(0, hashIdx) : trimmed;
+          const fragment = hashIdx !== -1 ? trimmed.slice(hashIdx) : "";
+
+          // Check if this cue payload line is an image URL (.jpg, .jpeg, .png, .webp or path)
+          if (/\.(jpe?g|png|webp)($|\?)/i.test(rawUrl) || hashIdx !== -1) {
+            const absUrl = rawUrl.startsWith("http://") || rawUrl.startsWith("https://")
+              ? rawUrl
+              : new URL(rawUrl, targetBase).toString();
+
+            if (!isPrivateHost(absUrl)) {
+              const proxiedUrl = `/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(absUrl, activeHeaders))}`;
+              return `${proxiedUrl}${fragment}`;
+            }
+          }
+          return line;
+        })
+        .join("\n");
+
+      res.setHeader("Content-Type", "text/vtt; charset=utf-8");
+      res.status(upstreamRes.status).send(rewritten);
+      return;
+    }
+
     const isSrt =
       rawTargetUrl.includes(".srt") ||
       rawTargetUrl.includes("subtitles.vidy.st/download") ||

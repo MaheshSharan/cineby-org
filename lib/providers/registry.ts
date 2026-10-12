@@ -2,7 +2,7 @@ import { DEFAULT_PROVIDER_TIMEOUT_MS, QUALITY_RANKS } from "./constants";
 import { isCircuitOpen, recordFailure, recordSuccess } from "./circuitBreaker";
 import { buildStreamProxyUrl } from "./proxy";
 import { ALL_PROVIDERS } from "./sources";
-import type { Provider, StreamRequest, StreamResponse, StreamSource, SubtitleTrack } from "./types";
+import type { Provider, StreamRequest, StreamResponse, StreamSource, SubtitleTrack, ThumbnailTrack } from "./types";
 import { logger, logError } from "@/lib/logger";
 import { getEnvVar } from "@/lib/env";
 
@@ -59,8 +59,10 @@ function processProviderResponse(
 ): StreamResponse {
   const collectedSources: StreamSource[] = [];
   const collectedSubtitles: SubtitleTrack[] = [];
+  const collectedThumbnails: ThumbnailTrack[] = [];
   const seenSourceUrls = new Set<string>();
   const seenSubtitleLabels = new Set<string>();
+  const seenThumbnailUrls = new Set<string>();
 
   for (const source of res.sources) {
     if (source.url && !seenSourceUrls.has(source.url)) {
@@ -89,6 +91,16 @@ function processProviderResponse(
     }
   }
 
+  for (const thumb of res.thumbnails ?? []) {
+    if (thumb.url && !seenThumbnailUrls.has(thumb.url)) {
+      seenThumbnailUrls.add(thumb.url);
+      collectedThumbnails.push({
+        ...thumb,
+        url: buildStreamProxyUrl(thumb.url, thumb.headers, clientIp),
+      });
+    }
+  }
+
   collectedSources.sort((a, b) => {
     const rankA = QUALITY_RANKS[a.quality] ?? 0;
     const rankB = QUALITY_RANKS[b.quality] ?? 0;
@@ -98,6 +110,7 @@ function processProviderResponse(
   return {
     sources: collectedSources,
     subtitles: collectedSubtitles,
+    thumbnails: collectedThumbnails,
   };
 }
 

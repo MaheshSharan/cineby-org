@@ -1,4 +1,4 @@
-import type { MediaSource, MediaType, SubtitleTrack } from "../types";
+import type { MediaSource, MediaType, SubtitleTrack, ThumbnailTrack } from "../types";
 
 export interface StreamProvider {
   id: string;
@@ -18,4 +18,5 @@ export interface StreamResolutionResult {
   source: MediaSource | null;
   sources: MediaSource[];
   subtitles: SubtitleTrack[];
+  thumbnails?: ThumbnailTrack[];
 }

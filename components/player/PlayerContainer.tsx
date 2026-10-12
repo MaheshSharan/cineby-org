@@ -715,6 +715,7 @@ export function PlayerContainer({
             mediaKey={mediaKey}
             cache={segmentByteCache}
             hoverThumbnails={appSettings.playback.hoverThumbnails}
+            thumbnailTrack={stream.source?.thumbnail || stream.source?.thumbnails?.[0]?.url || null}
             volume={playerState.volume}
             muted={playerState.muted}
             seekTime={appSettings.playback.seekTime}

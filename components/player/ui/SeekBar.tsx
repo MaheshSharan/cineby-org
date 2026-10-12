@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 
 import { useThumbnailPreview } from "../hooks/useThumbnailPreview";
+import { useProviderThumbnails } from "../hooks/useProviderThumbnails";
 import { ProgressBarThumbnail } from "./ProgressBarThumbnail";
 import type { SegmentByteCache } from "@/lib/player/media/segmentByteCache";
 
@@ -12,6 +13,7 @@ interface SeekBarProps {
   mediaKey?: string;
   cache?: SegmentByteCache | null;
   hoverThumbnails?: boolean;
+  thumbnailTrack?: string | null;
   onSeek: (time: number) => void;
 }
 
@@ -40,6 +42,7 @@ export function SeekBar({
   mediaKey = "",
   cache,
   hoverThumbnails = false,
+  thumbnailTrack,
   onSeek,
 }: SeekBarProps) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -47,11 +50,16 @@ export function SeekBar({
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [dragTime, setDragTime] = useState<number | null>(null);
 
+  const { getThumbnail, hasThumbnails: hasProviderThumbnails } = useProviderThumbnails(
+    hoverThumbnails ? thumbnailTrack : null
+  );
+
+  // Client-side video frame decoder is only enabled if provider did not supply thumbnails
   const { requestFrame } = useThumbnailPreview({
     src: src ?? null,
     mediaKey,
     cache: cache ?? null,
-    enabled: Boolean(hoverThumbnails && src && mediaKey && cache),
+    enabled: Boolean(hoverThumbnails && !hasProviderThumbnails && src && mediaKey && cache),
   });
 
   const activeTime = dragTime !== null ? dragTime : currentTime;
@@ -176,7 +184,8 @@ export function SeekBar({
         <ProgressBarThumbnail
           hoverTime={hoverTime}
           hoverProgress={hoverProgress}
-          requestFrame={requestFrame}
+          providerThumbnail={hasProviderThumbnails ? getThumbnail(hoverTime) : null}
+          requestFrame={hasProviderThumbnails ? undefined : requestFrame}
         />
       )}
 

@@ -8,6 +8,11 @@ export type QualityLabel = "2160p" | "1080p" | "720p" | "480p";
 
 export type PlaybackRate = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2;
 
+export interface ThumbnailTrack {
+  url: string;
+  headers?: Record<string, string>;
+}
+
 export interface MediaSource {
   id: string;
   kind: ServerKind;
@@ -16,6 +21,8 @@ export interface MediaSource {
   format: StreamFormat;
   quality: QualityLabel | null;
   headers?: Record<string, string>;
+  thumbnail?: string | null;
+  thumbnails?: ThumbnailTrack[];
 }
 
 export interface ServerOption {

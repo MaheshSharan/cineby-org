@@ -5,6 +5,7 @@ import type {
   StreamResponse,
   StreamSource,
   SubtitleTrack,
+  ThumbnailTrack,
 } from "../../types";
 import { decryptVidyPayload } from "./cipher";
 import { VIDY_SERVERS, type VidyServerConfig } from "./servers";
@@ -207,7 +208,7 @@ async function scrapeServer(
   req: StreamRequest,
   meta: TmdbMeta,
   seed: string
-): Promise<{ sources: StreamSource[]; subtitles: SubtitleTrack[] }> {
+): Promise<{ sources: StreamSource[]; subtitles: SubtitleTrack[]; thumbnails: ThumbnailTrack[] }> {
   const { tmdbId, type, season, episode, signal } = req;
   const url = new URL(`${API_BASE}/${server.endpoint}`);
 
@@ -244,12 +245,12 @@ async function scrapeServer(
     });
 
     if (!res.ok) {
-      return { sources: [], subtitles: [] };
+      return { sources: [], subtitles: [], thumbnails: [] };
     }
 
     const ciphertext = await res.text();
     if (!ciphertext || ciphertext.startsWith("{") || ciphertext.startsWith("<")) {
-      return { sources: [], subtitles: [] };
+      return { sources: [], subtitles: [], thumbnails: [] };
     }
     const payload = decryptVidyPayload<DecryptedPayload>(ciphertext, seed, tmdbId);
 
@@ -317,12 +318,26 @@ async function scrapeServer(
       });
     }
 
-    return { sources, subtitles: [] };
+    const thumbnails: ThumbnailTrack[] = payload.thumbnail
+      ? [
+          {
+            url: payload.thumbnail,
+            headers: {
+              Referer: "https://www.vidy.st/",
+              Origin: "https://www.vidy.st",
+              "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+            },
+          },
+        ]
+      : [];
+
+    return { sources, subtitles: [], thumbnails };
   } catch (error) {
     if (!signal?.aborted) {
       logError(`Provider:vidy:${server.id}`, error);
     }
-    return { sources: [], subtitles: [] };
+    return { sources: [], subtitles: [], thumbnails: [] };
   }
 }
 
@@ -365,6 +380,7 @@ async function scrape(req: StreamRequest): Promise<StreamResponse> {
           return {
             sources: result.sources,
             subtitles: [],
+            thumbnails: result.thumbnails,
           };
         }
       } catch {
@@ -380,16 +396,21 @@ async function scrape(req: StreamRequest): Promise<StreamResponse> {
   );
 
   const allSources: StreamSource[] = [];
+  const allThumbnails: ThumbnailTrack[] = [];
 
   for (const r of results) {
     if (r.status === "fulfilled") {
       allSources.push(...r.value.sources);
+      if (r.value.thumbnails) {
+        allThumbnails.push(...r.value.thumbnails);
+      }
     }
   }
 
   return {
     sources: allSources,
     subtitles: [],
+    thumbnails: allThumbnails,
   };
 }
 
@@ -408,12 +429,12 @@ export const vidyProvider: Provider = {
   fetchSubtitles: fetchSubtitlesOnly,
 };
 
-export function decryptVidyClientSources(
+export function decryptVidyClientPayload(
   ciphertext: string,
   seed: string,
   tmdbId: number,
   serverId = "miami"
-): StreamSource[] {
+): { sources: StreamSource[]; thumbnails: ThumbnailTrack[] } {
   try {
     const payload = decryptVidyPayload<DecryptedPayload>(ciphertext, seed, tmdbId);
     const serverObj = VIDY_SERVERS.find((s) => s.id === serverId) ?? VIDY_SERVERS[0];
@@ -461,9 +482,32 @@ export function decryptVidyClientSources(
       });
     }
 
-    return sources;
+    const thumbnails: ThumbnailTrack[] = payload.thumbnail
+      ? [
+          {
+            url: payload.thumbnail,
+            headers: {
+              Referer: "https://www.vidy.st/",
+              Origin: "https://www.vidy.st",
+              "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+            },
+          },
+        ]
+      : [];
+
+    return { sources, thumbnails };
   } catch (err) {
     logError("vidy:decryptClientCiphertext", err);
-    return [];
+    return { sources: [], thumbnails: [] };
   }
+}
+
+export function decryptVidyClientSources(
+  ciphertext: string,
+  seed: string,
+  tmdbId: number,
+  serverId = "miami"
+): StreamSource[] {
+  return decryptVidyClientPayload(ciphertext, seed, tmdbId, serverId).sources;
 }
