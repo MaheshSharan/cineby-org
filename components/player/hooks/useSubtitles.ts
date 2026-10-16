@@ -4,13 +4,12 @@ import type { SubtitleTrack } from "../types";
 import { srtToVtt } from "@/lib/utils/srtToVtt";
 import { getMediaKey } from "@/lib/utils/media";
 import { revokeBlob, revokeAllBlobs } from "../utils/blobPool";
+import {
+  type SubtitlesSettings,
+  resolveSubtitleColor,
+} from "@/lib/settings/types";
 
-export interface SubtitleStyleSettings {
-  font?: string;
-  textSize?: number;
-  textColor?: string;
-  backgroundBlur?: boolean;
-}
+export type SubtitleStyleSettings = Partial<SubtitlesSettings>;
 
 export interface UseSubtitlesOptions {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -32,6 +31,7 @@ export interface UseSubtitlesResult {
   subtitlesEnabled: boolean;
   isSubtitlesFetching: boolean;
   activeLabel: string;
+  subtitlesSettings?: SubtitleStyleSettings;
   selectTrack: (track: SubtitleTrack | null) => void;
   handleToggleSubtitles: () => void;
   fetchSubtitles: (targetLang?: string) => void;
@@ -43,6 +43,8 @@ export interface UseSubtitlesResult {
     fontSize: string;
     fontFamily: string;
     textShadow: string;
+    isNative: boolean;
+    position: number;
   };
 }
 
@@ -78,6 +80,12 @@ export function useSubtitles({
   const abortControllerRef = useRef<AbortController | null>(null);
   const subtitleFetchControllerRef = useRef<AbortController | null>(null);
   const subtitlesFetchedRef = useRef(false);
+  const rawSubtitleContentRef = useRef<string | null>(null);
+  const activeTrackRef = useRef<SubtitleTrack | null>(null);
+
+  useEffect(() => {
+    activeTrackRef.current = activeTrack;
+  }, [activeTrack]);
 
   const currentMediaKey = getMediaKey(mediaType ?? "movie", mediaId ?? 0, currentSeason, currentEpisode);
   const prevMediaKeyRef = useRef(currentMediaKey);
@@ -100,6 +108,7 @@ export function useSubtitles({
       });
       activeBlobUrls.clear();
       customSubtitleUrlRef.current = null;
+      rawSubtitleContentRef.current = null;
     };
   }, []);
 
@@ -130,6 +139,7 @@ export function useSubtitles({
 
       if (!track?.url) {
         setActiveTrack(null);
+        rawSubtitleContentRef.current = null;
         return;
       }
 
@@ -173,7 +183,12 @@ export function useSubtitles({
           const currentVideo = videoRef.current;
           if (!currentVideo) return;
 
-          const vttContent = srtToVtt(rawContent);
+          rawSubtitleContentRef.current = rawContent;
+          const vttContent = srtToVtt(
+            rawContent,
+            subtitlesSettings?.delay ?? 0,
+            subtitlesSettings?.position ?? 0
+          );
           const blob = new Blob([vttContent], { type: "text/vtt;charset=utf-8" });
           const blobUrl = URL.createObjectURL(blob);
           activeBlobUrlRef.current = blobUrl;
@@ -337,7 +352,12 @@ export function useSubtitles({
       let url: string;
       try {
         const text = await file.text();
-        const vtt = srtToVtt(text);
+        rawSubtitleContentRef.current = text;
+        const vtt = srtToVtt(
+          text,
+          subtitlesSettings?.delay ?? 0,
+          subtitlesSettings?.position ?? 0
+        );
         const blob = new Blob([vtt], { type: "text/vtt;charset=utf-8" });
         url = URL.createObjectURL(blob);
       } catch {
@@ -369,7 +389,7 @@ export function useSubtitles({
       setSubtitlesEnabled(true);
       selectTrack(customTrack);
     },
-    [selectTrack]
+    [selectTrack, subtitlesSettings?.delay, subtitlesSettings?.position]
   );
 
   const handleSubtitleChange = useCallback(
@@ -388,22 +408,58 @@ export function useSubtitles({
     [selectTrack]
   );
 
+  // Dynamic live sync when delay or position settings change while a subtitle is active
+  const delay = subtitlesSettings?.delay ?? 0;
+  const position = subtitlesSettings?.position ?? 0;
+
+  useEffect(() => {
+    if (!rawSubtitleContentRef.current || !activeTrackRef.current) return;
+    const currentVideo = videoRef.current;
+    if (!currentVideo) return;
+
+    const vttContent = srtToVtt(rawSubtitleContentRef.current, delay, position);
+    const blob = new Blob([vttContent], { type: "text/vtt;charset=utf-8" });
+    const blobUrl = URL.createObjectURL(blob);
+
+    if (activeBlobUrlRef.current) {
+      URL.revokeObjectURL(activeBlobUrlRef.current);
+    }
+    activeBlobUrlRef.current = blobUrl;
+
+    const oldTracks = currentVideo.querySelectorAll("track");
+    oldTracks.forEach((el) => el.remove());
+
+    const element = document.createElement("track");
+    element.kind = "subtitles";
+    element.label = activeTrackRef.current.label;
+    element.srclang = activeTrackRef.current.lang;
+    element.src = blobUrl;
+    element.default = true;
+
+    element.addEventListener("load", () => {
+      if (element.track) {
+        element.track.mode = "showing";
+      }
+    });
+
+    currentVideo.appendChild(element);
+    if (element.track) {
+      element.track.mode = "showing";
+    }
+  }, [delay, position, videoRef]);
+
   const activeLabel = useMemo(() => getActiveLabel(activeTrack), [activeTrack]);
 
   const subtitleStyles = useMemo(() => {
-    const subColor = subtitlesSettings?.textColor ?? "white";
-    const subFont = subtitlesSettings?.font ?? "inter";
+    const subColor = subtitlesSettings?.textColor ?? "#ffffff";
+    const subFont = subtitlesSettings?.font ?? "cineby";
     const subSize = subtitlesSettings?.textSize ?? 100;
     const subBlur = subtitlesSettings?.backgroundBlur ?? false;
+    const isPastel = subtitlesSettings?.pastelMode ?? false;
+    const isNative = subtitlesSettings?.useNative ?? false;
+    const pos = subtitlesSettings?.position ?? 0;
 
-    const color =
-      subColor === "yellow"
-        ? "#fef08a"
-        : subColor === "cyan"
-        ? "#67e8f9"
-        : subColor === "magenta"
-        ? "#f472b6"
-        : "#ffffff";
+    const color = resolveSubtitleColor(subColor, isPastel);
 
     const fontFamily =
       subFont === "netflix"
@@ -424,6 +480,8 @@ export function useSubtitles({
       fontSize,
       backgroundColor,
       textShadow,
+      isNative,
+      position: pos,
     };
   }, [subtitlesSettings]);
 
@@ -433,6 +491,7 @@ export function useSubtitles({
     subtitlesEnabled,
     isSubtitlesFetching,
     activeLabel,
+    subtitlesSettings,
     selectTrack,
     handleToggleSubtitles,
     fetchSubtitles,

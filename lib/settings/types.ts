@@ -3,7 +3,47 @@ export type EpisodeViewStyle = "carousel" | "vertical";
 export type DetailViewType = "page" | "modal";
 
 export type SubtitleFont = "cineby" | "netflix" | "montserrat";
-export type SubtitleColor = "white" | "yellow" | "cyan" | "magenta";
+
+export interface SubtitleColorPreset {
+  value: string;
+  label: string;
+}
+
+export const SUBTITLE_COLOR_PRESETS: readonly SubtitleColorPreset[] = [
+  { value: "#ffffff", label: "White" },
+  { value: "#80b1fa", label: "Blue" },
+  { value: "#e2e535", label: "Yellow" },
+  { value: "#10b981", label: "Green" },
+];
+
+export interface SubtitleFontOption {
+  id: SubtitleFont;
+  label: string;
+  className: string;
+}
+
+export const SUBTITLE_FONT_OPTIONS: readonly SubtitleFontOption[] = [
+  { id: "cineby", label: "Cineby", className: "font-sans" },
+  { id: "netflix", label: "Netflix", className: "font-sans tracking-wide" },
+  { id: "montserrat", label: "Montserrat", className: "font-['Montserrat',sans-serif]" },
+];
+
+export function resolveSubtitleColor(color?: string | null, pastelMode = false): string {
+  const c = color || "#ffffff";
+  if (!pastelMode) return c;
+
+  if (c === "#ffffff" || c === "white") return "#f1f5f9";
+  if (c === "#80b1fa" || c === "cyan") return "#bfdbfe";
+  if (c === "#e2e535" || c === "yellow") return "#fef9c3";
+  if (c === "#10b981" || c === "green") return "#bbf7d0";
+  if (c === "#f472b6" || c === "magenta") return "#fbcfe8";
+  return c;
+}
+
+export function getSubtitleFontClass(font?: SubtitleFont | null): string {
+  const match = SUBTITLE_FONT_OPTIONS.find((opt) => opt.id === font);
+  return match?.className ?? "font-sans font-medium";
+}
 
 export interface AppearanceSettings {
   theme: SiteTheme;
@@ -24,9 +64,13 @@ export interface PlaybackSettings {
 
 export interface SubtitlesSettings {
   font: SubtitleFont;
-  textSize: number; // 50 to 150 percent
-  textColor: SubtitleColor;
+  textSize: number; // 50 to 200 percent
+  textColor: string; // Hex string or preset
   backgroundBlur: boolean;
+  position: number; // 0 to 50
+  delay: number; // -20 to +20 seconds
+  useNative: boolean;
+  pastelMode: boolean;
 }
 
 export interface CinebySettings {
@@ -54,15 +98,18 @@ export const DEFAULT_SETTINGS: CinebySettings = {
   subtitles: {
     font: "cineby",
     textSize: 100,
-    textColor: "white",
+    textColor: "#ffffff",
     backgroundBlur: true,
+    position: 0,
+    delay: 0,
+    useNative: false,
+    pastelMode: false,
   },
 };
 
 const VALID_THEMES: readonly SiteTheme[] = ["default", "emerald", "cyan", "amber", "rose", "purple"];
 const VALID_DETAIL_VIEWS: readonly DetailViewType[] = ["page", "modal"];
 const VALID_FONTS: readonly SubtitleFont[] = ["cineby", "netflix", "montserrat"];
-const VALID_COLORS: readonly SubtitleColor[] = ["white", "yellow", "cyan", "magenta"];
 
 /**
  * Serializes CinebySettings into an API-friendly response object.
@@ -87,10 +134,17 @@ export function toApiSettingsResponse(settings: CinebySettings): Record<string, 
     subtitleFont: settings.subtitles.font,
     subtitleSize: settings.subtitles.textSize,
     textSize: settings.subtitles.textSize,
-    subtitleColor: settings.subtitles.textColor === "white" ? "#ffffff" : settings.subtitles.textColor,
+    subtitleColor: settings.subtitles.textColor,
     textColor: settings.subtitles.textColor,
     subtitleBackground: settings.subtitles.backgroundBlur,
     backgroundBlur: settings.subtitles.backgroundBlur,
+    subtitlePosition: settings.subtitles.position,
+    position: settings.subtitles.position,
+    subtitleDelay: settings.subtitles.delay,
+    delay: settings.subtitles.delay,
+    useNativeSubtitles: settings.subtitles.useNative,
+    useNative: settings.subtitles.useNative,
+    pastelMode: settings.subtitles.pastelMode,
 
     // Cineby structured namespaces
     appearance: settings.appearance,
@@ -194,23 +248,30 @@ export function normalizeApiSettings(payload: unknown): CinebySettings {
     ? (fontCandidate as SubtitleFont)
     : DEFAULT_SETTINGS.subtitles.font;
 
-  // Subtitle text size
+  // Subtitle text size (50 to 200 percent)
   const sizeCandidate = typeof rawSubtitles.textSize === "number"
     ? rawSubtitles.textSize
     : typeof raw.subtitleSize === "number"
     ? raw.subtitleSize
+    : typeof raw.textSize === "number"
+    ? raw.textSize
     : DEFAULT_SETTINGS.subtitles.textSize;
-  const textSize = typeof sizeCandidate === "number" && sizeCandidate >= 50 && sizeCandidate <= 150
+  const textSize = typeof sizeCandidate === "number" && sizeCandidate >= 50 && sizeCandidate <= 200
     ? sizeCandidate
     : DEFAULT_SETTINGS.subtitles.textSize;
 
-  // Subtitle color
+  // Subtitle color (supports hex string, named color, or preset)
   const colorCandidate = (rawSubtitles.textColor ?? raw.subtitleColor ?? raw.textColor) as string | undefined;
-  let textColor: SubtitleColor = DEFAULT_SETTINGS.subtitles.textColor;
-  if (colorCandidate === "#ffffff" || colorCandidate === "white") {
-    textColor = "white";
-  } else if (VALID_COLORS.includes(colorCandidate as SubtitleColor)) {
-    textColor = colorCandidate as SubtitleColor;
+  let textColor = DEFAULT_SETTINGS.subtitles.textColor;
+  if (typeof colorCandidate === "string" && colorCandidate.trim().length > 0) {
+    const trimmed = colorCandidate.trim();
+    if (trimmed === "white") textColor = "#ffffff";
+    else if (trimmed === "yellow") textColor = "#e2e535";
+    else if (trimmed === "cyan") textColor = "#80b1fa";
+    else if (trimmed === "magenta") textColor = "#f472b6";
+    else if (trimmed === "green") textColor = "#10b981";
+    else if (/^#([0-9a-fA-F]{3,8})$/.test(trimmed)) textColor = trimmed;
+    else textColor = trimmed;
   }
 
   // Background blur
@@ -218,7 +279,49 @@ export function normalizeApiSettings(payload: unknown): CinebySettings {
     ? rawSubtitles.backgroundBlur
     : typeof raw.subtitleBackground === "boolean"
     ? raw.subtitleBackground
+    : typeof raw.backgroundBlur === "boolean"
+    ? raw.backgroundBlur
     : DEFAULT_SETTINGS.subtitles.backgroundBlur;
+
+  // Subtitle position (0 to 50 percent)
+  const posCandidate = typeof rawSubtitles.position === "number"
+    ? rawSubtitles.position
+    : typeof raw.subtitlePosition === "number"
+    ? raw.subtitlePosition
+    : typeof raw.position === "number"
+    ? raw.position
+    : DEFAULT_SETTINGS.subtitles.position;
+  const position = typeof posCandidate === "number" && posCandidate >= 0 && posCandidate <= 50
+    ? Math.round(posCandidate)
+    : DEFAULT_SETTINGS.subtitles.position;
+
+  // Subtitle delay (-20 to +20 seconds)
+  const delayCandidate = typeof rawSubtitles.delay === "number"
+    ? rawSubtitles.delay
+    : typeof raw.subtitleDelay === "number"
+    ? raw.subtitleDelay
+    : typeof raw.delay === "number"
+    ? raw.delay
+    : DEFAULT_SETTINGS.subtitles.delay;
+  const delay = typeof delayCandidate === "number" && !Number.isNaN(delayCandidate)
+    ? Math.max(-20, Math.min(20, Math.round(delayCandidate * 10) / 10))
+    : DEFAULT_SETTINGS.subtitles.delay;
+
+  // Use native subtitles
+  const nativeCandidate = typeof rawSubtitles.useNative === "boolean"
+    ? rawSubtitles.useNative
+    : typeof raw.useNativeSubtitles === "boolean"
+    ? raw.useNativeSubtitles
+    : typeof raw.useNative === "boolean"
+    ? raw.useNative
+    : DEFAULT_SETTINGS.subtitles.useNative;
+
+  // Pastel mode
+  const pastelCandidate = typeof rawSubtitles.pastelMode === "boolean"
+    ? rawSubtitles.pastelMode
+    : typeof raw.pastelMode === "boolean"
+    ? raw.pastelMode
+    : DEFAULT_SETTINGS.subtitles.pastelMode;
 
   // Hover thumbnails
   const hoverThumbnails = typeof rawPlayback.hoverThumbnails === "boolean"
@@ -248,6 +351,10 @@ export function normalizeApiSettings(payload: unknown): CinebySettings {
       textSize,
       textColor,
       backgroundBlur: blurCandidate,
+      position,
+      delay,
+      useNative: nativeCandidate,
+      pastelMode: pastelCandidate,
     },
   };
 }

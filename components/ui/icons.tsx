@@ -294,6 +294,14 @@ export function ChevronLeftIcon({ className, size = 20 }: IconProps) {
   );
 }
 
+export function ChevronRightIcon({ className, size = 20 }: IconProps) {
+  return (
+    <Icon className={className} size={size}>
+      <path d="m9 18 6-6-6-6" />
+    </Icon>
+  );
+}
+
 export function CheckIcon({ className, size = 18 }: IconProps) {
   return (
     <Icon className={className} size={size}>

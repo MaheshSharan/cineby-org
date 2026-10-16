@@ -534,13 +534,16 @@ export function PlayerContainer({
   return (
     <div ref={containerRef} className="fixed inset-0 bg-black overflow-hidden select-none">
       <style jsx global>{`
+        ${subtitles.subtitleStyles.isNative ? "" : `
         video::cue {
           color: ${subtitles.subtitleStyles.color} !important;
           background-color: ${subtitles.subtitleStyles.backgroundColor} !important;
           font-size: ${subtitles.subtitleStyles.fontSize} !important;
           font-family: ${subtitles.subtitleStyles.fontFamily} !important;
           text-shadow: ${subtitles.subtitleStyles.textShadow} !important;
+          line-height: 1.4 !important;
         }
+        `}
       `}</style>
 
       <div className="flex h-full w-full">
