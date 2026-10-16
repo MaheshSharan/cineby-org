@@ -231,7 +231,6 @@ export function AudioSubtitlesPopover({
                     {/* Upload Subtitles Button */}
                     <div className="group relative mt-1 flex cursor-pointer select-none items-center gap-x-2 rounded-lg border border-dashed border-white/[0.12] bg-white/[0.01] px-3 py-2 text-[12.5px] font-medium text-gray-300 transition-colors duration-200 hover:border-white/[0.3] hover:bg-white/[0.04] hover:text-white">
                       <input
-                        ref={fileInputRef}
                         type="file"
                         accept=".vtt,.srt"
                         className="absolute inset-0 z-10 opacity-0 cursor-pointer"
