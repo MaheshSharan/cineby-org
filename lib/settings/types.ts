@@ -23,8 +23,8 @@ export interface SubtitleFontOption {
 }
 
 export const SUBTITLE_FONT_OPTIONS: readonly SubtitleFontOption[] = [
-  { id: "cineby", label: "Cineby", className: "font-sans" },
-  { id: "netflix", label: "Netflix", className: "font-sans tracking-wide" },
+  { id: "cineby", label: "Cineby", className: "font-sans font-medium" },
+  { id: "netflix", label: "Netflix", className: "font-['Netflix_Sans',sans-serif] tracking-wide" },
   { id: "montserrat", label: "Montserrat", className: "font-['Montserrat',sans-serif]" },
 ];
 

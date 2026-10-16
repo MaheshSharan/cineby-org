@@ -162,7 +162,7 @@ export function AudioSubtitlesPopover({
                       </div>
                     ) : isSubtitlesFetching ? (
                       <div className="flex items-center justify-center px-3 py-6">
-                        <Spinner size="md" className="text-cyan-400" />
+                        <Spinner size="md" className="text-primary" />
                       </div>
                     ) : orderedSubtitleTracks.length === 0 ? (
                       <div className="flex items-center justify-center px-3 py-4">
@@ -182,7 +182,7 @@ export function AudioSubtitlesPopover({
                             onClick={() => onSubtitleChange(track)}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer ${
                               isActive
-                                ? "bg-white/[0.08] border border-cyan-500/30 text-white shadow-[0_0_15px_rgba(6,182,212,0.1)]"
+                                ? "bg-white/[0.08] border border-primary/30 text-white shadow-[0_0_15px_var(--primary-glow)]"
                                 : "text-gray-300 hover:text-white hover:bg-white/[0.04] border border-transparent"
                             }`}
                           >
@@ -219,7 +219,7 @@ export function AudioSubtitlesPopover({
 
                             {/* Selected Checkmark Badge */}
                             {isActive && (
-                              <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-cyan-400/80 bg-cyan-500/20 text-cyan-300">
+                              <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-primary/80 bg-primary/20 text-primary">
                                 <CheckIcon size={12} strokeWidth={2.5} />
                               </div>
                             )}
@@ -307,170 +307,189 @@ export function AudioSubtitlesPopover({
                   </p>
                 </div>
 
-                {/* Pastel Mode */}
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-white">Pastel mode</p>
-                  <ToggleSwitch
-                    checked={!!subSettings.pastelMode}
-                    onChange={(val) => updateSubtitles({ pastelMode: val })}
-                    ariaLabel="Toggle pastel mode"
-                  />
-                </div>
-
-                {/* Subtitle Delay Sync */}
-                <div className="space-y-2.5">
-                  <p className="font-medium text-white">Subtitle delay</p>
-                  <input
-                    type="range"
-                    min={-20}
-                    max={20}
-                    step={0.1}
-                    value={subSettings.delay ?? 0}
-                    onChange={(e) => handleDelayChange(Number.parseFloat(e.target.value))}
-                    className="w-full accent-cyan-400 h-1.5 bg-white/20 rounded-lg cursor-pointer"
-                  />
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleDelayShift(-0.5)}
-                      className="flex-1 flex flex-col items-center justify-center py-2 h-11 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors cursor-pointer group"
-                    >
-                      <ChevronLeftIcon size={16} className="text-white/70 group-hover:text-white" />
-                      <span className="text-[11px] text-white/80 mt-0.5">Heard audio</span>
-                    </button>
-
-                    <div className="h-11 px-2 w-24 bg-white/5 rounded-lg border border-white/10 flex items-center justify-center">
-                      <input
-                        type="number"
-                        step={0.1}
-                        value={subSettings.delay ?? 0}
-                        onChange={(e) => handleDelayChange(Number.parseFloat(e.target.value))}
-                        className="w-full bg-transparent text-center font-mono text-[13px] font-semibold text-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                      <span className="text-[11px] text-white/50 ml-0.5 font-mono">s</span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDelayShift(0.5)}
-                      className="flex-1 flex flex-col items-center justify-center py-2 h-11 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors cursor-pointer group"
-                    >
-                      <ChevronRightIcon size={16} className="text-white/70 group-hover:text-white" />
-                      <span className="text-[11px] text-white/80 mt-0.5">Saw caption</span>
-                    </button>
-                  </div>
-                </div>
-
-                <hr className="border-white/10 my-2" />
-
-                {/* Font Selector */}
-                <div className="space-y-2">
-                  <p className="font-medium text-white">Font</p>
-                  <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/10 gap-1">
-                    {SUBTITLE_FONT_OPTIONS.map((f) => (
-                      <button
-                        key={f.id}
-                        type="button"
-                        onClick={() => updateSubtitles({ font: f.id })}
-                        className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                          subSettings.font === f.id
-                            ? "bg-white/20 text-white shadow-sm"
-                            : "text-white/60 hover:text-white hover:bg-white/10"
-                        } ${f.className}`}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Text Size */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-white">Text size</p>
-                    <span className="text-xs text-white/70 font-mono tabular-nums">{subSettings.textSize}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={50}
-                    max={200}
-                    step={5}
-                    value={subSettings.textSize}
-                    onChange={(e) => updateSubtitles({ textSize: Number(e.target.value) })}
-                    className="w-full accent-cyan-400 h-1.5 bg-white/20 rounded-lg cursor-pointer"
-                  />
-                </div>
-
-                {/* Position */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-white">Position</p>
-                    <span className="text-xs text-white/70 font-mono tabular-nums">
-                      {(subSettings.position ?? 0) === 0 ? "Default" : `${subSettings.position}%`}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={50}
-                    step={1}
-                    value={subSettings.position ?? 0}
-                    onChange={(e) => updateSubtitles({ position: Number(e.target.value) })}
-                    className="w-full accent-cyan-400 h-1.5 bg-white/20 rounded-lg cursor-pointer"
-                  />
-                </div>
-
-                {/* Background Plate */}
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-white">Background</p>
-                  <ToggleSwitch
-                    checked={!!subSettings.backgroundBlur}
-                    onChange={(val) => updateSubtitles({ backgroundBlur: val })}
-                    ariaLabel="Toggle background"
-                  />
-                </div>
-
-                {/* Subtitle Color & Custom Color Picker */}
-                <div className="space-y-2 pb-2">
+                {/* Subtitle customization settings - disabled when native subtitles are active */}
+                <div
+                  className={`space-y-4 transition-all duration-200 ${
+                    subSettings.useNative ? "opacity-30 pointer-events-none select-none filter grayscale-[40%]" : ""
+                  }`}
+                  aria-disabled={!!subSettings.useNative}
+                >
+                  {/* Pastel Mode */}
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-white">Color</p>
-                    <div className="flex items-center gap-1.5">
-                      {SUBTITLE_COLOR_PRESETS.map((c) => {
-                        const isSelected = (subSettings.textColor || "#ffffff").toLowerCase() === c.value.toLowerCase();
-                        return (
-                          <button
-                            key={c.value}
-                            type="button"
-                            onClick={() => updateSubtitles({ textColor: c.value })}
-                            aria-label={c.label}
-                            className={`h-6 w-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                              isSelected
-                                ? "ring-2 ring-cyan-400 ring-offset-2 ring-offset-black scale-105"
-                                : "opacity-80 hover:opacity-100 hover:scale-105"
-                            }`}
-                            style={{ backgroundColor: c.value }}
-                          >
-                            {isSelected && (
-                              <CheckIcon
-                                size={12}
-                                strokeWidth={3}
-                                className={c.value === "#ffffff" ? "text-black" : "text-white"}
-                              />
-                            )}
-                          </button>
-                        );
-                      })}
+                    <p className="font-medium text-white">Pastel mode</p>
+                    <ToggleSwitch
+                      checked={!subSettings.useNative && !!subSettings.pastelMode}
+                      disabled={!!subSettings.useNative}
+                      onChange={(val) => updateSubtitles({ pastelMode: val })}
+                      ariaLabel="Toggle pastel mode"
+                    />
+                  </div>
 
-                      {/* Custom Color Palette Picker */}
-                      <div className="relative flex items-center justify-center h-6 w-6 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer overflow-hidden transition-all">
+                  {/* Subtitle Delay Sync */}
+                  <div className="space-y-2.5">
+                    <p className="font-medium text-white">Subtitle delay</p>
+                    <input
+                      type="range"
+                      min={-20}
+                      max={20}
+                      step={0.1}
+                      disabled={!!subSettings.useNative}
+                      value={subSettings.delay ?? 0}
+                      onChange={(e) => handleDelayChange(Number.parseFloat(e.target.value))}
+                      className="w-full accent-primary h-1.5 bg-white/20 rounded-lg cursor-pointer disabled:cursor-not-allowed"
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={!!subSettings.useNative}
+                        onClick={() => handleDelayShift(-0.5)}
+                        className="flex-1 flex flex-col items-center justify-center py-2 h-11 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors cursor-pointer group disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeftIcon size={16} className="text-white/70 group-hover:text-white" />
+                        <span className="text-[11px] text-white/80 mt-0.5">Heard audio</span>
+                      </button>
+
+                      <div className="h-11 px-2 w-24 bg-white/5 rounded-lg border border-white/10 flex items-center justify-center">
                         <input
-                          type="color"
-                          value={subSettings.textColor.startsWith("#") ? subSettings.textColor : "#ffffff"}
-                          onChange={(e) => updateSubtitles({ textColor: e.target.value })}
-                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                          aria-label="Custom subtitle color"
+                          type="number"
+                          step={0.1}
+                          disabled={!!subSettings.useNative}
+                          value={subSettings.delay ?? 0}
+                          onChange={(e) => handleDelayChange(Number.parseFloat(e.target.value))}
+                          className="w-full bg-transparent text-center font-mono text-[13px] font-semibold text-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:cursor-not-allowed"
                         />
-                        <PaletteIcon size={12} className="text-white" />
+                        <span className="text-[11px] text-white/50 ml-0.5 font-mono">s</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={!!subSettings.useNative}
+                        onClick={() => handleDelayShift(0.5)}
+                        className="flex-1 flex flex-col items-center justify-center py-2 h-11 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors cursor-pointer group disabled:cursor-not-allowed"
+                      >
+                        <ChevronRightIcon size={16} className="text-white/70 group-hover:text-white" />
+                        <span className="text-[11px] text-white/80 mt-0.5">Saw caption</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <hr className="border-white/10 my-2" />
+
+                  {/* Font Selector */}
+                  <div className="space-y-2">
+                    <p className="font-medium text-white">Font</p>
+                    <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/10 gap-1">
+                      {SUBTITLE_FONT_OPTIONS.map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          disabled={!!subSettings.useNative}
+                          onClick={() => updateSubtitles({ font: f.id })}
+                          className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer disabled:cursor-not-allowed ${
+                            subSettings.font === f.id
+                              ? "bg-primary text-white shadow-sm"
+                              : "text-white/60 hover:text-white hover:bg-white/10"
+                          } ${f.className}`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Text Size */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-white">Text size</p>
+                      <span className="text-xs text-white/70 font-mono tabular-nums">{subSettings.textSize}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={50}
+                      max={200}
+                      step={5}
+                      disabled={!!subSettings.useNative}
+                      value={subSettings.textSize}
+                      onChange={(e) => updateSubtitles({ textSize: Number(e.target.value) })}
+                      className="w-full accent-primary h-1.5 bg-white/20 rounded-lg cursor-pointer disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  {/* Position */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-white">Position</p>
+                      <span className="text-xs text-white/70 font-mono tabular-nums">
+                        {(subSettings.position ?? 0) === 0 ? "Default" : `${subSettings.position}%`}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={50}
+                      step={1}
+                      disabled={!!subSettings.useNative}
+                      value={subSettings.position ?? 0}
+                      onChange={(e) => updateSubtitles({ position: Number(e.target.value) })}
+                      className="w-full accent-primary h-1.5 bg-white/20 rounded-lg cursor-pointer disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  {/* Background Plate */}
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-white">Background</p>
+                    <ToggleSwitch
+                      checked={!subSettings.useNative && !!subSettings.backgroundBlur}
+                      disabled={!!subSettings.useNative}
+                      onChange={(val) => updateSubtitles({ backgroundBlur: val })}
+                      ariaLabel="Toggle background"
+                    />
+                  </div>
+
+                  {/* Subtitle Color & Custom Color Picker */}
+                  <div className="space-y-2 pb-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium text-white">Color</p>
+                      <div className="flex items-center gap-1.5">
+                        {SUBTITLE_COLOR_PRESETS.map((c) => {
+                          const isSelected = (subSettings.textColor || "#ffffff").toLowerCase() === c.value.toLowerCase();
+                          return (
+                            <button
+                              key={c.value}
+                              type="button"
+                              disabled={!!subSettings.useNative}
+                              onClick={() => updateSubtitles({ textColor: c.value })}
+                              aria-label={c.label}
+                              className={`h-6 w-6 rounded-full flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed ${
+                                isSelected
+                                  ? "ring-2 ring-primary ring-offset-2 ring-offset-black scale-105"
+                                  : "opacity-80 hover:opacity-100 hover:scale-105"
+                              }`}
+                              style={{ backgroundColor: c.value }}
+                            >
+                              {isSelected && (
+                                <CheckIcon
+                                  size={12}
+                                  strokeWidth={3}
+                                  className={c.value === "#ffffff" ? "text-black" : "text-white"}
+                                />
+                              )}
+                            </button>
+                          );
+                        })}
+
+                        {/* Custom Color Palette Picker */}
+                        <div className="relative flex items-center justify-center h-6 w-6 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer overflow-hidden transition-all">
+                          <input
+                            type="color"
+                            disabled={!!subSettings.useNative}
+                            value={subSettings.textColor.startsWith("#") ? subSettings.textColor : "#ffffff"}
+                            onChange={(e) => updateSubtitles({ textColor: e.target.value })}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10 disabled:cursor-not-allowed"
+                            aria-label="Custom subtitle color"
+                          />
+                          <PaletteIcon size={12} className="text-white" />
+                        </div>
                       </div>
                     </div>
                   </div>

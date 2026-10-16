@@ -372,3 +372,36 @@
     }
   }
 }
+
+/* Authentic Netflix Sans @font-face definitions */
+@font-face {
+  font-family: 'Netflix Sans';
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Lt.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Netflix Sans';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Rg.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Netflix Sans';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Md.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Netflix Sans';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Bd.woff2') format('woff2');
+}

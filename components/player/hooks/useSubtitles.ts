@@ -468,7 +468,7 @@ export function useSubtitles({
 
     const fontFamily =
       subFont === "netflix"
-        ? "'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+        ? "'Netflix Sans', 'Netflix Font', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
         : subFont === "montserrat"
         ? "'Montserrat', sans-serif"
         : "'Inter', system-ui, -apple-system, sans-serif";
