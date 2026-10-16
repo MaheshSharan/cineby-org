@@ -82,10 +82,15 @@ export function useSubtitles({
   const subtitlesFetchedRef = useRef(false);
   const rawSubtitleContentRef = useRef<string | null>(null);
   const activeTrackRef = useRef<SubtitleTrack | null>(null);
+  const subtitlesSettingsRef = useRef(subtitlesSettings);
 
   useEffect(() => {
     activeTrackRef.current = activeTrack;
   }, [activeTrack]);
+
+  useEffect(() => {
+    subtitlesSettingsRef.current = subtitlesSettings;
+  }, [subtitlesSettings]);
 
   const currentMediaKey = getMediaKey(mediaType ?? "movie", mediaId ?? 0, currentSeason, currentEpisode);
   const prevMediaKeyRef = useRef(currentMediaKey);
@@ -186,8 +191,8 @@ export function useSubtitles({
           rawSubtitleContentRef.current = rawContent;
           const vttContent = srtToVtt(
             rawContent,
-            subtitlesSettings?.delay ?? 0,
-            subtitlesSettings?.position ?? 0
+            subtitlesSettingsRef.current?.delay ?? 0,
+            subtitlesSettingsRef.current?.position ?? 0
           );
           const blob = new Blob([vttContent], { type: "text/vtt;charset=utf-8" });
           const blobUrl = URL.createObjectURL(blob);

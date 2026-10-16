@@ -13,7 +13,6 @@ const TIME_BUCKET_SECONDS = 5;
 
 export function ProgressBarThumbnail({
   hoverTime,
-  hoverProgress,
   providerThumbnail,
   requestFrame,
 }: ProgressBarThumbnailProps) {

@@ -41,7 +41,7 @@ export function SubtitlesSettings() {
           <div className="max-w-md">
             <p className="text-[15px] font-medium text-white">Use native subtitles</p>
             <p className="text-[13px] text-white/50 mt-0.5">
-              Render subtitles using the device's built-in engine. Disables customization below.
+              Render subtitles using the device&apos;s built-in engine. Disables customization below.
             </p>
           </div>
           <ToggleSwitch
@@ -111,7 +111,7 @@ export function SubtitlesSettings() {
           <div>
             <p className="text-[15px] font-medium text-white">Position</p>
             <p className="text-[13px] text-white/50 mt-0.5">
-              Adjust vertical bottom lift so subtitles don't get obscured.
+              Adjust vertical bottom lift so subtitles don&apos;t get obscured.
             </p>
           </div>
 

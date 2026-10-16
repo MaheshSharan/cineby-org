@@ -4,7 +4,6 @@ import { FALLBACK_FLAG_URL, getFlagUrl } from "../constants";
 import { useSettings } from "@/hooks/useSettings";
 import { ToggleSwitch } from "@/components/settings/ToggleSwitch";
 import {
-  type SubtitleFont,
   SUBTITLE_COLOR_PRESETS,
   SUBTITLE_FONT_OPTIONS,
 } from "@/lib/settings/types";
@@ -305,7 +304,7 @@ export function AudioSubtitlesPopover({
                     />
                   </div>
                   <p className="text-[11px] text-white/50 leading-relaxed">
-                    Render subtitles using the device's built-in engine. Disables customization below.
+                    Render subtitles using the device&apos;s built-in engine. Disables customization below.
                   </p>
                 </div>
 
