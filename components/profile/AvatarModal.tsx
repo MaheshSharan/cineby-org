@@ -125,7 +125,7 @@ export function AvatarModal({
         </div>
 
         {/* Scrollable Avatars Area */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 scrollbar-styles">
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 no-scrollbar scrollbar-hide">
           <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
             {displayedAvatars.map((avatar) => {
               const isSelected = selectedUrl === avatar.url;

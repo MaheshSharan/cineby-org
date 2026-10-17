@@ -162,7 +162,7 @@ export function ProfileWizard({
                 Pick an avatar that feels like this profile
               </p>
 
-              <div className="mt-8 max-h-[46vh] w-full max-w-2xl overflow-y-auto px-1 pb-2 scrollbar-styles">
+              <div className="mt-8 max-h-[46vh] w-full max-w-2xl overflow-y-auto px-1 pb-2 no-scrollbar scrollbar-hide">
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
                   {(showAllAvatars ? CLASSIC_AVATARS : CLASSIC_AVATARS.slice(0, 12)).map((av) => {
                     const isSelected = avatar === av.url;

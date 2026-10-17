@@ -285,7 +285,7 @@ export function EpisodesSection({ tvId, seasons, onReady }: EpisodesSectionProps
           ))}
         </ContentRow>
       ) : (
-        <div className="scrollbar-styles flex max-h-[32rem] flex-col gap-2 overflow-auto pr-1 lg:max-h-[40rem]">
+        <div className="no-scrollbar scrollbar-hide flex max-h-[32rem] flex-col gap-2 overflow-auto pr-1 lg:max-h-[40rem]">
           {visibleEpisodes.map((episode) => (
             <EpisodeCard
               key={episode.id}
@@ -448,7 +448,7 @@ function EpisodeCard({
             <span className="tabular-nums font-semibold">{episode.episodeNumber}.</span>{" "}
             {episode.name}
           </h4>
-          <p className="scrollbar-styles mb-3 max-h-[140px] overflow-y-auto pr-1 text-[13px] leading-relaxed text-text-mid">
+          <p className="no-scrollbar scrollbar-hide mb-3 max-h-[140px] overflow-y-auto pr-1 text-[13px] leading-relaxed text-text-mid">
             {episode.overview || "No overview available."}
           </p>
           <div className="flex items-center gap-2.5">
