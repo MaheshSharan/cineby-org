@@ -144,3 +144,13 @@ describe("media SEO metadata", () => {
     expect(buildMediaTitle({ title: "Iron Man", releaseDate: null })).toBe("Iron Man | Cineby");
   });
 });
+
+describe("IndexNow protocol verification", () => {
+  it("serves an IndexNow verification key file matching its filename", () => {
+    const key = "7167d655bfd4a931ef195c13ff631d3f";
+    const content = readPublicFile(`${key}.txt`).trim();
+
+    expect(content).toBe(key);
+  });
+});
+
