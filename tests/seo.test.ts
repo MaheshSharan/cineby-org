@@ -113,7 +113,13 @@ describe("sitemap.xml", () => {
   const sitemapPaths = getSitemapPaths();
 
   it("lists the home page and the browse pages", () => {
-    expect(sitemapPaths).toEqual(["/", "/browse/movie", "/browse/tv"]);
+    expect(sitemapPaths).toEqual([
+      "/",
+      "/browse/movie",
+      "/browse/tv",
+      "/privacy",
+      "/terms",
+    ]);
   });
 
   it("uses the canonical origin for every URL", () => {
