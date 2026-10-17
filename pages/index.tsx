@@ -157,6 +157,44 @@ export default function Home({
           initialItems={topRatedSeries}
           fetchUrl="/api/tmdb/browse?mediaType=tv&sortBy=vote_average.desc"
         />
+
+        {/* Informational About & Compliance Section for Users & Search Crawlers */}
+        <footer className="mt-8 border-t border-white/10 pt-10 text-white/60">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="space-y-3">
+              <h2 className="text-base font-semibold text-white">About Cineby</h2>
+              <p className="text-xs leading-relaxed text-white/60">
+                Cineby is an open media discovery and personal entertainment tracking platform. Browse trending movies, top-rated TV series, explore titles by streaming provider, and manage personal watchlists and multi-user viewing profiles.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-base font-semibold text-white">Features</h2>
+              <ul className="text-xs space-y-1.5 text-white/60">
+                <li>• Unified media discovery powered by The Movie Database (TMDB)</li>
+                <li>• Synchronized watch progress and multi-profile support</li>
+                <li>• Seamless authentication via Google One Tap and email login</li>
+                <li>• Cross-platform responsive PWA support on desktop and mobile</li>
+              </ul>
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-base font-semibold text-white">Legal & Compliance</h2>
+              <p className="text-xs leading-relaxed text-white/60">
+                Cineby (Google Project MAARE) adheres to strict user privacy standards. Learn how your data is handled:
+              </p>
+              <div className="flex flex-wrap gap-4 text-xs font-medium text-white/80">
+                <Link href="/privacy" className="hover:text-white underline">
+                  Privacy Policy
+                </Link>
+                <Link href="/terms" className="hover:text-white underline">
+                  Terms of Service
+                </Link>
+              </div>
+            </div>
+          </div>
+          <div className="mt-10 border-t border-white/5 pt-6 text-center text-xs text-white/40">
+            © {new Date().getFullYear()} Cineby. All metadata provided by TMDB.
+          </div>
+        </footer>
       </div>
     </>
   );

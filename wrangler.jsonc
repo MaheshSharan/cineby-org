@@ -14,8 +14,18 @@
     {
       "binding": "DB",
       "database_name": "cineby-db",
-      "database_id": "0993f8c9-f27e-420a-8f34-6b778912ae12",
+      "database_id": "d9b17c57-accb-42b2-af82-65a3ef942575",
       "migrations_dir": "migrations"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "cineby.group",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.cineby.group",
+      "custom_domain": true
     }
   ],
   "vars": {
@@ -24,7 +34,7 @@
     "NEXT_PUBLIC_TMDB_IMAGE_BASE_URL": "https://image.tmdb.org/t/p",
     "NEXT_PUBLIC_ENABLE_IMAGE_PROXY": "true",
     "NEXT_PUBLIC_IMAGE_PROXY_URL": "https://wsrv.nl",
-    "STREAM_PROXY_URL": "https://cineby-stream-proxy.maheworks.workers.dev",
+    "STREAM_PROXY_URL": "https://proxygloomy.cineby.group",
     "ENABLE_CINEZO": "true",
     "ENABLE_VIDY": "true",
     "ENABLE_VIXSRC": "false",

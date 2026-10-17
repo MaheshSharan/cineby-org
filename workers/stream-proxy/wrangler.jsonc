@@ -6,8 +6,14 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "routes": [
+    {
+      "pattern": "proxygloomy.cineby.group",
+      "custom_domain": true
+    }
+  ],
   "vars": {
-    "CORS_ALLOWED_ORIGINS": "https://cineby.maheworks.workers.dev,http://localhost:3000"
+    "CORS_ALLOWED_ORIGINS": "https://cineby.group,https://www.cineby.group,http://localhost:3000"
   },
   "observability": {
     "enabled": true,
