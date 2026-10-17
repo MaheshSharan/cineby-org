@@ -1,14 +1,15 @@
 import type { GetServerSideProps } from "next";
-import Head from "next/head";
 import { useRouter } from "next/router";
 
-import { getMovieDetails, getTvDetails } from "@/lib/tmdb/server";
+import { getMovieDetails, getTvDetails, isTmdbNotFoundError } from "@/lib/tmdb/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { listHistory } from "@/lib/db/history";
+import { logger } from "@/lib/logger";
 import { formatRuntime, getEpisodeHref, getYear, toPlayerSeasons } from "@/lib/utils/media";
 
 import { PlayerShell } from "@/components/player/PlayerShell";
 import type { PlayerMedia } from "@/components/player/types";
+import { PageSeo } from "@/components/seo/PageSeo";
 
 interface WatchPageProps {
   title: string;
@@ -21,9 +22,7 @@ export default function WatchPage({ title, subtitle, media }: WatchPageProps) {
 
   return (
     <>
-      <Head>
-        <title>{`Watch ${title} | Cineby`}</title>
-      </Head>
+      <PageSeo title={`Watch ${title} | Cineby`} noindex />
       <PlayerShell
         title={title}
         subtitle={subtitle}
@@ -115,8 +114,13 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
         },
       },
     };
-  } catch {
-    return { notFound: true };
+  } catch (error) {
+    if (isTmdbNotFoundError(error)) {
+      return { notFound: true };
+    }
+
+    logger.error("[watch] Failed to load media details", error);
+    throw error;
   }
 };
 

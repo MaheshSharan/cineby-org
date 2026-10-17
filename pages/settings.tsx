@@ -1,7 +1,7 @@
-import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
+import { PageSeo } from "@/components/seo/PageSeo";
 import { SettingsIcon } from "@/components/ui/icons";
 import { SettingsTabs, type SettingsTabId } from "@/components/settings/SettingsTabs";
 import { AccountSettings } from "@/components/settings/AccountSettings";
@@ -36,13 +36,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Head>
-        <title>Settings - Cineby</title>
-        <meta
-          name="description"
-          content="Manage your Cineby account, customize appearance, playback behavior, and subtitles."
-        />
-      </Head>
+      <PageSeo title="Settings - Cineby" noindex />
 
       <div className="mx-auto max-w-3xl min-h-[calc(100vh-88px)] px-4 pb-20 pt-24 md:px-6 md:pt-32">
         {/* Page Title & Icon matching Cinejoy */}

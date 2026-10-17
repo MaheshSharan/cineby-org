@@ -1,12 +1,20 @@
 import type { GetServerSideProps } from "next";
-import Head from "next/head";
 
 import type { TvDetails } from "@/lib/tmdb";
-import { getTvDetails } from "@/lib/tmdb/server";
+import { getTvDetails, isTmdbNotFoundError } from "@/lib/tmdb/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { listHistory } from "@/lib/db/history";
+import { logger } from "@/lib/logger";
+import {
+  buildMediaDescription,
+  buildMediaTitle,
+  getMediaOpenGraphImageUrl,
+} from "@/lib/seo/media";
+import { getMediaHref } from "@/lib/utils/media";
+import { extractIdFromSlug } from "@/lib/utils/slug";
 
 import { DetailPage } from "@/components/detail/DetailPage";
+import { PageSeo } from "@/components/seo/PageSeo";
 
 interface TvPageProps {
   details: TvDetails;
@@ -18,10 +26,13 @@ interface TvPageProps {
 export default function TvPage({ details, isPlaying, seasonNumber, episodeNumber }: TvPageProps) {
   return (
     <>
-      <Head>
-        <title>{`${details.title} | Cineby`}</title>
-        <meta name="description" content={details.overview} />
-      </Head>
+      <PageSeo
+        title={buildMediaTitle(details)}
+        description={buildMediaDescription(details)}
+        path={getMediaHref("tv", details.id, details.title)}
+        imageUrl={getMediaOpenGraphImageUrl(details)}
+        openGraphType="video.tv_show"
+      />
       <DetailPage
         details={details}
         isPlaying={isPlaying}
@@ -31,8 +42,6 @@ export default function TvPage({ details, isPlaying, seasonNumber, episodeNumber
     </>
   );
 }
-
-import { extractIdFromSlug } from "@/lib/utils/slug";
 
 export const getServerSideProps: GetServerSideProps<TvPageProps> = async (context) => {
   const params = context.params?.params;
@@ -79,7 +88,13 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
         episodeNumber,
       },
     };
-  } catch {
-    return { notFound: true };
+  } catch (error) {
+    if (isTmdbNotFoundError(error)) {
+      return { notFound: true };
+    }
+
+    // An upstream outage must surface as a 5xx; a 404 would make search engines drop the page.
+    logger.error("[tv] Failed to load TV details", error);
+    throw error;
   }
 };

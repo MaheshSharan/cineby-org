@@ -1,4 +1,3 @@
-import Head from "next/head";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
 
@@ -10,6 +9,7 @@ import { ProfileGrid } from "@/components/profile/ProfileGrid";
 import { ProfileGridSkeleton } from "@/components/profile/ProfileGridSkeleton";
 import { ProfileWizard } from "@/components/profile/ProfileWizard";
 import type { Profile, ProfileListResponse } from "@/components/profile/types";
+import { PageSeo } from "@/components/seo/PageSeo";
 import { LogOutIcon } from "@/components/ui/icons";
 import { CLASSIC_AVATARS } from "@/lib/profile/avatars";
 import { syncGuestHistoryToServer } from "@/lib/api/history";
@@ -325,16 +325,12 @@ export default function ProfilesPage() {
 
   return (
     <>
-      <Head>
-        <title>
-          {editingProfile
-            ? "Edit profile"
-            : isCreating
-            ? "Create your profile"
-            : "Who's watching?"}{" "}
-          - Cineby
-        </title>
-      </Head>
+      <PageSeo
+        title={`${
+          editingProfile ? "Edit profile" : isCreating ? "Create your profile" : "Who's watching?"
+        } - Cineby`}
+        noindex
+      />
 
       <div className="relative min-h-[100dvh] overflow-x-hidden bg-[#05070a] text-white">
         {/* Ambient Red Radial Gradient */}

@@ -1,4 +1,4 @@
-import Head from "next/head";
+import { PageSeo } from "@/components/seo/PageSeo";
 
 import packageJson from "../package.json";
 
@@ -16,9 +16,7 @@ export default function VersionPage() {
 
   return (
     <>
-      <Head>
-        <title>Version | Cineby</title>
-      </Head>
+      <PageSeo title="Version | Cineby" noindex />
 
       <div className="mx-auto max-w-md px-4 pb-16 pt-28 md:pt-36">
         <h1 className="heading-trail mb-6 text-xl font-semibold text-text-hi md:text-2xl">

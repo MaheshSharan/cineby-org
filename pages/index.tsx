@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import type { GetServerSideProps } from "next";
-import Head from "next/head";
 import Link from "next/link";
 
 import type { MediaSummary } from "@/lib/tmdb";
@@ -17,6 +16,7 @@ import { HeroCarousel } from "@/components/home/HeroCarousel";
 import { LazyContentRow } from "@/components/home/LazyContentRow";
 import { OnlyOnRow } from "@/components/home/OnlyOnRow";
 import { TopTenRow } from "@/components/home/TopTenRow";
+import { PageSeo } from "@/components/seo/PageSeo";
 
 const HERO_ITEMS = 12;
 const ROW_ITEMS = 20;
@@ -109,13 +109,11 @@ export default function Home({
 
   return (
     <>
-      <Head>
-        <title>Cineby - Watch Free Movies & TV Shows Online</title>
-        <meta
-          name="description"
-          content="Watch free movies and TV shows online."
-        />
-      </Head>
+      <PageSeo
+        title="Cineby - Watch Free Movies & TV Shows Online"
+        description="Watch free movies and TV shows online. Browse trending titles, top-rated series and popular streaming providers, and keep your own watchlist on Cineby."
+        path="/"
+      />
 
       <HeroCarousel items={heroItems} genreNames={genreNames} />
 

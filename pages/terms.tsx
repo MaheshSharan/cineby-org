@@ -1,15 +1,13 @@
-import Head from "next/head";
+import { PageSeo } from "@/components/seo/PageSeo";
 
 export default function TermsOfServicePage() {
   return (
     <>
-      <Head>
-        <title>Terms of Service - Cineby</title>
-        <meta
-          name="description"
-          content="Terms of Service for Cineby governing platform usage, account responsibilities, and third-party media content."
-        />
-      </Head>
+      <PageSeo
+        title="Terms of Service - Cineby"
+        description="Terms of Service for Cineby governing platform usage, account responsibilities, and third-party media content."
+        path="/terms"
+      />
 
       <main className="mx-auto max-w-4xl px-6 pb-24 pt-28 md:pt-36 text-white/90">
         <div className="mb-10 text-center md:text-left">

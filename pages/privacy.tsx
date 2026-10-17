@@ -1,16 +1,15 @@
-import Head from "next/head";
 import Link from "next/link";
+
+import { PageSeo } from "@/components/seo/PageSeo";
 
 export default function PrivacyPolicyPage() {
   return (
     <>
-      <Head>
-        <title>Privacy Policy - Cineby</title>
-        <meta
-          name="description"
-          content="Privacy Policy for Cineby (Google Project MAARE) detailing user data protection, Google OAuth compliance, and data retention standards."
-        />
-      </Head>
+      <PageSeo
+        title="Privacy Policy - Cineby"
+        description="Privacy Policy for Cineby (Google Project MAARE) detailing user data protection, Google OAuth compliance, and data retention standards."
+        path="/privacy"
+      />
 
       <main className="mx-auto max-w-4xl px-6 pb-24 pt-28 md:pt-36 text-white/90">
         <div className="mb-10 text-center md:text-left">

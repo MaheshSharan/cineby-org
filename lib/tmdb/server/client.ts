@@ -12,6 +12,10 @@ export class TmdbApiError extends Error {
   }
 }
 
+export function isTmdbNotFoundError(error: unknown): boolean {
+  return error instanceof TmdbApiError && error.status === 404;
+}
+
 export class TmdbTimeoutError extends Error {
   constructor() {
     super(`TMDB request timed out after ${REQUEST_TIMEOUT_MS}ms`);

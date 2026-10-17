@@ -1,4 +1,3 @@
-import Head from "next/head";
 import { useEffect, useState } from "react";
 
 import type { HistoryEntry } from "@/lib/db/types";
@@ -7,6 +6,7 @@ import { addToWatchlist } from "@/lib/api/watchlist";
 import { getEpisodeHref, getPlayHref } from "@/lib/utils/media";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
+import { PageSeo } from "@/components/seo/PageSeo";
 import { SkeletonCardGrid } from "@/components/skeleton/SkeletonCard";
 import { BookmarkIcon, TrashIcon, XIcon } from "@/components/ui/icons";
 
@@ -94,10 +94,7 @@ export default function HistoryPage() {
 
   return (
     <>
-      <Head>
-        <title>History - Cineby</title>
-        <meta name="description" content="Keep track of all the movies and TV shows you've watched." />
-      </Head>
+      <PageSeo title="History - Cineby" noindex />
 
       <main className="mx-auto max-w-[1360px] min-h-[calc(100vh-88px)] md:min-h-[calc(100vh-90px)] px-4 pb-16 pt-28 md:px-8 md:pt-36">
         {isLoading || isHistoryLoading ? (

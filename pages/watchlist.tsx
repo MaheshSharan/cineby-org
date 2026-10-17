@@ -1,4 +1,3 @@
-import Head from "next/head";
 import { useEffect, useState } from "react";
 
 import type { WatchlistItem } from "@/lib/db/types";
@@ -6,6 +5,7 @@ import { clearAllWatchlist, listWatchlist, removeFromWatchlist } from "@/lib/api
 import { getMediaHref } from "@/lib/utils/media";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
+import { PageSeo } from "@/components/seo/PageSeo";
 import { SkeletonCardGrid } from "@/components/skeleton/SkeletonCard";
 import { TrashIcon, XIcon } from "@/components/ui/icons";
 
@@ -67,10 +67,7 @@ export default function WatchlistPage() {
 
   return (
     <>
-      <Head>
-        <title>Watchlist - Cineby</title>
-        <meta name="description" content="Save your favorite movies and TV shows to watch later." />
-      </Head>
+      <PageSeo title="Watchlist - Cineby" noindex />
 
       <main className="mx-auto max-w-[1360px] min-h-[calc(100vh-88px)] md:min-h-[calc(100vh-90px)] px-4 pb-16 pt-28 md:px-8 md:pt-36">
         {isLoading || (user && isWatchlistLoading) ? (
