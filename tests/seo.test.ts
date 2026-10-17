@@ -4,22 +4,9 @@ import { describe, it, expect } from "vitest";
 
 import { buildMediaDescription, buildMediaTitle, truncateDescription } from "@/lib/seo/media";
 import { buildAbsoluteUrl, SITE_URL } from "@/lib/seo/site";
+import { generateSitemapIndexXml } from "@/lib/seo/sitemap";
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
-
-const NON_SITEMAP_PATH_PREFIXES = [
-  "/api",
-  "/history",
-  "/login",
-  "/movie/",
-  "/profiles",
-  "/register",
-  "/settings",
-  "/tv/",
-  "/version",
-  "/watch",
-  "/watchlist",
-];
 
 interface RobotsGroup {
   agents: string[];
@@ -63,12 +50,6 @@ function findGroup(groups: RobotsGroup[], agent: string): RobotsGroup | undefine
   return groups.find((group) => group.agents.includes(agent));
 }
 
-function getSitemapPaths(): string[] {
-  const xml = readPublicFile("sitemap.xml");
-
-  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => new URL(match[1]).pathname);
-}
-
 describe("robots.txt", () => {
   const robotsText = readPublicFile("robots.txt");
   const groups = parseRobotsGroups(robotsText);
@@ -110,33 +91,20 @@ describe("robots.txt", () => {
 });
 
 describe("sitemap.xml", () => {
-  const sitemapPaths = getSitemapPaths();
-
-  it("lists the home page and the browse pages", () => {
-    expect(sitemapPaths).toEqual([
-      "/",
-      "/browse/movie",
-      "/browse/tv",
-      "/privacy",
-      "/terms",
-    ]);
-  });
-
-  it("uses the canonical origin for every URL", () => {
-    const xml = readPublicFile("sitemap.xml");
+  it("generates a sitemap index pointing to sub-sitemaps on the canonical origin", () => {
+    const sitemaps = [
+      { loc: `${SITE_URL}/sitemaps/pages.xml`, lastmod: "2026-10-18" },
+      { loc: `${SITE_URL}/sitemaps/movies.xml`, lastmod: "2026-10-18" },
+      { loc: `${SITE_URL}/sitemaps/tv.xml`, lastmod: "2026-10-18" },
+    ];
+    const xml = generateSitemapIndexXml(sitemaps);
     const locations = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
 
-    for (const location of locations) {
-      expect(location.startsWith(`${SITE_URL}/`)).toBe(true);
-    }
-  });
-
-  it("excludes title pages, the player, account pages and APIs", () => {
-    for (const sitemapPath of sitemapPaths) {
-      for (const prefix of NON_SITEMAP_PATH_PREFIXES) {
-        expect(sitemapPath.startsWith(prefix)).toBe(false);
-      }
-    }
+    expect(locations).toEqual([
+      `${SITE_URL}/sitemaps/pages.xml`,
+      `${SITE_URL}/sitemaps/movies.xml`,
+      `${SITE_URL}/sitemaps/tv.xml`,
+    ]);
   });
 });
 
