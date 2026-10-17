@@ -23,9 +23,14 @@ interface TvPageProps {
   episodeNumber?: number | null;
 }
 
-import { buildTvSeriesJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
+import { buildBreadcrumbJsonLd, buildTvSeriesJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 
 export default function TvPage({ details, isPlaying, seasonNumber, episodeNumber }: TvPageProps) {
+  const schemas = [
+    buildBreadcrumbJsonLd("tv", details.title, details.id),
+    buildTvSeriesJsonLd(details),
+  ];
+
   return (
     <>
       <PageSeo
@@ -34,7 +39,7 @@ export default function TvPage({ details, isPlaying, seasonNumber, episodeNumber
         path={getMediaHref("tv", details.id, details.title)}
         imageUrl={getMediaOpenGraphImageUrl(details)}
         openGraphType="video.tv_show"
-        jsonLd={sanitizeJsonLd(buildTvSeriesJsonLd(details))}
+        jsonLd={sanitizeJsonLd(schemas)}
       />
       <DetailPage
         details={details}

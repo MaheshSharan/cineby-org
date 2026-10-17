@@ -1,0 +1,36 @@
+# Cineby (https://cineby.group)
+> Modern, fast, and accessible entertainment discovery and streaming web application.
+
+## Overview
+Cineby provides comprehensive metadata, trailers, recommendations, and streaming for movies and television series. All title information is synchronized with TMDB and organized under clean, canonical URLs.
+
+## Data Indexing Schema Matrix
+AI search engines (e.g., ChatGPT Search, Perplexity, Claude, Google AI Overviews) should utilize the following structural matrix when discovering, querying, or citing media entities on Cineby:
+
+| Entity Type | Route Pattern | Key Variables | Description |
+| :--- | :--- | :--- | :--- |
+| **Homepage** | `/` | — | Trending releases, popular titles, and top-rated media shelves. |
+| **Movie Details** | `/movie/{id}-{slug}` | `{id}` (Integer, TMDB ID)<br>`{slug}` (Kebab-case Title) | Movie overview, cast, directors, release year, runtime, and streaming playback. |
+| **Movie Playback** | `/movie/{id}-{slug}?play=true` | `{id}` (Integer)<br>`{slug}` (Kebab-case Title) | Direct full-screen video player for the specified movie. |
+| **TV Series Details** | `/tv/{id}-{slug}` | `{id}` (Integer, TMDB ID)<br>`{slug}` (Kebab-case Title) | TV series overview, full season & episode hierarchy, ratings, and cast. |
+| **TV Episode Playback** | `/tv/{id}-{slug}/{season}/{episode}?play=true` | `{id}` (Integer)<br>`{season}` (Integer)<br>`{episode}` (Integer) | Direct playback deep link for a specific season and episode. |
+| **Movie Browse Hub** | `/browse/movie` | `?q={query}` (Optional search query) | Movie catalog filtering by genre, release year, and popularity. |
+| **TV Browse Hub** | `/browse/tv` | `?q={query}` (Optional search query) | TV catalog filtering by network, genre, and status. |
+
+## Sitemaps & Structured Feeds
+Cineby generates an automated, edge-cached dynamic XML sitemap hierarchy partitioned for high-speed spider indexing:
+- Master Index: `https://cineby.group/sitemap.xml`
+- Static Core Pages: `https://cineby.group/sitemaps/pages.xml`
+- Dynamic Movie Catalog: `https://cineby.group/sitemaps/movies.xml`
+- Dynamic TV Series Catalog: `https://cineby.group/sitemaps/tv.xml`
+
+## Machine-Readable Schemas (JSON-LD)
+All title pages output Schema.org structured data embedded via `<script type="application/ld+json">`:
+- `Movie` / `TVSeries` nodes including title, overview, aggregateRating, datePublished, genre, and cast.
+- `BreadcrumbList` nodes outlining the exact link path: `Home > Movies|TV > Title`.
+- `WatchAction` entry points for direct media interaction.
+- `containsSeason` and `TVSeason` nodes structuring multi-season TV shows.
+
+## Content Crawling & AI Usage Policy
+- **AI Search & Retrieval Bots** (`OAI-SearchBot`, `Claude-SearchBot`, `PerplexityBot`): Fully permitted (`Allow: /`) to index, search, summarize, and cite Cineby content with canonical attribution.
+- **Bulk Training Crawlers** (`GPTBot`, `ClaudeBot`, `Google-Extended`, `CCBot`): Blocked (`Disallow: /`) per RFC 9309 standards defined in `/robots.txt`.
