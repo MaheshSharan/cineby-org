@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CheckIcon, Share2Icon } from "@/components/ui/icons";
+import { trackEvent } from "@/lib/analytics/gtag";
 
 interface ShareButtonProps {
   title: string;
@@ -35,6 +36,14 @@ export function ShareButton({
           text: text ?? `Watch ${title} on Cineby`,
           url: fullUrl,
         });
+        trackEvent({
+          action: "share_click",
+          params: {
+            content_id: url,
+            media_type: url.includes("/tv") ? "tv" : "movie",
+            method: "web_share",
+          },
+        });
         return;
       } catch (err) {
         // AbortError is thrown when the user closes the native share sheet; safely ignore
@@ -58,6 +67,15 @@ export function ShareButton({
         document.execCommand("copy");
         document.body.removeChild(textarea);
       }
+
+      trackEvent({
+        action: "share_click",
+        params: {
+          content_id: url,
+          media_type: url.includes("/tv") ? "tv" : "movie",
+          method: "clipboard",
+        },
+      });
 
       setCopied(true);
       onToast?.("Link copied to clipboard!");

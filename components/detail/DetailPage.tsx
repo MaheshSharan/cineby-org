@@ -23,6 +23,7 @@ import { PlayerShell } from "@/components/player/PlayerShell";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PlayButton } from "@/components/ui/PlayButton";
 import { ShareButton } from "@/components/detail/ShareButton";
+import { trackEvent } from "@/lib/analytics/gtag";
 import {
   CheckIcon,
   ChevronLeftIcon,
@@ -216,6 +217,25 @@ export function DetailPage({
         const nextState = !inWatchlist;
         setInWatchlist(nextState);
         showToast(nextState ? "Added to watchlist" : "Removed from watchlist");
+
+        if (nextState) {
+          trackEvent({
+            action: "watchlist_add",
+            params: {
+              content_id: String(details.id),
+              media_type: details.mediaType,
+              title: details.title,
+            },
+          });
+        } else {
+          trackEvent({
+            action: "watchlist_remove",
+            params: {
+              content_id: String(details.id),
+              media_type: details.mediaType,
+            },
+          });
+        }
       }
     } catch {
       // Watchlist toggle failed — keep current state; user can retry.

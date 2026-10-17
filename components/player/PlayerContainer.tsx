@@ -27,6 +27,7 @@ import { usePlayerSegments } from "./hooks/usePlayerSegments";
 import { useSettings } from "@/hooks/useSettings";
 import { buildImageUrl } from "@/lib/tmdb/image";
 import { createSegmentByteCache } from "@/lib/player/media/segmentByteCache";
+import { trackEvent } from "@/lib/analytics/gtag";
 
 import { AudioSubtitlesPopover } from "./ui/AudioSubtitlesPopover";
 import { EpisodesDrawer } from "./ui/EpisodesDrawer";
@@ -373,6 +374,73 @@ export function PlayerContainer({
   useEffect(() => {
     void loadStream(settings.serverId);
   }, [loadStream, mediaKey, settings.serverId]);
+
+  // Track media start and milestone progress
+  const startedRef = useRef(false);
+  const reachedMilestonesRef = useRef<Set<number>>(new Set());
+
+  // Reset milestone tracking when mediaKey changes
+  useEffect(() => {
+    startedRef.current = false;
+    reachedMilestonesRef.current.clear();
+  }, [mediaKey]);
+
+  useEffect(() => {
+    if (!playerState.isPlaying || startedRef.current || !stream.source) {
+      return;
+    }
+    startedRef.current = true;
+    trackEvent({
+      action: "media_start",
+      params: {
+        content_id: String(media.mediaId),
+        media_type: media.mediaType,
+        title: media.title,
+        season: isTv ? currentSeason : undefined,
+        episode: isTv ? currentEpisode : undefined,
+      },
+    });
+  }, [currentEpisode, currentSeason, isTv, media.mediaId, media.mediaType, media.title, playerState.isPlaying, stream.source]);
+
+  // Milestone triggers (25%, 50%, 75%, 90%, 100%)
+  useEffect(() => {
+    const dur = playerState.duration;
+    const cur = playerState.currentTime;
+    if (!dur || dur <= 0 || !playerState.isPlaying) return;
+
+    const percent = Math.floor((cur / dur) * 100);
+    const milestones = [25, 50, 75, 90, 100] as const;
+
+    for (const m of milestones) {
+      if (percent >= m && !reachedMilestonesRef.current.has(m)) {
+        reachedMilestonesRef.current.add(m);
+        trackEvent({
+          action: "media_milestone",
+          params: {
+            content_id: String(media.mediaId),
+            media_type: media.mediaType,
+            milestone: m,
+            duration: Math.round(dur),
+            title: media.title,
+          },
+        });
+      }
+    }
+  }, [media.mediaId, media.mediaType, media.title, playerState.currentTime, playerState.duration, playerState.isPlaying]);
+
+  // Stream failure telemetry
+  useEffect(() => {
+    if (stream.isError && !stream.source && !isResolvingStream) {
+      trackEvent({
+        action: "embed_not_available",
+        params: {
+          content_id: String(media.mediaId),
+          media_type: media.mediaType,
+          title: media.title,
+        },
+      });
+    }
+  }, [isResolvingStream, media.mediaId, media.mediaType, media.title, stream.isError, stream.source]);
 
   // Keep a stable ref for onTimeUpdate to prevent interval teardown when parent re-renders
   const onTimeUpdateRef = useRef(onTimeUpdate);

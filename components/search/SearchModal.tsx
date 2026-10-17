@@ -6,6 +6,7 @@ import { getPosterResponsiveUrls } from "@/lib/tmdb/image";
 import { getEpisodeHref, getMediaHref, getPlayHref, getYear } from "@/lib/utils/media";
 import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
+import { trackEvent } from "@/lib/analytics/gtag";
 
 import { ChevronDownIcon, SearchIcon, StarIcon, XIcon } from "@/components/ui/icons";
 
@@ -109,6 +110,13 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
         .then((data) => {
           setResults(data.results);
           setHasSearched(true);
+          trackEvent({
+            action: "search_query",
+            params: {
+              query: trimmedQuery,
+              result_count: data.results?.length ?? 0,
+            },
+          });
         })
         .catch((error: unknown) => {
           if (error instanceof Error && error.name === "AbortError") {
@@ -318,6 +326,15 @@ function SearchResultItem({ item, isExpanded, onToggle, onSelect }: SearchResult
   const mediaHref = getMediaHref(item.mediaType, item.id, item.title);
 
   const handleDetailClick = (e: React.MouseEvent) => {
+    trackEvent({
+      action: "search_result_select",
+      params: {
+        content_id: String(item.id),
+        media_type: item.mediaType,
+        title: item.title,
+      },
+    });
+
     if (isModalDetail) {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
         return;
