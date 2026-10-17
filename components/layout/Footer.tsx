@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SineRibbons } from "@/components/ui/SineRibbons";
+import { SineRibbonsText } from "@/components/ui/SineRibbons";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -7,22 +7,17 @@ export function Footer() {
   return (
     <footer className="relative z-20 mt-auto w-full border-t border-white/[0.08] px-4 pt-16 pb-20 sm:pt-20 sm:pb-12 md:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
-        {/* Main visual brand with dynamic Sine Ribbons clipped inside text */}
+        {/* Main visual brand with dynamic Sine Ribbons strictly inside the letters */}
         <div className="flex flex-col items-center text-center">
           <Link
             href="/"
             className="group relative inline-block select-none transition-transform duration-300 hover:scale-[1.02]"
             aria-label="Cineby Home"
           >
-            {/* The wrapper sets the exact shape and clips the inner canvas using mix-blend-mode */}
-            <div className="relative inline-block overflow-hidden">
-              <SineRibbons />
-              <h2
-                className="relative text-6xl font-black uppercase tracking-tight sm:text-8xl md:text-9xl lg:text-[11rem] leading-none text-black bg-white mix-blend-multiply pointer-events-none select-none"
-              >
-                CINEBY
-              </h2>
-            </div>
+            <SineRibbonsText
+              text="CINEBY"
+              className="text-6xl font-black uppercase tracking-tight sm:text-8xl md:text-9xl lg:text-[11rem]"
+            />
           </Link>
 
           {/* Description */}

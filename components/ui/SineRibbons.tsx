@@ -27,11 +27,11 @@ const RIBBONS: RibbonConfig[] = [
       { freq: 0.007, amp: 16, speed: 0.018 },
       { freq: 0.014, amp: 8, speed: -0.01 },
     ],
-    colorStart: "rgba(225, 29, 72, 0.70)", // rose-600
-    colorMid: "rgba(168, 85, 247, 0.55)",   // purple-500
-    colorEnd: "rgba(59, 130, 246, 0.20)",   // blue-500
+    colorStart: "rgba(225, 29, 72, 0.75)", // rose-600
+    colorMid: "rgba(168, 85, 247, 0.60)",   // purple-500
+    colorEnd: "rgba(59, 130, 246, 0.30)",   // blue-500
     edgeColor: "rgba(255, 255, 255, 0.95)",
-    lineWidth: 1.8,
+    lineWidth: 2.2,
   },
   {
     baseY: 0.50,
@@ -44,11 +44,11 @@ const RIBBONS: RibbonConfig[] = [
       { freq: 0.0055, amp: 20, speed: -0.014 },
       { freq: 0.01, amp: 10, speed: 0.02 },
     ],
-    colorStart: "rgba(244, 63, 94, 0.65)", // rose-500
-    colorMid: "rgba(139, 92, 246, 0.50)",  // violet-500
-    colorEnd: "rgba(236, 72, 153, 0.18)",  // pink-500
-    edgeColor: "rgba(254, 205, 211, 0.90)",
-    lineWidth: 1.6,
+    colorStart: "rgba(244, 63, 94, 0.70)", // rose-500
+    colorMid: "rgba(139, 92, 246, 0.55)",  // violet-500
+    colorEnd: "rgba(236, 72, 153, 0.25)",  // pink-500
+    edgeColor: "rgba(254, 205, 211, 0.92)",
+    lineWidth: 1.9,
   },
   {
     baseY: 0.60,
@@ -61,11 +61,11 @@ const RIBBONS: RibbonConfig[] = [
       { freq: 0.0048, amp: 18, speed: 0.015 },
       { freq: 0.009, amp: 12, speed: -0.012 },
     ],
-    colorStart: "rgba(147, 51, 234, 0.60)", // purple-600
-    colorMid: "rgba(225, 29, 72, 0.45)",   // rose-600
-    colorEnd: "rgba(99, 102, 241, 0.15)",  // indigo-500
-    edgeColor: "rgba(243, 232, 255, 0.88)",
-    lineWidth: 1.5,
+    colorStart: "rgba(147, 51, 234, 0.65)", // purple-600
+    colorMid: "rgba(225, 29, 72, 0.50)",   // rose-600
+    colorEnd: "rgba(99, 102, 241, 0.20)",  // indigo-500
+    edgeColor: "rgba(243, 232, 255, 0.90)",
+    lineWidth: 1.8,
   },
   {
     baseY: 0.44,
@@ -78,20 +78,27 @@ const RIBBONS: RibbonConfig[] = [
       { freq: 0.008, amp: 14, speed: 0.022 },
       { freq: 0.015, amp: 6, speed: -0.016 },
     ],
-    colorStart: "rgba(236, 72, 153, 0.60)", // pink-500
-    colorMid: "rgba(244, 63, 94, 0.40)",   // rose-500
-    colorEnd: "rgba(124, 58, 237, 0.15)",  // violet-600
-    edgeColor: "rgba(255, 255, 255, 0.92)",
-    lineWidth: 1.7,
+    colorStart: "rgba(236, 72, 153, 0.65)", // pink-500
+    colorMid: "rgba(244, 63, 94, 0.45)",   // rose-500
+    colorEnd: "rgba(124, 58, 237, 0.20)",  // violet-600
+    edgeColor: "rgba(255, 255, 255, 0.95)",
+    lineWidth: 2.0,
   },
 ];
 
-export function SineRibbons() {
+interface SineRibbonsTextProps {
+  text: string;
+  className?: string;
+}
+
+export function SineRibbonsText({ text, className = "" }: SineRibbonsTextProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -102,12 +109,12 @@ export function SineRibbons() {
     let height = 0;
 
     const resize = () => {
-      const parent = canvas.parentElement;
-      if (!parent) return;
-
+      const rect = container.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = parent.clientWidth;
-      height = parent.clientHeight;
+      width = rect.width;
+      height = rect.height;
+
+      if (width === 0 || height === 0) return;
 
       canvas.width = Math.max(1, Math.floor(width * dpr));
       canvas.height = Math.max(1, Math.floor(height * dpr));
@@ -118,9 +125,7 @@ export function SineRibbons() {
     };
 
     const resizeObserver = new ResizeObserver(() => resize());
-    if (canvas.parentElement) {
-      resizeObserver.observe(canvas.parentElement);
-    }
+    resizeObserver.observe(container);
     resize();
 
     let time = 0;
@@ -146,7 +151,7 @@ export function SineRibbons() {
       time += 1;
       ctx.clearRect(0, 0, width, height);
 
-      // Deep dark backdrop to enhance vibrant ribbons within text
+      // Deep dark backdrop inside the letters
       const bgGrad = ctx.createRadialGradient(
         width * 0.5,
         height * 0.5,
@@ -155,9 +160,9 @@ export function SineRibbons() {
         height * 0.5,
         Math.max(width, height)
       );
-      bgGrad.addColorStop(0, "#1a0818");
-      bgGrad.addColorStop(0.5, "#0b0510");
-      bgGrad.addColorStop(1, "#030205");
+      bgGrad.addColorStop(0, "#22081e");
+      bgGrad.addColorStop(0.5, "#0d0414");
+      bgGrad.addColorStop(1, "#020104");
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
 
@@ -219,10 +224,7 @@ export function SineRibbons() {
       isVisible = entries[0]?.isIntersecting ?? false;
     });
 
-    if (canvas.parentElement) {
-      intersectionObserver.observe(canvas.parentElement);
-    }
-
+    intersectionObserver.observe(container);
     render();
 
     return () => {
@@ -233,10 +235,46 @@ export function SineRibbons() {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none absolute inset-0 h-full w-full select-none"
-      aria-hidden="true"
-    />
+    <div ref={containerRef} className="relative inline-block select-none leading-none">
+      {/* Invisible text that sizes the container perfectly to the font metrics */}
+      <span className={`invisible select-none ${className}`} aria-hidden="true">
+        {text}
+      </span>
+
+      {/* SVG Mask: clips the canvas strictly to the text glyphs */}
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full overflow-hidden"
+        aria-hidden="true"
+      >
+        <defs>
+          <mask id="sine-ribbons-text-mask">
+            {/* White fills allow the canvas through; black blocks it */}
+            <rect width="100%" height="100%" fill="black" />
+            <text
+              x="50%"
+              y="50%"
+              dominantBaseline="central"
+              textAnchor="middle"
+              fill="white"
+              className={className}
+            >
+              {text}
+            </text>
+          </mask>
+        </defs>
+
+        {/* ForeignObject embeds the HTML5 Canvas inside the masked SVG region */}
+        <foreignObject
+          width="100%"
+          height="100%"
+          mask="url(#sine-ribbons-text-mask)"
+        >
+          <canvas
+            ref={canvasRef}
+            className="h-full w-full block"
+          />
+        </foreignObject>
+      </svg>
+    </div>
   );
 }
