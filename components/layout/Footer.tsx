@@ -1,60 +1,71 @@
 import Link from "next/link";
 
 export function Footer() {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="relative z-20 mt-auto w-full px-6 pt-24 pb-28 sm:pt-28 md:pt-36 lg:px-16 lg:pb-12">
+    <footer className="relative z-20 mt-auto w-full border-t border-white/[0.08] px-4 pt-16 pb-20 sm:pt-20 sm:pb-12 md:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col items-center gap-6">
+        {/* Main visual brand with clipped Avengers background */}
+        <div className="flex flex-col items-center text-center">
           <Link
             href="/"
-            className="group relative flex items-center justify-center"
+            className="group relative inline-block select-none transition-transform duration-300 hover:scale-[1.02]"
             aria-label="Cineby Home"
           >
-            <div className="relative z-10 flex items-center gap-2.5 transition-transform duration-300 group-hover:scale-110">
-              <picture>
-                <img
-                  src="/logo.png"
-                  alt="Cineby"
-                  width={36}
-                  height={36}
-                  draggable={false}
-                  decoding="async"
-                  className="h-8 w-8 select-none drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] md:h-9 md:w-9"
-                />
-              </picture>
-              <span className="text-xl font-bold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] md:text-2xl">
-                Cineby
-              </span>
-            </div>
+            <h2
+              className="text-6xl font-black uppercase tracking-tight sm:text-8xl md:text-9xl lg:text-[11rem] leading-none"
+              style={{
+                backgroundImage: "url('/assets/avengers-text-bg.webp')",
+                backgroundSize: "cover",
+                backgroundPosition: "center 30%",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                color: "transparent",
+                filter: "drop-shadow(0 15px 35px rgba(0,0,0,0.85)) drop-shadow(0 2px 8px rgba(255,255,255,0.12))",
+              }}
+            >
+              CINEBY
+            </h2>
           </Link>
 
-          <p className="max-w-lg text-center text-xs leading-relaxed text-white/40">
-            Cineby does not host, store, or distribute any media files. All content is sourced from third-party providers.
+          {/* Description */}
+          <p className="mt-4 max-w-2xl text-xs sm:text-sm font-normal leading-relaxed text-white/50 px-2">
+            Cineby is an open media discovery and personal entertainment tracking platform. Browse trending movies,
+            top-rated TV series, explore titles by streaming provider, and manage personal watchlists and multi-user viewing profiles.
           </p>
+        </div>
 
-          <div className="flex items-center gap-6 text-xs text-white/50">
+        {/* Bottom bar with Links and concise copyright & disclaimer on a single clean line */}
+        <div className="mt-14 pt-8 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+          {/* Navigation Links */}
+          <nav className="flex items-center gap-6 font-semibold uppercase tracking-wider text-white/60">
             <Link
               href="/privacy"
-              className="transition-colors duration-200 hover:text-white"
+              className="transition-colors hover:text-white"
             >
               Privacy Policy
             </Link>
             <Link
               href="/terms"
-              className="transition-colors duration-200 hover:text-white"
+              className="transition-colors hover:text-white"
             >
               Terms of Service
             </Link>
             <a
               href="mailto:maheshsharan28@gmail.com"
-              className="transition-colors duration-200 hover:text-white"
+              className="transition-colors hover:text-white"
             >
               Contact
             </a>
+          </nav>
+
+          {/* Single-line concise copyright and disclaimer */}
+          <div className="text-white/40 text-center sm:text-right whitespace-nowrap text-[11px] sm:text-xs">
+            <span>© {currentYear} Cineby. Non-hosting provider index. All metadata via TMDB.</span>
           </div>
         </div>
       </div>
     </footer>
   );
 }
-
