@@ -24,7 +24,7 @@ export function RecommendationsRow({ title, items }: RecommendationsRowProps) {
             key={item.id}
             title={item.title}
             posterPath={item.posterPath}
-            href={getMediaHref(item.mediaType, item.id)}
+            href={getMediaHref(item.mediaType, item.id, item.title)}
             mediaType={item.mediaType}
             mediaId={item.id}
             rating={item.voteAverage}

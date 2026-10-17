@@ -243,8 +243,8 @@ interface HistoryCardProps {
 function HistoryCard({ entry, onRemove, onAddToWatchlist }: HistoryCardProps) {
   const playHref =
     entry.mediaType === "tv" && entry.seasonNumber && entry.episodeNumber
-      ? getEpisodeHref(entry.mediaId, entry.seasonNumber, entry.episodeNumber)
-      : getPlayHref(entry.mediaType, entry.mediaId);
+      ? getEpisodeHref(entry.mediaId, entry.seasonNumber, entry.episodeNumber, null, entry.title)
+      : getPlayHref(entry.mediaType, entry.mediaId, null, entry.title);
 
   const subtitle =
     entry.mediaType === "tv"

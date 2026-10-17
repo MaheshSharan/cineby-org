@@ -83,8 +83,8 @@ function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardProps) {
 
   const playHref =
     entry.mediaType === "tv" && entry.seasonNumber && entry.episodeNumber
-      ? getEpisodeHref(entry.mediaId, entry.seasonNumber, entry.episodeNumber, resumeSeconds)
-      : getPlayHref(entry.mediaType, entry.mediaId, resumeSeconds);
+      ? getEpisodeHref(entry.mediaId, entry.seasonNumber, entry.episodeNumber, resumeSeconds, entry.title)
+      : getPlayHref(entry.mediaType, entry.mediaId, resumeSeconds, entry.title);
 
   const isTv = entry.mediaType === "tv";
   const subtitle =
@@ -100,7 +100,7 @@ function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardProps) {
       posterPath={entry.posterPath}
       backdropPath={entry.backdropPath}
       href={playHref}
-      infoHref={getMediaHref(entry.mediaType, entry.mediaId)}
+      infoHref={getMediaHref(entry.mediaType, entry.mediaId, entry.title)}
       mediaType={entry.mediaType}
       mediaId={entry.mediaId}
       subtitle={subtitle}

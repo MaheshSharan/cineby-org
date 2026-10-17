@@ -192,7 +192,7 @@ interface WatchlistCardProps {
 }
 
 function WatchlistCard({ item, onRemove }: WatchlistCardProps) {
-  const href = getMediaHref(item.mediaType, item.mediaId);
+  const href = getMediaHref(item.mediaType, item.mediaId, item.title);
   const typeLabel = item.mediaType === "tv" ? "TV Show" : "Movie";
 
   return (
