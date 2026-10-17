@@ -9,12 +9,21 @@ export function getYear(dateString: string | null): string {
   return dateString.slice(0, 4);
 }
 
-export function getMediaHref(mediaType: MediaType, id: number): string {
-  return mediaType === "tv" ? `/tv/${id}` : `/movie/${id}`;
+import { slugify } from "@/lib/utils/slug";
+
+export function getMediaHref(mediaType: MediaType, id: number, title?: string | null): string {
+  const slug = slugify(title);
+  const identifier = slug ? `${id}-${slug}` : `${id}`;
+  return mediaType === "tv" ? `/tv/${identifier}` : `/movie/${identifier}`;
 }
 
-export function getPlayHref(mediaType: MediaType, id: number, timeSeconds?: number | null): string {
-  const base = `${getMediaHref(mediaType, id)}?play=true`;
+export function getPlayHref(
+  mediaType: MediaType,
+  id: number,
+  timeSeconds?: number | null,
+  title?: string | null
+): string {
+  const base = `${getMediaHref(mediaType, id, title)}?play=true`;
   return timeSeconds && timeSeconds > 0 ? `${base}&t=${Math.floor(timeSeconds)}` : base;
 }
 
@@ -22,9 +31,12 @@ export function getEpisodeHref(
   id: number,
   seasonNumber: number,
   episodeNumber: number,
-  timeSeconds?: number | null
+  timeSeconds?: number | null,
+  title?: string | null
 ): string {
-  const base = `/tv/${id}/${seasonNumber}/${episodeNumber}?play=true`;
+  const slug = slugify(title);
+  const identifier = slug ? `${id}-${slug}` : `${id}`;
+  const base = `/tv/${identifier}/${seasonNumber}/${episodeNumber}?play=true`;
   return timeSeconds && timeSeconds > 0 ? `${base}&t=${Math.floor(timeSeconds)}` : base;
 }
 

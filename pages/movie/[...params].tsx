@@ -23,8 +23,11 @@ export default function MoviePage({ details, isPlaying }: MoviePageProps) {
   );
 }
 
+import { extractIdFromSlug } from "@/lib/utils/slug";
+
 export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (context) => {
-  const id = context.params?.params?.[0];
+  const param = context.params?.params?.[0];
+  const id = extractIdFromSlug(param);
 
   if (!id) {
     return { notFound: true };

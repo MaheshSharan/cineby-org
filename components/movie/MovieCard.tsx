@@ -31,7 +31,7 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
   const isModalDetail = settings.appearance.detailViewType === "modal";
 
   const backdrop = getBackdropResponsiveUrls(media.backdropPath || media.posterPath);
-  const href = getMediaHref(media.mediaType, media.id);
+  const href = getMediaHref(media.mediaType, media.id, media.title);
   const year = getYear(media.releaseDate);
   const typeLabel = getMediaTypeLabel(media.mediaType);
   const widthClass = VARIANT_WIDTH[variant];

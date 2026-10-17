@@ -32,9 +32,12 @@ export default function TvPage({ details, isPlaying, seasonNumber, episodeNumber
   );
 }
 
+import { extractIdFromSlug } from "@/lib/utils/slug";
+
 export const getServerSideProps: GetServerSideProps<TvPageProps> = async (context) => {
   const params = context.params?.params;
-  const id = params?.[0];
+  const rawId = params?.[0];
+  const id = extractIdFromSlug(rawId);
   const parsedSeason = params?.[1] ? Number.parseInt(params[1], 10) : null;
   const parsedEpisode = params?.[2] ? Number.parseInt(params[2], 10) : null;
   const isPlaying = context.query.play === "true";

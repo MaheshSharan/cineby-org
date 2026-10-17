@@ -124,7 +124,7 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
     item.mediaType === "tv"
       ? getEpisodeHref(item.id, 1, 1)
       : getPlayHref(item.mediaType, item.id);
-  const mediaHref = getMediaHref(item.mediaType, item.id);
+  const mediaHref = getMediaHref(item.mediaType, item.id, item.title);
 
   const handleSeeMoreClick = (e: React.MouseEvent) => {
     if (isModalDetail) {
