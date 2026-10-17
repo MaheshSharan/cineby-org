@@ -19,6 +19,8 @@ interface MoviePageProps {
   isPlaying: boolean;
 }
 
+import { buildMovieJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
+
 export default function MoviePage({ details, isPlaying }: MoviePageProps) {
   return (
     <>
@@ -28,6 +30,7 @@ export default function MoviePage({ details, isPlaying }: MoviePageProps) {
         path={getMediaHref("movie", details.id, details.title)}
         imageUrl={getMediaOpenGraphImageUrl(details)}
         openGraphType="video.movie"
+        jsonLd={sanitizeJsonLd(buildMovieJsonLd(details))}
       />
       <DetailPage details={details} isPlaying={isPlaying} />
     </>

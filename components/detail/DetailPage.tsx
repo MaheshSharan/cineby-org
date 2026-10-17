@@ -22,6 +22,7 @@ import { RecommendationsRow } from "@/components/detail/RecommendationsRow";
 import { PlayerShell } from "@/components/player/PlayerShell";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PlayButton } from "@/components/ui/PlayButton";
+import { ShareButton } from "@/components/detail/ShareButton";
 import {
   CheckIcon,
   ChevronLeftIcon,
@@ -572,6 +573,14 @@ export function DetailPage({
                   <PlusIcon size={19} className="stroke-[2]" />
                 )}
               </button>
+
+              {/* Share button */}
+              <ShareButton
+                title={details.title}
+                text={details.overview}
+                url={getMediaHref(details.mediaType, details.id, details.title)}
+                onToast={showToast}
+              />
 
               {isTv ? (
                 <a

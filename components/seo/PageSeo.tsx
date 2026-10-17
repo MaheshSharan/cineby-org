@@ -12,6 +12,8 @@ interface IndexablePageSeoProps {
   /** Absolute image URL for link previews. Defaults to the site preview image. */
   imageUrl?: string | null;
   openGraphType?: OpenGraphType;
+  /** Sanitized JSON-LD payload to embed in <head>. Must be pre-sanitized via sanitizeJsonLd per AGENTS.md §18. */
+  jsonLd?: string;
   noindex?: false;
 }
 
@@ -51,6 +53,15 @@ export function PageSeo(props: PageSeoProps) {
       <meta key="twitter:title" name="twitter:title" content={title} />
       <meta key="twitter:description" name="twitter:description" content={description} />
       <meta key="twitter:image" name="twitter:image" content={previewImageUrl} />
+      {props.jsonLd ? (
+        <script
+          key="json-ld"
+          type="application/ld+json"
+          // Documented security reason: Schema.org structured data requires raw JSON in application/ld+json.
+          // Sanitized against closing tag XSS injections via sanitizeJsonLd() per AGENTS.md §18.
+          dangerouslySetInnerHTML={{ __html: props.jsonLd }}
+        />
+      ) : null}
     </Head>
   );
 }
