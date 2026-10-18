@@ -2,14 +2,14 @@ import Link from "next/link";
 import * as React from "react";
 import { PlayIcon } from "@/components/ui/icons";
 
-export interface PlayButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface PlayButtonProps extends React.ButtonHTMLAttributes<HTMLElement> {
   href?: string;
   label?: string;
   size?: "sm" | "md" | "lg";
   iconOnly?: boolean;
 }
 
-export const PlayButton = React.forwardRef<HTMLButtonElement, PlayButtonProps>(
+export const PlayButton = React.forwardRef<HTMLElement, PlayButtonProps>(
   (
     {
       href,
@@ -34,28 +34,40 @@ export const PlayButton = React.forwardRef<HTMLButtonElement, PlayButtonProps>(
       lg: 22,
     }[size];
 
-    const buttonContent = (
-      <button
-        ref={ref}
-        type="button"
-        onClick={onClick}
-        className={`relative inline-flex items-center justify-center rounded-full bg-white font-bold tracking-wide text-[#05070a] shadow-xl shadow-black/10 transition-all duration-200 hover:scale-105 hover:bg-white/95 active:scale-95 disabled:pointer-events-none disabled:opacity-50 select-none cursor-pointer ${sizeClasses} ${className}`}
-        {...props}
-      >
+    const baseClasses = `relative inline-flex items-center justify-center rounded-full bg-white font-bold tracking-wide text-[#05070a] shadow-xl shadow-black/10 transition-all duration-200 hover:scale-105 hover:bg-white/95 active:scale-95 disabled:pointer-events-none disabled:opacity-50 select-none cursor-pointer ${sizeClasses} ${className}`;
+
+    const innerContent = (
+      <>
         <PlayIcon size={iconSizes} className="fill-current text-[#05070a] shrink-0" />
         {!iconOnly ? <span>{label}</span> : null}
-      </button>
+      </>
     );
 
     if (href) {
       return (
-        <Link href={href} className="inline-flex" tabIndex={-1}>
-          {buttonContent}
+        <Link
+          href={href}
+          ref={ref as React.Ref<HTMLAnchorElement>}
+          onClick={onClick as React.MouseEventHandler<HTMLAnchorElement>}
+          className={baseClasses}
+          {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        >
+          {innerContent}
         </Link>
       );
     }
 
-    return buttonContent;
+    return (
+      <button
+        ref={ref as React.Ref<HTMLButtonElement>}
+        type="button"
+        onClick={onClick as React.MouseEventHandler<HTMLButtonElement>}
+        className={baseClasses}
+        {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+      >
+        {innerContent}
+      </button>
+    );
   }
 );
 

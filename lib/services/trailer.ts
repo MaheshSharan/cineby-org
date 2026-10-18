@@ -24,7 +24,13 @@ export const TRAILER_CONFIG = {
   /** Master switch for direct MP4 trailers */
   enabled: true,
   /** Endpoint for oldest trailer API */
-  trailerEndpoint: "https://trailers.wecollege.net/getOldestTrailer",
+  get trailerEndpoint(): string {
+    const endpoint = process.env.TRAILER_API_URL?.trim();
+    if (!endpoint) {
+      throw new Error("Missing required environment variable: TRAILER_API_URL");
+    }
+    return endpoint;
+  },
 } as const;
 
 /**

@@ -371,14 +371,6 @@ export default {
       return new Response(JSON.stringify({ error: "Upstream stream fetch failed" }), { status: 502, headers: corsHeaders });
     }
 
-    console.log(`[proxy] Fetching upstream ${targetUrl.hostname}${targetUrl.pathname} -> status=${upstreamRes.status} ${upstreamRes.statusText}`);
-
-    if (!upstreamRes.ok) {
-      const errClone = upstreamRes.clone();
-      const errBody = await errClone.text().catch(() => "");
-      console.log(`[proxy] Upstream error body preview: ${errBody.slice(0, 300)}`);
-    }
-
     const responseHeaders = new Headers(corsHeaders);
     const contentType = upstreamRes.headers.get("content-type") || "";
     const isM3u8 =

@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from "react";
 import type { Episode } from "../types";
 import { formatRuntime } from "@/lib/utils/media";
+import { getStillThumbUrl } from "@/lib/tmdb/image";
 
 interface SeasonOption {
   seasonNumber: number;
@@ -202,7 +203,7 @@ export const EpisodesDrawer = React.memo(function EpisodesDrawer({
                     {episode.stillPath ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={`https://image.tmdb.org/t/p/w500${episode.stillPath}`}
+                        src={getStillThumbUrl(episode.stillPath) ?? undefined}
                         alt={episode.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"

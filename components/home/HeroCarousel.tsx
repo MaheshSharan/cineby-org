@@ -254,30 +254,29 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
             <div className="mt-[22px] flex items-center gap-3">
               <PlayButton href={playHref} size="lg" label="Play" />
 
-              <Link href={mediaHref} onClick={handleSeeMoreClick}>
-                <button
-                  type="button"
-                  className="flex h-[52px] items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-6 font-medium tracking-tight text-white backdrop-blur-[16px] transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:shadow-glow active:scale-[0.98]"
+              <Link
+                href={mediaHref}
+                onClick={handleSeeMoreClick}
+                className="flex h-[52px] items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-6 font-medium tracking-tight text-white backdrop-blur-[16px] transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:shadow-glow active:scale-[0.98]"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-info text-white"
+                  aria-hidden="true"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="lucide lucide-info text-white"
-                    aria-hidden="true"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 16v-4" />
-                    <path d="M12 8h.01" />
-                  </svg>
-                  <span>See More</span>
-                </button>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
+                <span>See More</span>
               </Link>
             </div>
           </div>

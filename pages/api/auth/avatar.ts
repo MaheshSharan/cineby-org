@@ -6,10 +6,6 @@ import { withApiContext } from "@/lib/validation";
 
 const MAX_AVATAR_SIZE_BYTES = 3 * 1024 * 1024; // 3MB
 
-interface AvatarBody {
-  avatar?: unknown;
-}
-
 export const config = {
   api: {
     bodyParser: {
@@ -31,8 +27,11 @@ export default withApiContext("api/auth/avatar", async (req: NextApiRequest, res
     return;
   }
 
-  const body = (req.body ?? {}) as AvatarBody;
-  const avatar = typeof body.avatar === "string" ? body.avatar.trim() : "";
+  const body: unknown = req.body;
+  const avatar =
+    typeof body === "object" && body !== null && "avatar" in body && typeof (body as { avatar: unknown }).avatar === "string"
+      ? (body as { avatar: string }).avatar.trim()
+      : "";
 
   if (!avatar) {
     res.status(400).json({ error: "Avatar data is required." });

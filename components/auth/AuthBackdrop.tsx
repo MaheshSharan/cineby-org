@@ -1,46 +1,59 @@
-const POSTERS_COL_1 = [
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2F6UqflU8Qqkz7Dq4swJPqs0ZJjY4.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FbjiS5ipwxb9JFy3XRRN4OAilSeX.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FsfQtVlIHljToOwYjhe21KPGzZWK.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FrhGx6E3qRNMgj3i5su2oukNHwIQ.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2ForkLtdgMGiO9rTVMqJ1kKwrnup1.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2F360qdtu2hLnqMu8SVHMywn420w1.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FfYXqpgPmHMphSF2W30GbTeJVIa5.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2F2DPmTlv8F0V1TQBPmlsGOVOhtWk.jpg&output=webp&q=50",
+import type { CSSProperties } from "react";
+import { buildImageUrl, getPosterResponsiveUrls } from "@/lib/tmdb/image";
+
+// Clean TMDB file hashes for backdrop poster wall
+const POSTERS_HASHES_1 = [
+  "6UqflU8Qqkz7Dq4swJPqs0ZJjY4.jpg",
+  "bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+  "sfQtVlIHljToOwYjhe21KPGzZWK.jpg",
+  "rhGx6E3qRNMgj3i5su2oukNHwIQ.jpg",
+  "orkLtdgMGiO9rTVMqJ1kKwrnup1.jpg",
+  "360qdtu2hLnqMu8SVHMywn420w1.jpg",
+  "fYXqpgPmHMphSF2W30GbTeJVIa5.jpg",
+  "2DPmTlv8F0V1TQBPmlsGOVOhtWk.jpg",
 ];
 
-const POSTERS_COL_2 = [
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FaAnTt6KpmbbHbd6xH3FQFlppZjc.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2F5O616X9vmRzQdB68PHzBewPittd.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2F4tTrW9dXCByS5wt2pXVWb58zNjz.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FxTZuh9ziUjIyHBWO9OvqNIPqVWe.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2Falpf5v4UqSFawPmG9RX03Or4BDk.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FuRxrNXQWkHoENm3nwVOZDYSCx2F.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2Fb7Dr8Chzse8VagexAporUu2RtLx.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2Ff1VCQIG2iCyOookdgOzwtUpwWC0.jpg&output=webp&q=50",
+const POSTERS_HASHES_2 = [
+  "aAnTt6KpmbbHbd6xH3FQFlppZjc.jpg",
+  "5O616X9vmRzQdB68PHzBewPittd.jpg",
+  "4tTrW9dXCByS5wt2pXVWb58zNjz.jpg",
+  "xTZuh9ziUjIyHBWO9OvqNIPqVWe.jpg",
+  "alpf5v4UqSFawPmG9RX03Or4BDk.jpg",
+  "uRxrNXQWkHoENm3nwVOZDYSCx2F.jpg",
+  "b7Dr8Chzse8VagexAporUu2RtLx.jpg",
+  "f1VCQIG2iCyOookdgOzwtUpwWC0.jpg",
 ];
 
-const POSTERS_COL_3 = [
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2F5rhTDKUhPYvpdQIijFIs5VoWsON.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2F3PWJqDfygN0YNNjWsDUOXclCp3h.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FbRwnj8WEKBCvmfeUNOukJPwB43K.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FdIl3cGBcR9AwOjWhEbMuagXdVtG.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2Fdx2dblJL3GAKcXXXPjC2FSaMTWW.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2F4LwvU9SZc8QQzW1X1FAPhNbXnEU.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FgpC7h43xPMEV3goYMQShfJbTtLq.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2F2EewmxXe72ogD0EaWM8gqa0ccIw.jpg&output=webp&q=50",
+const POSTERS_HASHES_3 = [
+  "5rhTDKUhPYvpdQIijFIs5VoWsON.jpg",
+  "3PWJqDfygN0YNNjWsDUOXclCp3h.jpg",
+  "bRwnj8WEKBCvmfeUNOukJPwB43K.jpg",
+  "dIl3cGBcR9AwOjWhEbMuagXdVtG.jpg",
+  "dx2dblJL3GAKcXXXPjC2FSaMTWW.jpg",
+  "4LwvU9SZc8QQzW1X1FAPhNbXnEU.jpg",
+  "gpC7h43xPMEV3goYMQShfJbTtLq.jpg",
+  "2EewmxXe72ogD0EaWM8gqa0ccIw.jpg",
 ];
 
-const POSTERS_COL_4 = [
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FovDgO2LPfwdVRfvScAqo9aMiIW.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FdB4EDhre2dsC2kxYDavyKWqLQwi.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FoHqYrPAsIiTD5m4DuxumV4er8BU.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2Ftxj8ujTZwGUjpCdhCsQBnTlh4aS.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FrzpHPSEgPTpRs8EHbygwsOw7jC0.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2FxsrkiXg8EuNNtbPtbmvCxg95gK7.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2F97TTJuqiSMfU0DuXx1B4NG5QNP7.jpg&output=webp&q=50",
-  "https://wsrv.nl/?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw342%2F2mwgHfOyrFrmvozjFoEXHRdfGhv.jpg&output=webp&q=50",
+const POSTERS_HASHES_4 = [
+  "ovDgO2LPfwdVRfvScAqo9aMiIW.jpg",
+  "dB4EDhre2dsC2kxYDavyKWqLQwi.jpg",
+  "oHqYrPAsIiTD5m4DuxumV4er8BU.jpg",
+  "txj8ujTZwGUjpCdhCsQBnTlh4aS.jpg",
+  "rzpHPSEgPTpRs8EHbygwsOw7jC0.jpg",
+  "xsrkiXg8EuNNtbPtbmvCxg95gK7.jpg",
+  "97TTJuqiSMfU0DuXx1B4NG5QNP7.jpg",
+  "2mwgHfOyrFrmvozjFoEXHRdfGhv.jpg",
 ];
+
+function resolvePosterUrls(hashes: string[]): string[] {
+  return hashes.map((hash) => getPosterResponsiveUrls(hash).mobile ?? buildImageUrl(hash, "w342") ?? "");
+}
+
+const POSTERS_COL_1 = resolvePosterUrls(POSTERS_HASHES_1);
+const POSTERS_COL_2 = resolvePosterUrls(POSTERS_HASHES_2);
+const POSTERS_COL_3 = resolvePosterUrls(POSTERS_HASHES_3);
+const POSTERS_COL_4 = resolvePosterUrls(POSTERS_HASHES_4);
 
 export function AuthMobileBanner() {
   return (
@@ -56,7 +69,7 @@ export function AuthMobileBanner() {
       <div className="poster-wall">
         <div className="poster-row">
           <div className="poster-track">
-            <div className="poster-rail" style={{ ["--duration" as string]: "30s" }}>
+            <div className="poster-rail" style={{ "--duration": "30s" } as CSSProperties}>
               {POSTERS_COL_1.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -64,7 +77,7 @@ export function AuthMobileBanner() {
                 </figure>
               ))}
             </div>
-            <div className="poster-rail" aria-hidden="true" style={{ ["--duration" as string]: "30s" }}>
+            <div className="poster-rail" aria-hidden="true" style={{ "--duration": "30s" } as CSSProperties}>
               {POSTERS_COL_1.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -75,7 +88,7 @@ export function AuthMobileBanner() {
           </div>
 
           <div className="poster-track">
-            <div className="poster-rail poster-reverse" style={{ ["--duration" as string]: "35s" }}>
+            <div className="poster-rail poster-reverse" style={{ "--duration": "35s" } as CSSProperties}>
               {POSTERS_COL_2.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -86,7 +99,7 @@ export function AuthMobileBanner() {
             <div
               className="poster-rail poster-reverse"
               aria-hidden="true"
-              style={{ ["--duration" as string]: "35s" }}
+              style={{ "--duration": "35s" } as CSSProperties}
             >
               {POSTERS_COL_2.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
@@ -98,7 +111,7 @@ export function AuthMobileBanner() {
           </div>
 
           <div className="poster-track">
-            <div className="poster-rail" style={{ ["--duration" as string]: "40s" }}>
+            <div className="poster-rail" style={{ "--duration": "40s" } as CSSProperties}>
               {POSTERS_COL_3.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -106,7 +119,7 @@ export function AuthMobileBanner() {
                 </figure>
               ))}
             </div>
-            <div className="poster-rail" aria-hidden="true" style={{ ["--duration" as string]: "40s" }}>
+            <div className="poster-rail" aria-hidden="true" style={{ "--duration": "40s" } as CSSProperties}>
               {POSTERS_COL_3.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -134,7 +147,7 @@ export function AuthBackdrop() {
         <div className="poster-row">
           {/* Column 1 */}
           <div className="poster-track">
-            <div className="poster-rail" style={{ ["--duration" as string]: "36s" }}>
+            <div className="poster-rail" style={{ "--duration": "36s" } as CSSProperties}>
               {POSTERS_COL_1.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -142,7 +155,7 @@ export function AuthBackdrop() {
                 </figure>
               ))}
             </div>
-            <div className="poster-rail" aria-hidden="true" style={{ ["--duration" as string]: "36s" }}>
+            <div className="poster-rail" aria-hidden="true" style={{ "--duration": "36s" } as CSSProperties}>
               {POSTERS_COL_1.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -154,7 +167,7 @@ export function AuthBackdrop() {
 
           {/* Column 2 (Reverse + Offset) */}
           <div className="poster-track poster-offset">
-            <div className="poster-rail poster-reverse" style={{ ["--duration" as string]: "44s" }}>
+            <div className="poster-rail poster-reverse" style={{ "--duration": "44s" } as CSSProperties}>
               {POSTERS_COL_2.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -165,7 +178,7 @@ export function AuthBackdrop() {
             <div
               className="poster-rail poster-reverse"
               aria-hidden="true"
-              style={{ ["--duration" as string]: "44s" }}
+              style={{ "--duration": "44s" } as CSSProperties}
             >
               {POSTERS_COL_2.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
@@ -178,7 +191,7 @@ export function AuthBackdrop() {
 
           {/* Column 3 */}
           <div className="poster-track">
-            <div className="poster-rail" style={{ ["--duration" as string]: "52s" }}>
+            <div className="poster-rail" style={{ "--duration": "52s" } as CSSProperties}>
               {POSTERS_COL_3.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -186,7 +199,7 @@ export function AuthBackdrop() {
                 </figure>
               ))}
             </div>
-            <div className="poster-rail" aria-hidden="true" style={{ ["--duration" as string]: "52s" }}>
+            <div className="poster-rail" aria-hidden="true" style={{ "--duration": "52s" } as CSSProperties}>
               {POSTERS_COL_3.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -198,7 +211,7 @@ export function AuthBackdrop() {
 
           {/* Column 4 (Reverse + Offset) */}
           <div className="poster-track poster-offset">
-            <div className="poster-rail poster-reverse" style={{ ["--duration" as string]: "38s" }}>
+            <div className="poster-rail poster-reverse" style={{ "--duration": "38s" } as CSSProperties}>
               {POSTERS_COL_4.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -209,7 +222,7 @@ export function AuthBackdrop() {
             <div
               className="poster-rail poster-reverse"
               aria-hidden="true"
-              style={{ ["--duration" as string]: "38s" }}
+              style={{ "--duration": "38s" } as CSSProperties}
             >
               {POSTERS_COL_4.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">

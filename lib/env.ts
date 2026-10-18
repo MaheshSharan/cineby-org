@@ -1,8 +1,9 @@
-const rawImageBaseUrl = process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL || "https://image.tmdb.org/t/p";
-const imageProxyUrl = process.env.NEXT_PUBLIC_IMAGE_PROXY_URL || "https://assets.cineby.group";
-const isProxyEnabled = process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY !== "false";
-
 export function getTmdbImageBaseUrl(): string {
+  const rawImageBaseUrl = process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL?.trim();
+  if (!rawImageBaseUrl) {
+    throw new Error("Missing required environment variable: NEXT_PUBLIC_TMDB_IMAGE_BASE_URL");
+  }
+
   // If the base URL in env accidentally has a proxy prefix like wsrv.nl/?url=, extract the actual target URL
   if (rawImageBaseUrl.includes("url=")) {
     const parts = rawImageBaseUrl.split("url=");
@@ -14,11 +15,18 @@ export function getTmdbImageBaseUrl(): string {
 }
 
 export function getImageProxyUrl(): string {
+  const imageProxyUrl = process.env.NEXT_PUBLIC_IMAGE_PROXY_URL?.trim();
+  if (!imageProxyUrl) {
+    throw new Error("Missing required environment variable: NEXT_PUBLIC_IMAGE_PROXY_URL");
+  }
   return imageProxyUrl.replace(/\/+$/, "");
 }
 
 export function getFlagsApiBaseUrl(): string {
-  const flagsUrl = process.env.NEXT_PUBLIC_FLAGS_API_BASE_URL || "https://flagsapi.com";
+  const flagsUrl = process.env.NEXT_PUBLIC_FLAGS_API_BASE_URL?.trim();
+  if (!flagsUrl) {
+    throw new Error("Missing required environment variable: NEXT_PUBLIC_FLAGS_API_BASE_URL");
+  }
   return flagsUrl.replace(/\/+$/, "");
 }
 
@@ -39,7 +47,7 @@ export function getEnvVar(name: string): string | undefined {
 }
 
 export function isImageProxyEnabled(): boolean {
-  return isProxyEnabled;
+  return process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY !== "false";
 }
 
 export function getCacheBackend(): "memory" | "redis" {

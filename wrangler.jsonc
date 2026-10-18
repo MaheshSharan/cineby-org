@@ -43,6 +43,9 @@
     "SKIPDB_API_URL": "https://api.skipdb.tv",
     "CACHE_BACKEND": "redis",
     "UPSTASH_REDIS_REST_URL": "https://sought-cub-298860.upstash.io",
+    "NEXT_PUBLIC_SITE_URL": "https://cineby.group",
+    "NEXT_PUBLIC_FLAGS_API_BASE_URL": "https://flagsapi.com",
+    "TRAILER_API_URL": "https://trailers.wecollege.net/getOldestTrailer",
     "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "710500048793-55rctnc4coj15s1jvao7l2ouejvpftpn.apps.googleusercontent.com",
     "NEXT_PUBLIC_GA_MEASUREMENT_ID": "G-GWQTFJK3QW"
   },

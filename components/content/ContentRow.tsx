@@ -2,6 +2,7 @@ import { useCallback, useRef, useState, useEffect, type ReactNode } from "react"
 
 interface ContentRowProps {
   title?: ReactNode;
+  headerSlot?: ReactNode;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -10,6 +11,7 @@ interface ContentRowProps {
 
 export function ContentRow({
   title,
+  headerSlot,
   action,
   children,
   className = "",
@@ -88,9 +90,11 @@ export function ContentRow({
       aria-labelledby={headingId}
       className={`group/row relative ${className}`}
     >
-      {title || action ? (
+      {title || headerSlot || action ? (
         <div className="mb-5 flex items-center justify-between gap-4">
-          {title ? (
+          {headerSlot ? (
+            headerSlot
+          ) : title ? (
             <h2 id={headingId} className="heading-trail text-xl font-semibold text-text-hi md:text-2xl">
               {title}
             </h2>

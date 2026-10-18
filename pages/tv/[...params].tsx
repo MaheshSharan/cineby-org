@@ -69,11 +69,13 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
   try {
     const details = await getTvDetails(id);
 
-    let seasonNumber = Number.isInteger(parsedSeason) && (parsedSeason as number) > 0 ? parsedSeason : null;
-    let episodeNumber = Number.isInteger(parsedEpisode) && (parsedEpisode as number) > 0 ? parsedEpisode : null;
+    const seasonNumber = typeof parsedSeason === "number" && Number.isInteger(parsedSeason) && parsedSeason > 0 ? parsedSeason : null;
+    const episodeNumber = typeof parsedEpisode === "number" && Number.isInteger(parsedEpisode) && parsedEpisode > 0 ? parsedEpisode : null;
+    let effectiveSeason = seasonNumber;
+    let effectiveEpisode = episodeNumber;
 
     // If playing but no explicit season/episode in the URL, check user's history
-    if (isPlaying && (!seasonNumber || !episodeNumber)) {
+    if (isPlaying && (!effectiveSeason || !effectiveEpisode)) {
       const user = await getCurrentUser(context.req);
       if (user) {
         const historyList = await listHistory(user.id, user.activeProfileId ?? undefined);
@@ -81,22 +83,22 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
           (item) => item.mediaType === "tv" && item.mediaId === details.id
         );
         if (match?.seasonNumber && match?.episodeNumber) {
-          seasonNumber = match.seasonNumber;
-          episodeNumber = match.episodeNumber;
+          effectiveSeason = match.seasonNumber;
+          effectiveEpisode = match.episodeNumber;
         }
       }
 
       // Default fallback if no history exists for this TV show
-      seasonNumber = seasonNumber ?? 1;
-      episodeNumber = episodeNumber ?? 1;
+      effectiveSeason = effectiveSeason ?? 1;
+      effectiveEpisode = effectiveEpisode ?? 1;
     }
 
     return {
       props: {
         details,
         isPlaying,
-        seasonNumber,
-        episodeNumber,
+        seasonNumber: effectiveSeason,
+        episodeNumber: effectiveEpisode,
       },
     };
   } catch (error) {

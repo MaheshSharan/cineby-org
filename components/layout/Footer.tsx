@@ -44,7 +44,7 @@ export function Footer() {
               Terms of Service
             </Link>
             <a
-              href="mailto:maheshsharan28@gmail.com"
+              href="mailto:contact@cineby.group"
               className="transition-colors hover:text-white"
             >
               Contact

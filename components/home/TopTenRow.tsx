@@ -48,14 +48,14 @@ export function TopTenRow({ items: initialItems }: TopTenRowProps) {
   return (
     <div ref={ref}>
       <ContentRow
-        title={
+        headerSlot={
           <div className="flex flex-col">
-            <span className="text-xl md:text-2xl font-semibold text-text-hi">
+            <h2 className="heading-trail text-xl md:text-2xl font-semibold text-text-hi">
               TOP 10 on Cineby
-            </span>
-            <span className="text-[13px] md:text-sm font-normal text-text-mid mt-0.5">
+            </h2>
+            <p className="text-[13px] md:text-sm font-normal text-text-mid mt-0.5">
               The most watched titles right now
-            </span>
+            </p>
           </div>
         }
       >

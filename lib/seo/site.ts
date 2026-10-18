@@ -1,6 +1,9 @@
-// Canonical production origin. robots.txt and sitemap.xml are static files and repeat this value;
-// tests/seo.test.ts fails if they drift from it.
-export const SITE_URL = "https://cineby.group";
+const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+if (!rawSiteUrl) {
+  throw new Error("Missing required environment variable: NEXT_PUBLIC_SITE_URL");
+}
+
+export const SITE_URL = rawSiteUrl.replace(/\/+$/, "");
 
 export const SITE_NAME = "Cineby";
 

@@ -57,6 +57,15 @@ function optimizeImageUrl(rawUrl: string, quality: number, width?: number): stri
   }
 
   const proxyBase = getImageProxyUrl();
+  const tmdbBase = getTmdbImageBaseUrl();
+
+  // If the proxy supports clean paths and URL originates from configured TMDB base
+  if (rawUrl.startsWith(tmdbBase)) {
+    const subPath = rawUrl.slice(tmdbBase.length).replace(/^\/+/, "");
+    const cleanPath = subPath.replace(/\.(jpg|jpeg|png)$/i, ".webp");
+    return `${proxyBase}/p/${cleanPath}`;
+  }
+
   const widthParam = width ? `&w=${width}` : "";
   return `${proxyBase}/?url=${encodeURIComponent(rawUrl)}${widthParam}&output=webp&q=${quality}&n=-1`;
 }
@@ -86,8 +95,8 @@ export interface BackdropResponsiveUrls {
 export function getBackdropResponsiveUrls(
   path: string | null | undefined
 ): BackdropResponsiveUrls {
-  const mobileTmdb = buildImageUrl(path, "original");
-  const desktopTmdb = buildImageUrl(path, "original");
+  const mobileTmdb = buildImageUrl(path, "w780");
+  const desktopTmdb = buildImageUrl(path, "w1280");
 
   return {
     mobile: mobileTmdb ? optimizeImageUrl(mobileTmdb, 80) : null,

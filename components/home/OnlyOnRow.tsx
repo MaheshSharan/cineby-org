@@ -96,9 +96,11 @@ export function OnlyOnRow({
     [fetchProviderItems, onProviderChange]
   );
 
-  const customTitle = (
+  const customHeader = (
     <div className="flex items-baseline gap-2 flex-wrap" ref={containerRef}>
-      <span>Only on</span>
+      <h2 className="heading-trail text-xl font-semibold text-text-hi md:text-2xl">
+        Only on
+      </h2>
       <div className="relative inline-block select-none align-baseline">
         <button
           type="button"
@@ -106,7 +108,7 @@ export function OnlyOnRow({
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           onClick={() => setIsOpen((prev) => !prev)}
-          className="group inline-flex items-center gap-2 text-inherit font-inherit cursor-pointer hover:opacity-90 transition-opacity focus:outline-none"
+          className="group inline-flex items-center gap-2 text-xl font-semibold text-text-hi md:text-2xl cursor-pointer hover:opacity-90 transition-opacity focus:outline-none"
         >
           <span className="w-6 h-6 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex-shrink-0 inline-flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -183,7 +185,7 @@ export function OnlyOnRow({
   return (
     <div id="only-on-section" className="scroll-mt-24" ref={inViewRef}>
       <ContentRow
-        title={customTitle}
+        headerSlot={customHeader}
         className={isLoading && displayItems.length > 0 ? "opacity-50 transition-opacity duration-200" : "transition-opacity duration-200"}
       >
         {isLoading && displayItems.length === 0
