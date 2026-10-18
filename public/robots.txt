@@ -38,6 +38,7 @@ User-agent: Applebot-Extended
 User-agent: CCBot
 User-agent: Bytespider
 User-agent: Amazonbot
+Content-Signal: search=no, ai-input=no, ai-train=no
 Disallow: /
 
 Sitemap: https://cineby.group/sitemap.xml

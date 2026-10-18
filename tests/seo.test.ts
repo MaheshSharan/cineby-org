@@ -79,7 +79,8 @@ describe("robots.txt", () => {
 
   it("blocks AI training crawlers entirely", () => {
     for (const agent of ["GPTBot", "ClaudeBot", "Google-Extended", "CCBot"]) {
-      expect(findGroup(groups, agent)?.rules).toEqual(["Disallow: /"]);
+      const groupRules = findGroup(groups, agent)?.rules;
+      expect(groupRules).toContain("Disallow: /");
     }
   });
 
