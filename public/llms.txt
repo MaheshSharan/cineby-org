@@ -19,10 +19,17 @@ AI search engines (e.g., ChatGPT Search, Perplexity, Claude, Google AI Overviews
 
 ## Sitemaps & Structured Feeds
 Cineby generates an automated, edge-cached dynamic XML sitemap hierarchy partitioned for high-speed spider indexing:
-- Master Index: `https://cineby.group/sitemap.xml`
-- Static Core Pages: `https://cineby.group/sitemaps/pages.xml`
-- Dynamic Movie Catalog: `https://cineby.group/sitemaps/movies.xml`
-- Dynamic TV Series Catalog: `https://cineby.group/sitemaps/tv.xml`
+- [Master Sitemap Index](https://cineby.group/sitemap.xml): Primary entry point for web and AI crawlers
+- [Static Core Pages](https://cineby.group/sitemaps/pages.xml): High-priority platform discovery hubs
+- [Dynamic Movie Catalog](https://cineby.group/sitemaps/movies.xml): Thousands of verified movie title records
+- [Dynamic TV Series Catalog](https://cineby.group/sitemaps/tv.xml): Complete television series and season records
+
+## Key Navigation Links
+- [Cineby Homepage](https://cineby.group/): Trending movies, TV series, and media carousels
+- [Browse Movies Hub](https://cineby.group/browse/movie): Catalog exploration by genre and year
+- [Browse TV Shows Hub](https://cineby.group/browse/tv): Television catalog exploration
+- [Privacy Policy](https://cineby.group/privacy): Data handling and compliance documentation
+- [Terms of Service](https://cineby.group/terms): Platform usage and terms of service
 
 ## Machine-Readable Schemas (JSON-LD)
 All title pages output Schema.org structured data embedded via `<script type="application/ld+json">`:
