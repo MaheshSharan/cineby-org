@@ -140,9 +140,11 @@ describe("media SEO metadata", () => {
 
   it("puts the release year in the title when known", () => {
     expect(buildMediaTitle({ title: "Iron Man", releaseDate: "2008-04-30" })).toBe(
-      "Iron Man (2008) | Cineby"
+      "Watch Iron Man (2008) Online Free | Cineby"
     );
-    expect(buildMediaTitle({ title: "Iron Man", releaseDate: null })).toBe("Iron Man | Cineby");
+    expect(buildMediaTitle({ title: "Iron Man", releaseDate: null })).toBe(
+      "Watch Iron Man Online Free | Cineby"
+    );
   });
 });
 

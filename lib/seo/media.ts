@@ -25,8 +25,9 @@ export function truncateDescription(text: string, maxLength = MAX_DESCRIPTION_LE
 
 export function buildMediaTitle(media: Pick<SeoMedia, "title" | "releaseDate">): string {
   const year = getYear(media.releaseDate);
+  const yearSuffix = year ? ` (${year})` : "";
 
-  return year ? `${media.title} (${year}) | ${SITE_NAME}` : `${media.title} | ${SITE_NAME}`;
+  return `Watch ${media.title}${yearSuffix} Online Free | ${SITE_NAME}`;
 }
 
 export function buildMediaDescription(media: SeoMedia): string {

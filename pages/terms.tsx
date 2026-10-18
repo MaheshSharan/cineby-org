@@ -4,7 +4,7 @@ export default function TermsOfServicePage() {
   return (
     <>
       <PageSeo
-        title="Terms of Service - Cineby"
+        title="Terms of Service & Platform Guidelines | Cineby"
         description="Terms of Service for Cineby governing platform usage, account responsibilities, and third-party media content."
         path="/terms"
       />

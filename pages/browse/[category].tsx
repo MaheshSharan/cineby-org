@@ -13,24 +13,26 @@ interface BrowsePageProps {
   initialItems: MediaSummary[];
 }
 
-const CATEGORY_SEO: Record<MediaType, { heading: string; description: string }> = {
+const CATEGORY_SEO: Record<MediaType, { title: string; heading: string; description: string }> = {
   movie: {
+    title: "Browse Movies & Popular Streaming Titles | Cineby",
     heading: "Browse Movies",
     description: "Browse popular movies by genre and find your next movie to watch on Cineby.",
   },
   tv: {
+    title: "Browse TV Shows & Streaming Series | Cineby",
     heading: "Browse TV Shows",
     description: "Browse popular TV shows by genre and find your next series to watch on Cineby.",
   },
 };
 
 export default function BrowsePage({ mediaType, genres, initialItems }: BrowsePageProps) {
-  const { heading, description } = CATEGORY_SEO[mediaType];
+  const { title, heading, description } = CATEGORY_SEO[mediaType];
 
   return (
     <>
       <PageSeo
-        title={`${heading} | Cineby`}
+        title={title}
         description={description}
         path={`/browse/${mediaType}`}
       />

@@ -457,6 +457,7 @@ export function DetailPage({
             {/* Title / Logo */}
             {details.logoPath && settings.appearance.useImageLogos ? (
               <div className="mb-2 max-w-[280px] sm:max-w-[340px] md:max-w-[420px]">
+                <h1 className="sr-only">{details.title}</h1>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getLogoUrl(details.logoPath) ?? undefined}

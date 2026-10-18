@@ -6,7 +6,7 @@ export default function PrivacyPolicyPage() {
   return (
     <>
       <PageSeo
-        title="Privacy Policy - Cineby"
+        title="Privacy Policy & Data Protection Standards | Cineby"
         description="Privacy Policy for Cineby (Google Project MAARE) detailing user data protection, Google OAuth compliance, and data retention standards."
         path="/privacy"
       />
