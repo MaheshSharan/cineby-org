@@ -5,16 +5,12 @@
  * 1. Safely proxy and optimize images via wsrv.nl backend without CNAME SSL cross-tenant blocks.
  * 2. Serve first-party URLs (https://assets.cineby.group/?url=... or /p/...)
  * 3. Enforce heavy Edge Caching (30 days immutable) so repeat requests hit Cloudflare Edge Cache directly.
+ * 4. Normalize quality, width and output (see params.ts) so query strings cannot fragment the cache.
  */
 
-export interface Env {}
+import { buildCanonicalCacheUrl, parseImageRequest } from "./params";
 
-const ALLOWED_HOSTS = new Set([
-  "image.tmdb.org",
-  "cineby.group",
-  "www.cineby.group",
-  "lh3.googleusercontent.com",
-]);
+export interface Env {}
 
 export default {
   async fetch(request: Request, _env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -25,58 +21,32 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
+    // Reject invalid requests before touching the cache or the upstream backend.
+    const parsed = parseImageRequest(url);
+
+    if (!parsed.ok) {
+      return new Response(parsed.message, { status: parsed.status });
+    }
+
+    const { params } = parsed;
+
     // Check Cloudflare Edge Cache first
     const cache = caches.default;
-    const cacheKey = new Request(request.url, { method: "GET" });
+    const cacheKey = new Request(buildCanonicalCacheUrl(url.origin, params), { method: "GET" });
     const cachedResponse = await cache.match(cacheKey);
 
     if (cachedResponse) {
       return cachedResponse;
     }
 
-    // Determine target image URL
-    let targetImageUrl: string | null = null;
-    let quality = "80";
-    let output = "webp";
-    let width: string | null = null;
-
-    if (url.searchParams.has("url")) {
-      targetImageUrl = url.searchParams.get("url");
-      quality = url.searchParams.get("q") ?? "80";
-      output = url.searchParams.get("output") ?? "webp";
-      width = url.searchParams.get("w");
-    } else {
-      // Clean path pattern: /p/{size}/{hash}.webp -> https://image.tmdb.org/t/p/{size}/{hash}
-      const match = url.pathname.match(/^\/p\/([^/]+)\/(.+)$/);
-      if (match) {
-        const size = match[1];
-        const file = match[2];
-        const cleanFile = file.replace(/\.(webp|jpg|jpeg|png)$/i, "");
-        targetImageUrl = `https://image.tmdb.org/t/p/${size}/${cleanFile}.jpg`;
-      }
-    }
-
-    if (!targetImageUrl) {
-      return new Response("Missing target image URL", { status: 400 });
-    }
-
-    try {
-      const parsed = new URL(targetImageUrl);
-      if (!ALLOWED_HOSTS.has(parsed.hostname)) {
-        return new Response("Target host not allowed", { status: 403 });
-      }
-    } catch {
-      return new Response("Invalid image URL", { status: 400 });
-    }
-
     // Fetch from wsrv.nl backend
     const backendUrl = new URL("https://wsrv.nl/");
-    backendUrl.searchParams.set("url", targetImageUrl);
-    backendUrl.searchParams.set("output", output);
-    backendUrl.searchParams.set("q", quality);
+    backendUrl.searchParams.set("url", params.targetUrl);
+    backendUrl.searchParams.set("output", params.output);
+    backendUrl.searchParams.set("q", String(params.quality));
     backendUrl.searchParams.set("n", "-1");
-    if (width) {
-      backendUrl.searchParams.set("w", width);
+    if (params.width !== null) {
+      backendUrl.searchParams.set("w", String(params.width));
     }
 
     const upstreamResponse = await fetch(backendUrl.toString(), {

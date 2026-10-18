@@ -209,9 +209,9 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
                 />
               </div>
             ) : (
-              <h1 className="font-sans text-2xl font-black uppercase leading-[0.95] tracking-[-0.03em] text-text-hi drop-shadow-[0_8px_24px_rgba(0,0,0,0.65)] md:text-4xl xl:text-5xl">
+              <h2 className="font-sans text-2xl font-black uppercase leading-[0.95] tracking-[-0.03em] text-text-hi drop-shadow-[0_8px_24px_rgba(0,0,0,0.65)] md:text-4xl xl:text-5xl">
                 {item.title}
-              </h1>
+              </h2>
             )}
 
             {/* Meta Tags: Rating, Year, Genres */}
