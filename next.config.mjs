@@ -6,6 +6,55 @@ const nextConfig = {
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
     NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
   },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains; preload",
+          },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
+          },
+        ],
+      },
+    ];
+  },
+  async redirects() {
+    return [
+      {
+        source: "/browse/movies",
+        destination: "/browse/movie",
+        permanent: true,
+      },
+      {
+        source: "/browse/shows",
+        destination: "/browse/tv",
+        permanent: true,
+      },
+      {
+        source: "/browse/series",
+        destination: "/browse/tv",
+        permanent: true,
+      },
+      {
+        source: "/sitemaps/shows.xml",
+        destination: "/sitemaps/tv.xml",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

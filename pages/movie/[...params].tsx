@@ -4,7 +4,7 @@ import { logger } from "@/lib/logger";
 import {
   buildMediaDescription,
   buildMediaTitle,
-  getMediaOpenGraphImageUrl,
+  getMediaOpenGraphImage,
 } from "@/lib/seo/media";
 import type { MovieDetails } from "@/lib/tmdb";
 import { getMovieDetails, isTmdbNotFoundError } from "@/lib/tmdb/server";
@@ -26,6 +26,7 @@ export default function MoviePage({ details, isPlaying }: MoviePageProps) {
     buildBreadcrumbJsonLd("movie", details.title, details.id),
     buildMovieJsonLd(details),
   ];
+  const ogImage = getMediaOpenGraphImage(details);
 
   return (
     <>
@@ -33,7 +34,9 @@ export default function MoviePage({ details, isPlaying }: MoviePageProps) {
         title={buildMediaTitle(details)}
         description={buildMediaDescription(details)}
         path={getMediaHref("movie", details.id, details.title)}
-        imageUrl={getMediaOpenGraphImageUrl(details)}
+        imageUrl={ogImage?.url}
+        imageWidth={ogImage?.width}
+        imageHeight={ogImage?.height}
         openGraphType="video.movie"
         jsonLd={sanitizeJsonLd(schemas)}
       />

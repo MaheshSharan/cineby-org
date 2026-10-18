@@ -8,7 +8,7 @@ import { logger } from "@/lib/logger";
 import {
   buildMediaDescription,
   buildMediaTitle,
-  getMediaOpenGraphImageUrl,
+  getMediaOpenGraphImage,
 } from "@/lib/seo/media";
 import { getMediaHref } from "@/lib/utils/media";
 import { extractIdFromSlug } from "@/lib/utils/slug";
@@ -30,6 +30,7 @@ export default function TvPage({ details, isPlaying, seasonNumber, episodeNumber
     buildBreadcrumbJsonLd("tv", details.title, details.id),
     buildTvSeriesJsonLd(details),
   ];
+  const ogImage = getMediaOpenGraphImage(details);
 
   return (
     <>
@@ -37,7 +38,9 @@ export default function TvPage({ details, isPlaying, seasonNumber, episodeNumber
         title={buildMediaTitle(details)}
         description={buildMediaDescription(details)}
         path={getMediaHref("tv", details.id, details.title)}
-        imageUrl={getMediaOpenGraphImageUrl(details)}
+        imageUrl={ogImage?.url}
+        imageWidth={ogImage?.width}
+        imageHeight={ogImage?.height}
         openGraphType="video.tv_show"
         jsonLd={sanitizeJsonLd(schemas)}
       />

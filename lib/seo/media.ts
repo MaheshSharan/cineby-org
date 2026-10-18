@@ -48,3 +48,24 @@ export function getMediaOpenGraphImageUrl(
 ): string | null {
   return buildImageUrl(media.backdropPath, "w1280") ?? buildImageUrl(media.posterPath, "w780");
 }
+
+export function getMediaOpenGraphImage(
+  media: Pick<MediaSummary, "backdropPath" | "posterPath">
+): { url: string; width: number; height: number } | null {
+  if (media.backdropPath) {
+    const url = buildImageUrl(media.backdropPath, "w1280");
+    if (url) {
+      return { url, width: 1280, height: 720 };
+    }
+  }
+
+  if (media.posterPath) {
+    const url = buildImageUrl(media.posterPath, "w780");
+    if (url) {
+      return { url, width: 780, height: 1170 };
+    }
+  }
+
+  return null;
+}
+
