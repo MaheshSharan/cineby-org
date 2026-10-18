@@ -17,22 +17,21 @@ export function buildImageUrl(
     return null;
   }
 
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  const imageBaseUrl = getTmdbImageBaseUrl();
+  const cleanFile = path.replace(/^\/+/, "").replace(/\.(jpg|jpeg|png)$/i, "");
 
-  return `${imageBaseUrl}/${size}${cleanPath}`;
+  if (isImageProxyEnabled()) {
+    return `${getImageProxyUrl()}/p/${size}/${cleanFile}.webp`;
+  }
+
+  return `${getTmdbImageBaseUrl()}/${size}/${cleanFile}.jpg`;
 }
 
 export function getLogoUrl(path: string | null | undefined): string | null {
-  const tmdbUrl = buildImageUrl(path, "w500");
-
-  return tmdbUrl ? optimizeImageUrl(tmdbUrl, 50) : null;
+  return buildImageUrl(path, "w500");
 }
 
 export function getHeroBackdropUrl(path: string | null | undefined): string | null {
-  const tmdbUrl = buildImageUrl(path, "original");
-
-  return tmdbUrl ? optimizeImageUrl(tmdbUrl, 80) : null;
+  return buildImageUrl(path, "original");
 }
 
 export function getProfileUrl(path: string | null | undefined): string | null {
@@ -40,34 +39,21 @@ export function getProfileUrl(path: string | null | undefined): string | null {
 }
 
 export function getStillThumbUrl(path: string | null | undefined): string | null {
-  const tmdbUrl = buildImageUrl(path, isImageProxyEnabled() ? "original" : "w300");
+  if (!isImageProxyEnabled()) {
+    return buildImageUrl(path, "w300");
+  }
 
-  return tmdbUrl ? optimizeImageUrl(tmdbUrl, 75, 640) : null;
+  // 640px still thumbnail using proxy with explicit width parameter
+  if (!path) {
+    return null;
+  }
+  const cleanFile = path.replace(/^\/+/, "").replace(/\.(jpg|jpeg|png)$/i, "");
+  const tmdbUrl = `${getTmdbImageBaseUrl()}/original/${cleanFile}.jpg`;
+  return `${getImageProxyUrl()}/?url=${encodeURIComponent(tmdbUrl)}&w=640&output=webp&q=75&n=-1`;
 }
 
 export function getSeasonPosterThumbUrl(path: string | null | undefined): string | null {
-  const tmdbUrl = buildImageUrl(path, "w154");
-
-  return tmdbUrl ? optimizeImageUrl(tmdbUrl, 60) : null;
-}
-
-function optimizeImageUrl(rawUrl: string, quality: number, width?: number): string {
-  if (!isImageProxyEnabled()) {
-    return rawUrl;
-  }
-
-  const proxyBase = getImageProxyUrl();
-  const tmdbBase = getTmdbImageBaseUrl();
-
-  // If the proxy supports clean paths and URL originates from configured TMDB base
-  if (rawUrl.startsWith(tmdbBase)) {
-    const subPath = rawUrl.slice(tmdbBase.length).replace(/^\/+/, "");
-    const cleanPath = subPath.replace(/\.(jpg|jpeg|png)$/i, ".webp");
-    return `${proxyBase}/p/${cleanPath}`;
-  }
-
-  const widthParam = width ? `&w=${width}` : "";
-  return `${proxyBase}/?url=${encodeURIComponent(rawUrl)}${widthParam}&output=webp&q=${quality}&n=-1`;
+  return buildImageUrl(path, "w154");
 }
 
 export interface PosterResponsiveUrls {
@@ -78,12 +64,9 @@ export interface PosterResponsiveUrls {
 export function getPosterResponsiveUrls(
   path: string | null | undefined
 ): PosterResponsiveUrls {
-  const mobileTmdb = buildImageUrl(path, "w342");
-  const desktopTmdb = buildImageUrl(path, "w780");
-
   return {
-    mobile: mobileTmdb ? optimizeImageUrl(mobileTmdb, 50) : null,
-    desktop: desktopTmdb ? optimizeImageUrl(desktopTmdb, 65) : null,
+    mobile: buildImageUrl(path, "w342"),
+    desktop: buildImageUrl(path, "w780"),
   };
 }
 
@@ -95,11 +78,8 @@ export interface BackdropResponsiveUrls {
 export function getBackdropResponsiveUrls(
   path: string | null | undefined
 ): BackdropResponsiveUrls {
-  const mobileTmdb = buildImageUrl(path, "w780");
-  const desktopTmdb = buildImageUrl(path, "w1280");
-
   return {
-    mobile: mobileTmdb ? optimizeImageUrl(mobileTmdb, 80) : null,
-    desktop: desktopTmdb ? optimizeImageUrl(desktopTmdb, 85) : null,
+    mobile: buildImageUrl(path, "w780"),
+    desktop: buildImageUrl(path, "w1280"),
   };
 }

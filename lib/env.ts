@@ -1,8 +1,8 @@
+const DEFAULT_TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p";
+const DEFAULT_IMAGE_PROXY_URL = "https://assets.cineby.group";
+
 export function getTmdbImageBaseUrl(): string {
-  const rawImageBaseUrl = process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL?.trim();
-  if (!rawImageBaseUrl) {
-    throw new Error("Missing required environment variable: NEXT_PUBLIC_TMDB_IMAGE_BASE_URL");
-  }
+  const rawImageBaseUrl = process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL?.trim() || DEFAULT_TMDB_IMAGE_BASE_URL;
 
   // If the base URL in env accidentally has a proxy prefix like wsrv.nl/?url=, extract the actual target URL
   if (rawImageBaseUrl.includes("url=")) {
@@ -15,10 +15,7 @@ export function getTmdbImageBaseUrl(): string {
 }
 
 export function getImageProxyUrl(): string {
-  const imageProxyUrl = process.env.NEXT_PUBLIC_IMAGE_PROXY_URL?.trim();
-  if (!imageProxyUrl) {
-    throw new Error("Missing required environment variable: NEXT_PUBLIC_IMAGE_PROXY_URL");
-  }
+  const imageProxyUrl = process.env.NEXT_PUBLIC_IMAGE_PROXY_URL?.trim() || DEFAULT_IMAGE_PROXY_URL;
   return imageProxyUrl.replace(/\/+$/, "");
 }
 
