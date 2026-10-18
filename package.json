@@ -13,6 +13,7 @@
     "test:smoke:tmdb": "bun run scripts/smoke-test.tmdb.ts",
     "cf-typegen": "bunx wrangler types --env-interface CloudflareEnv",
     "deploy:proxy": "bunx wrangler deploy --config workers/stream-proxy/wrangler.jsonc",
+    "deploy:assets": "bunx wrangler deploy --config workers/assets/wrangler.jsonc",
     "build:worker": "bunx opennextjs-cloudflare build",
     "deploy:app": "bunx opennextjs-cloudflare build && bunx wrangler deploy"
   },

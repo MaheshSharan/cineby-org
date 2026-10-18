@@ -1,5 +1,5 @@
 const rawImageBaseUrl = process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL || "https://image.tmdb.org/t/p";
-const imageProxyUrl = process.env.NEXT_PUBLIC_IMAGE_PROXY_URL || "https://wsrv.nl";
+const imageProxyUrl = process.env.NEXT_PUBLIC_IMAGE_PROXY_URL || "https://assets.cineby.group";
 const isProxyEnabled = process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY !== "false";
 
 export function getTmdbImageBaseUrl(): string {
