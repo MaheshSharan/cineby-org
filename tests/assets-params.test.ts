@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   buildCanonicalCacheUrl,
+  parseImageWorkerConfig,
   normalizeOutput,
   normalizeQuality,
   normalizeWidth,
@@ -9,13 +10,25 @@ import {
 } from "@/workers/assets/params";
 
 const ORIGIN = "https://assets.cineby.group";
+
+const configResult = parseImageWorkerConfig({
+  TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p",
+  IMAGE_BACKEND_URL: "https://wsrv.nl",
+  ALLOWED_IMAGE_HOSTS: "image.tmdb.org,cineby.group,www.cineby.group,lh3.googleusercontent.com",
+});
+
+if (!configResult.ok) {
+  throw new Error("Test image worker config is invalid");
+}
+
+const CONFIG = configResult.config;
 const TMDB_IMAGE = "https://image.tmdb.org/t/p/w500/abc123.jpg";
 
 // Quality values the app requests today (lib/tmdb/image.ts); clamping must leave them unchanged.
 const APP_QUALITIES = [50, 60, 65, 75, 80, 85];
 
 function parse(pathAndQuery: string) {
-  return parseImageRequest(new URL(pathAndQuery, ORIGIN));
+  return parseImageRequest(new URL(pathAndQuery, ORIGIN), CONFIG);
 }
 
 function cacheKeyFor(pathAndQuery: string): string {
@@ -113,6 +126,21 @@ describe("assets worker request parsing", () => {
 
     expect(result).toMatchObject({ ok: true, params: { targetUrl: TMDB_IMAGE } });
   });
+
+  it("requests the source extension for png and svg logos", () => {
+    expect(parse("/p/w500/logo.png")).toMatchObject({
+      ok: true,
+      params: { targetUrl: "https://image.tmdb.org/t/p/w500/logo.png" },
+    });
+    expect(parse("/p/w500/logo.svg")).toMatchObject({
+      ok: true,
+      params: { targetUrl: "https://image.tmdb.org/t/p/original/logo.svg" },
+    });
+  });
+
+  it("rejects a doubled extension", () => {
+    expect(parse("/p/w500/logo.svg.webp")).toMatchObject({ ok: false, status: 400 });
+  });
 });
 
 describe("assets worker cache key", () => {
@@ -141,5 +169,18 @@ describe("assets worker cache key", () => {
     const fromUrlParam = cacheKeyFor(`/?url=${encodeURIComponent(TMDB_IMAGE)}`);
 
     expect(fromPath).toBe(fromUrlParam);
+  });
+});
+
+describe("assets worker configuration", () => {
+  it("reports every missing variable instead of using defaults", () => {
+    expect(parseImageWorkerConfig({})).toEqual({
+      ok: false,
+      missing: ["TMDB_IMAGE_BASE_URL", "IMAGE_BACKEND_URL", "ALLOWED_IMAGE_HOSTS"],
+    });
+    expect(parseImageWorkerConfig({ TMDB_IMAGE_BASE_URL: "  ", IMAGE_BACKEND_URL: "x" })).toMatchObject({
+      ok: false,
+      missing: ["TMDB_IMAGE_BASE_URL", "ALLOWED_IMAGE_HOSTS"],
+    });
   });
 });

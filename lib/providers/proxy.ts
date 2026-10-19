@@ -1,4 +1,4 @@
-import { getEnvVar } from "@/lib/env";
+import { getStreamProxyUrl } from "@/lib/env/server";
 import { createProxyDescriptor } from "./signedProxy";
 
 export function buildStreamProxyUrl(
@@ -10,12 +10,7 @@ export function buildStreamProxyUrl(
     return targetUrl;
   }
 
-  const proxyBase =
-    getEnvVar("STREAM_PROXY_URL")?.trim() ||
-    getEnvVar("NEXT_PUBLIC_STREAM_PROXY_URL")?.trim() ||
-    "/api/stream/proxy";
-
-  const cleanBase = proxyBase.replace(/\/+$/, "");
+  const cleanBase = getStreamProxyUrl();
 
   // Prevent double-proxying or proxying local blob/data schemes
   if (
@@ -37,8 +32,4 @@ export function buildStreamProxyUrl(
   }
 
   return `${cleanBase}/?${params.toString()}`;
-}
-
-export function isStreamProxyConfigured(): boolean {
-  return true;
 }

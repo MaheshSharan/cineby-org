@@ -1,6 +1,7 @@
 import type { MediaSegment, SegmentType } from "@/components/player/types";
 
-export type SegmentProviderName = "introdb" | "skipdb";
+export const SEGMENT_PROVIDER_NAMES = ["introdb", "skipdb"] as const;
+export type SegmentProviderName = (typeof SEGMENT_PROVIDER_NAMES)[number];
 
 export interface SegmentFetchParams {
   imdbId: string;

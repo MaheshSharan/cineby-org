@@ -1,4 +1,4 @@
-import { getCacheBackend, getCacheMaxEntries, getRedisUrl } from "@/lib/env";
+import { getCacheBackend, getCacheMaxEntries } from "@/lib/env/server";
 import { logger } from "@/lib/logger";
 import { MemoryCacheStore } from "./memory";
 import { RedisCacheStore } from "./redis";
@@ -28,12 +28,10 @@ const singleFlight = new SingleFlight();
 
 export function getCacheStore(): CacheStore {
   if (!globalCacheStore) {
-    const backend = getCacheBackend();
-    if (backend === "redis") {
-      globalCacheStore = new RedisCacheStore(getRedisUrl());
-    } else {
-      globalCacheStore = new MemoryCacheStore(getCacheMaxEntries());
-    }
+    globalCacheStore =
+      getCacheBackend() === "redis"
+        ? new RedisCacheStore()
+        : new MemoryCacheStore(getCacheMaxEntries());
   }
   return globalCacheStore;
 }

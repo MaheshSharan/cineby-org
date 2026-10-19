@@ -1,6 +1,9 @@
 import { PageSeo } from "@/components/seo/PageSeo";
+import { getLegalContactEmail } from "@/lib/env/public";
 
 export default function TermsOfServicePage() {
+  const legalEmail = getLegalContactEmail();
+
   return (
     <>
       <PageSeo
@@ -68,8 +71,8 @@ export default function TermsOfServicePage() {
             <h2 className="text-lg font-semibold text-white">6. Contact Information</h2>
             <p>
               For legal inquiries, copyright notices, or questions regarding our terms, please contact us at{" "}
-              <a href="mailto:maheshsharan28@gmail.com" className="text-primary underline hover:text-primary/80">
-                maheshsharan28@gmail.com
+              <a href={`mailto:${legalEmail}`} className="text-primary underline hover:text-primary/80">
+                {legalEmail}
               </a>
               .
             </p>

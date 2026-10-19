@@ -8,12 +8,17 @@
  * 4. Normalize quality, width and output (see params.ts) so query strings cannot fragment the cache.
  */
 
-import { buildCanonicalCacheUrl, parseImageRequest } from "./params";
+import {
+  buildCanonicalCacheUrl,
+  parseImageRequest,
+  parseImageWorkerConfig,
+  type ImageWorkerEnv,
+} from "./params";
 
-export interface Env {}
+export type Env = ImageWorkerEnv;
 
 export default {
-  async fetch(request: Request, _env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     // Healthcheck
@@ -21,8 +26,18 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
+    // No defaults: a worker without its configuration refuses to serve.
+    const configResult = parseImageWorkerConfig(env);
+
+    if (!configResult.ok) {
+      return new Response(
+        `Server Misconfiguration: missing required variable(s) ${configResult.missing.join(", ")}`,
+        { status: 500 }
+      );
+    }
+
     // Reject invalid requests before touching the cache or the upstream backend.
-    const parsed = parseImageRequest(url);
+    const parsed = parseImageRequest(url, configResult.config);
 
     if (!parsed.ok) {
       return new Response(parsed.message, { status: parsed.status });
@@ -40,7 +55,7 @@ export default {
     }
 
     // Fetch from wsrv.nl backend
-    const backendUrl = new URL("https://wsrv.nl/");
+    const backendUrl = new URL(`${configResult.config.imageBackendUrl}/`);
     backendUrl.searchParams.set("url", params.targetUrl);
     backendUrl.searchParams.set("output", params.output);
     backendUrl.searchParams.set("q", String(params.quality));

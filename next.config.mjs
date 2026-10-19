@@ -2,15 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
-  env: {
-    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-    NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
-    NEXT_PUBLIC_IMAGE_PROXY_URL: process.env.NEXT_PUBLIC_IMAGE_PROXY_URL,
-    NEXT_PUBLIC_ENABLE_IMAGE_PROXY: process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY,
-    NEXT_PUBLIC_TMDB_IMAGE_BASE_URL: process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL,
-    NEXT_PUBLIC_FLAGS_API_BASE_URL: process.env.NEXT_PUBLIC_FLAGS_API_BASE_URL,
-  },
+  // NEXT_PUBLIC_* values are inlined by Next.js from the build environment, which
+  // scripts/with-wrangler-vars.ts fills from wrangler.jsonc. No `env` mapping is needed here.
   async headers() {
     return [
       {

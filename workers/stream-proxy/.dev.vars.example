@@ -1,0 +1,7 @@
+# Local values for `wrangler dev --config workers/stream-proxy/wrangler.jsonc`.
+# Copy to workers/stream-proxy/.dev.vars (gitignored). Production uses wrangler secrets/vars.
+
+# Must equal STREAM_PROXY_SECRET in the main app's .env.local.
+STREAM_PROXY_SECRET=
+# Overrides the production origins in wrangler.jsonc while developing.
+CORS_ALLOWED_ORIGINS=http://localhost:3000

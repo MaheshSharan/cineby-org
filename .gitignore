@@ -44,3 +44,6 @@ audit_comprehensive_report.md
 
 docs/
 .claude/
+
+# Worker local secrets
+.dev.vars

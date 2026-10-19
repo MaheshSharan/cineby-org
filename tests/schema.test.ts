@@ -7,7 +7,7 @@ import {
   sanitizeJsonLd,
 } from "@/lib/seo/jsonLd";
 import type { MovieDetails, TvDetails } from "@/lib/tmdb";
-import { SITE_URL } from "@/lib/seo/site";
+import { getSiteUrl } from "@/lib/env/public";
 
 describe("Schema.org JSON-LD structured data generators", () => {
   it("generates WebSite schema with SearchAction for Sitelinks Searchbox", () => {
@@ -15,13 +15,13 @@ describe("Schema.org JSON-LD structured data generators", () => {
 
     expect(schema["@context"]).toBe("https://schema.org");
     expect(schema["@type"]).toBe("WebSite");
-    expect(schema.url).toBe(SITE_URL);
+    expect(schema.url).toBe(getSiteUrl());
     expect(schema.potentialAction).toBeDefined();
 
     const action = schema.potentialAction as Record<string, unknown>;
     expect(action["@type"]).toBe("SearchAction");
     expect((action.target as Record<string, unknown>).urlTemplate).toBe(
-      `${SITE_URL}/browse/movie?q={search_term_string}`
+      `${getSiteUrl()}/browse/movie?q={search_term_string}`
     );
   });
 
@@ -33,18 +33,18 @@ describe("Schema.org JSON-LD structured data generators", () => {
 
     const items = schema.itemListElement as Array<{ position: number; name: string; item: string }>;
     expect(items.length).toBe(3);
-    expect(items[0]).toEqual({ "@type": "ListItem", position: 1, name: "Home", item: SITE_URL });
+    expect(items[0]).toEqual({ "@type": "ListItem", position: 1, name: "Home", item: getSiteUrl() });
     expect(items[1]).toEqual({
       "@type": "ListItem",
       position: 2,
       name: "Movies",
-      item: `${SITE_URL}/browse/movie`,
+      item: `${getSiteUrl()}/browse/movie`,
     });
     expect(items[2]).toEqual({
       "@type": "ListItem",
       position: 3,
       name: "Inception",
-      item: `${SITE_URL}/movie/27205-inception`,
+      item: `${getSiteUrl()}/movie/27205-inception`,
     });
   });
 
@@ -89,7 +89,7 @@ describe("Schema.org JSON-LD structured data generators", () => {
     const action = schema.potentialAction as Record<string, unknown>;
     expect(action["@type"]).toBe("WatchAction");
     expect((action.target as Record<string, unknown>).urlTemplate).toBe(
-      `${SITE_URL}/movie/603-the-matrix?play=true`
+      `${getSiteUrl()}/movie/603-the-matrix?play=true`
     );
     expect((action.actionAccessibilityRequirement as Record<string, unknown>).category).toBe("free");
   });

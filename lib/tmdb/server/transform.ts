@@ -151,8 +151,12 @@ function toTvCertification(value: unknown): string | null {
 
 export function toLogoPath(images: unknown): string | null {
   const logos = recordArray(asRecord(images)?.logos);
+  const filePaths = logos
+    .map((logo) => nullableString(logo.file_path))
+    .filter((filePath): filePath is string => Boolean(filePath));
 
-  return nullableString(logos[0]?.file_path);
+  // Raster logos first: SVGs cannot be resized by the image proxy.
+  return filePaths.find((filePath) => !filePath.toLowerCase().endsWith(".svg")) ?? filePaths[0] ?? null;
 }
 
 export function toLogoBackdropPath(images: unknown, fallbackBackdropPath?: string | null): string | null {

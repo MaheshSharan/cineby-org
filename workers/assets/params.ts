@@ -14,12 +14,46 @@ export type ImageRequestResult =
   | { ok: true; params: ImageRequestParams }
   | { ok: false; status: 400 | 403; message: string };
 
-const ALLOWED_HOSTS = new Set([
-  "image.tmdb.org",
-  "cineby.group",
-  "www.cineby.group",
-  "lh3.googleusercontent.com",
-]);
+/** Deployment configuration (workers/assets/wrangler.jsonc vars). Nothing here has a default. */
+export interface ImageWorkerEnv {
+  TMDB_IMAGE_BASE_URL?: string;
+  IMAGE_BACKEND_URL?: string;
+  ALLOWED_IMAGE_HOSTS?: string;
+}
+
+export interface ImageWorkerConfig {
+  tmdbImageBaseUrl: string;
+  imageBackendUrl: string;
+  allowedHosts: ReadonlySet<string>;
+}
+
+export type ImageWorkerConfigResult =
+  | { ok: true; config: ImageWorkerConfig }
+  | { ok: false; missing: string[] };
+
+const REQUIRED_ENV = ["TMDB_IMAGE_BASE_URL", "IMAGE_BACKEND_URL", "ALLOWED_IMAGE_HOSTS"] as const;
+
+export function parseImageWorkerConfig(env: ImageWorkerEnv): ImageWorkerConfigResult {
+  const missing = REQUIRED_ENV.filter((name) => !env[name]?.trim());
+
+  if (missing.length > 0) {
+    return { ok: false, missing };
+  }
+
+  return {
+    ok: true,
+    config: {
+      tmdbImageBaseUrl: (env.TMDB_IMAGE_BASE_URL as string).trim().replace(/\/+$/, ""),
+      imageBackendUrl: (env.IMAGE_BACKEND_URL as string).trim().replace(/\/+$/, ""),
+      allowedHosts: new Set(
+        (env.ALLOWED_IMAGE_HOSTS as string)
+          .split(",")
+          .map((host) => host.trim().toLowerCase())
+          .filter(Boolean)
+      ),
+    },
+  };
+}
 
 const TMDB_IMAGE_SIZES = new Set([
   "w92",
@@ -34,7 +68,10 @@ const TMDB_IMAGE_SIZES = new Set([
 ]);
 
 // TMDB file names are URL-safe hashes; anything else could escape the /t/p/{size}/ path.
-const TMDB_PATH_PATTERN = /^\/p\/([^/]+)\/([A-Za-z0-9_-]+)(?:\.(?:webp|jpg|jpeg|png))?$/i;
+const TMDB_PATH_PATTERN = /^\/p\/([^/]+)\/([A-Za-z0-9_-]+)(?:\.(webp|jpg|jpeg|png|svg))?$/i;
+
+const SOURCE_EXTENSIONS = new Set(["png", "svg"]);
+const DEFAULT_SOURCE_EXTENSION = "jpg";
 
 const DEFAULT_OUTPUT: ImageOutput = "webp";
 
@@ -83,24 +120,35 @@ export function normalizeWidth(raw: string | null): number | null {
   return WIDTH_BUCKETS.find((bucket) => bucket >= parsed) ?? MAX_WIDTH;
 }
 
-export function buildTmdbImageUrl(pathname: string): string | null {
+/**
+ * Maps `/p/{size}/{name}.{ext}` to the TMDB source file. The extension names the source format
+ * (`png`/`svg` logos); anything else is a JPEG. Vector logos only exist at `original`.
+ */
+export function buildTmdbImageUrl(pathname: string, tmdbImageBaseUrl: string): string | null {
   const match = TMDB_PATH_PATTERN.exec(pathname);
 
   if (!match) {
     return null;
   }
 
-  const [, size, file] = match;
+  const [, requestedSize, name, extension = ""] = match;
+  const sourceExtension = SOURCE_EXTENSIONS.has(extension.toLowerCase())
+    ? extension.toLowerCase()
+    : DEFAULT_SOURCE_EXTENSION;
+  const size = sourceExtension === "svg" ? "original" : requestedSize;
 
-  return TMDB_IMAGE_SIZES.has(size) ? `https://image.tmdb.org/t/p/${size}/${file}.jpg` : null;
+  return TMDB_IMAGE_SIZES.has(size)
+    ? `${tmdbImageBaseUrl}/${size}/${name}.${sourceExtension}`
+    : null;
 }
 
 function reject(status: 400 | 403, message: string): ImageRequestResult {
   return { ok: false, status, message };
 }
 
-export function parseImageRequest(url: URL): ImageRequestResult {
-  const rawTargetUrl = url.searchParams.get("url") ?? buildTmdbImageUrl(url.pathname);
+export function parseImageRequest(url: URL, config: ImageWorkerConfig): ImageRequestResult {
+  const rawTargetUrl =
+    url.searchParams.get("url") ?? buildTmdbImageUrl(url.pathname, config.tmdbImageBaseUrl);
 
   if (!rawTargetUrl) {
     return reject(400, "Missing target image URL");
@@ -113,7 +161,7 @@ export function parseImageRequest(url: URL): ImageRequestResult {
     return reject(400, "Invalid image URL");
   }
 
-  if (!ALLOWED_HOSTS.has(target.hostname)) {
+  if (!config.allowedHosts.has(target.hostname)) {
     return reject(403, "Target host not allowed");
   }
 

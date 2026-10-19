@@ -5,8 +5,7 @@ import { DatabaseSync } from "node:sqlite";
 import { initializeSchema } from "./schema";
 import { type DbClient, D1DbAdapter, LocalSqliteAdapter, type D1DatabaseBinding } from "./adapter";
 import { logger } from "@/lib/logger";
-
-const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "cineby.db");
+import { getDatabasePath } from "@/lib/env/server";
 
 let clientInstance: DbClient | null = null;
 
@@ -57,7 +56,7 @@ export function getDb(): DbClient {
     throw new Error("[DB] D1 Database binding 'DB' was not found in Cloudflare Worker context.");
   }
 
-  const dbPath = process.env.DATABASE_PATH?.trim() || DEFAULT_DB_PATH;
+  const dbPath = getDatabasePath();
   try {
     mkdirSync(path.dirname(dbPath), { recursive: true });
     const rawDb = new DatabaseSync(dbPath);

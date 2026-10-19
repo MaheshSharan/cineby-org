@@ -15,6 +15,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import type { AuthModalProps, AuthMode } from "@/components/auth/types";
 import { handleGoogleCredentialResponse } from "@/components/auth/GoogleOneTap";
+import { getGoogleClientId } from "@/lib/env/public";
 
 export type { AuthMode } from "@/components/auth/types";
 
@@ -65,8 +66,7 @@ export function AuthModal({
 
     const setupGoogleBtn = () => {
       if (cancelled || !googleBtnContainerRef.current || typeof window === "undefined" || !window.google?.accounts?.id) return;
-      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-      if (!clientId) return;
+      const clientId = getGoogleClientId();
 
       try {
         window.google.accounts.id.initialize({

@@ -1,5 +1,5 @@
 import type { MediaSegment, SegmentFetchParams } from "./types";
-import { getEnvVar } from "@/lib/env";
+import { getSkipDbApiKey, getSkipDbApiUrl } from "@/lib/env/server";
 
 interface SkipDbSegmentRaw {
   start_ms: number;
@@ -23,11 +23,7 @@ interface SkipDbApiResponse {
   intro_length_estimate_ms?: number | null;
 }
 
-export function buildSkipDbUrl(params: SegmentFetchParams): URL | null {
-  const baseUrl = getEnvVar("SKIPDB_API_URL")?.replace(/\/+$/, "");
-  if (!baseUrl) {
-    return null;
-  }
+export function buildSkipDbUrl(baseUrl: string, params: SegmentFetchParams): URL {
   const url = new URL(`${baseUrl}/api/segments`);
 
   url.searchParams.set("imdb_id", params.imdbId);
@@ -86,21 +82,15 @@ export async function fetchSkipDbSegments(
   params: SegmentFetchParams,
   timeoutMs = 4000
 ): Promise<MediaSegment[]> {
+  // Configuration errors must surface; only network and parsing failures degrade to "no segments".
+  const url = buildSkipDbUrl(getSkipDbApiUrl(), params);
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "User-Agent": "Cineby/1.0",
+    "X-API-Key": getSkipDbApiKey(),
+  };
+
   try {
-    const url = buildSkipDbUrl(params);
-    if (!url) {
-      return [];
-    }
-
-    const headers: Record<string, string> = {
-      Accept: "application/json",
-      "User-Agent": "Cineby/1.0",
-    };
-
-    const apiKey = getEnvVar("SKIPDB_API_KEY")?.trim();
-    if (apiKey) {
-      headers["X-API-Key"] = apiKey;
-    }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);

@@ -8,7 +8,7 @@ import type { MediaType, StreamResponse } from "@/lib/providers/types";
 import { logger } from "@/lib/logger";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
-import { getEnvVar } from "@/lib/env";
+import { isProviderEnabled } from "@/lib/env/server";
 
 function extractClientIp(req: NextApiRequest): string {
   const cfIp = req.headers["cf-connecting-ip"];
@@ -79,9 +79,7 @@ export default withApiContext(
 
       // 1. If client provided a browser-fetched vixsrc embed HTML, parse and sign immediately.
       // Guard with ENABLE_VIXSRC so toggling the env flag also disables the client-assisted path.
-      const vixsrcEnv = getEnvVar("ENABLE_VIXSRC");
-      const isVixsrcEnabled = vixsrcEnv !== "false" && vixsrcEnv !== "0";
-      if (vixsrcEmbedHtml && isVixsrcEnabled) {
+      if (vixsrcEmbedHtml && isProviderEnabled("vixsrc")) {
         logger.debug(`[resolve] Processing client-provided Vixsrc embed HTML for tmdbId=${parsedTmdbId}`);
         const source = parseVixsrcEmbedHtml(vixsrcEmbedHtml);
 
@@ -100,9 +98,7 @@ export default withApiContext(
 
       // 2. If client provided a browser-fetched Vidy payload, decrypt and sign immediately.
       // Guard with ENABLE_VIDY so toggling the env flag also disables the client-assisted path.
-      const vidyEnv = getEnvVar("ENABLE_VIDY");
-      const isVidyEnabled = vidyEnv !== "false" && vidyEnv !== "0";
-      if (vidyCiphertext && vidySeed && isVidyEnabled) {
+      if (vidyCiphertext && vidySeed && isProviderEnabled("vidy")) {
         logger.debug(`[resolve] Processing client-provided Vidy payload for tmdbId=${parsedTmdbId}`);
         const decrypted = decryptVidyClientPayload(vidyCiphertext, vidySeed, parsedTmdbId, vidyServerId);
         const rawSources = decrypted.sources;

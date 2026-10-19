@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "predev": "bun scripts/check-env.ts",
     "dev": "next dev",
-    "build": "next build",
+    "check:env": "bun scripts/check-env.ts",
+    "build": "bun scripts/with-wrangler-vars.ts bunx next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -14,8 +16,8 @@
     "cf-typegen": "bunx wrangler types --env-interface CloudflareEnv",
     "deploy:proxy": "bunx wrangler deploy --config workers/stream-proxy/wrangler.jsonc",
     "deploy:assets": "bunx wrangler deploy --config workers/assets/wrangler.jsonc",
-    "build:worker": "bunx opennextjs-cloudflare build",
-    "deploy:app": "bunx opennextjs-cloudflare build && bunx wrangler deploy"
+    "build:worker": "bun scripts/with-wrangler-vars.ts bunx opennextjs-cloudflare build",
+    "deploy:app": "bun run build:worker && bunx wrangler deploy"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.3.7",

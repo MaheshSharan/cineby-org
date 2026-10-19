@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { logger } from "@/lib/logger";
+import { getStreamProxySecret } from "@/lib/env/server";
 
 export interface Descriptor {
   url: string;
@@ -10,61 +10,8 @@ export interface Descriptor {
 
 const DEFAULT_TTL_MS = 6 * 60 * 60_000; // 6 hours
 
-let devFallbackSecret: string | null = null;
-
-function secret(): string {
-  // 1. Check process.env
-  const value = process.env.STREAM_PROXY_SECRET?.trim();
-  if (value) {
-    return value;
-  }
-
-  // 2. Check OpenNext Cloudflare ALS context
-  try {
-    const cfContext = (globalThis as unknown as Record<symbol, { env?: Record<string, unknown> }>)[
-      Symbol.for("__cloudflare-context__")
-    ];
-    const cfSecret = cfContext?.env?.STREAM_PROXY_SECRET;
-    if (typeof cfSecret === "string" && cfSecret.trim()) {
-      return cfSecret.trim();
-    }
-  } catch {
-    // Continue
-  }
-
-  // 4. Check global env
-  const globalEnv = (globalThis as unknown as { env?: Record<string, unknown> })?.env;
-  if (typeof globalEnv?.STREAM_PROXY_SECRET === "string" && globalEnv.STREAM_PROXY_SECRET.trim()) {
-    return globalEnv.STREAM_PROXY_SECRET.trim();
-  }
-
-  // 5. Check direct globalThis
-  const directSecret = (globalThis as unknown as Record<string, unknown>).STREAM_PROXY_SECRET;
-  if (typeof directSecret === "string" && directSecret.trim()) {
-    return directSecret.trim();
-  }
-
-  // In production, an absent secret must fail fast rather than signing with an insecure static key.
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "[signedProxy] STREAM_PROXY_SECRET is required in production! Set it via Cloudflare secrets or environment variables."
-    );
-  }
-
-  if (!devFallbackSecret) {
-    logger.warn(
-      "[signedProxy] No STREAM_PROXY_SECRET found. Generated an ephemeral in-memory secret for local development."
-    );
-    // Ephemeral random secret for local development (not a static guessable string)
-    devFallbackSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  }
-  return devFallbackSecret;
-}
-
 function sign(payload: string): string {
-  return createHmac("sha256", secret()).update(payload).digest("base64url");
+  return createHmac("sha256", getStreamProxySecret()).update(payload).digest("base64url");
 }
 
 export function createProxyDescriptor(

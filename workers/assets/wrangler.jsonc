@@ -12,6 +12,11 @@
       "custom_domain": true
     }
   ],
+  "vars": {
+    "TMDB_IMAGE_BASE_URL": "https://image.tmdb.org/t/p",
+    "IMAGE_BACKEND_URL": "https://wsrv.nl",
+    "ALLOWED_IMAGE_HOSTS": "image.tmdb.org,cineby.group,www.cineby.group,lh3.googleusercontent.com"
+  },
   "observability": {
     "logs": {
       "enabled": true,

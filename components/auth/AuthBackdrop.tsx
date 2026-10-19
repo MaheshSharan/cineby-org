@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { buildImageUrl, getPosterResponsiveUrls } from "@/lib/tmdb/image";
+import { buildImageUrl } from "@/lib/tmdb/image";
 
 // Clean TMDB file hashes for backdrop poster wall
 const POSTERS_HASHES_1 = [
@@ -46,16 +46,16 @@ const POSTERS_HASHES_4 = [
   "2mwgHfOyrFrmvozjFoEXHRdfGhv.jpg",
 ];
 
-function resolvePosterUrls(hashes: string[]): string[] {
-  return hashes.map((hash) => getPosterResponsiveUrls(hash).mobile ?? buildImageUrl(hash, "w342") ?? "");
+// Resolved per render, never at import time, so the image proxy config is read where it is used.
+function resolvePosterColumns(): string[][] {
+  return [POSTERS_HASHES_1, POSTERS_HASHES_2, POSTERS_HASHES_3, POSTERS_HASHES_4].map((hashes) =>
+    hashes.map((hash) => buildImageUrl(hash, "w342") ?? "")
+  );
 }
 
-const POSTERS_COL_1 = resolvePosterUrls(POSTERS_HASHES_1);
-const POSTERS_COL_2 = resolvePosterUrls(POSTERS_HASHES_2);
-const POSTERS_COL_3 = resolvePosterUrls(POSTERS_HASHES_3);
-const POSTERS_COL_4 = resolvePosterUrls(POSTERS_HASHES_4);
-
 export function AuthMobileBanner() {
+  const [posterCol1, posterCol2, posterCol3] = resolvePosterColumns();
+
   return (
     <div
       className="block lg:hidden h-[180px] md:h-[220px] overflow-hidden relative pointer-events-none shrink-0"
@@ -70,7 +70,7 @@ export function AuthMobileBanner() {
         <div className="poster-row">
           <div className="poster-track">
             <div className="poster-rail" style={{ "--duration": "30s" } as CSSProperties}>
-              {POSTERS_COL_1.map((src, i) => (
+              {posterCol1.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -78,7 +78,7 @@ export function AuthMobileBanner() {
               ))}
             </div>
             <div className="poster-rail" aria-hidden="true" style={{ "--duration": "30s" } as CSSProperties}>
-              {POSTERS_COL_1.map((src, i) => (
+              {posterCol1.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -89,7 +89,7 @@ export function AuthMobileBanner() {
 
           <div className="poster-track">
             <div className="poster-rail poster-reverse" style={{ "--duration": "35s" } as CSSProperties}>
-              {POSTERS_COL_2.map((src, i) => (
+              {posterCol2.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -101,7 +101,7 @@ export function AuthMobileBanner() {
               aria-hidden="true"
               style={{ "--duration": "35s" } as CSSProperties}
             >
-              {POSTERS_COL_2.map((src, i) => (
+              {posterCol2.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -112,7 +112,7 @@ export function AuthMobileBanner() {
 
           <div className="poster-track">
             <div className="poster-rail" style={{ "--duration": "40s" } as CSSProperties}>
-              {POSTERS_COL_3.map((src, i) => (
+              {posterCol3.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -120,7 +120,7 @@ export function AuthMobileBanner() {
               ))}
             </div>
             <div className="poster-rail" aria-hidden="true" style={{ "--duration": "40s" } as CSSProperties}>
-              {POSTERS_COL_3.map((src, i) => (
+              {posterCol3.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -135,6 +135,8 @@ export function AuthMobileBanner() {
 }
 
 export function AuthBackdrop() {
+  const [posterCol1, posterCol2, posterCol3, posterCol4] = resolvePosterColumns();
+
   return (
     <div className="hidden lg:flex relative h-full w-[44%] xl:w-[48%] 2xl:w-[50%] overflow-hidden bg-[#05070a] border-l border-white/[0.06] pointer-events-none select-none">
       <div className="poster-wall" aria-hidden="true">
@@ -148,7 +150,7 @@ export function AuthBackdrop() {
           {/* Column 1 */}
           <div className="poster-track">
             <div className="poster-rail" style={{ "--duration": "36s" } as CSSProperties}>
-              {POSTERS_COL_1.map((src, i) => (
+              {posterCol1.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -156,7 +158,7 @@ export function AuthBackdrop() {
               ))}
             </div>
             <div className="poster-rail" aria-hidden="true" style={{ "--duration": "36s" } as CSSProperties}>
-              {POSTERS_COL_1.map((src, i) => (
+              {posterCol1.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -168,7 +170,7 @@ export function AuthBackdrop() {
           {/* Column 2 (Reverse + Offset) */}
           <div className="poster-track poster-offset">
             <div className="poster-rail poster-reverse" style={{ "--duration": "44s" } as CSSProperties}>
-              {POSTERS_COL_2.map((src, i) => (
+              {posterCol2.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -180,7 +182,7 @@ export function AuthBackdrop() {
               aria-hidden="true"
               style={{ "--duration": "44s" } as CSSProperties}
             >
-              {POSTERS_COL_2.map((src, i) => (
+              {posterCol2.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -192,7 +194,7 @@ export function AuthBackdrop() {
           {/* Column 3 */}
           <div className="poster-track">
             <div className="poster-rail" style={{ "--duration": "52s" } as CSSProperties}>
-              {POSTERS_COL_3.map((src, i) => (
+              {posterCol3.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -200,7 +202,7 @@ export function AuthBackdrop() {
               ))}
             </div>
             <div className="poster-rail" aria-hidden="true" style={{ "--duration": "52s" } as CSSProperties}>
-              {POSTERS_COL_3.map((src, i) => (
+              {posterCol3.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -212,7 +214,7 @@ export function AuthBackdrop() {
           {/* Column 4 (Reverse + Offset) */}
           <div className="poster-track poster-offset">
             <div className="poster-rail poster-reverse" style={{ "--duration": "38s" } as CSSProperties}>
-              {POSTERS_COL_4.map((src, i) => (
+              {posterCol4.map((src, i) => (
                 <figure key={i} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
@@ -224,7 +226,7 @@ export function AuthBackdrop() {
               aria-hidden="true"
               style={{ "--duration": "38s" } as CSSProperties}
             >
-              {POSTERS_COL_4.map((src, i) => (
+              {posterCol4.map((src, i) => (
                 <figure key={`dup-${i}`} className="poster-item">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" loading="lazy" />
