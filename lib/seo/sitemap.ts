@@ -1,6 +1,6 @@
 import type { MediaType } from "@/lib/tmdb";
 import { getMediaHref } from "@/lib/utils/media";
-import { SITE_URL } from "@/lib/seo/site";
+import { getSiteUrl } from "@/lib/env/public";
 
 export interface SitemapUrlEntry {
   loc: string;
@@ -45,7 +45,7 @@ export function buildMediaCanonicalUrl(
   title?: string | null
 ): string {
   const relativeHref = getMediaHref(mediaType, id, title);
-  return `${SITE_URL}${relativeHref}`;
+  return `${getSiteUrl()}${relativeHref}`;
 }
 
 /**

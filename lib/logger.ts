@@ -1,7 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
 
-export type LogLevel = "debug" | "info" | "warn" | "error";
+import { getLogLevel, type LogLevel } from "@/lib/env/server";
+
+export type { LogLevel };
 
 const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   debug: 10,
@@ -9,14 +11,6 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   warn: 30,
   error: 40,
 };
-
-function getActiveLogLevel(): LogLevel {
-  const envLevel = process.env.LOG_LEVEL?.toLowerCase();
-  if (envLevel === "debug" || envLevel === "info" || envLevel === "warn" || envLevel === "error") {
-    return envLevel;
-  }
-  return process.env.NODE_ENV === "production" ? "info" : "debug";
-}
 
 const REDACTED_KEYS = new Set([
   "password",
@@ -85,13 +79,12 @@ export interface StructuredLogRecord {
 }
 
 export class Logger {
-  private activePriority: number;
-
-  constructor() {
-    this.activePriority = LOG_LEVEL_PRIORITY[getActiveLogLevel()];
-  }
+  // Resolved on first use so importing the logger never reads configuration.
+  private activePriority: number | null = null;
 
   private shouldLog(level: LogLevel): boolean {
+    this.activePriority ??= LOG_LEVEL_PRIORITY[getLogLevel()];
+
     return LOG_LEVEL_PRIORITY[level] >= this.activePriority;
   }
 

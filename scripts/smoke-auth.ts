@@ -1,4 +1,4 @@
-const BASE_URL = process.env.SMOKE_BASE_URL ?? "http://localhost:3001";
+import { parseUrl } from "../lib/env/read";
 
 interface User {
   id: number;
@@ -151,7 +151,7 @@ const isDirectRun =
   typeof process.argv[1] === "string" && process.argv[1].replaceAll("\\", "/").endsWith("smoke-auth.ts");
 
 if (isDirectRun) {
-  runAuthChecks(process.env.SMOKE_BASE_URL ?? "http://localhost:3001").catch((error) => {
+  runAuthChecks(parseUrl("SMOKE_BASE_URL", process.env.SMOKE_BASE_URL)).catch((error) => {
     console.error(error);
     process.exit(1);
   });

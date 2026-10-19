@@ -13,7 +13,7 @@ import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { UpdateToast } from "@/components/pwa/UpdateToast";
 import { ScrollEdgeButton } from "@/components/ui/ScrollEdgeButton";
 import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
-import { GA_MEASUREMENT_ID, pageView, trackEvent, setUserProperties } from "@/lib/analytics/gtag";
+import { getActiveGaMeasurementId, pageView, trackEvent, setUserProperties } from "@/lib/analytics/gtag";
 
 import "../styles/globals.css";
 
@@ -23,7 +23,7 @@ const DetailModal = dynamic(
 );
 
 export function reportWebVitals(metric: NextWebVitalsMetric) {
-  if (!GA_MEASUREMENT_ID) return;
+  if (!getActiveGaMeasurementId()) return;
 
   const validMetrics = ["CLS", "FCP", "FID", "INP", "LCP", "TTFB"] as const;
   if (!validMetrics.includes(metric.name as (typeof validMetrics)[number])) {
@@ -56,9 +56,10 @@ export function reportWebVitals(metric: NextWebVitalsMetric) {
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  const gaMeasurementId = getActiveGaMeasurementId();
 
   useEffect(() => {
-    if (!GA_MEASUREMENT_ID) return;
+    if (!gaMeasurementId) return;
 
     // Report network connection context
     if (typeof navigator !== "undefined" && "connection" in navigator) {
@@ -76,7 +77,7 @@ export default function App({ Component, pageProps }: AppProps) {
     return () => {
       router.events.off("routeChangeComplete", handleRouteChange);
     };
-  }, [router.events]);
+  }, [gaMeasurementId, router.events]);
 
   return (
     <AuthProvider>
@@ -85,7 +86,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </Head>
 
-      {GA_MEASUREMENT_ID && (
+      {gaMeasurementId && (
         <>
           {/* Google Consent Mode v2 setup (defaulting to privacy-safe measurement) */}
           <Script
@@ -108,7 +109,7 @@ export default function App({ Component, pageProps }: AppProps) {
           {/* Google Analytics 4 Script */}
           <Script
             strategy="afterInteractive"
-            src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+            src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
           />
           <Script
             id="google-analytics-init"
@@ -118,7 +119,7 @@ export default function App({ Component, pageProps }: AppProps) {
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${GA_MEASUREMENT_ID}', {
+                gtag('config', '${gaMeasurementId}', {
                   page_path: window.location.pathname,
                   send_page_view: true
                 });

@@ -1,8 +1,12 @@
 import Link from "next/link";
 
 import { PageSeo } from "@/components/seo/PageSeo";
+import { getLegalContactEmail, getSiteUrl } from "@/lib/env/public";
 
 export default function PrivacyPolicyPage() {
+  const siteUrl = getSiteUrl();
+  const legalEmail = getLegalContactEmail();
+
   return (
     <>
       <PageSeo
@@ -17,7 +21,7 @@ export default function PrivacyPolicyPage() {
             Privacy Policy
           </h1>
           <p className="mt-2 text-sm text-white/50">
-            Effective Date: October 17, 2026 | Application: Cineby (Google Project MAARE) | Website: https://cineby.group
+            Effective Date: October 17, 2026 | Application: Cineby (Google Project MAARE) | Website: {siteUrl}
           </p>
         </div>
 
@@ -25,7 +29,7 @@ export default function PrivacyPolicyPage() {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-white">1. Introduction & Application Purpose</h2>
             <p>
-              Cineby (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;), operated under the Google Cloud Project <strong>MAARE</strong>, is an interactive media indexing, discovery, and personal watch tracking web application accessible at <a href="https://cineby.group" className="text-primary underline">https://cineby.group</a> and <a href="https://www.cineby.group" className="text-primary underline">https://www.cineby.group</a>.
+              Cineby (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;), operated under the Google Cloud Project <strong>MAARE</strong>, is an interactive media indexing, discovery, and personal watch tracking web application accessible at <a href={siteUrl} className="text-primary underline">{siteUrl}</a>.
             </p>
             <p>
               This Privacy Policy explains in detail our practices regarding the collection, use, disclosure, storage, and protection of personal data when you interact with our website, create a profile, or authenticate using Google Identity Services.
@@ -134,8 +138,8 @@ export default function PrivacyPolicyPage() {
             </p>
             <div className="mt-2 rounded-xl bg-white/5 p-4 border border-white/10 space-y-1">
               <p><strong className="text-white">Developer / Project Lead:</strong> Mahesh Sharan</p>
-              <p><strong className="text-white">Email:</strong> <a href="mailto:maheshsharan28@gmail.com" className="text-primary underline">maheshsharan28@gmail.com</a></p>
-              <p><strong className="text-white">Application URL:</strong> <a href="https://cineby.group" className="text-primary underline">https://cineby.group</a></p>
+              <p><strong className="text-white">Email:</strong> <a href={`mailto:${legalEmail}`} className="text-primary underline">{legalEmail}</a></p>
+              <p><strong className="text-white">Application URL:</strong> <a href={siteUrl} className="text-primary underline">{siteUrl}</a></p>
             </div>
           </section>
         </div>

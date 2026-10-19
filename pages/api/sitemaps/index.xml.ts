@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { SITE_URL } from "@/lib/seo/site";
+import { getSiteUrl } from "@/lib/env/public";
 import { generateSitemapIndexXml } from "@/lib/seo/sitemap";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -18,9 +18,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const now = new Date().toISOString().split("T")[0];
 
   const sitemaps = [
-    { loc: `${SITE_URL}/sitemaps/pages.xml`, lastmod: now },
-    { loc: `${SITE_URL}/sitemaps/movies.xml`, lastmod: now },
-    { loc: `${SITE_URL}/sitemaps/tv.xml`, lastmod: now },
+    { loc: `${getSiteUrl()}/sitemaps/pages.xml`, lastmod: now },
+    { loc: `${getSiteUrl()}/sitemaps/movies.xml`, lastmod: now },
+    { loc: `${getSiteUrl()}/sitemaps/tv.xml`, lastmod: now },
   ];
 
   const xml = generateSitemapIndexXml(sitemaps);

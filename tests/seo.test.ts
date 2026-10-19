@@ -3,7 +3,8 @@ import path from "node:path";
 import { describe, it, expect } from "vitest";
 
 import { buildMediaDescription, buildMediaTitle, truncateDescription } from "@/lib/seo/media";
-import { buildAbsoluteUrl, SITE_URL } from "@/lib/seo/site";
+import { buildAbsoluteUrl } from "@/lib/seo/site";
+import { getSiteUrl } from "@/lib/env/public";
 import { generateSitemapIndexXml } from "@/lib/seo/sitemap";
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
@@ -55,7 +56,7 @@ describe("robots.txt", () => {
   const groups = parseRobotsGroups(robotsText);
 
   it("points crawlers to the sitemap on the canonical origin", () => {
-    expect(robotsText).toContain(`Sitemap: ${SITE_URL}/sitemap.xml`);
+    expect(robotsText).toContain(`Sitemap: ${getSiteUrl()}/sitemap.xml`);
   });
 
   it("keeps the player and private APIs away from every crawler group that allows the site", () => {
@@ -94,26 +95,26 @@ describe("robots.txt", () => {
 describe("sitemap.xml", () => {
   it("generates a sitemap index pointing to sub-sitemaps on the canonical origin", () => {
     const sitemaps = [
-      { loc: `${SITE_URL}/sitemaps/pages.xml`, lastmod: "2026-10-18" },
-      { loc: `${SITE_URL}/sitemaps/movies.xml`, lastmod: "2026-10-18" },
-      { loc: `${SITE_URL}/sitemaps/tv.xml`, lastmod: "2026-10-18" },
+      { loc: `${getSiteUrl()}/sitemaps/pages.xml`, lastmod: "2026-10-18" },
+      { loc: `${getSiteUrl()}/sitemaps/movies.xml`, lastmod: "2026-10-18" },
+      { loc: `${getSiteUrl()}/sitemaps/tv.xml`, lastmod: "2026-10-18" },
     ];
     const xml = generateSitemapIndexXml(sitemaps);
     const locations = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
 
     expect(locations).toEqual([
-      `${SITE_URL}/sitemaps/pages.xml`,
-      `${SITE_URL}/sitemaps/movies.xml`,
-      `${SITE_URL}/sitemaps/tv.xml`,
+      `${getSiteUrl()}/sitemaps/pages.xml`,
+      `${getSiteUrl()}/sitemaps/movies.xml`,
+      `${getSiteUrl()}/sitemaps/tv.xml`,
     ]);
   });
 });
 
 describe("media SEO metadata", () => {
   it("builds absolute canonical URLs", () => {
-    expect(buildAbsoluteUrl("/")).toBe(`${SITE_URL}/`);
-    expect(buildAbsoluteUrl("/movie/1-iron-man")).toBe(`${SITE_URL}/movie/1-iron-man`);
-    expect(buildAbsoluteUrl("browse/tv")).toBe(`${SITE_URL}/browse/tv`);
+    expect(buildAbsoluteUrl("/")).toBe(`${getSiteUrl()}/`);
+    expect(buildAbsoluteUrl("/movie/1-iron-man")).toBe(`${getSiteUrl()}/movie/1-iron-man`);
+    expect(buildAbsoluteUrl("browse/tv")).toBe(`${getSiteUrl()}/browse/tv`);
   });
 
   it("keeps short overviews untouched and collapses whitespace", () => {

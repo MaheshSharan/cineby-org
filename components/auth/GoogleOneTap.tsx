@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
 import Script from "next/script";
 
+import { getGoogleClientId } from "@/lib/env/public";
+
 const GOOGLE_SCRIPT_WAIT_MS = 5000;
 
 interface GoogleOneTapProps {
-  clientId?: string;
   onSuccess?: (redirectTo?: string) => void;
   onError?: (error: string) => void;
   disabled?: boolean;
@@ -60,11 +61,11 @@ export function handleGoogleCredentialResponse(
 }
 
 export function GoogleOneTap({
-  clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
   onSuccess,
   onError,
   disabled = false,
 }: GoogleOneTapProps) {
+  const clientId = getGoogleClientId();
   // Callbacks change identity on every parent render; keeping them in a ref stops the prompt from re-initializing.
   const callbacksRef = useRef({ onSuccess, onError });
   useEffect(() => {
@@ -72,7 +73,7 @@ export function GoogleOneTap({
   }, [onSuccess, onError]);
 
   useEffect(() => {
-    if (disabled || !clientId) {
+    if (disabled) {
       return;
     }
 
@@ -117,7 +118,7 @@ export function GoogleOneTap({
     };
   }, [clientId, disabled]);
 
-  if (disabled || !clientId) {
+  if (disabled) {
     return null;
   }
 

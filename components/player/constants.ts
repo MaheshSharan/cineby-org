@@ -1,5 +1,5 @@
 import type { PlaybackRate, QualityLabel, ServerGroup, ServerOption } from "./types";
-import { getFlagsApiBaseUrl } from "@/lib/env";
+import { getFlagsApiBaseUrl } from "@/lib/env/public";
 
 export const HISTORY_SAVE_INTERVAL_MS = 30_000;
 
@@ -98,39 +98,39 @@ export const SERVER_GROUPS: ServerGroup[] = [
     id: "vidy",
     name: "Vidy",
     children: [
-      { id: "vidy-miami", name: "Miami", flagUrl: getFlagUrl("us") },
-      { id: "vidy-boise", name: "Boise", flagUrl: getFlagUrl("us") },
-      { id: "vidy-atlanta", name: "Atlanta", flagUrl: getFlagUrl("us") },
-      { id: "vidy-seattle", name: "Seattle", flagUrl: getFlagUrl("us") },
-      { id: "vidy-denver", name: "Denver", flagUrl: getFlagUrl("us") },
-      { id: "vidy-phoenix", name: "Phoenix", flagUrl: getFlagUrl("us") },
-      { id: "vidy-portland", name: "Portland", flagUrl: getFlagUrl("us") },
-      { id: "vidy-austin", name: "Austin", flagUrl: getFlagUrl("us") },
-      { id: "vidy-dallas", name: "Dallas", flagUrl: getFlagUrl("us") },
-      { id: "vidy-tampa", name: "Tampa", flagUrl: getFlagUrl("us") },
-      { id: "vidy-orlando", name: "Orlando", flagUrl: getFlagUrl("us") },
-      { id: "vidy-munich", name: "Munich", flagUrl: getFlagUrl("de") },
-      { id: "vidy-berlin", name: "Berlin", flagUrl: getFlagUrl("de") },
-      { id: "vidy-paris", name: "Paris", flagUrl: getFlagUrl("fr") },
-      { id: "vidy-delhi", name: "Delhi", flagUrl: getFlagUrl("in") },
-      { id: "vidy-cancun", name: "Cancun", flagUrl: getFlagUrl("mx") },
+      { id: "vidy-miami", name: "Miami", flagUrl: "us" },
+      { id: "vidy-boise", name: "Boise", flagUrl: "us" },
+      { id: "vidy-atlanta", name: "Atlanta", flagUrl: "us" },
+      { id: "vidy-seattle", name: "Seattle", flagUrl: "us" },
+      { id: "vidy-denver", name: "Denver", flagUrl: "us" },
+      { id: "vidy-phoenix", name: "Phoenix", flagUrl: "us" },
+      { id: "vidy-portland", name: "Portland", flagUrl: "us" },
+      { id: "vidy-austin", name: "Austin", flagUrl: "us" },
+      { id: "vidy-dallas", name: "Dallas", flagUrl: "us" },
+      { id: "vidy-tampa", name: "Tampa", flagUrl: "us" },
+      { id: "vidy-orlando", name: "Orlando", flagUrl: "us" },
+      { id: "vidy-munich", name: "Munich", flagUrl: "de" },
+      { id: "vidy-berlin", name: "Berlin", flagUrl: "de" },
+      { id: "vidy-paris", name: "Paris", flagUrl: "fr" },
+      { id: "vidy-delhi", name: "Delhi", flagUrl: "in" },
+      { id: "vidy-cancun", name: "Cancun", flagUrl: "mx" },
     ],
   },
   {
     id: "cinezo",
     name: "Cinezo",
-    flagUrl: getFlagUrl("us"),
+    flagUrl: "us",
     children: [
-      { id: "cinezo-berlin", name: "Berlin", flagUrl: getFlagUrl("de") },
-      { id: "cinezo-zendaya", name: "Zendaya", flagUrl: getFlagUrl("us") },
-      { id: "cinezo-cinefreak", name: "Sadie", flagUrl: getFlagUrl("us") },
-      { id: "cinezo-jennifer", name: "Jennifer", flagUrl: getFlagUrl("us") },
+      { id: "cinezo-berlin", name: "Berlin", flagUrl: "de" },
+      { id: "cinezo-zendaya", name: "Zendaya", flagUrl: "us" },
+      { id: "cinezo-cinefreak", name: "Sadie", flagUrl: "us" },
+      { id: "cinezo-jennifer", name: "Jennifer", flagUrl: "us" },
     ],
   },
   {
     id: "vixsrc",
     name: "Vixsrc",
-    flagUrl: getFlagUrl("us"),
+    flagUrl: "us",
     children: [],
   },
 ];

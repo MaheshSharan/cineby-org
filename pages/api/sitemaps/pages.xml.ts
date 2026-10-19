@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { SITE_URL } from "@/lib/seo/site";
+import { getSiteUrl } from "@/lib/env/public";
 import { generateUrlsetXml, type SitemapUrlEntry } from "@/lib/seo/sitemap";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -17,11 +17,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const now = new Date().toISOString().split("T")[0];
 
   const staticUrls: SitemapUrlEntry[] = [
-    { loc: `${SITE_URL}/`, lastmod: now, changefreq: "daily", priority: 1.0 },
-    { loc: `${SITE_URL}/browse/movie`, lastmod: now, changefreq: "daily", priority: 0.9 },
-    { loc: `${SITE_URL}/browse/tv`, lastmod: now, changefreq: "daily", priority: 0.9 },
-    { loc: `${SITE_URL}/privacy`, lastmod: now, changefreq: "monthly", priority: 0.3 },
-    { loc: `${SITE_URL}/terms`, lastmod: now, changefreq: "monthly", priority: 0.3 },
+    { loc: `${getSiteUrl()}/`, lastmod: now, changefreq: "daily", priority: 1.0 },
+    { loc: `${getSiteUrl()}/browse/movie`, lastmod: now, changefreq: "daily", priority: 0.9 },
+    { loc: `${getSiteUrl()}/browse/tv`, lastmod: now, changefreq: "daily", priority: 0.9 },
+    { loc: `${getSiteUrl()}/privacy`, lastmod: now, changefreq: "monthly", priority: 0.3 },
+    { loc: `${getSiteUrl()}/terms`, lastmod: now, changefreq: "monthly", priority: 0.3 },
   ];
 
   const xml = generateUrlsetXml(staticUrls);

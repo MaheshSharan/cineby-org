@@ -1,5 +1,5 @@
 import type { MediaSegment, SegmentFetchParams, SegmentType } from "./types";
-import { getEnvVar } from "@/lib/env";
+import { getIntroDbApiKey, getIntroDbApiUrl } from "@/lib/env/server";
 
 export function parseTimeValue(value: unknown): number | null {
   if (typeof value === "number") {
@@ -165,11 +165,7 @@ export function parseIntroDbSegments(data: unknown, durationSec?: number): Media
   return results.sort((a, b) => a.start - b.start);
 }
 
-export function buildIntroDbUrl(params: SegmentFetchParams): URL | null {
-  const baseUrl = getEnvVar("INTRODB_API_URL")?.replace(/\/+$/, "");
-  if (!baseUrl) {
-    return null;
-  }
+export function buildIntroDbUrl(baseUrl: string, params: SegmentFetchParams): URL {
   const url = new URL(`${baseUrl}/segments`);
 
   url.searchParams.set("imdb_id", params.imdbId);
@@ -192,21 +188,15 @@ export async function fetchIntroDbSegments(
   params: SegmentFetchParams,
   timeoutMs = 4000
 ): Promise<MediaSegment[]> {
+  // Configuration errors must surface; only network and parsing failures degrade to "no segments".
+  const url = buildIntroDbUrl(getIntroDbApiUrl(), params);
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "User-Agent": "Cineby/1.0",
+    "X-API-Key": getIntroDbApiKey(),
+  };
+
   try {
-    const url = buildIntroDbUrl(params);
-    if (!url) {
-      return [];
-    }
-
-    const headers: Record<string, string> = {
-      Accept: "application/json",
-      "User-Agent": "Cineby/1.0",
-    };
-
-    const apiKey = getEnvVar("INTRODB_API_KEY")?.trim();
-    if (apiKey) {
-      headers["X-API-Key"] = apiKey;
-    }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);

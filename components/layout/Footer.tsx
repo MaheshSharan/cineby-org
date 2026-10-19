@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getContactEmail } from "@/lib/env/public";
 import { SineRibbonsText } from "@/components/ui/SineRibbons";
 
 export function Footer() {
@@ -44,7 +45,7 @@ export function Footer() {
               Terms of Service
             </Link>
             <a
-              href="mailto:contact@cineby.group"
+              href={`mailto:${getContactEmail()}`}
               className="transition-colors hover:text-white"
             >
               Contact

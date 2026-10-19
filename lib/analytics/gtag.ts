@@ -1,4 +1,9 @@
-export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || "";
+import { getGaMeasurementId, isAnalyticsEnabled } from "@/lib/env/public";
+
+/** GA4 measurement ID, or null while analytics is explicitly disabled (NEXT_PUBLIC_ENABLE_ANALYTICS=false). */
+export function getActiveGaMeasurementId(): string | null {
+  return isAnalyticsEnabled() ? getGaMeasurementId() : null;
+}
 
 export type GTagEvent =
   | {
@@ -165,7 +170,7 @@ declare global {
 }
 
 export function isAnalyticsActive(): boolean {
-  return typeof window !== "undefined" && Boolean(GA_MEASUREMENT_ID);
+  return typeof window !== "undefined" && isAnalyticsEnabled();
 }
 
 export function pageView(url: string, title?: string): void {
@@ -173,7 +178,7 @@ export function pageView(url: string, title?: string): void {
     return;
   }
 
-  window.gtag("config", GA_MEASUREMENT_ID, {
+  window.gtag("config", getGaMeasurementId(), {
     page_path: url,
     page_title: title || (typeof document !== "undefined" ? document.title : ""),
   });

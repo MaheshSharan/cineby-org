@@ -4,17 +4,7 @@ import { buildStreamProxyUrl } from "./proxy";
 import { ALL_PROVIDERS } from "./sources";
 import type { Provider, StreamRequest, StreamResponse, StreamSource, SubtitleTrack, ThumbnailTrack } from "./types";
 import { logger, logError } from "@/lib/logger";
-import { getEnvVar } from "@/lib/env";
-
-function isProviderEnabled(provider: Provider): boolean {
-  const envVar = `ENABLE_${provider.id.toUpperCase()}`;
-  const val = getEnvVar(envVar);
-  // Enabled by default unless explicitly set to "false" or "0"
-  if (val === "false" || val === "0") {
-    return false;
-  }
-  return true;
-}
+import { isProviderEnabled } from "@/lib/env/server";
 
 async function fetchWithTimeout(
   provider: Provider,
@@ -121,7 +111,7 @@ export async function resolveAllStreams(
   const timeoutMs = options?.timeoutMs ?? DEFAULT_PROVIDER_TIMEOUT_MS;
 
   const targetProviders = ALL_PROVIDERS.filter((p) => {
-    const enabled = isProviderEnabled(p);
+    const enabled = isProviderEnabled(p.id);
     const circuitOpen = isCircuitOpen(p.id);
     logger.debug(`[registry] Provider ${p.id}: enabled=${enabled}, circuitOpen=${circuitOpen}`);
 
@@ -213,7 +203,7 @@ export async function raceProviders(
 }
 
 export function listAvailableProviders(): { id: string; name: string }[] {
-  return ALL_PROVIDERS.filter((p) => isProviderEnabled(p) && !isCircuitOpen(p.id)).map((p) => ({
+  return ALL_PROVIDERS.filter((p) => isProviderEnabled(p.id) && !isCircuitOpen(p.id)).map((p) => ({
     id: p.id,
     name: p.name,
   }));
@@ -227,7 +217,7 @@ export async function fetchProviderSubtitles(
   // Determine which provider owns the active server
   const provider = activeServerId
     ? ALL_PROVIDERS.find((p) => activeServerId === p.id || activeServerId.startsWith(`${p.id}-`))
-    : ALL_PROVIDERS.find((p) => isProviderEnabled(p) && !isCircuitOpen(p.id));
+    : ALL_PROVIDERS.find((p) => isProviderEnabled(p.id) && !isCircuitOpen(p.id));
 
   if (!provider?.fetchSubtitles) {
     return [];

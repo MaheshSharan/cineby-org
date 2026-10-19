@@ -1,5 +1,6 @@
 import type { MovieDetails, TvDetails } from "@/lib/tmdb";
-import { buildAbsoluteUrl, SITE_NAME, SITE_URL } from "@/lib/seo/site";
+import { buildAbsoluteUrl, SITE_NAME } from "@/lib/seo/site";
+import { getSiteUrl } from "@/lib/env/public";
 import { getMediaHref } from "@/lib/utils/media";
 import { getMediaOpenGraphImageUrl } from "@/lib/seo/media";
 
@@ -34,7 +35,7 @@ export function buildBreadcrumbJsonLd(
         "@type": "ListItem",
         position: 1,
         name: "Home",
-        item: SITE_URL,
+        item: getSiteUrl(),
       },
       {
         "@type": "ListItem",
@@ -60,12 +61,12 @@ export function buildWebSiteJsonLd(): JsonLdData {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: SITE_NAME,
-    url: SITE_URL,
+    url: getSiteUrl(),
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${SITE_URL}/browse/movie?q={search_term_string}`,
+        urlTemplate: `${getSiteUrl()}/browse/movie?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },

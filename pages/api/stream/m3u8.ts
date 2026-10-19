@@ -20,11 +20,7 @@ import { isPrivateHost } from "@/lib/providers/allowlist";
  *
  * The client creates a Blob URL from the response and passes it to HLS.js.
  */
-import { getEnvVar } from "@/lib/env";
-
-function getM3u8FetcherUrl(): string {
-  return getEnvVar("M3U8_FETCHER_URL")?.trim() || "";
-}
+import { getM3u8FetcherUrl } from "@/lib/env/server";
 
 function extractClientIp(req: NextApiRequest): string {
   const cfIp = req.headers["cf-connecting-ip"];
@@ -55,55 +51,6 @@ function getAppOrigin(req: NextApiRequest): string {
       : "https";
 
   return `${proto}://${host}`;
-}
-
-async function fetchWithSsrfProtection(
-  initialUrl: string,
-  options: RequestInit,
-  maxRedirects = 3
-): Promise<Response> {
-  let currentUrl = initialUrl;
-  let redirectsRemaining = maxRedirects;
-
-  while (true) {
-    let parsed: URL;
-    try {
-      parsed = new URL(currentUrl);
-    } catch {
-      const err = new Error("Invalid stream URL");
-      (err as { status?: number }).status = 400;
-      throw err;
-    }
-
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      const err = new Error("Unsupported stream URL protocol");
-      (err as { status?: number }).status = 400;
-      throw err;
-    }
-
-    if (isPrivateHost(parsed.hostname)) {
-      const err = new Error("Stream host is private or internal");
-      (err as { status?: number }).status = 403;
-      throw err;
-    }
-
-    const upstream = await fetch(currentUrl, {
-      ...options,
-      redirect: "manual",
-    });
-
-    if (upstream.status >= 300 && upstream.status < 400) {
-      const location = upstream.headers.get("location");
-      if (!location || redirectsRemaining <= 0) {
-        return upstream;
-      }
-      redirectsRemaining--;
-      currentUrl = new URL(location, currentUrl).toString();
-      continue;
-    }
-
-    return upstream;
-  }
 }
 
 import { withApiContext } from "@/lib/validation";
@@ -158,38 +105,23 @@ export default withApiContext(
     }
 
     baseUrl = targetUrl;
+    // Read outside the try block so a missing M3U8_FETCHER_URL is a configuration error, not a 502.
+    const fetcherBase = getM3u8FetcherUrl();
     try {
-      const fetcherBase = getM3u8FetcherUrl().replace(/\/+$/, "");
       const explicitReferer = headers.Referer || headers.referer || refererQuery;
       const explicitOrigin = headers.Origin || headers.origin || originQuery;
       const targetOrigin = parsedTargetUrl ? parsedTargetUrl.origin : "";
       const fetchReferer = explicitReferer || (targetOrigin ? `${targetOrigin}/` : "");
       const fetchOrigin = explicitOrigin || targetOrigin;
 
-      const fetchHeaders: Record<string, string> = {
-        ...(fetchReferer ? { Referer: fetchReferer } : {}),
-        ...(fetchOrigin ? { Origin: fetchOrigin } : {}),
-        "User-Agent":
-          headers["User-Agent"] ??
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        Accept: "*/*",
-      };
-
-      let upstream: Response;
-      if (fetcherBase) {
-        const params = new URLSearchParams({
-          url: targetUrl,
-          ...(fetchHeaders.Referer ? { referer: fetchHeaders.Referer } : {}),
-          ...(fetchHeaders.Origin ? { origin: fetchHeaders.Origin } : {}),
-        });
-        const fetchUrl = `${fetcherBase}?${params.toString()}`;
-        upstream = await fetch(fetchUrl, { headers: { Accept: "*/*" } });
-      } else {
-        upstream = await fetchWithSsrfProtection(
-          targetUrl,
-          { headers: fetchHeaders }
-        );
-      }
+      const params = new URLSearchParams({
+        url: targetUrl,
+        ...(fetchReferer ? { referer: fetchReferer } : {}),
+        ...(fetchOrigin ? { origin: fetchOrigin } : {}),
+      });
+      const upstream = await fetch(`${fetcherBase}?${params.toString()}`, {
+        headers: { Accept: "*/*" },
+      });
 
       if (!upstream.ok) {
         res.status(502).json({ error: `Upstream returned ${upstream.status}` });

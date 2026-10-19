@@ -11,9 +11,17 @@
  */
 
 export interface Env {
+  /** Secret (`wrangler secret put` / `.dev.vars`), shared with the main app. */
   STREAM_PROXY_SECRET?: string;
+  /** Comma-separated origins allowed to call the proxy (wrangler.jsonc vars). */
   CORS_ALLOWED_ORIGINS?: string;
-  ENVIRONMENT?: string;
+}
+
+const REQUIRED_ENV = ["STREAM_PROXY_SECRET", "CORS_ALLOWED_ORIGINS"] as const;
+
+/** Names of required variables that are missing or empty. No defaults: the worker refuses to run. */
+function findMissingEnv(env: Env): string[] {
+  return REQUIRED_ENV.filter((name) => !env[name]?.trim());
 }
 
 function isPrivateIpv4(ip: string): boolean {
@@ -199,12 +207,7 @@ function handleCors(req: Request, env: Env): Headers {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  if (allowed.length > 0) {
-    if (origin && allowed.includes(origin)) {
-      headers.set("Access-Control-Allow-Origin", origin);
-      headers.set("Vary", "Origin");
-    }
-  } else if (origin) {
+  if (origin && allowed.includes(origin)) {
     headers.set("Access-Control-Allow-Origin", origin);
     headers.set("Vary", "Origin");
   }
@@ -220,6 +223,16 @@ export interface WorkerContext {
 
 export default {
   async fetch(req: Request, env: Env, ctx?: WorkerContext): Promise<Response> {
+    const missingEnv = findMissingEnv(env);
+    if (missingEnv.length > 0) {
+      return new Response(
+        JSON.stringify({
+          error: `Server Misconfiguration: missing required variable(s) ${missingEnv.join(", ")}`,
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const corsHeaders = handleCors(req, env);
 
     if (req.method === "OPTIONS") {
@@ -234,21 +247,7 @@ export default {
     const url = new URL(req.url);
     const rawToken = url.searchParams.get("token") || "";
 
-    const isDev =
-      env.ENVIRONMENT === "development" ||
-      (typeof process !== "undefined" && process.env?.NODE_ENV === "development");
-
-    const configuredSecret = env.STREAM_PROXY_SECRET?.trim();
-    if (!configuredSecret && !isDev) {
-      return new Response(
-        JSON.stringify({ error: "Server Misconfiguration: STREAM_PROXY_SECRET is required" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
-        }
-      );
-    }
-    const secret = configuredSecret || "cineby_dev_stream_secret_default_fallback_key";
+    const secret = (env.STREAM_PROXY_SECRET ?? "").trim();
 
     const descriptor = await readDescriptor(rawToken, secret);
     if (!descriptor) {

@@ -10,11 +10,11 @@ import type {
 import { decryptVidyPayload } from "./cipher";
 import { VIDY_SERVERS, type VidyServerConfig } from "./servers";
 import { logError } from "@/lib/logger";
+import { getTmdbApiKey, getTmdbApiUrl } from "@/lib/env/server";
 
 const PROVIDER_ID = "vidy";
 const PROVIDER_NAME = "Vidy";
 const API_BASE = "https://api.wecollege.net";
-const DB_BASE = "https://db.wecollege.net/3";
 const SUBTITLES_BASE = "https://subtitles.vidy.st";
 
 interface TmdbMeta {
@@ -72,8 +72,13 @@ async function fetchMetadata(
   signal?: AbortSignal
 ): Promise<TmdbMeta> {
   try {
+    const metadataUrl = new URL(`${getTmdbApiUrl()}/${type}/${tmdbId}`);
+    metadataUrl.searchParams.set("api_key", getTmdbApiKey());
+    metadataUrl.searchParams.set("append_to_response", "external_ids,translations");
+    metadataUrl.searchParams.set("language", "en");
+
     const res = await fetch(
-      `${DB_BASE}/${type}/${tmdbId}?append_to_response=external_ids,translations&language=en`,
+      metadataUrl,
       {
         headers: {
           Referer: "https://www.vidy.st/",

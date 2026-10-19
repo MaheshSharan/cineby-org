@@ -1,5 +1,5 @@
 import type { MediaSummary } from "@/lib/tmdb";
-import { buildImageUrl } from "@/lib/tmdb/image";
+import { buildSourceImageUrl } from "@/lib/tmdb/image";
 import { getYear } from "@/lib/utils/media";
 
 import { SITE_NAME } from "./site";
@@ -46,21 +46,21 @@ export function buildMediaDescription(media: SeoMedia): string {
 export function getMediaOpenGraphImageUrl(
   media: Pick<MediaSummary, "backdropPath" | "posterPath">
 ): string | null {
-  return buildImageUrl(media.backdropPath, "w1280") ?? buildImageUrl(media.posterPath, "w780");
+  return buildSourceImageUrl(media.backdropPath, "w1280") ?? buildSourceImageUrl(media.posterPath, "w780");
 }
 
 export function getMediaOpenGraphImage(
   media: Pick<MediaSummary, "backdropPath" | "posterPath">
 ): { url: string; width: number; height: number } | null {
   if (media.backdropPath) {
-    const url = buildImageUrl(media.backdropPath, "w1280");
+    const url = buildSourceImageUrl(media.backdropPath, "w1280");
     if (url) {
       return { url, width: 1280, height: 720 };
     }
   }
 
   if (media.posterPath) {
-    const url = buildImageUrl(media.posterPath, "w780");
+    const url = buildSourceImageUrl(media.posterPath, "w780");
     if (url) {
       return { url, width: 780, height: 1170 };
     }

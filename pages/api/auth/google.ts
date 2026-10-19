@@ -13,9 +13,7 @@ import { getDb } from "@/lib/db/connection";
 import { createUser, findUserByEmail, findUserByIdentifier, toPublicUser } from "@/lib/db/users";
 import { allowAuthAttempt, authClientKey } from "@/lib/auth/rateLimit";
 import { withApiContext } from "@/lib/validation";
-import { getEnvVar } from "@/lib/env";
-
-const GOOGLE_CLIENT_ID = getEnvVar("NEXT_PUBLIC_GOOGLE_CLIENT_ID");
+import { getGoogleClientId } from "@/lib/env/public";
 
 export default withApiContext(
   "api/auth/google",
@@ -39,7 +37,7 @@ export default withApiContext(
       return;
     }
 
-    const tokenPayload = await verifyGoogleIdToken(credential, GOOGLE_CLIENT_ID);
+    const tokenPayload = await verifyGoogleIdToken(credential, getGoogleClientId());
     if (!tokenPayload || !tokenPayload.email) {
       res.status(401).json({ error: "Invalid or expired Google credential." });
       return;

@@ -3,6 +3,8 @@
  * Can be globally or individually toggled via TRAILER_CONFIG.
  */
 
+import { getTrailerApiUrl } from "@/lib/env/public";
+
 export interface TrailerStream {
   quality: string;
   url: string;
@@ -23,14 +25,6 @@ export interface TrailerResponse {
 export const TRAILER_CONFIG = {
   /** Master switch for direct MP4 trailers */
   enabled: true,
-  /** Endpoint for oldest trailer API */
-  get trailerEndpoint(): string {
-    const endpoint = process.env.TRAILER_API_URL?.trim();
-    if (!endpoint) {
-      throw new Error("Missing required environment variable: TRAILER_API_URL");
-    }
-    return endpoint;
-  },
 } as const;
 
 /**
@@ -42,8 +36,11 @@ export async function getTrailerUrl(imdbId?: string | null): Promise<string | nu
     return null;
   }
 
+  // Read outside the try block so a missing TRAILER_API_URL is not mistaken for "no trailer".
+  const endpoint = getTrailerApiUrl();
+
   try {
-    const res = await fetch(`${TRAILER_CONFIG.trailerEndpoint}?id=${encodeURIComponent(imdbId)}`);
+    const res = await fetch(`${endpoint}?id=${encodeURIComponent(imdbId)}`);
     if (!res.ok) return null;
 
     const data = (await res.json()) as TrailerResponse;

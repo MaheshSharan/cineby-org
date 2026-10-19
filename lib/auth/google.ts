@@ -17,7 +17,7 @@ export interface GoogleTokenPayload {
  */
 export async function verifyGoogleIdToken(
   credential: string,
-  expectedClientId?: string
+  expectedClientId: string
 ): Promise<GoogleTokenPayload | null> {
   if (!credential || typeof credential !== "string") {
     return null;
@@ -40,7 +40,7 @@ export async function verifyGoogleIdToken(
     }
 
     const aud = typeof payload.aud === "string" ? payload.aud : "";
-    if (expectedClientId && aud !== expectedClientId) {
+    if (aud !== expectedClientId) {
       return null;
     }
 

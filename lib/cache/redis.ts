@@ -1,6 +1,6 @@
 import type { CacheStats, CacheStore } from "./types";
 import { MemoryCacheStore } from "./memory";
-import { getCacheMaxEntries, getRedisUrl, getUpstashRedisRestToken, getUpstashRedisRestUrl } from "@/lib/env";
+import { getCacheMaxEntries, getUpstashRedisRestToken, getUpstashRedisRestUrl } from "@/lib/env/server";
 import { logger } from "@/lib/logger";
 
 /**
@@ -91,58 +91,18 @@ export class UpstashRestClient implements RedisClientLike {
   }
 }
 
-function resolveRedisCredentials(
-  redisUrl?: string,
-  restUrl?: string,
-  restToken?: string
-): { url: string; token: string } | null {
-  const explicitUrl = restUrl || redisUrl || getUpstashRedisRestUrl() || getRedisUrl();
-  let explicitToken = restToken || getUpstashRedisRestToken();
-
-  if (!explicitUrl) return null;
-
-  try {
-    const parsed = new URL(explicitUrl);
-    if (!explicitToken && parsed.password) {
-      explicitToken = decodeURIComponent(parsed.password);
-    }
-
-    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
-      if (explicitToken) {
-        return { url: `${parsed.protocol}//${parsed.host}`, token: explicitToken };
-      }
-    } else if (parsed.protocol === "rediss:" || parsed.protocol === "redis:") {
-      if (explicitToken) {
-        return { url: `https://${parsed.hostname}`, token: explicitToken };
-      }
-    }
-  } catch {
-    // Malformed Redis URLs fall through to memory cache; safely ignored per §16
-  }
-
-  return null;
-}
-
 export class RedisCacheStore implements CacheStore {
   readonly name = "redis";
   private client: RedisClientLike | null = null;
   private fallbackStore: CacheStore;
 
-  constructor(redisUrl?: string, client?: RedisClientLike, fallbackStore?: CacheStore) {
+  /**
+   * Upstash credentials are required: selecting the redis backend without them throws instead of
+   * silently degrading to memory. `fallbackStore` only covers runtime Redis request failures.
+   */
+  constructor(client?: RedisClientLike, fallbackStore?: CacheStore) {
     this.fallbackStore = fallbackStore ?? new MemoryCacheStore(getCacheMaxEntries());
-
-    if (client) {
-      this.client = client;
-    } else {
-      const creds = resolveRedisCredentials(redisUrl);
-      if (creds) {
-        this.client = new UpstashRestClient(creds.url, creds.token);
-      } else {
-        logger.warn(
-          "[RedisCacheStore] Redis backend selected but neither REDIS_URL nor UPSTASH_REDIS_REST_URL/TOKEN is configured. Falling back to in-memory cache."
-        );
-      }
-    }
+    this.client = client ?? new UpstashRestClient(getUpstashRedisRestUrl(), getUpstashRedisRestToken());
   }
 
   async get<T>(key: string): Promise<T | null> {
