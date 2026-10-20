@@ -13,6 +13,7 @@ import { formatRuntime, getMediaKey } from "@/lib/utils/media";
 
 import { usePlayerControls } from "./hooks/usePlayerControls";
 import { usePlayerState } from "./hooks/usePlayerState";
+import { useSubtitleSync } from "./hooks/useSubtitleSync";
 import { useSubtitles } from "./hooks/useSubtitles";
 import { usePlayerShortcuts } from "./hooks/usePlayerShortcuts";
 import { usePlayerSource } from "./hooks/usePlayerSource";
@@ -178,6 +179,21 @@ export function PlayerContainer({
     preferredLanguage: appSettings.playback.preferredLanguage,
     subtitlesSettings: appSettings.subtitles,
   });
+
+  const subtitleSync = useSubtitleSync({
+    videoRef,
+    sourceUrl: stream.source?.url,
+    format: stream.source?.format,
+    enabled: appSettings.subtitles.autoSync,
+    trackId: subtitles.activeTrack?.id,
+    getRawSubtitles: subtitles.getRawSubtitles,
+    globalDelaySec: appSettings.subtitles.delay,
+    setTrackOffset: subtitles.setTrackOffset,
+  });
+
+  function nudgeSubtitles(deltaSec: number) {
+    subtitles.setTrackOffset(subtitles.trackOffset + deltaSec);
+  }
 
   function closePopovers() {
     setIsQualityOpen(false);
@@ -699,6 +715,20 @@ export function PlayerContainer({
                     subtitlesEnabled={subtitles.subtitlesEnabled}
                     isSubtitlesFetching={subtitles.isSubtitlesFetching}
                     onToggleSubtitles={subtitles.handleToggleSubtitles}
+                    sync={
+                      subtitleSync.supported
+                        ? {
+                            state: subtitleSync.state,
+                            trackOffset: subtitles.trackOffset,
+                            hasTrack: !!subtitles.activeTrack,
+                            onStart: subtitleSync.start,
+                            onCancel: subtitleSync.cancel,
+                            onApply: subtitleSync.apply,
+                            onNudge: nudgeSubtitles,
+                            onReset: () => subtitles.setTrackOffset(0),
+                          }
+                        : undefined
+                    }
                   />
                 </div>
 

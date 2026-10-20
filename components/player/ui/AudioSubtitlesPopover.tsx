@@ -18,6 +18,7 @@ import {
   UploadIcon,
 } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/Spinner";
+import { SubtitleSyncPanel, type SubtitleSyncPanelProps } from "./SubtitleSyncPanel";
 
 interface AudioSubtitlesPopoverProps {
   open: boolean;
@@ -29,6 +30,8 @@ interface AudioSubtitlesPopoverProps {
   subtitlesEnabled: boolean;
   isSubtitlesFetching: boolean;
   onToggleSubtitles: () => void;
+  /** Present only when subtitle auto-sync is enabled and supported. */
+  sync?: SubtitleSyncPanelProps;
 }
 
 export function AudioSubtitlesPopover({
@@ -41,6 +44,7 @@ export function AudioSubtitlesPopover({
   subtitlesEnabled,
   isSubtitlesFetching,
   onToggleSubtitles,
+  sync,
 }: AudioSubtitlesPopoverProps) {
   const [view, setView] = useState<"tracks" | "settings">("tracks");
 
@@ -324,6 +328,13 @@ export function AudioSubtitlesPopover({
                       ariaLabel="Toggle pastel mode"
                     />
                   </div>
+
+                  {sync ? (
+                    <>
+                      <SubtitleSyncPanel {...sync} />
+                      <hr className="border-white/10 my-2" />
+                    </>
+                  ) : null}
 
                   {/* Subtitle Delay Sync */}
                   <div className="space-y-2.5">
