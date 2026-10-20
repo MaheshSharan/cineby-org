@@ -19,6 +19,7 @@ export function SubtitlesSettings() {
     backgroundBlur,
     useNative,
     pastelMode,
+    autoSync,
     position = 0,
   } = settings.subtitles;
 
@@ -48,6 +49,21 @@ export function SubtitlesSettings() {
             checked={!!useNative}
             onChange={(val) => updateSubtitles({ useNative: val })}
             ariaLabel="Use native subtitles"
+          />
+        </div>
+
+        {/* Auto-sync: works with native subtitles too, so it sits outside the disabled block */}
+        <div className="py-5 flex items-center justify-between gap-4">
+          <div className="max-w-md">
+            <p className="text-[15px] font-medium text-white">Subtitle auto-sync</p>
+            <p className="text-[13px] text-white/50 mt-0.5">
+              Show a one-click Auto-sync button in the player that lines subtitles up with the audio. Listens for up to 30 seconds and runs entirely on your device. Not available in Safari.
+            </p>
+          </div>
+          <ToggleSwitch
+            checked={!!autoSync}
+            onChange={(val) => updateSubtitles({ autoSync: val })}
+            ariaLabel="Subtitle auto-sync"
           />
         </div>
 

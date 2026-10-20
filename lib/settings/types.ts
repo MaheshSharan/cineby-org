@@ -71,6 +71,7 @@ export interface SubtitlesSettings {
   delay: number; // -20 to +20 seconds
   useNative: boolean;
   pastelMode: boolean;
+  autoSync: boolean; // one-click subtitle auto-sync in the player
 }
 
 export interface CinebySettings {
@@ -104,6 +105,7 @@ export const DEFAULT_SETTINGS: CinebySettings = {
     delay: 0,
     useNative: false,
     pastelMode: false,
+    autoSync: true,
   },
 };
 
@@ -145,6 +147,7 @@ export function toApiSettingsResponse(settings: CinebySettings): Record<string, 
     useNativeSubtitles: settings.subtitles.useNative,
     useNative: settings.subtitles.useNative,
     pastelMode: settings.subtitles.pastelMode,
+    autoSync: settings.subtitles.autoSync,
 
     // Cineby structured namespaces
     appearance: settings.appearance,
@@ -323,6 +326,13 @@ export function normalizeApiSettings(payload: unknown): CinebySettings {
     ? raw.pastelMode
     : DEFAULT_SETTINGS.subtitles.pastelMode;
 
+  // Subtitle auto-sync
+  const autoSync = typeof rawSubtitles.autoSync === "boolean"
+    ? rawSubtitles.autoSync
+    : typeof raw.autoSync === "boolean"
+    ? raw.autoSync
+    : DEFAULT_SETTINGS.subtitles.autoSync;
+
   // Hover thumbnails
   const hoverThumbnails = typeof rawPlayback.hoverThumbnails === "boolean"
     ? rawPlayback.hoverThumbnails
@@ -355,6 +365,7 @@ export function normalizeApiSettings(payload: unknown): CinebySettings {
       delay,
       useNative: nativeCandidate,
       pastelMode: pastelCandidate,
+      autoSync,
     },
   };
 }
