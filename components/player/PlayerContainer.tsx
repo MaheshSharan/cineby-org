@@ -184,6 +184,7 @@ export function PlayerContainer({
     videoRef,
     sourceUrl: stream.source?.url,
     format: stream.source?.format,
+    headers: stream.source?.headers,
     enabled: appSettings.subtitles.autoSync,
     trackId: subtitles.activeTrack?.id,
     getRawSubtitles: subtitles.getRawSubtitles,
@@ -234,10 +235,13 @@ export function PlayerContainer({
     }
   }
 
+  const isSyncActive = isAudioSubtitlesOpen && subtitleSync.state.phase === "listening";
+
   const controls = usePlayerControls({
     containerRef,
     seekTime: appSettings.playback.seekTime,
     isLocked,
+    keepVisible: isSyncActive,
     onTogglePlay: playerState.togglePlay,
     onSeekBy: playerState.seekBy,
     onDoubleTapSeek: handleDoubleTapSeek,
@@ -514,7 +518,9 @@ export function PlayerContainer({
   const handleAudioMouseLeave = () => {
     if (!isHoverSupportedRef.current) return;
     if (audioTimerRef.current) clearTimeout(audioTimerRef.current);
+    if (subtitleSync.state.phase === "listening") return;
     audioTimerRef.current = setTimeout(() => {
+      if (subtitleSync.state.phase === "listening") return;
       setIsAudioSubtitlesOpen(false);
     }, 150);
   };
@@ -715,10 +721,12 @@ export function PlayerContainer({
                     subtitlesEnabled={subtitles.subtitlesEnabled}
                     isSubtitlesFetching={subtitles.isSubtitlesFetching}
                     onToggleSubtitles={subtitles.handleToggleSubtitles}
+                    onOpenOpenSubtitles={() => subtitles.fetchSubtitles()}
                     sync={
                       subtitleSync.supported
                         ? {
                             state: subtitleSync.state,
+                            logs: subtitleSync.logs,
                             trackOffset: subtitles.trackOffset,
                             hasTrack: !!subtitles.activeTrack,
                             onStart: subtitleSync.start,

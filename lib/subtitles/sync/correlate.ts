@@ -3,7 +3,7 @@ import { FRAME_SEC, type SubtitleCue, type WindowMatch } from "./types";
 
 export const MAX_SHIFT_SEC = 60;
 export const MIN_PEAK = 0.25;
-export const MIN_CONFIDENCE = 0.12;
+export const MIN_CONFIDENCE = 0.08;
 const PEAK_EXCLUSION_SEC = 0.5;
 
 function prefixSums(signal: Uint8Array): { sum: Float64Array } {
@@ -92,5 +92,8 @@ export function matchWindow(
 }
 
 export function isConfident(match: WindowMatch): boolean {
-  return match.peak >= MIN_PEAK && match.confidence >= MIN_CONFIDENCE;
+  return (
+    (match.peak >= 0.35 && match.confidence >= 0.025) ||
+    (match.peak >= MIN_PEAK && match.confidence >= MIN_CONFIDENCE)
+  );
 }

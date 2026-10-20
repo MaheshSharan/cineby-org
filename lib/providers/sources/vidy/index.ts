@@ -337,7 +337,29 @@ async function scrapeServer(
         ]
       : [];
 
-    return { sources, subtitles: [], thumbnails };
+    // Map subtitles embedded in the decrypted payload. These are timing-locked to the
+    // stream's HLS epoch, so they align correctly without any offset correction.
+    // Community SRT fallback (subtitles.vidy.st) supplements non-English tracks
+    // and is fetched lazily via fetchSubtitlesOnly.
+    const payloadSubtitleTracks: SubtitleTrack[] = (payload.subtitles ?? [])
+      .filter((s): s is DecryptedSubtitleItem & { url: string } => Boolean(s.url))
+      .map((s, idx) => {
+        const lang = s.lang ?? s.language ?? "en";
+        const label = lang === "eng" || lang === "en" ? "English" : lang.toUpperCase();
+        return {
+                    id: `vidy-payload-sub-${s.lang ?? idx}`,
+          lang,
+          label,
+          url: s.url,
+          format: "vtt" as const,
+          headers: {
+            Referer: "https://www.vidy.st/",
+            Origin: "https://www.vidy.st",
+          },
+        };
+      });
+
+    return { sources, subtitles: payloadSubtitleTracks, thumbnails };
   } catch (error) {
     if (!signal?.aborted) {
       logError(`Provider:vidy:${server.id}`, error);
@@ -384,7 +406,7 @@ async function scrape(req: StreamRequest): Promise<StreamResponse> {
         if (result.sources.length > 0) {
           return {
             sources: result.sources,
-            subtitles: [],
+            subtitles: result.subtitles,
             thumbnails: result.thumbnails,
           };
         }
@@ -412,9 +434,23 @@ async function scrape(req: StreamRequest): Promise<StreamResponse> {
     }
   }
 
+  // Deduplicate subtitle tracks by lang (multiple servers may return same lang)
+  const seenLangs = new Set<string>();
+  const allSubtitles = allSources.length > 0
+    ? results
+        .filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof scrapeServer>>> => r.status === "fulfilled")
+        .flatMap((r) => r.value.subtitles)
+        .filter((s) => {
+          const langKey = (s.lang || "unknown").toLowerCase();
+          if (seenLangs.has(langKey)) return false;
+          seenLangs.add(langKey);
+          return true;
+        })
+    : [];
+
   return {
     sources: allSources,
-    subtitles: [],
+    subtitles: allSubtitles,
     thumbnails: allThumbnails,
   };
 }
@@ -439,7 +475,7 @@ export function decryptVidyClientPayload(
   seed: string,
   tmdbId: number,
   serverId = "miami"
-): { sources: StreamSource[]; thumbnails: ThumbnailTrack[] } {
+): { sources: StreamSource[]; subtitles: SubtitleTrack[]; thumbnails: ThumbnailTrack[] } {
   try {
     const payload = decryptVidyPayload<DecryptedPayload>(ciphertext, seed, tmdbId);
     const serverObj = VIDY_SERVERS.find((s) => s.id === serverId) ?? VIDY_SERVERS[0];
@@ -501,10 +537,28 @@ export function decryptVidyClientPayload(
         ]
       : [];
 
-    return { sources, thumbnails };
+    const subtitles: SubtitleTrack[] = (payload.subtitles ?? [])
+      .filter((s): s is DecryptedSubtitleItem & { url: string } => Boolean(s.url))
+      .map((s, idx) => {
+        const lang = s.lang ?? s.language ?? "en";
+        const label = lang === "eng" || lang === "en" ? "English" : lang.toUpperCase();
+        return {
+          id: `vidy-payload-sub-${s.lang ?? idx}`,
+          lang,
+          label,
+          url: s.url,
+          format: "vtt" as const,
+          headers: {
+            Referer: "https://www.vidy.st/",
+            Origin: "https://www.vidy.st",
+          },
+        };
+      });
+
+    return { sources, subtitles, thumbnails };
   } catch (err) {
     logError("vidy:decryptClientCiphertext", err);
-    return { sources: [], thumbnails: [] };
+    return { sources: [], subtitles: [], thumbnails: [] };
   }
 }
 

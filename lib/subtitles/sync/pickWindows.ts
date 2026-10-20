@@ -42,7 +42,7 @@ function scoreWindow(cues: readonly SubtitleCue[], window: TimeWindow): number {
 }
 
 function isEligible(cue: SubtitleCue, durationSec: number): boolean {
-  const introEnd = Math.max(INTRO_SKIP_MIN_SEC, durationSec * INTRO_SKIP_FRACTION);
+  const introEnd = Math.min(INTRO_SKIP_MIN_SEC, durationSec * 0.1);
   return cue.start >= introEnd && cue.end <= durationSec * CREDITS_START_FRACTION;
 }
 

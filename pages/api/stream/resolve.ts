@@ -114,7 +114,7 @@ export default withApiContext(
             url: buildStreamProxyUrl(thumb.url, thumb.headers, clientIp),
           }));
 
-          const subtitles = await fetchProviderSubtitles(
+          const fallbackSubtitles = await fetchProviderSubtitles(
             {
               tmdbId: parsedTmdbId,
               type: mediaType,
@@ -125,8 +125,13 @@ export default withApiContext(
             clientIp
           );
 
-          logger.debug(`[resolve] Vidy client-assisted resolution succeeded: ${finalSources.length} sources, ${subtitles.length} subtitles, ${finalThumbnails.length} thumbnails`);
-          res.status(200).json({ sources: finalSources, subtitles, thumbnails: finalThumbnails });
+          const payloadSubs = decrypted.subtitles ?? [];
+          const seenLangs = new Set<string>(payloadSubs.map((s) => (s.lang || "unknown").toLowerCase()));
+          const extraSubs = fallbackSubtitles.filter((s) => !seenLangs.has((s.lang || "unknown").toLowerCase()));
+          const combinedSubtitles = [...payloadSubs, ...extraSubs];
+
+          logger.debug(`[resolve] Vidy client-assisted resolution succeeded: ${finalSources.length} sources, ${combinedSubtitles.length} subtitles, ${finalThumbnails.length} thumbnails`);
+          res.status(200).json({ sources: finalSources, subtitles: combinedSubtitles, thumbnails: finalThumbnails });
           return;
         }
         logger.warn(`[resolve] Vidy client-provided payload failed to decrypt any sources, falling back to server`);
