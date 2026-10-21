@@ -1,7 +1,9 @@
 import type { PlaybackRate, QualityLabel, ServerGroup, ServerOption } from "./types";
 import { getFlagsApiBaseUrl } from "@/lib/env/public";
 
-export const HISTORY_SAVE_INTERVAL_MS = 30_000;
+// Each save is a Worker request plus a database write, so keep the periodic save slow; pausing
+// or leaving the page saves immediately.
+export const HISTORY_SAVE_INTERVAL_MS = 120_000;
 
 export const AUTOHIDE_CONTROLS_MS = 3000;
 

@@ -50,6 +50,8 @@ export async function saveHistory(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
+      // Lets the save finish when it is triggered by closing the tab.
+      keepalive: true,
     });
 
     if (response.status === 401) {
