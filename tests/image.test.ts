@@ -36,7 +36,11 @@ describe("TMDB & Asset Proxy Image URL resolution", () => {
 
     const responsiveBackdrop = getBackdropResponsiveUrls("abc123xyz.jpg");
     expect(responsiveBackdrop.mobile).toBe("https://assets.cineby.group/p/w780/abc123xyz.jpg");
-    expect(responsiveBackdrop.desktop).toBe("https://assets.cineby.group/p/w1280/abc123xyz.jpg");
+    expect(responsiveBackdrop.tablet).toBe("https://assets.cineby.group/p/w1280/abc123xyz.jpg");
+    expect(responsiveBackdrop.desktop).toBe("https://assets.cineby.group/p/original/abc123xyz.jpg?w=1920");
+    expect(responsiveBackdrop.desktopSrcSet).toBe(
+      "https://assets.cineby.group/p/w1280/abc123xyz.jpg 1280w, https://assets.cineby.group/p/original/abc123xyz.jpg?w=1920 1920w"
+    );
 
     expect(getLogoUrl("abc123xyz.png")).toBe("https://assets.cineby.group/p/w500/abc123xyz.png");
     expect(getHeroBackdropUrl("abc123xyz.jpg")).toBe("https://assets.cineby.group/p/w1280/abc123xyz.jpg");

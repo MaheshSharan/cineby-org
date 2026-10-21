@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { MovieDetails, TvDetails } from "@/lib/tmdb";
-import { getHeroBackdropUrl, getLogoUrl } from "@/lib/tmdb/image";
+import { getBackdropResponsiveUrls, getHeroBackdropUrl, getLogoUrl } from "@/lib/tmdb/image";
 import type { HistoryEntry } from "@/lib/db/types";
 import { listHistory } from "@/lib/api/history";
 import {
@@ -69,6 +69,7 @@ export function DetailPage({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const heroBackdrop = getHeroBackdropUrl(details.backdropPath);
+  const { mobile, tablet, desktop, desktopSrcSet } = getBackdropResponsiveUrls(details.backdropPath);
   const isTv = details.mediaType === "tv";
 
   const [historyEntry, setHistoryEntry] = useState<HistoryEntry | null>(null);
@@ -354,7 +355,23 @@ export function DetailPage({
             WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
           }}
         >
-          {heroBackdrop ? (
+          {mobile ? (
+            <picture className="h-full w-full block">
+              {desktopSrcSet ? (
+                <source media="(min-width: 960px)" srcSet={desktopSrcSet} sizes="100vw" />
+              ) : desktop ? (
+                <source media="(min-width: 960px)" srcSet={desktop} />
+              ) : null}
+              {tablet ? <source media="(min-width: 600px)" srcSet={tablet} /> : null}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={mobile}
+                alt=""
+                aria-hidden="true"
+                className="h-full w-full object-cover object-top"
+              />
+            </picture>
+          ) : heroBackdrop ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={heroBackdrop}
