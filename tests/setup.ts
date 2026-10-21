@@ -14,7 +14,7 @@ Object.assign(process.env, {
   TMDB_API_URL: "https://tmdb.test/3",
   TMDB_API_KEY: "test-tmdb-key",
   NEXT_PUBLIC_TMDB_DEFAULT_LANGUAGE: "en",
-  NEXT_PUBLIC_ENABLE_IMAGE_PROXY: "true",
+  NEXT_PUBLIC_IMAGE_MODE: "worker",
   NEXT_PUBLIC_IMAGE_PROXY_URL: "https://assets.cineby.group",
   NEXT_PUBLIC_TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p",
   STREAM_PROXY_URL: "/api/stream/proxy",

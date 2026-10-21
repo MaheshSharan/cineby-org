@@ -37,8 +37,8 @@
     // 2. TMDB API & Image Assets
     "TMDB_API_URL": "https://db.wecollege.net/3",
     "NEXT_PUBLIC_TMDB_DEFAULT_LANGUAGE": "en",
-    "NEXT_PUBLIC_ENABLE_IMAGE_PROXY": "true",
-    "NEXT_PUBLIC_IMAGE_PROXY_URL": "https://assets.cineby.group",
+    "NEXT_PUBLIC_IMAGE_MODE": "wsrv",
+    "NEXT_PUBLIC_IMAGE_PROXY_URL": "https://wsrv.nl",
     "NEXT_PUBLIC_TMDB_IMAGE_BASE_URL": "https://image.tmdb.org/t/p",
 
     // 3. Streaming Infrastructure & Proxy
