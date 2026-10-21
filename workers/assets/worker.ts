@@ -5,9 +5,11 @@
  * 1. Safely proxy and optimize images via wsrv.nl backend without CNAME SSL cross-tenant blocks.
  * 2. Serve first-party URLs (https://assets.cineby.group/?url=... or /p/...)
  * 3. Enforce heavy Edge Caching (30 days immutable) so repeat requests hit Cloudflare Edge Cache directly.
- * 4. Normalize quality, width and output (see params.ts) so query strings cannot fragment the cache.
+ * 4. Fall back to the source image when wsrv.nl fails (see fetchImage.ts).
+ * 5. Normalize quality, width and output (see params.ts) so query strings cannot fragment the cache.
  */
 
+import { fetchImage } from "./fetchImage";
 import {
   buildCanonicalCacheUrl,
   parseImageRequest,
@@ -17,8 +19,17 @@ import {
 
 export type Env = ImageWorkerEnv;
 
+// Minimal Workers runtime types, matching workers/stream-proxy (no @cloudflare/workers-types dependency).
+interface WorkerContext {
+  waitUntil(promise: Promise<unknown>): void;
+}
+
+interface WorkerCacheStorage extends CacheStorage {
+  default: Cache;
+}
+
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: WorkerContext): Promise<Response> {
     const url = new URL(request.url);
 
     // Healthcheck
@@ -40,13 +51,16 @@ export default {
     const parsed = parseImageRequest(url, configResult.config);
 
     if (!parsed.ok) {
-      return new Response(parsed.message, { status: parsed.status });
+      return new Response(parsed.message, {
+        status: parsed.status,
+        headers: { "X-Assets-Source": "worker-rejected" },
+      });
     }
 
     const { params } = parsed;
 
     // Check Cloudflare Edge Cache first
-    const cache = caches.default;
+    const cache = (caches as WorkerCacheStorage).default;
     const cacheKey = new Request(buildCanonicalCacheUrl(url.origin, params), { method: "GET" });
     const cachedResponse = await cache.match(cacheKey);
 
@@ -54,44 +68,12 @@ export default {
       return cachedResponse;
     }
 
-    // Fetch from wsrv.nl backend
-    const backendUrl = new URL(`${configResult.config.imageBackendUrl}/`);
-    backendUrl.searchParams.set("url", params.targetUrl);
-    backendUrl.searchParams.set("output", params.output);
-    backendUrl.searchParams.set("q", String(params.quality));
-    backendUrl.searchParams.set("n", "-1");
-    if (params.width !== null) {
-      backendUrl.searchParams.set("w", String(params.width));
+    const { response, cacheable } = await fetchImage(params, configResult.config);
+
+    // Only successful images are stored; failures must be retried on the next request.
+    if (cacheable) {
+      ctx.waitUntil(cache.put(cacheKey, response.clone()));
     }
-
-    const upstreamResponse = await fetch(backendUrl.toString(), {
-      headers: {
-        "User-Agent": "CinebyAssetsProxy/1.0",
-        Accept: "image/webp,image/avif,image/*,*/*;q=0.8",
-      },
-    });
-
-    if (!upstreamResponse.ok) {
-      return new Response(upstreamResponse.body, {
-        status: upstreamResponse.status,
-        headers: upstreamResponse.headers,
-      });
-    }
-
-    // Build edge-cacheable response headers
-    const headers = new Headers(upstreamResponse.headers);
-    headers.set("Cache-Control", "public, max-age=2592000, s-maxage=2592000, immutable");
-    headers.set("Access-Control-Allow-Origin", "*");
-    headers.delete("cf-ray");
-    headers.delete("cf-cache-status");
-
-    const response = new Response(upstreamResponse.body, {
-      status: 200,
-      headers,
-    });
-
-    // Store in Cloudflare Edge Cache
-    ctx.waitUntil(cache.put(cacheKey, response.clone()));
 
     return response;
   },

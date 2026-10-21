@@ -80,7 +80,7 @@ export function getLogoUrl(path: string | null | undefined): string | null {
 }
 
 export function getHeroBackdropUrl(path: string | null | undefined): string | null {
-  return buildImageUrl(path, "original");
+  return buildImageUrl(path, "w1280");
 }
 
 export function getProfileUrl(path: string | null | undefined): string | null {
