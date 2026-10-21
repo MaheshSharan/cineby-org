@@ -9,9 +9,9 @@ export const TMDB_TTL_SECONDS = {
   discover: 15 * 60, // 15 minutes
   search: 5 * 60, // 5 minutes
   genres: 24 * 60 * 60, // 24 hours
-  movieDetails: 24 * 60 * 60, // 24 hours
-  tvDetails: 24 * 60 * 60, // 24 hours
-  seasonEpisodes: 24 * 60 * 60, // 24 hours
+  movieDetails: 6 * 60 * 60, // 6 hours
+  tvDetails: 6 * 60 * 60, // 6 hours
+  seasonEpisodes: 6 * 60 * 60, // 6 hours
   credits: 24 * 60 * 60, // 24 hours
   recommendations: 24 * 60 * 60, // 24 hours
   negative: 60, // 1 minute negative caching for 404s
@@ -21,9 +21,9 @@ export const TMDB_STALE_SECONDS = {
   trending: 5 * 60, // Stale after 5 min
   discover: 5 * 60, // Stale after 5 min
   search: 2 * 60, // Stale after 2 min
-  movieDetails: 12 * 60 * 60, // Stale after 12 hours
-  tvDetails: 12 * 60 * 60, // Stale after 12 hours
-  seasonEpisodes: 12 * 60 * 60, // Stale after 12 hours
+  movieDetails: 3 * 60 * 60, // Stale after 3 hours
+  tvDetails: 3 * 60 * 60, // Stale after 3 hours
+  seasonEpisodes: 3 * 60 * 60, // Stale after 3 hours
 } as const;
 
 function clean(part: string | number | undefined): string {

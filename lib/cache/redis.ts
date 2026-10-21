@@ -22,6 +22,10 @@ import { logger } from "@/lib/logger";
  * If Redis is selected but unconfigured or fails, it gracefully falls back to MemoryCacheStore
  * and logs warnings rather than crashing Cineby.
  */
+const MAX_ERROR_DETAIL_CHARS = 200;
+// Larger cache entries stay in memory only, so a few heavy titles cannot fill the Upstash quota.
+const MAX_REDIS_VALUE_CHARS = 100_000;
+
 export interface RedisClientLike {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, mode?: string, duration?: number): Promise<unknown>;
@@ -53,7 +57,9 @@ export class UpstashRestClient implements RedisClientLike {
       });
 
       if (!res.ok) {
-        throw new Error(`[UpstashRestClient] Request failed with HTTP ${res.status}`);
+        // Upstash explains rejections (for example a full database) in the body.
+        const detail = (await res.text().catch(() => "")).slice(0, MAX_ERROR_DETAIL_CHARS);
+        throw new Error(`[UpstashRestClient] Request failed with HTTP ${res.status}${detail ? `: ${detail}` : ""}`);
       }
 
       const data = (await res.json()) as { result?: T; error?: string };
@@ -120,7 +126,7 @@ export class RedisCacheStore implements CacheStore {
             return raw as unknown as T;
           }
         }
-        return null;
+        // Redis miss: the entry may only exist in memory (oversized, or its Redis write failed).
       } catch (error) {
         logger.warn(`[RedisCacheStore] Failed to read key ${key} from Redis, falling back to memory`, undefined, error);
       }
@@ -149,7 +155,7 @@ export class RedisCacheStore implements CacheStore {
             return { value: raw as unknown as T, isStale: false };
           }
         }
-        return { value: null, isStale: false };
+        // Redis miss: fall through to the memory store, as in get().
       } catch (error) {
         logger.warn(`[RedisCacheStore] Failed to get stale key ${key} from Redis, falling back to memory`, undefined, error);
       }
@@ -162,7 +168,12 @@ export class RedisCacheStore implements CacheStore {
       try {
         const staleAfter = staleSeconds !== undefined ? Date.now() + staleSeconds * 1000 : undefined;
         const payload = JSON.stringify({ value, staleAfter });
-        await this.client.set(key, payload, "EX", Math.max(1, ttlSeconds));
+        if (payload.length > MAX_REDIS_VALUE_CHARS) {
+          // Oversized entries would eat the database quota; the memory store still keeps them.
+          logger.debug(`[RedisCacheStore] Skipping Redis write for ${key}: ${payload.length} chars exceeds limit`);
+        } else {
+          await this.client.set(key, payload, "EX", Math.max(1, ttlSeconds));
+        }
       } catch (error) {
         logger.warn(`[RedisCacheStore] Failed to set key ${key} in Redis, falling back to memory`, undefined, error);
       }
