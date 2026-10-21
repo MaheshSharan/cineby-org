@@ -4,6 +4,7 @@ import type { MediaSource, PlayerMedia, ServerGroup, ServerOption } from "../typ
 import { SERVERS, SERVER_GROUPS, preloadFlags } from "../constants";
 import { resolveStream } from "../providers";
 import { getMediaKey } from "@/lib/utils/media";
+import { fetchActiveProviders } from "../providers/activeProviders";
 
 export interface StreamState {
   source: MediaSource | null;
@@ -69,13 +70,9 @@ export function usePlayerSource({
   // Fetch enabled providers dynamically
   useEffect(() => {
     let isCurrent = true;
-    fetch("/api/stream/providers")
-      .then((res) => (res.ok ? res.json() : { providers: [] }))
-      .then((data: unknown) => {
-        if (!isCurrent) return;
-        if (data && typeof data === "object" && "providers" in data && Array.isArray((data as { providers: unknown }).providers)) {
-          setActiveProviders((data as { providers: { id: string; name: string }[] }).providers);
-        }
+    fetchActiveProviders()
+      .then((providers) => {
+        if (isCurrent) setActiveProviders(providers);
       })
       .catch(() => {});
     return () => {

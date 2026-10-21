@@ -4,6 +4,7 @@ import { fetchVidyPayloadFromBrowser } from "@/lib/providers/sources/vidy/client
 import type { MediaSource, QualityLabel, SubtitleTrack } from "../types";
 import type { StreamRequest, StreamResolutionResult } from "./types";
 import { createPlaylistBlob, revokeAllBlobs } from "../utils/blobPool";
+import { fetchActiveProviders } from "./activeProviders";
 
 function toQualityLabel(quality?: Quality | string): QualityLabel | null {
   switch (quality) {
@@ -64,11 +65,7 @@ async function buildFetchResponse(
     let activeProviderIds: string[] = [];
 
     try {
-      const provRes = await fetch("/api/stream/providers", { signal: request.signal });
-      if (provRes.ok) {
-        const data = (await provRes.json()) as { providers: { id: string }[] };
-        activeProviderIds = (data.providers ?? []).map((p) => p.id);
-      }
+      activeProviderIds = (await fetchActiveProviders()).map((p) => p.id);
     } catch {
       // If the providers endpoint fails, fall through to server-side GET
     }

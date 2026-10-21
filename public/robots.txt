@@ -9,6 +9,7 @@ User-agent: *
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 Disallow: /watch/
+Disallow: /*?play=
 Disallow: /api/auth/
 Disallow: /api/stream/
 Disallow: /api/history
@@ -23,6 +24,7 @@ User-agent: PerplexityBot
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 Disallow: /watch/
+Disallow: /*?play=
 Disallow: /api/auth/
 Disallow: /api/stream/
 Disallow: /api/history

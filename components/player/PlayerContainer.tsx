@@ -453,15 +453,38 @@ export function PlayerContainer({
       return;
     }
 
+    const video = videoRef.current;
+    let lastSavedSecond = -1;
+
     const saveHistory = () => {
-      onTimeUpdateRef.current?.(videoRef.current?.currentTime ?? 0, videoRef.current?.duration ?? 0, {
+      const currentTime = video?.currentTime ?? 0;
+      const second = Math.floor(currentTime);
+
+      // Nothing to save at the very start, or when the position has not moved since the last save.
+      if (second <= 0 || second === lastSavedSecond) return;
+      lastSavedSecond = second;
+
+      onTimeUpdateRef.current?.(currentTime, video?.duration ?? 0, {
         seasonNumber: isTv ? currentSeason : undefined,
         episodeNumber: isTv ? currentEpisode : undefined,
       });
     };
 
+    const saveWhenHidden = () => {
+      if (document.visibilityState === "hidden") saveHistory();
+    };
+
     const interval = window.setInterval(saveHistory, HISTORY_SAVE_INTERVAL_MS);
-    return () => window.clearInterval(interval);
+    video?.addEventListener("pause", saveHistory);
+    document.addEventListener("visibilitychange", saveWhenHidden);
+    window.addEventListener("pagehide", saveHistory);
+
+    return () => {
+      window.clearInterval(interval);
+      video?.removeEventListener("pause", saveHistory);
+      document.removeEventListener("visibilitychange", saveWhenHidden);
+      window.removeEventListener("pagehide", saveHistory);
+    };
   }, [currentEpisode, currentSeason, isTv, stream.source]);
 
   // Cache hover support to avoid DOM layout queries on mouse interactions
