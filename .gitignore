@@ -28,7 +28,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 # database
-/data
+/data/*
+!/data/hero-picks.txt
 cineby_extension/*
 simple-proxy/
 vercel-m3u8-fetcher/
