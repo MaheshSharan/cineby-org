@@ -1,4 +1,4 @@
-import { getImageProxyUrl, getTmdbImageBaseUrl, isImageProxyEnabled } from "@/lib/env/public";
+import { getImageMode, getImageProxyUrl, getTmdbImageBaseUrl } from "@/lib/env/public";
 
 type TmdbImageSize =
   | "w92"
@@ -12,6 +12,7 @@ type TmdbImageSize =
   | "original";
 
 const STILL_THUMB_WIDTH = 640;
+const WSRV_QUALITY = 75;
 const DEFAULT_IMAGE_EXTENSION = "jpg";
 const VECTOR_IMAGE_EXTENSION = "svg";
 
@@ -52,9 +53,21 @@ export function buildSourceImageUrl(
   return `${getTmdbImageBaseUrl()}/${resolveSize(size, extension)}/${name}.${extension}`;
 }
 
+/** The wsrv service takes the source URL as a query parameter and returns resized WebP. */
+function buildWsrvUrl(sourceUrl: string, width?: number): string {
+  const params = new URLSearchParams({ url: sourceUrl, output: "webp", q: String(WSRV_QUALITY), n: "-1" });
+
+  if (width) {
+    params.set("w", String(width));
+  }
+
+  return `${getImageProxyUrl()}/?${params.toString()}`;
+}
+
 /**
- * Image URL for the UI. Served through the asset proxy when enabled
- * (`/p/{size}/{name}.{sourceExtension}`, the proxy outputs WebP), otherwise straight from TMDB.
+ * Image URL for the UI, shaped by the image mode (see getImageMode):
+ * straight from TMDB, through the wsrv service, or through the assets Worker
+ * (`/p/{size}/{name}.{sourceExtension}`, which outputs WebP).
  */
 export function buildImageUrl(
   path: string | null | undefined,
@@ -65,11 +78,19 @@ export function buildImageUrl(
     return null;
   }
 
-  if (!isImageProxyEnabled()) {
-    return buildSourceImageUrl(path, size);
+  const mode = getImageMode();
+  const sourceUrl = buildSourceImageUrl(path, size);
+  const { name, extension } = parseTmdbFile(path);
+
+  // Vector logos are already tiny; rasterizing them would only make them larger.
+  if (mode === "tmdb" || (mode === "wsrv" && extension === VECTOR_IMAGE_EXTENSION)) {
+    return sourceUrl;
   }
 
-  const { name, extension } = parseTmdbFile(path);
+  if (mode === "wsrv") {
+    return sourceUrl ? buildWsrvUrl(sourceUrl, options.width) : null;
+  }
+
   const assetUrl = `${getImageProxyUrl()}/p/${resolveSize(size, extension)}/${name}.${extension}`;
 
   return options.width ? `${assetUrl}?w=${options.width}` : assetUrl;
@@ -88,7 +109,7 @@ export function getProfileUrl(path: string | null | undefined): string | null {
 }
 
 export function getStillThumbUrl(path: string | null | undefined): string | null {
-  if (!isImageProxyEnabled()) {
+  if (getImageMode() === "tmdb") {
     return buildImageUrl(path, "w300");
   }
 

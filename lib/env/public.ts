@@ -4,7 +4,7 @@
 // at build time and cannot do that for dynamic lookups. Getters are called lazily (never at module
 // scope) so a missing value fails where it is used, not while the bundle is being imported.
 
-import { parseFlag, parseUrl, requireValue } from "./read";
+import { parseEnum, parseFlag, parseUrl, requireValue } from "./read";
 
 export function getSiteUrl(): string {
   return parseUrl("NEXT_PUBLIC_SITE_URL", process.env.NEXT_PUBLIC_SITE_URL);
@@ -34,10 +34,20 @@ export function getTmdbImageBaseUrl(): string {
   return parseUrl("NEXT_PUBLIC_TMDB_IMAGE_BASE_URL", process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL);
 }
 
-export function isImageProxyEnabled(): boolean {
-  return parseFlag("NEXT_PUBLIC_ENABLE_IMAGE_PROXY", process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY);
+/**
+ * How images reach the browser:
+ * - `tmdb`: straight from the TMDB CDN (JPEG, no proxy variable needed).
+ * - `wsrv`: the browser asks the wsrv resizing service directly for resized WebP. No Cloudflare Worker request.
+ * - `worker`: through the assets Worker, which fronts the same service. Every image costs a Worker request.
+ */
+export const IMAGE_MODES = ["tmdb", "wsrv", "worker"] as const;
+export type ImageMode = (typeof IMAGE_MODES)[number];
+
+export function getImageMode(): ImageMode {
+  return parseEnum("NEXT_PUBLIC_IMAGE_MODE", process.env.NEXT_PUBLIC_IMAGE_MODE, IMAGE_MODES);
 }
 
+/** Base URL of the resizing service for the `wsrv` and `worker` modes. */
 export function getImageProxyUrl(): string {
   return parseUrl("NEXT_PUBLIC_IMAGE_PROXY_URL", process.env.NEXT_PUBLIC_IMAGE_PROXY_URL);
 }

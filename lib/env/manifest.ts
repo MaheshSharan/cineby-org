@@ -63,8 +63,14 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
   { name: "TMDB_API_URL", category: "tmdb", scope: "server", kind: "url" },
   { name: "TMDB_API_KEY", category: "tmdb", scope: "secret", kind: "string" },
   { name: "NEXT_PUBLIC_TMDB_DEFAULT_LANGUAGE", category: "tmdb", scope: "public", kind: "string" },
-  { name: "NEXT_PUBLIC_ENABLE_IMAGE_PROXY", category: "tmdb", scope: "public", kind: "flag" },
-  { name: "NEXT_PUBLIC_IMAGE_PROXY_URL", category: "tmdb", scope: "public", kind: "url" },
+  { name: "NEXT_PUBLIC_IMAGE_MODE", category: "tmdb", scope: "public", kind: ["tmdb", "wsrv", "worker"] },
+  {
+    name: "NEXT_PUBLIC_IMAGE_PROXY_URL",
+    category: "tmdb",
+    scope: "public",
+    kind: "url",
+    requiredWhen: (env) => env.NEXT_PUBLIC_IMAGE_MODE !== "tmdb",
+  },
   { name: "NEXT_PUBLIC_TMDB_IMAGE_BASE_URL", category: "tmdb", scope: "public", kind: "url" },
 
   // 3. Streaming Infrastructure & Proxy

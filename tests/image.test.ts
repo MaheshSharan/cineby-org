@@ -24,7 +24,7 @@ describe("TMDB & Asset Proxy Image URL resolution", () => {
   });
 
   it("constructs clean asset proxy URLs when proxy is enabled", () => {
-    process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY = "true";
+    process.env.NEXT_PUBLIC_IMAGE_MODE = "worker";
     process.env.NEXT_PUBLIC_IMAGE_PROXY_URL = "https://assets.cineby.group";
 
     const url = buildImageUrl("/abc123xyz.jpg", "w500");
@@ -49,7 +49,7 @@ describe("TMDB & Asset Proxy Image URL resolution", () => {
   });
 
   it("builds still thumbnails as clean /p/ paths with a 640px width", () => {
-    process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY = "true";
+    process.env.NEXT_PUBLIC_IMAGE_MODE = "worker";
     process.env.NEXT_PUBLIC_IMAGE_PROXY_URL = "https://assets.cineby.group";
 
     expect(getStillThumbUrl("/abc123xyz.jpg")).toBe(
@@ -58,7 +58,7 @@ describe("TMDB & Asset Proxy Image URL resolution", () => {
   });
 
   it("keeps the source extension for PNG and SVG logos and never doubles it", () => {
-    process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY = "true";
+    process.env.NEXT_PUBLIC_IMAGE_MODE = "worker";
     process.env.NEXT_PUBLIC_IMAGE_PROXY_URL = "https://assets.cineby.group";
 
     expect(getLogoUrl("/aB5jf4O14dykrksrPgtOlvVk0pi.svg")).toBe(
@@ -68,15 +68,15 @@ describe("TMDB & Asset Proxy Image URL resolution", () => {
   });
 
   it("points SEO images at the original TMDB file, never the proxy", () => {
-    process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY = "true";
+    process.env.NEXT_PUBLIC_IMAGE_MODE = "worker";
 
     expect(buildSourceImageUrl("/abc123xyz.jpg", "w1280")).toBe(
       "https://image.tmdb.org/t/p/w1280/abc123xyz.jpg"
     );
   });
 
-  it("falls back to direct TMDB image CDN URLs when proxy is disabled", () => {
-    process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY = "false";
+  it("serves direct TMDB image CDN URLs in tmdb mode", () => {
+    process.env.NEXT_PUBLIC_IMAGE_MODE = "tmdb";
     process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p";
 
     const url = buildImageUrl("/abc123xyz.jpg", "w500");
@@ -84,6 +84,27 @@ describe("TMDB & Asset Proxy Image URL resolution", () => {
 
     const still = getStillThumbUrl("/abc123xyz.jpg");
     expect(still).toBe("https://image.tmdb.org/t/p/w300/abc123xyz.jpg");
+  });
+
+  it("builds browser-direct wsrv.nl URLs in wsrv mode", () => {
+    process.env.NEXT_PUBLIC_IMAGE_MODE = "wsrv";
+    process.env.NEXT_PUBLIC_IMAGE_PROXY_URL = "https://wsrv.nl";
+
+    const poster = new URL(buildImageUrl("/abc123xyz.jpg", "w342") as string);
+    expect(poster.origin).toBe("https://wsrv.nl");
+    expect(poster.searchParams.get("url")).toBe("https://image.tmdb.org/t/p/w342/abc123xyz.jpg");
+    expect(poster.searchParams.get("output")).toBe("webp");
+    expect(poster.searchParams.get("w")).toBeNull();
+
+    const still = new URL(getStillThumbUrl("/abc123xyz.jpg") as string);
+    expect(still.searchParams.get("url")).toBe("https://image.tmdb.org/t/p/original/abc123xyz.jpg");
+    expect(still.searchParams.get("w")).toBe("640");
+  });
+
+  it("leaves vector logos untouched in wsrv mode", () => {
+    process.env.NEXT_PUBLIC_IMAGE_MODE = "wsrv";
+
+    expect(buildImageUrl("/logo.svg", "w500")).toBe("https://image.tmdb.org/t/p/original/logo.svg");
   });
 
   it("handles null and undefined paths safely", () => {

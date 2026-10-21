@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getGaMeasurementId, getImageProxyUrl, isAnalyticsEnabled, isImageProxyEnabled } from "@/lib/env/public";
+import { getGaMeasurementId, getImageProxyUrl, getImageMode, isAnalyticsEnabled } from "@/lib/env/public";
 import {
   EnvConfigError,
   parseEnum,
@@ -68,12 +68,15 @@ describe("env getters fail fast", () => {
     expect(() => getImageProxyUrl()).toThrow(/NEXT_PUBLIC_IMAGE_PROXY_URL/);
   });
 
-  it("require an explicit image proxy flag", () => {
-    delete process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY;
-    expect(() => isImageProxyEnabled()).toThrow(/NEXT_PUBLIC_ENABLE_IMAGE_PROXY/);
+  it("require an explicit, valid image mode", () => {
+    delete process.env.NEXT_PUBLIC_IMAGE_MODE;
+    expect(() => getImageMode()).toThrow(/NEXT_PUBLIC_IMAGE_MODE/);
 
-    process.env.NEXT_PUBLIC_ENABLE_IMAGE_PROXY = "false";
-    expect(isImageProxyEnabled()).toBe(false);
+    process.env.NEXT_PUBLIC_IMAGE_MODE = "cdn";
+    expect(() => getImageMode()).toThrow(/NEXT_PUBLIC_IMAGE_MODE/);
+
+    process.env.NEXT_PUBLIC_IMAGE_MODE = "wsrv";
+    expect(getImageMode()).toBe("wsrv");
   });
 
   it("only asks for the GA id while analytics is enabled", () => {
