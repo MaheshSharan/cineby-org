@@ -16,7 +16,7 @@
     "cf-typegen": "bunx wrangler types --env-interface CloudflareEnv",
     "deploy:proxy": "bunx wrangler deploy --config workers/stream-proxy/wrangler.jsonc",
     "deploy:assets": "bunx wrangler deploy --config workers/assets/wrangler.jsonc",
-    "build:worker": "bun scripts/with-wrangler-vars.ts bunx opennextjs-cloudflare build",
+    "build:worker": "bun scripts/with-wrangler-vars.ts bunx opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
     "deploy:app": "bun run build:worker && bunx wrangler deploy"
   },
   "dependencies": {
