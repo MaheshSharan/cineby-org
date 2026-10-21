@@ -39,7 +39,7 @@ describe("TMDB & Asset Proxy Image URL resolution", () => {
     expect(responsiveBackdrop.desktop).toBe("https://assets.cineby.group/p/w1280/abc123xyz.jpg");
 
     expect(getLogoUrl("abc123xyz.png")).toBe("https://assets.cineby.group/p/w500/abc123xyz.png");
-    expect(getHeroBackdropUrl("abc123xyz.jpg")).toBe("https://assets.cineby.group/p/original/abc123xyz.jpg");
+    expect(getHeroBackdropUrl("abc123xyz.jpg")).toBe("https://assets.cineby.group/p/w1280/abc123xyz.jpg");
     expect(getProfileUrl("abc123xyz.jpg")).toBe("https://assets.cineby.group/p/w185/abc123xyz.jpg");
     expect(getSeasonPosterThumbUrl("abc123xyz.jpg")).toBe("https://assets.cineby.group/p/w154/abc123xyz.jpg");
   });
