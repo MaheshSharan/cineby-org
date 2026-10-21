@@ -22,6 +22,7 @@ import { buildWebSiteJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 
 const HERO_ITEMS = 12;
 const ROW_ITEMS = 20;
+const ANIMATION_GENRE_ID = 16;
 
 interface HomePageProps {
   heroItems: MediaSummary[];
@@ -188,9 +189,11 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
 
   const seenKeys = new Set<string>();
 
-  // Prioritize curated Hero Picks from data/hero-picks.txt in their exact line position
-  const heroPool = [...heroPicks, ...heroP1.results, ...heroP2.results];
-  const heroItems = deduplicateMediaPool(heroPool, seenKeys, HERO_ITEMS);
+  // Filter out any Animation titles (TMDB genre ID 16) from the hero carousel pool
+  const nonAnimatedHeroPool = [...heroPicks, ...heroP1.results, ...heroP2.results].filter(
+    (item) => !item.genreIds || !item.genreIds.includes(ANIMATION_GENRE_ID)
+  );
+  const heroItems = deduplicateMediaPool(nonAnimatedHeroPool, seenKeys, HERO_ITEMS);
 
   const trendingMoviesPool = [...trendingMoviesP1.results, ...trendingMoviesP2.results];
   const trendingMovies = deduplicateMediaPool(trendingMoviesPool, seenKeys, ROW_ITEMS);

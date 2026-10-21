@@ -29,6 +29,13 @@ export function HeroCarousel({ items, genreNames }: HeroCarouselProps) {
   const [isPaused, setIsPaused] = useState(false);
   const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Pick a random starting slide on initial mount so a different hero item appears first on each reload/visit
+  useEffect(() => {
+    if (length > 1) {
+      setIndex(Math.floor(Math.random() * length));
+    }
+  }, [length]);
+
   useEffect(() => {
     if (length <= 1 || isPaused) {
       if (autoplayTimerRef.current) clearInterval(autoplayTimerRef.current);
