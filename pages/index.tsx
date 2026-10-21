@@ -9,6 +9,7 @@ import {
   getMediaLogo,
   getTrending,
 } from "@/lib/tmdb/server";
+import { getHeroPicksMedia } from "@/lib/tmdb/server/heroPicks";
 
 import { BrowseByProviderRow } from "@/components/home/BrowseByProviderRow";
 import { ContinueWatchingRow } from "@/components/home/ContinueWatchingRow";
@@ -168,6 +169,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
   res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
 
   const [
+    heroPicks,
     heroP1,
     heroP2,
     trendingMoviesP1,
@@ -175,6 +177,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
     movieGenres,
     tvGenres,
   ] = await Promise.all([
+    getHeroPicksMedia(),
     getTrending("all", "day", 1),
     getTrending("all", "day", 2),
     getTrending("movie", "day", 1),
@@ -185,7 +188,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
 
   const seenKeys = new Set<string>();
 
-  const heroPool = [...heroP1.results, ...heroP2.results];
+  // Prioritize curated Hero Picks from data/hero-picks.txt in their exact line position
+  const heroPool = [...heroPicks, ...heroP1.results, ...heroP2.results];
   const heroItems = deduplicateMediaPool(heroPool, seenKeys, HERO_ITEMS);
 
   const trendingMoviesPool = [...trendingMoviesP1.results, ...trendingMoviesP2.results];
