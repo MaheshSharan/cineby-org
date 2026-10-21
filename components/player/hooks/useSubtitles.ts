@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { SubtitleTrack } from "../types";
 import { srtToVtt } from "@/lib/utils/srtToVtt";
-import { loadOffset, offsetKey, sanitizeOffset, saveOffset } from "@/lib/subtitles/sync/offsetStore";
 import { getMediaKey } from "@/lib/utils/media";
 import { revokeBlob, revokeAllBlobs } from "../utils/blobPool";
 import {
@@ -38,11 +37,6 @@ export interface UseSubtitlesResult {
   fetchSubtitles: (targetLang?: string) => void;
   handleUploadSubtitle: (file: File) => Promise<void>;
   handleSubtitleChange: (track: SubtitleTrack | null) => void;
-  /** Offset in seconds for the active track, on top of the profile-wide delay. */
-  trackOffset: number;
-  setTrackOffset: (offsetSec: number) => void;
-  /** Raw text of the active subtitle file, or null when none is loaded. */
-  getRawSubtitles: () => string | null;
   subtitleStyles: {
     color: string;
     backgroundColor: string;
@@ -89,8 +83,6 @@ export function useSubtitles({
   const rawSubtitleContentRef = useRef<string | null>(null);
   const activeTrackRef = useRef<SubtitleTrack | null>(null);
   const subtitlesSettingsRef = useRef(subtitlesSettings);
-  const [trackOffset, setTrackOffsetState] = useState(0);
-  const trackOffsetRef = useRef(0);
 
   useEffect(() => {
     activeTrackRef.current = activeTrack;
@@ -199,7 +191,7 @@ export function useSubtitles({
           rawSubtitleContentRef.current = rawContent;
           const vttContent = srtToVtt(
             rawContent,
-            (subtitlesSettingsRef.current?.delay ?? 0) + trackOffsetRef.current,
+            subtitlesSettingsRef.current?.delay ?? 0,
             subtitlesSettingsRef.current?.position ?? 0
           );
           const blob = new Blob([vttContent], { type: "text/vtt;charset=utf-8" });
@@ -368,7 +360,7 @@ export function useSubtitles({
         rawSubtitleContentRef.current = text;
         const vtt = srtToVtt(
           text,
-          (subtitlesSettings?.delay ?? 0) + trackOffsetRef.current,
+          subtitlesSettings?.delay ?? 0,
           subtitlesSettings?.position ?? 0
         );
         const blob = new Blob([vtt], { type: "text/vtt;charset=utf-8" });
@@ -430,7 +422,7 @@ export function useSubtitles({
     const currentVideo = videoRef.current;
     if (!currentVideo) return;
 
-    const vttContent = srtToVtt(rawSubtitleContentRef.current, delay + trackOffset, position);
+    const vttContent = srtToVtt(rawSubtitleContentRef.current, delay, position);
     const blob = new Blob([vttContent], { type: "text/vtt;charset=utf-8" });
     const blobUrl = URL.createObjectURL(blob);
 
@@ -459,27 +451,7 @@ export function useSubtitles({
     if (element.track) {
       element.track.mode = "showing";
     }
-  }, [delay, trackOffset, position, videoRef]);
-
-  // Restore the saved auto-sync offset whenever the active track changes
-  const activeTrackKey = activeTrack ? offsetKey(currentMediaKey, activeServerId, activeTrack.id) : null;
-  useEffect(() => {
-    const saved = activeTrackKey ? loadOffset(activeTrackKey) : 0;
-    trackOffsetRef.current = saved;
-    setTrackOffsetState(saved);
-  }, [activeTrackKey]);
-
-  const setTrackOffset = useCallback(
-    (offsetSec: number) => {
-      const value = sanitizeOffset(offsetSec);
-      trackOffsetRef.current = value;
-      setTrackOffsetState(value);
-      if (activeTrackKey) saveOffset(activeTrackKey, value);
-    },
-    [activeTrackKey]
-  );
-
-  const getRawSubtitles = useCallback(() => rawSubtitleContentRef.current, []);
+  }, [delay, position, videoRef]);
 
   const activeLabel = useMemo(() => getActiveLabel(activeTrack), [activeTrack]);
 
@@ -530,9 +502,6 @@ export function useSubtitles({
     fetchSubtitles,
     handleUploadSubtitle,
     handleSubtitleChange,
-    trackOffset,
-    setTrackOffset,
-    getRawSubtitles,
     subtitleStyles,
   };
 }

@@ -6,7 +6,6 @@ interface UsePlayerControlsOptions {
   containerRef?: React.RefObject<HTMLDivElement | null>;
   seekTime?: number;
   isLocked?: boolean;
-  keepVisible?: boolean;
   onTogglePlay: () => void;
   onSeekBy: (seconds: number) => void;
   onDoubleTapSeek?: (seconds: number, side: "left" | "right") => void;
@@ -28,7 +27,6 @@ export function usePlayerControls({
   containerRef,
   seekTime = 10,
   isLocked = false,
-  keepVisible = false,
   onTogglePlay,
   onSeekBy,
   onDoubleTapSeek,
@@ -50,17 +48,11 @@ export function usePlayerControls({
       window.clearTimeout(hideTimerRef.current);
     }
 
-    if (keepVisible) {
-      setAreControlsVisible(true);
-      setIsIdle(false);
-      return;
-    }
-
     hideTimerRef.current = window.setTimeout(() => {
       setAreControlsVisible(false);
       setIsIdle(true);
     }, AUTOHIDE_CONTROLS_MS);
-  }, [keepVisible]);
+  }, []);
 
   const showControls = useCallback(() => {
     setAreControlsVisible(true);
@@ -229,17 +221,13 @@ export function usePlayerControls({
   }, [containerRef, isLocked]);
 
   useEffect(() => {
-    if (keepVisible) {
-      setAreControlsVisible(true);
-      setIsIdle(false);
-    }
     scheduleHide();
     return () => {
       if (hideTimerRef.current !== null) {
         window.clearTimeout(hideTimerRef.current);
       }
     };
-  }, [scheduleHide, keepVisible]);
+  }, [scheduleHide]);
 
   return { areControlsVisible, isIdle, showControls };
 }

@@ -13,7 +13,6 @@ import { formatRuntime, getMediaKey } from "@/lib/utils/media";
 
 import { usePlayerControls } from "./hooks/usePlayerControls";
 import { usePlayerState } from "./hooks/usePlayerState";
-import { useSubtitleSync } from "./hooks/useSubtitleSync";
 import { useSubtitles } from "./hooks/useSubtitles";
 import { usePlayerShortcuts } from "./hooks/usePlayerShortcuts";
 import { usePlayerSource } from "./hooks/usePlayerSource";
@@ -180,22 +179,6 @@ export function PlayerContainer({
     subtitlesSettings: appSettings.subtitles,
   });
 
-  const subtitleSync = useSubtitleSync({
-    videoRef,
-    sourceUrl: stream.source?.url,
-    format: stream.source?.format,
-    headers: stream.source?.headers,
-    enabled: appSettings.subtitles.autoSync,
-    trackId: subtitles.activeTrack?.id,
-    getRawSubtitles: subtitles.getRawSubtitles,
-    globalDelaySec: appSettings.subtitles.delay,
-    setTrackOffset: subtitles.setTrackOffset,
-  });
-
-  function nudgeSubtitles(deltaSec: number) {
-    subtitles.setTrackOffset(subtitles.trackOffset + deltaSec);
-  }
-
   function closePopovers() {
     setIsQualityOpen(false);
     setIsAudioSubtitlesOpen(false);
@@ -235,13 +218,10 @@ export function PlayerContainer({
     }
   }
 
-  const isSyncActive = isAudioSubtitlesOpen && subtitleSync.state.phase === "listening";
-
   const controls = usePlayerControls({
     containerRef,
     seekTime: appSettings.playback.seekTime,
     isLocked,
-    keepVisible: isSyncActive,
     onTogglePlay: playerState.togglePlay,
     onSeekBy: playerState.seekBy,
     onDoubleTapSeek: handleDoubleTapSeek,
@@ -518,9 +498,7 @@ export function PlayerContainer({
   const handleAudioMouseLeave = () => {
     if (!isHoverSupportedRef.current) return;
     if (audioTimerRef.current) clearTimeout(audioTimerRef.current);
-    if (subtitleSync.state.phase === "listening") return;
     audioTimerRef.current = setTimeout(() => {
-      if (subtitleSync.state.phase === "listening") return;
       setIsAudioSubtitlesOpen(false);
     }, 150);
   };
@@ -722,21 +700,6 @@ export function PlayerContainer({
                     isSubtitlesFetching={subtitles.isSubtitlesFetching}
                     onToggleSubtitles={subtitles.handleToggleSubtitles}
                     onOpenOpenSubtitles={() => subtitles.fetchSubtitles()}
-                    sync={
-                      subtitleSync.supported
-                        ? {
-                            state: subtitleSync.state,
-                            logs: subtitleSync.logs,
-                            trackOffset: subtitles.trackOffset,
-                            hasTrack: !!subtitles.activeTrack,
-                            onStart: subtitleSync.start,
-                            onCancel: subtitleSync.cancel,
-                            onApply: subtitleSync.apply,
-                            onNudge: nudgeSubtitles,
-                            onReset: () => subtitles.setTrackOffset(0),
-                          }
-                        : undefined
-                    }
                   />
                 </div>
 
