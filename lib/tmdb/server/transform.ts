@@ -167,11 +167,10 @@ export function toLogoBackdropPath(images: unknown, fallbackBackdropPath?: strin
 
 export function toMovieDetails(raw: Record<string, unknown>): MovieDetails {
   const mediaType: MediaType = "movie";
-  const logoBackdrop = toLogoBackdropPath(raw.images, nullableString(raw.backdrop_path));
 
   return {
     ...toMediaSummary(raw, mediaType),
-    backdropPath: logoBackdrop,
+    backdropPath: nullableString(raw.backdrop_path),
     originalTitle: nullableString(raw.original_title) ?? "",
     tagline: nullableString(raw.tagline),
     status: nullableString(raw.status),
@@ -205,11 +204,10 @@ function toSeasons(value: unknown): Season[] {
 
 export function toTvDetails(raw: Record<string, unknown>): TvDetails {
   const mediaType: MediaType = "tv";
-  const logoBackdrop = toLogoBackdropPath(raw.images, nullableString(raw.backdrop_path));
 
   return {
     ...toMediaSummary(raw, mediaType),
-    backdropPath: logoBackdrop,
+    backdropPath: nullableString(raw.backdrop_path),
     originalName: nullableString(raw.original_name) ?? "",
     tagline: nullableString(raw.tagline),
     status: nullableString(raw.status),

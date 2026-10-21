@@ -115,7 +115,7 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
   const { openDetailModal } = useDetailModal();
 
   const isModalDetail = settings.appearance.detailViewType === "modal";
-  const { mobile, desktop } = getBackdropResponsiveUrls(item.backdropPath);
+  const { mobile, tablet, desktop, desktopSrcSet } = getBackdropResponsiveUrls(item.backdropPath);
   const year = getYear(item.releaseDate);
   const genres = getGenreNames(item, genreNames);
   const rating = item.voteAverage ? item.voteAverage.toFixed(1) : null;
@@ -165,7 +165,12 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
         {/* Main Sharp Backdrop */}
         {mobile ? (
           <picture className="absolute inset-0 block h-full w-full">
-            {desktop ? <source media="(min-width: 768px)" srcSet={desktop} /> : null}
+            {desktopSrcSet ? (
+              <source media="(min-width: 960px)" srcSet={desktopSrcSet} sizes="100vw" />
+            ) : desktop ? (
+              <source media="(min-width: 960px)" srcSet={desktop} />
+            ) : null}
+            {tablet ? <source media="(min-width: 600px)" srcSet={tablet} /> : null}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={mobile}

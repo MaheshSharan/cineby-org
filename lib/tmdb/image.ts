@@ -115,14 +115,27 @@ export function getPosterResponsiveUrls(
 
 export interface BackdropResponsiveUrls {
   mobile: string | null;
+  tablet: string | null;
   desktop: string | null;
+  desktopSrcSet: string | null;
 }
 
 export function getBackdropResponsiveUrls(
   path: string | null | undefined
 ): BackdropResponsiveUrls {
+  const mobile = buildImageUrl(path, "w780");
+  const tablet = buildImageUrl(path, "w1280");
+  const desktop1280 = buildImageUrl(path, "w1280");
+  const desktop1920 = buildImageUrl(path, "original", { width: 1920 });
+
+  const desktopSrcSet = desktop1920 && desktop1280
+    ? `${desktop1280} 1280w, ${desktop1920} 1920w`
+    : desktop1280 ?? null;
+
   return {
-    mobile: buildImageUrl(path, "w780"),
-    desktop: buildImageUrl(path, "w1280"),
+    mobile,
+    tablet,
+    desktop: desktop1920 ?? desktop1280,
+    desktopSrcSet,
   };
 }
