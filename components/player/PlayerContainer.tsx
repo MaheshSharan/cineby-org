@@ -722,7 +722,7 @@ export function PlayerContainer({
                     subtitlesEnabled={subtitles.subtitlesEnabled}
                     isSubtitlesFetching={subtitles.isSubtitlesFetching}
                     onToggleSubtitles={subtitles.handleToggleSubtitles}
-                    onOpenOpenSubtitles={() => subtitles.fetchSubtitles()}
+                    onOpenOpenSubtitles={() => subtitles.fetchSubtitles(undefined, true)}
                   />
                 </div>
 

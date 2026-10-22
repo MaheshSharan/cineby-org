@@ -260,11 +260,16 @@ export function AudioSubtitlesPopover({
                 <button
                   type="button"
                   onClick={onOpenOpenSubtitles}
-                  className="w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors text-left cursor-pointer"
+                  disabled={isSubtitlesFetching}
+                  className="w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="flex items-center gap-2.5 whitespace-nowrap">
-                    <SearchIcon size={16} className="text-gray-400 flex-shrink-0" />
-                    Search on OpenSubtitles
+                    {isSubtitlesFetching ? (
+                      <Spinner className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    ) : (
+                      <SearchIcon size={16} className="text-gray-400 flex-shrink-0" />
+                    )}
+                    {isSubtitlesFetching ? "Fetching community subtitles..." : "Fetch Community Subtitles"}
                   </span>
                   <ChevronRightIcon size={14} className="text-gray-500 flex-shrink-0" />
                 </button>

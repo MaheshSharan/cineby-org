@@ -94,7 +94,7 @@ export default function App({ Component, pageProps }: AppProps) {
           {/* Google Consent Mode v2 setup (defaulting to privacy-safe measurement) */}
           <Script
             id="google-consent-mode"
-            strategy="beforeInteractive"
+            strategy="afterInteractive"
             dangerouslySetInnerHTML={{
               __html: `
                 window.dataLayer = window.dataLayer || [];

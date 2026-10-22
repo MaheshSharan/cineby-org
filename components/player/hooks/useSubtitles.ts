@@ -34,7 +34,7 @@ export interface UseSubtitlesResult {
   subtitlesSettings?: SubtitleStyleSettings;
   selectTrack: (track: SubtitleTrack | null) => void;
   handleToggleSubtitles: () => void;
-  fetchSubtitles: (targetLang?: string) => void;
+  fetchSubtitles: (targetLang?: string, force?: boolean) => void;
   handleUploadSubtitle: (file: File) => Promise<void>;
   handleSubtitleChange: (track: SubtitleTrack | null) => void;
   subtitleStyles: {
@@ -248,9 +248,13 @@ export function useSubtitles({
   }, [currentMediaKey, selectTrack]);
 
   const fetchSubtitles = useCallback(
-    (targetLang: string = preferredLanguage || "en") => {
-      if (!mediaId || subtitlesFetchedRef.current) {
+    (targetLang: string = preferredLanguage || "en", force = false) => {
+      if (!mediaId || (!force && subtitlesFetchedRef.current)) {
         return;
+      }
+
+      if (force && subtitleFetchControllerRef.current) {
+        subtitleFetchControllerRef.current.abort();
       }
 
       subtitlesFetchedRef.current = true;

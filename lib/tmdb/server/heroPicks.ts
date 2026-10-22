@@ -1,4 +1,4 @@
-import type { MediaSummary, MediaType } from "@/lib/tmdb/types";
+import type { MediaSummary } from "@/lib/tmdb/types";
 import { HERO_SPOTLIGHT_PICKS, type HeroPickItem } from "@/lib/constants/heroPicks";
 import { getMediaLogo, getMovieDetails } from "@/lib/tmdb/server/movies";
 import { getTvDetails } from "@/lib/tmdb/server/tv";
