@@ -67,7 +67,16 @@ export function AudioSubtitlesPopover({
     return [activeTrack, ...subtitleTracks.filter((_, i) => i !== activeIndex)];
   }, [subtitleTracks, activeSubtitleId]);
 
-  if (!open) return null;
+  const [hasBeenOpened, setHasBeenOpened] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setHasBeenOpened(true);
+    }
+  }, [open]);
+
+  // Keep popover in DOM after first open so images are cached and not re-requested on each hover
+  if (!open && !hasBeenOpened) return null;
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -194,8 +203,8 @@ export function AudioSubtitlesPopover({
                                   src={getFlagUrl(track.flagUrl || track.lang)}
                                   alt=""
                                   className="h-full w-full object-cover rounded-[4px]"
-                                  loading="eager"
-                                  decoding="sync"
+                                  loading="lazy"
+                                  decoding="async"
                                   onError={(e) => {
                                     (e.currentTarget as HTMLImageElement).src = FALLBACK_FLAG_URL;
                                   }}
