@@ -34,6 +34,7 @@ Object.assign(process.env, {
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: "test-client-id.apps.googleusercontent.com",
   NEXT_PUBLIC_FLAGS_API_BASE_URL: "https://flags.test",
   NEXT_PUBLIC_ENABLE_ANALYTICS: "false",
+  NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED: "false",
   CORS_ALLOWED_ORIGINS: "https://cineby.group",
   LOG_LEVEL: "debug",
 });

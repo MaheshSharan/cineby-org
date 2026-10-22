@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import { useEffect } from "react";
 
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { useDevtoolsGuard } from "@/hooks/useDevtoolsGuard";
 import { SettingsProvider } from "@/hooks/useSettings";
 import { DetailModalProvider } from "@/components/detail/DetailModalContext";
 import { Layout } from "@/components/layout/Layout";
@@ -57,6 +58,8 @@ export function reportWebVitals(metric: NextWebVitalsMetric) {
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const gaMeasurementId = getActiveGaMeasurementId();
+
+  useDevtoolsGuard();
 
   useEffect(() => {
     if (!gaMeasurementId) return;

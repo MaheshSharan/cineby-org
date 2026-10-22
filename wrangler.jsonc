@@ -65,6 +65,7 @@
     "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "710500048793-55rctnc4coj15s1jvao7l2ouejvpftpn.apps.googleusercontent.com",
     "NEXT_PUBLIC_FLAGS_API_BASE_URL": "https://flagsapi.com",
     "NEXT_PUBLIC_ENABLE_ANALYTICS": "true",
+    "NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED": "false",
     "NEXT_PUBLIC_GA_MEASUREMENT_ID": "G-GWQTFJK3QW",
     "CORS_ALLOWED_ORIGINS": "https://cineby.group,https://www.cineby.group",
     "LOG_LEVEL": "info"
