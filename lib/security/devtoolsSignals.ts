@@ -11,11 +11,14 @@ export const DOCKED_PANEL_MIN_SHRINK_PX = 200;
 /** Consecutive polls that must agree before a docked panel is reported (filters transient layout shifts). */
 export const DOCKED_PANEL_CONFIRMATIONS = 3;
 
-/** A worker held on `debugger` for longer than this is paused by a debugger, not by a scheduling hiccup. */
-export const WORKER_PAUSE_THRESHOLD_MS = 1500;
+/** A thread held on `debugger` for longer than this is paused by a debugger, not by a scheduling hiccup. */
+export const DEBUGGER_PAUSE_THRESHOLD_MS = 1500;
 
-/** Separate pauses required before the worker signal is reported. */
-export const WORKER_PAUSE_CONFIRMATIONS = 2;
+/** Consecutive pauses required before a debugger signal (worker or main thread) is reported. */
+export const DEBUGGER_PAUSE_CONFIRMATIONS = 2;
+
+/** Consecutive console probes that must be inspected before the console signal is reported. */
+export const CONSOLE_PROBE_CONFIRMATIONS = 2;
 
 export interface ViewportMetrics {
   innerWidth: number;
