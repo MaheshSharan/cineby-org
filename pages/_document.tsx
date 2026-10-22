@@ -38,6 +38,12 @@ export default function Document() {
             media={getIosSplashMedia(screen)}
           />
         ))}
+        <meta name="google-adsense-account" content="ca-pub-8925754855638542" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8925754855638542"
+          crossOrigin="anonymous"
+        />
       </Head>
       <body className="bg-background">
         <script
