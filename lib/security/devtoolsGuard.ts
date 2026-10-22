@@ -3,6 +3,7 @@
 // This is a deterrent, not a security boundary: anything client-side can be bypassed by a determined user.
 // Stream protection must stay server-side (signed descriptors, rate limits).
 
+import { getTabSid } from "./sid";
 import {
   CONSOLE_PROBE_CONFIRMATIONS,
   createConfirmationCounter,
@@ -22,6 +23,7 @@ const VIEWPORT_POLL_INTERVAL_MS = 500;
 const HEARTBEAT_WORKER_URL = "/devtools-heartbeat.js";
 const MAIN_THREAD_HEARTBEAT_URL = "/devtools-main-heartbeat.js";
 const CONSOLE_PROBE_INTERVAL_MS = 1000;
+const CANARY_SCRIPT_URL = "/api/stream/canary-script";
 
 // Must match the event names in public/devtools-main-heartbeat.js, which cannot import from the bundle.
 const PAUSE_EVENT_NAME = "cineby:debugger-pause";
@@ -187,10 +189,24 @@ function watchConsoleProbe(onDetected: () => void): () => void {
   return () => window.clearInterval(intervalId);
 }
 
+/**
+ * Loads an empty script whose source map URL carries this tab's sid. DevTools requests that map when it opens,
+ * which flags the sid on the server. Works for undocked DevTools and with breakpoints off.
+ */
+function installCanaryScript(): () => void {
+  const script = document.createElement("script");
+
+  script.src = `${CANARY_SCRIPT_URL}?sid=${getTabSid()}`;
+  document.head.appendChild(script);
+
+  return () => script.remove();
+}
+
 /** Starts every signal and returns one cleanup function. `onDetected` may fire more than once. */
 export function startDevtoolsGuard(onDetected: () => void): () => void {
   const cleanups = [
     installShortcutShield(),
+    installCanaryScript(),
     watchDockedPanel(onDetected),
     watchDebuggerPauses(onDetected),
     watchMainThreadPauses(onDetected),

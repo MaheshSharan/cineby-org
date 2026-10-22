@@ -1,3 +1,4 @@
+import { getSidHeaders, getTabSid } from "@/lib/security/sid";
 import type { Quality, StreamResponse } from "@/lib/providers/types";
 import { fetchVixsrcPayloadFromBrowser } from "@/lib/providers/sources/vixsrc/client";
 import { fetchVidyPayloadFromBrowser } from "@/lib/providers/sources/vidy/client";
@@ -83,7 +84,7 @@ async function buildFetchResponse(
         if (payload) {
           return fetch("/api/stream/resolve", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...getSidHeaders() },
             body: JSON.stringify({
               tmdbId: request.mediaId,
               type: request.mediaType,
@@ -110,7 +111,7 @@ async function buildFetchResponse(
         if (payload) {
           return fetch("/api/stream/resolve", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...getSidHeaders() },
             body: JSON.stringify({
               tmdbId: request.mediaId,
               type: request.mediaType,
@@ -127,6 +128,7 @@ async function buildFetchResponse(
 
     // All client fetchers failed or no active providers — let server handle it
     return fetch(`/api/stream/resolve?${params.toString()}`, {
+      headers: getSidHeaders(),
       signal: request.signal,
     });
   }
@@ -143,7 +145,7 @@ async function buildFetchResponse(
     if (payload) {
       return fetch("/api/stream/resolve", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getSidHeaders() },
         body: JSON.stringify({
           tmdbId: request.mediaId,
           type: request.mediaType,
@@ -160,6 +162,7 @@ async function buildFetchResponse(
   if (isCinezoServer(serverId)) {
     // Cinezo stream resolution is handled cleanly server-side
     return fetch(`/api/stream/resolve?${params.toString()}`, {
+      headers: getSidHeaders(),
       signal: request.signal,
     });
   }
@@ -177,7 +180,7 @@ async function buildFetchResponse(
     if (payload) {
       return fetch("/api/stream/resolve", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getSidHeaders() },
         body: JSON.stringify({
           tmdbId: request.mediaId,
           type: request.mediaType,
@@ -195,7 +198,7 @@ async function buildFetchResponse(
     // Targeted Vidy child server had no playable stream — do not fall back to other servers
     return new Response(JSON.stringify({ sources: [], subtitles: [] }), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getSidHeaders() },
     });
   }
 
@@ -203,12 +206,13 @@ async function buildFetchResponse(
   if (isVixsrcServer(serverId)) {
     return new Response(JSON.stringify({ sources: [], subtitles: [] }), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getSidHeaders() },
     });
   }
 
   // Unrecognised provider or initial auto search — fall through to server-side
   return fetch(`/api/stream/resolve?${params.toString()}`, {
+    headers: getSidHeaders(),
     signal: request.signal,
   });
 }
@@ -235,8 +239,8 @@ async function rewriteM3u8ToBlobUrl(
   try {
     const rewriteRes = await fetch("/api/stream/m3u8", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: m3u8Url, headers }),
+      headers: { "Content-Type": "application/json", ...getSidHeaders() },
+      body: JSON.stringify({ url: m3u8Url, headers, sid: getTabSid() }),
       signal,
     });
     if (!rewriteRes.ok) return null;

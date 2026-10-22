@@ -6,6 +6,7 @@ export interface Descriptor {
   headers: Record<string, string>;
   expiresAt: number;
   ip?: string;
+  sid?: string;
 }
 
 const DEFAULT_TTL_MS = 6 * 60 * 60_000; // 6 hours
@@ -17,13 +18,15 @@ function sign(payload: string): string {
 export function createProxyDescriptor(
   url: string,
   headers: Record<string, string> = {},
-  clientIp?: string
+  clientIp?: string,
+  sid?: string
 ): string {
   const descriptor: Descriptor = {
     url,
     headers,
     expiresAt: Date.now() + DEFAULT_TTL_MS,
     ...(clientIp ? { ip: clientIp.trim() } : {}),
+    ...(sid ? { sid } : {}),
   };
   const payload = Buffer.from(JSON.stringify(descriptor)).toString("base64url");
   return `${payload}.${sign(payload)}`;
@@ -44,6 +47,7 @@ export function readProxyDescriptor(token: string): Descriptor | null {
       headers: descriptor.headers ?? {},
       expiresAt: descriptor.expiresAt,
       ip: typeof descriptor.ip === "string" ? descriptor.ip : undefined,
+      sid: typeof descriptor.sid === "string" ? descriptor.sid : undefined,
     };
   } catch { return null; }
 }
