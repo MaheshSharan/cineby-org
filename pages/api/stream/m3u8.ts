@@ -1,6 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { buildStreamProxyUrl } from "@/lib/providers/proxy";
 import { isPrivateHost } from "@/lib/providers/allowlist";
+import { createProxyDescriptor, readProxyDescriptor } from "@/lib/providers/signedProxy";
+import { isSidFlagged } from "@/lib/security/canaryStore";
+import { isValidSid } from "@/lib/security/sid";
 
 /**
  * POST /api/stream/m3u8
@@ -71,8 +74,28 @@ export default withApiContext(
   const body = typeof req.body === "object" && req.body !== null ? (req.body as Record<string, unknown>) : {};
   const query = req.query;
 
-  const targetUrl = typeof body.url === "string" && body.url ? body.url : typeof query.url === "string" ? query.url : null;
-  const rawHeaders = (typeof body.headers === "object" && body.headers !== null ? body.headers : {}) as Record<string, string>;
+  const token = typeof query.token === "string" ? query.token : null;
+  const descriptor = token ? readProxyDescriptor(token) : null;
+
+  if (token && !descriptor) {
+    res.status(403).json({ error: "Invalid or expired playlist token" });
+    return;
+  }
+
+  const bodySid = isValidSid(body.sid) ? body.sid : undefined;
+  const sid = descriptor?.sid ?? bodySid;
+
+  // A tab whose DevTools canary fired gets no new playlists. Segments already in a loaded playlist keep working.
+  if (sid && (await isSidFlagged(sid))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const targetUrl =
+    descriptor?.url ??
+    (typeof body.url === "string" && body.url ? body.url : typeof query.url === "string" ? query.url : null);
+  const bodyHeaders = (typeof body.headers === "object" && body.headers !== null ? body.headers : {}) as Record<string, string>;
+  const rawHeaders = { ...bodyHeaders, ...descriptor?.headers };
   const refererQuery = typeof query.referer === "string" ? query.referer : "";
   const originQuery = typeof query.origin === "string" ? query.origin : "";
 
@@ -211,6 +234,10 @@ export default withApiContext(
     Origin: explicitOrigin || fallbackOrigin,
   };
 
+  // Sub-playlists are signed too, so the Network tab never shows the upstream URL.
+  const buildPlaylistUrl = (playlistUrl: string): string =>
+    `/api/stream/m3u8?token=${createProxyDescriptor(playlistUrl, proxyHeaders, clientIp, sid)}`;
+
   const lines = m3u8Text.split("\n");
   const rewritten: string[] = [];
   let expectingSegment = false;
@@ -231,7 +258,7 @@ export default withApiContext(
         const uri = match[1];
         const abs = resolveUrl(uri);
         if (!isPrivateHost(abs)) {
-          const proxyUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
+          const proxyUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid));
           rewritten.push(t.replace(/URI="[^"]+"/, `URI="${proxyUrl}"`));
         } else {
           rewritten.push(line);
@@ -249,7 +276,7 @@ export default withApiContext(
         const uri = match[1];
         const abs = resolveUrl(uri);
         if (!isPrivateHost(abs)) {
-          const mapUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
+          const mapUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid));
           rewritten.push(t.replace(/URI="[^"]+"/, `URI="${mapUrl}"`));
         } else {
           rewritten.push(line);
@@ -267,14 +294,8 @@ export default withApiContext(
         if (!isPrivateHost(abs)) {
           const isMediaPlaylist = abs.includes(".m3u8");
           const replacementUrl = isMediaPlaylist
-            ? toAbsolute(
-                `/api/stream/m3u8?${new URLSearchParams({
-                  url: abs,
-                  referer: proxyHeaders.Referer || "",
-                  origin: proxyHeaders.Origin || "",
-                }).toString()}`
-              )
-            : toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp));
+            ? toAbsolute(buildPlaylistUrl(abs))
+            : toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid));
           rewritten.push(t.replace(/URI="[^"]+"/, `URI="${replacementUrl}"`));
         } else {
           rewritten.push(line);
@@ -329,18 +350,13 @@ export default withApiContext(
 
     if (isSubPlaylist) {
       if (!isPrivateHost(abs)) {
-        const params = new URLSearchParams({
-          url: abs,
-          referer: proxyHeaders.Referer || "",
-          origin: proxyHeaders.Origin || "",
-        });
-        rewritten.push(toAbsolute(`/api/stream/m3u8?${params.toString()}`));
+        rewritten.push(toAbsolute(buildPlaylistUrl(abs)));
       } else {
         rewritten.push(line);
       }
     } else {
       if (!isPrivateHost(abs)) {
-        rewritten.push(toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp)));
+        rewritten.push(toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid)));
       } else {
         rewritten.push(line);
       }

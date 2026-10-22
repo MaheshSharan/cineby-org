@@ -9,6 +9,8 @@ import { logger } from "@/lib/logger";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
 import { isProviderEnabled } from "@/lib/env/server";
+import { isSidFlagged } from "@/lib/security/canaryStore";
+import { isValidSid } from "@/lib/security/sid";
 
 function extractClientIp(req: NextApiRequest): string {
   const cfIp = req.headers["cf-connecting-ip"];
@@ -41,6 +43,14 @@ export default withApiContext(
     if (req.method !== "GET" && req.method !== "POST") {
       res.setHeader("Allow", ["GET", "POST"]);
       res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+      return;
+    }
+
+    const sid = req.headers["x-cb-sid"];
+
+    // A tab whose DevTools canary fired gets no new stream sources.
+    if (isValidSid(sid) && (await isSidFlagged(sid))) {
+      res.status(403).json({ error: "Forbidden" });
       return;
     }
 

@@ -4,7 +4,8 @@ import { createProxyDescriptor } from "./signedProxy";
 export function buildStreamProxyUrl(
   targetUrl: string,
   headers?: Record<string, string>,
-  clientIp?: string
+  clientIp?: string,
+  sid?: string
 ): string {
   if (!targetUrl) {
     return targetUrl;
@@ -21,7 +22,7 @@ export function buildStreamProxyUrl(
     return targetUrl;
   }
 
-  const params = new URLSearchParams({ token: createProxyDescriptor(targetUrl, headers, clientIp) });
+  const params = new URLSearchParams({ token: createProxyDescriptor(targetUrl, headers, clientIp, sid) });
 
   if (cleanBase.includes("?")) {
     return `${cleanBase}&${params.toString()}`;
