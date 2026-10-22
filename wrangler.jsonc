@@ -73,16 +73,22 @@
     // TMDB_API_KEY, STREAM_PROXY_SECRET, UPSTASH_REDIS_REST_TOKEN, INTRODB_API_KEY, SKIPDB_API_KEY
   },
   "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "redact_query_string": false,
     "logs": {
-      "enabled": true,
+      "enabled": false,
       "head_sampling_rate": 1,
       "invocation_logs": true,
       "persist": true
     },
     "traces": {
-      "enabled": true,
+      "enabled": false,
       "head_sampling_rate": 1,
       "persist": true
+    },
+    "issues": {
+      "enabled": false
     }
   }
 }
