@@ -4,6 +4,7 @@ import { isPrivateHost } from "@/lib/providers/allowlist";
 import { createProxyDescriptor, readProxyDescriptor } from "@/lib/providers/signedProxy";
 import { isSidFlagged } from "@/lib/security/canaryStore";
 import { isValidSid } from "@/lib/security/sid";
+import type { ClientPublicKeyJwk } from "@/lib/security/tabCrypto";
 
 /**
  * POST /api/stream/m3u8
@@ -84,6 +85,24 @@ export default withApiContext(
 
   const bodySid = isValidSid(body.sid) ? body.sid : undefined;
   const sid = descriptor?.sid ?? bodySid;
+
+  const rawPk = (body.clientPublicKey ?? descriptor?.pk) as unknown;
+  let clientPublicKey: ClientPublicKeyJwk | undefined;
+  if (
+    rawPk &&
+    typeof rawPk === "object" &&
+    (rawPk as ClientPublicKeyJwk).kty === "EC" &&
+    (rawPk as ClientPublicKeyJwk).crv === "P-256" &&
+    typeof (rawPk as ClientPublicKeyJwk).x === "string" &&
+    typeof (rawPk as ClientPublicKeyJwk).y === "string"
+  ) {
+    clientPublicKey = {
+      kty: "EC",
+      crv: "P-256",
+      x: (rawPk as ClientPublicKeyJwk).x,
+      y: (rawPk as ClientPublicKeyJwk).y,
+    };
+  }
 
   // A tab whose DevTools canary fired gets no new playlists. Segments already in a loaded playlist keep working.
   if (sid && (await isSidFlagged(sid))) {
@@ -236,7 +255,7 @@ export default withApiContext(
 
   // Sub-playlists are signed too, so the Network tab never shows the upstream URL.
   const buildPlaylistUrl = (playlistUrl: string): string =>
-    `/api/stream/m3u8?token=${createProxyDescriptor(playlistUrl, proxyHeaders, clientIp, sid)}`;
+    `/api/stream/m3u8?token=${createProxyDescriptor(playlistUrl, proxyHeaders, clientIp, sid, clientPublicKey)}`;
 
   const lines = m3u8Text.split("\n");
   const rewritten: string[] = [];
@@ -258,7 +277,7 @@ export default withApiContext(
         const uri = match[1];
         const abs = resolveUrl(uri);
         if (!isPrivateHost(abs)) {
-          const proxyUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid));
+          const proxyUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey));
           rewritten.push(t.replace(/URI="[^"]+"/, `URI="${proxyUrl}"`));
         } else {
           rewritten.push(line);
@@ -276,7 +295,7 @@ export default withApiContext(
         const uri = match[1];
         const abs = resolveUrl(uri);
         if (!isPrivateHost(abs)) {
-          const mapUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid));
+          const mapUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey));
           rewritten.push(t.replace(/URI="[^"]+"/, `URI="${mapUrl}"`));
         } else {
           rewritten.push(line);
@@ -295,7 +314,7 @@ export default withApiContext(
           const isMediaPlaylist = abs.includes(".m3u8");
           const replacementUrl = isMediaPlaylist
             ? toAbsolute(buildPlaylistUrl(abs))
-            : toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid));
+            : toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey));
           rewritten.push(t.replace(/URI="[^"]+"/, `URI="${replacementUrl}"`));
         } else {
           rewritten.push(line);
@@ -356,7 +375,7 @@ export default withApiContext(
       }
     } else {
       if (!isPrivateHost(abs)) {
-        rewritten.push(toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid)));
+        rewritten.push(toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey)));
       } else {
         rewritten.push(line);
       }

@@ -110,11 +110,66 @@ const DEFAULT_UA =
 
 const DEFAULT_TTL_MS = 6 * 60 * 60_000; // 6 hours
 
+export interface ClientPublicKeyJwk {
+  kty: "EC";
+  crv: "P-256";
+  x: string;
+  y: string;
+}
+
 interface Descriptor {
   url: string;
   headers: Record<string, string>;
   expiresAt: number;
   ip?: string;
+  sid?: string;
+  pk?: ClientPublicKeyJwk;
+}
+
+function buildCanonicalTarget(urlStr: string): string {
+  try {
+    const parsed = new URL(urlStr);
+    parsed.searchParams.delete("sig");
+    parsed.searchParams.delete("ts");
+    return `${parsed.pathname}${parsed.search ? parsed.search : ""}`;
+  } catch {
+    const withoutQuery = urlStr.split("?")[0] || "/";
+    return withoutQuery;
+  }
+}
+
+async function verifyEcdsaSignature(
+  pk: ClientPublicKeyJwk,
+  payload: string,
+  sigBase64Url: string
+): Promise<boolean> {
+  try {
+    const key = await crypto.subtle.importKey(
+      "jwk",
+      pk,
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["verify"]
+    );
+
+    let base64 = sigBase64Url.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) base64 += "=";
+    const binary = atob(base64);
+    const sigBytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      sigBytes[i] = binary.charCodeAt(i);
+    }
+
+    const encoder = new TextEncoder();
+    return await crypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      key,
+      sigBytes,
+      encoder.encode(payload)
+    );
+  } catch {
+    return false;
+  }
 }
 
 // SubtleCrypto HMAC helper for pure Web Standards / Workers runtime
@@ -170,11 +225,30 @@ async function readDescriptor(token: string, secret: string): Promise<Descriptor
     if (typeof parsed.url !== "string" || typeof parsed.expiresAt !== "number" || parsed.expiresAt < Date.now()) {
       return null;
     }
+    let pk: ClientPublicKeyJwk | undefined;
+    if (
+      parsed.pk &&
+      typeof parsed.pk === "object" &&
+      parsed.pk.kty === "EC" &&
+      parsed.pk.crv === "P-256" &&
+      typeof parsed.pk.x === "string" &&
+      typeof parsed.pk.y === "string"
+    ) {
+      pk = {
+        kty: "EC",
+        crv: "P-256",
+        x: parsed.pk.x,
+        y: parsed.pk.y,
+      };
+    }
+
     return {
       url: parsed.url,
       headers: parsed.headers ?? {},
       expiresAt: parsed.expiresAt,
       ip: typeof parsed.ip === "string" ? parsed.ip : undefined,
+      sid: typeof parsed.sid === "string" ? parsed.sid : undefined,
+      pk,
     };
   } catch {
     return null;
@@ -185,13 +259,17 @@ async function createDescriptorToken(
   url: string,
   headers: Record<string, string>,
   secretOrKey: string | CryptoKey,
-  clientIp?: string
+  clientIp?: string,
+  sid?: string,
+  pk?: ClientPublicKeyJwk
 ): Promise<string> {
   const descriptor: Descriptor = {
     url,
     headers,
     expiresAt: Date.now() + DEFAULT_TTL_MS,
     ...(clientIp ? { ip: clientIp.trim() } : {}),
+    ...(sid ? { sid } : {}),
+    ...(pk ? { pk } : {}),
   };
   const payloadJson = JSON.stringify(descriptor);
   const base64 = btoa(payloadJson).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -255,6 +333,38 @@ export default {
         status: 401,
         headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
       });
+    }
+
+    // ECDSA tab-bound verification if descriptor contains client public key (pk)
+    if (descriptor.pk) {
+      const tsParam = url.searchParams.get("ts");
+      const sigParam = url.searchParams.get("sig");
+
+      if (!tsParam || !sigParam) {
+        return new Response(JSON.stringify({ error: "Missing required segment signature" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
+        });
+      }
+
+      const timestamp = Number.parseInt(tsParam, 10);
+      if (Number.isNaN(timestamp) || Math.abs(Date.now() - timestamp) > 25_000) {
+        return new Response(JSON.stringify({ error: "Expired segment signature" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
+        });
+      }
+
+      const canonicalTarget = buildCanonicalTarget(req.url);
+      const signaturePayload = `GET\n${canonicalTarget}\n${timestamp}`;
+
+      const isValid = await verifyEcdsaSignature(descriptor.pk, signaturePayload, sigParam);
+      if (!isValid) {
+        return new Response(JSON.stringify({ error: "Invalid segment signature" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
+        });
+      }
     }
 
     // IP verification (log mismatch for diagnostics without blocking mobile/CGNAT users)
@@ -420,7 +530,7 @@ export default {
             const uri = match[1];
             const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
             if (!isPrivateHost(abs)) {
-              const token = await createDescriptorToken(abs, activeHeaders, signingKey, descriptor.ip);
+              const token = await createDescriptorToken(abs, activeHeaders, signingKey, descriptor.ip, descriptor.sid, descriptor.pk);
               rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
             } else {
               rewrittenLines.push(line);
@@ -437,7 +547,7 @@ export default {
             const uri = match[1];
             const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
             if (!isPrivateHost(abs)) {
-              const token = await createDescriptorToken(abs, activeHeaders, signingKey, descriptor.ip);
+              const token = await createDescriptorToken(abs, activeHeaders, signingKey, descriptor.ip, descriptor.sid, descriptor.pk);
               rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
             } else {
               rewrittenLines.push(line);
@@ -452,7 +562,7 @@ export default {
             const uri = match[1];
             const abs = uri.startsWith("http://") || uri.startsWith("https://") ? uri : new URL(uri, targetBase).toString();
             if (!isPrivateHost(abs)) {
-              const token = await createDescriptorToken(abs, activeHeaders, signingKey, descriptor.ip);
+              const token = await createDescriptorToken(abs, activeHeaders, signingKey, descriptor.ip, descriptor.sid, descriptor.pk);
               rewrittenLines.push(trimmed.replace(/URI="[^"]+"/, `URI="${workerOrigin}/?token=${encodeURIComponent(token)}"`));
             } else {
               rewrittenLines.push(line);
@@ -468,7 +578,7 @@ export default {
 
         const absUrl = trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : new URL(trimmed, targetBase).toString();
         if (!isPrivateHost(absUrl)) {
-          const token = await createDescriptorToken(absUrl, activeHeaders, signingKey, descriptor.ip);
+          const token = await createDescriptorToken(absUrl, activeHeaders, signingKey, descriptor.ip, descriptor.sid, descriptor.pk);
           rewrittenLines.push(`${workerOrigin}/?token=${encodeURIComponent(token)}`);
         } else {
           rewrittenLines.push(line);
@@ -524,7 +634,7 @@ export default {
             : new URL(rawUrl, effectiveBase).toString();
 
           if (!isPrivateHost(absUrl)) {
-            const token = await createDescriptorToken(absUrl, activeHeaders, signingKey, descriptor.ip);
+            const token = await createDescriptorToken(absUrl, activeHeaders, signingKey, descriptor.ip, descriptor.sid, descriptor.pk);
             rewrittenLines.push(`${workerOrigin}/?token=${encodeURIComponent(token)}${fragment}`);
             continue;
           }

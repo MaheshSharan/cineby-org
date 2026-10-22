@@ -6,6 +6,53 @@ import { createProxyDescriptor, readProxyDescriptor } from "@/lib/providers/sign
 import { applyCorsHeaders } from "@/lib/cors";
 import { isPrivateHost } from "@/lib/providers/allowlist";
 import { withApiContext } from "@/lib/validation";
+import type { ClientPublicKeyJwk } from "@/lib/security/tabCrypto";
+
+function buildCanonicalTarget(urlStr: string): string {
+  try {
+    const parsed = new URL(urlStr, "https://cineby.internal");
+    parsed.searchParams.delete("sig");
+    parsed.searchParams.delete("ts");
+    return `${parsed.pathname}${parsed.search ? parsed.search : ""}`;
+  } catch {
+    const withoutQuery = urlStr.split("?")[0] || "/";
+    return withoutQuery;
+  }
+}
+
+async function verifyEcdsaSignature(
+  pk: ClientPublicKeyJwk,
+  payload: string,
+  sigBase64Url: string
+): Promise<boolean> {
+  try {
+    const key = await crypto.subtle.importKey(
+      "jwk",
+      pk,
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["verify"]
+    );
+
+    let base64 = sigBase64Url.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) base64 += "=";
+    const binary = atob(base64);
+    const sigBytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      sigBytes[i] = binary.charCodeAt(i);
+    }
+
+    const encoder = new TextEncoder();
+    return await crypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      key,
+      sigBytes as unknown as BufferSource,
+      encoder.encode(payload)
+    );
+  } catch {
+    return false;
+  }
+}
 
 export const config = {
   api: {
@@ -33,6 +80,32 @@ export default withApiContext("api/stream/proxy", async (req: NextApiRequest, re
   if (!descriptor) {
     res.status(401).json({ error: "Missing or invalid stream descriptor" });
     return;
+  }
+
+  // ECDSA tab-bound verification if descriptor contains a client public key (pk)
+  if (descriptor.pk) {
+    const tsParam = typeof req.query.ts === "string" ? req.query.ts : "";
+    const sigParam = typeof req.query.sig === "string" ? req.query.sig : "";
+
+    if (!tsParam || !sigParam) {
+      res.status(403).json({ error: "Missing required segment signature" });
+      return;
+    }
+
+    const timestamp = Number.parseInt(tsParam, 10);
+    if (Number.isNaN(timestamp) || Math.abs(Date.now() - timestamp) > 25_000) {
+      res.status(403).json({ error: "Expired segment signature" });
+      return;
+    }
+
+    const canonicalTarget = buildCanonicalTarget(req.url || "");
+    const signaturePayload = `GET\n${canonicalTarget}\n${timestamp}`;
+
+    const isValid = await verifyEcdsaSignature(descriptor.pk, signaturePayload, sigParam);
+    if (!isValid) {
+      res.status(403).json({ error: "Invalid segment signature" });
+      return;
+    }
   }
   const rawTargetUrl = descriptor.url;
   const customHeaders = descriptor.headers || {};
@@ -152,7 +225,7 @@ export default withApiContext("api/stream/proxy", async (req: NextApiRequest, re
                 ? uri
                 : new URL(uri, targetBase).toString();
               if (!isPrivateHost(abs)) {
-                return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, activeHeaders))}"`;
+                return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, activeHeaders, descriptor.ip, descriptor.sid, descriptor.pk))}"`;
               }
               return `URI="${uri}"`;
             });
@@ -165,7 +238,7 @@ export default withApiContext("api/stream/proxy", async (req: NextApiRequest, re
                 ? uri
                 : new URL(uri, targetBase).toString();
               if (!isPrivateHost(abs)) {
-                return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, activeHeaders))}"`;
+                return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, activeHeaders, descriptor.ip, descriptor.sid, descriptor.pk))}"`;
               }
               return `URI="${uri}"`;
             });
@@ -178,7 +251,7 @@ export default withApiContext("api/stream/proxy", async (req: NextApiRequest, re
                 ? uri
                 : new URL(uri, targetBase).toString();
               if (!isPrivateHost(abs)) {
-                return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, activeHeaders))}"`;
+                return `URI="/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(abs, activeHeaders, descriptor.ip, descriptor.sid, descriptor.pk))}"`;
               }
               return `URI="${uri}"`;
             });
@@ -193,7 +266,7 @@ export default withApiContext("api/stream/proxy", async (req: NextApiRequest, re
             : new URL(trimmed, targetBase).toString();
 
           if (!isPrivateHost(absoluteUrl)) {
-            return `/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(absoluteUrl, activeHeaders))}`;
+            return `/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(absoluteUrl, activeHeaders, descriptor.ip, descriptor.sid, descriptor.pk))}`;
           }
           return line;
         })
@@ -237,7 +310,7 @@ export default withApiContext("api/stream/proxy", async (req: NextApiRequest, re
               : new URL(rawUrl, effectiveBase).toString();
 
             if (!isPrivateHost(absUrl)) {
-              const proxiedUrl = `/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(absUrl, activeHeaders))}`;
+              const proxiedUrl = `/api/stream/proxy?token=${encodeURIComponent(createProxyDescriptor(absUrl, activeHeaders, descriptor.ip, descriptor.sid, descriptor.pk))}`;
               return `${proxiedUrl}${fragment}`;
             }
           }

@@ -10,6 +10,7 @@ import Hls, {
 } from "hls.js";
 
 import type { SegmentByteCache } from "./segmentByteCache";
+import { signSegmentUrl } from "@/lib/security/tabCrypto";
 
 function isFragmentContext(context: LoaderContext): context is FragmentLoaderContext {
   return "frag" in context && Boolean((context as FragmentLoaderContext).frag);
@@ -47,12 +48,36 @@ export function createCachingLoader(
 
       // Only cache media fragments (not manifests, playlists, keys, etc.)
       if (!isFragmentContext(context)) {
+        if (context.url.includes("token=")) {
+          void signSegmentUrl(context.url)
+            .then((signedUrl) => {
+              context.url = signedUrl;
+              this.defaultLoader.load(context, config, callbacks);
+            })
+            .catch(() => {
+              this.defaultLoader.load(context, config, callbacks);
+            });
+          return;
+        }
+
         this.defaultLoader.load(context, config, callbacks);
         return;
       }
 
       const frag = context.frag;
       if (typeof frag.sn !== "number" || frag.sn < 0) {
+        if (context.url.includes("token=")) {
+          void signSegmentUrl(context.url)
+            .then((signedUrl) => {
+              context.url = signedUrl;
+              this.defaultLoader.load(context, config, callbacks);
+            })
+            .catch(() => {
+              this.defaultLoader.load(context, config, callbacks);
+            });
+          return;
+        }
+
         this.defaultLoader.load(context, config, callbacks);
         return;
       }
@@ -94,6 +119,18 @@ export function createCachingLoader(
           callbacks.onSuccess(response, stats, ctx, networkDetails);
         },
       };
+
+      if (context.url.includes("token=")) {
+        void signSegmentUrl(context.url)
+          .then((signedUrl) => {
+            context.url = signedUrl;
+            this.defaultLoader.load(context, config, wrappedCallbacks);
+          })
+          .catch(() => {
+            this.defaultLoader.load(context, config, wrappedCallbacks);
+          });
+        return;
+      }
 
       this.defaultLoader.load(context, config, wrappedCallbacks);
     }

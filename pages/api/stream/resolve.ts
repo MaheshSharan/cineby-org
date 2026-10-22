@@ -11,6 +11,7 @@ import { applyCorsHeaders } from "@/lib/cors";
 import { isProviderEnabled } from "@/lib/env/server";
 import { isSidFlagged } from "@/lib/security/canaryStore";
 import { isValidSid } from "@/lib/security/sid";
+import type { ClientPublicKeyJwk } from "@/lib/security/tabCrypto";
 
 function extractClientIp(req: NextApiRequest): string {
   const cfIp = req.headers["cf-connecting-ip"];
@@ -47,9 +48,10 @@ export default withApiContext(
     }
 
     const sid = req.headers["x-cb-sid"];
+    const validatedSid = isValidSid(sid) ? sid : undefined;
 
     // A tab whose DevTools canary fired gets no new stream sources.
-    if (isValidSid(sid) && (await isSidFlagged(sid))) {
+    if (validatedSid && (await isSidFlagged(validatedSid))) {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
@@ -59,6 +61,24 @@ export default withApiContext(
     // Support both GET query and POST JSON body
     const body = (req.method === "POST" && typeof req.body === "object" ? req.body : {}) as Record<string, unknown>;
     const query = req.query;
+
+    const rawPk = (body.clientPublicKey ?? query.clientPublicKey) as unknown;
+    let clientPublicKey: ClientPublicKeyJwk | undefined;
+    if (
+      rawPk &&
+      typeof rawPk === "object" &&
+      (rawPk as ClientPublicKeyJwk).kty === "EC" &&
+      (rawPk as ClientPublicKeyJwk).crv === "P-256" &&
+      typeof (rawPk as ClientPublicKeyJwk).x === "string" &&
+      typeof (rawPk as ClientPublicKeyJwk).y === "string"
+    ) {
+      clientPublicKey = {
+        kty: "EC",
+        crv: "P-256",
+        x: (rawPk as ClientPublicKeyJwk).x,
+        y: (rawPk as ClientPublicKeyJwk).y,
+      };
+    }
 
     const tmdbId = body.tmdbId ?? query.tmdbId;
     const type = body.type ?? query.type;
@@ -96,7 +116,7 @@ export default withApiContext(
         if (source) {
           const finalSource = {
             ...source,
-            url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers, clientIp),
+            url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers, clientIp, validatedSid, clientPublicKey),
           };
 
           logger.debug(`[resolve] Vixsrc client-assisted resolution succeeded for tmdbId=${parsedTmdbId}`);
@@ -116,12 +136,12 @@ export default withApiContext(
         if (rawSources.length > 0) {
           const finalSources = rawSources.map((src) => ({
             ...src,
-            url: src.direct ? src.url : buildStreamProxyUrl(src.url, src.headers, clientIp),
+            url: src.direct ? src.url : buildStreamProxyUrl(src.url, src.headers, clientIp, validatedSid, clientPublicKey),
           }));
 
           const finalThumbnails = decrypted.thumbnails.map((thumb) => ({
             ...thumb,
-            url: buildStreamProxyUrl(thumb.url, thumb.headers, clientIp),
+            url: buildStreamProxyUrl(thumb.url, thumb.headers, clientIp, validatedSid, clientPublicKey),
           }));
 
           const fallbackSubtitles = await fetchProviderSubtitles(
@@ -156,7 +176,7 @@ export default withApiContext(
           season: seasonNum,
           episode: episodeNum,
         },
-        { targetProviderId: targetServer, clientIp }
+        { targetProviderId: targetServer, clientIp, sid: validatedSid, clientPublicKey }
       );
 
       logger.debug(`[resolve] First pass found ${result.sources?.length ?? 0} sources`);

@@ -1,11 +1,13 @@
 import { getStreamProxyUrl } from "@/lib/env/server";
 import { createProxyDescriptor } from "./signedProxy";
+import type { ClientPublicKeyJwk } from "@/lib/security/tabCrypto";
 
 export function buildStreamProxyUrl(
   targetUrl: string,
   headers?: Record<string, string>,
   clientIp?: string,
-  sid?: string
+  sid?: string,
+  clientPublicKey?: ClientPublicKeyJwk
 ): string {
   if (!targetUrl) {
     return targetUrl;
@@ -22,7 +24,9 @@ export function buildStreamProxyUrl(
     return targetUrl;
   }
 
-  const params = new URLSearchParams({ token: createProxyDescriptor(targetUrl, headers, clientIp, sid) });
+  const params = new URLSearchParams({
+    token: createProxyDescriptor(targetUrl, headers, clientIp, sid, clientPublicKey),
+  });
 
   if (cleanBase.includes("?")) {
     return `${cleanBase}&${params.toString()}`;

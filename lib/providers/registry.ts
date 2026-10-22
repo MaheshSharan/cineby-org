@@ -5,6 +5,7 @@ import { ALL_PROVIDERS } from "./sources";
 import type { Provider, StreamRequest, StreamResponse, StreamSource, SubtitleTrack, ThumbnailTrack } from "./types";
 import { logger, logError } from "@/lib/logger";
 import { isProviderEnabled } from "@/lib/env/server";
+import type { ClientPublicKeyJwk } from "@/lib/security/tabCrypto";
 
 async function fetchWithTimeout(
   provider: Provider,
@@ -45,7 +46,9 @@ async function fetchWithTimeout(
 function processProviderResponse(
   res: StreamResponse,
   provider: Provider,
-  clientIp?: string
+  clientIp?: string,
+  sid?: string,
+  clientPublicKey?: ClientPublicKeyJwk
 ): StreamResponse {
   const collectedSources: StreamSource[] = [];
   const collectedSubtitles: SubtitleTrack[] = [];
@@ -59,7 +62,7 @@ function processProviderResponse(
       seenSourceUrls.add(source.url);
       collectedSources.push({
         ...source,
-        url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers, clientIp),
+        url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers, clientIp, sid, clientPublicKey),
         provider: {
           id: source.provider?.id || provider.id,
           name: source.provider?.name || provider.name,
@@ -76,7 +79,7 @@ function processProviderResponse(
         ...sub,
         flagUrl: sub.flagUrl,
         format: sub.format,
-        url: buildStreamProxyUrl(sub.url, sub.headers, clientIp),
+        url: buildStreamProxyUrl(sub.url, sub.headers, clientIp, sid, clientPublicKey),
       });
     }
   }
@@ -86,7 +89,7 @@ function processProviderResponse(
       seenThumbnailUrls.add(thumb.url);
       collectedThumbnails.push({
         ...thumb,
-        url: buildStreamProxyUrl(thumb.url, thumb.headers, clientIp),
+        url: buildStreamProxyUrl(thumb.url, thumb.headers, clientIp, sid, clientPublicKey),
       });
     }
   }
@@ -106,7 +109,14 @@ function processProviderResponse(
 
 export async function resolveAllStreams(
   request: StreamRequest,
-  options?: { timeoutMs?: number; targetProviderId?: string; force?: boolean; clientIp?: string }
+  options?: {
+    timeoutMs?: number;
+    targetProviderId?: string;
+    force?: boolean;
+    clientIp?: string;
+    sid?: string;
+    clientPublicKey?: ClientPublicKeyJwk;
+  }
 ): Promise<StreamResponse> {
   const timeoutMs = options?.timeoutMs ?? DEFAULT_PROVIDER_TIMEOUT_MS;
 
@@ -143,7 +153,13 @@ export async function resolveAllStreams(
       { ...request, serverId: options.targetProviderId },
       timeoutMs
     );
-    const processed = processProviderResponse(res, provider, options.clientIp);
+    const processed = processProviderResponse(
+      res,
+      provider,
+      options.clientIp,
+      options.sid,
+      options.clientPublicKey
+    );
     logger.debug(`[registry] Provider ${provider.id} produced ${processed.sources.length} sources`);
     return processed;
   }
@@ -156,7 +172,12 @@ export async function raceProviders(
   providers: Provider[],
   request: StreamRequest,
   timeoutMs: number,
-  options?: { targetProviderId?: string; clientIp?: string }
+  options?: {
+    targetProviderId?: string;
+    clientIp?: string;
+    sid?: string;
+    clientPublicKey?: ClientPublicKeyJwk;
+  }
 ): Promise<StreamResponse> {
   if (providers.length === 0 || request.signal?.aborted) {
     return { sources: [], subtitles: [] };
@@ -183,7 +204,13 @@ export async function raceProviders(
 
       if (res.sources && res.sources.length > 0) {
         logger.debug(`[registry] Provider ${provider.id} succeeded with ${res.sources.length} sources`);
-        return processProviderResponse(res, provider, options?.clientIp);
+        return processProviderResponse(
+          res,
+          provider,
+          options?.clientIp,
+          options?.sid,
+          options?.clientPublicKey
+        );
       }
 
       throw new Error(`Provider ${provider.id} returned no playable sources`);

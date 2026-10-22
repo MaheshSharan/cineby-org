@@ -1,4 +1,5 @@
 import { getSidHeaders, getTabSid } from "@/lib/security/sid";
+import { getTabPublicKeyJwk } from "@/lib/security/tabCrypto";
 import type { Quality, StreamResponse } from "@/lib/providers/types";
 import { fetchVixsrcPayloadFromBrowser } from "@/lib/providers/sources/vixsrc/client";
 import { fetchVidyPayloadFromBrowser } from "@/lib/providers/sources/vidy/client";
@@ -133,6 +134,8 @@ async function buildFetchResponse(
     });
   }
 
+  const clientPublicKey = await getTabPublicKeyJwk();
+
   if (isVixsrcServer(serverId)) {
     const payload = await fetchVixsrcPayloadFromBrowser({
       tmdbId: request.mediaId,
@@ -153,6 +156,7 @@ async function buildFetchResponse(
           episode: request.episodeNumber,
           server: serverId,
           embedHtml: payload.embedHtml,
+          clientPublicKey,
         }),
         signal: request.signal,
       });
@@ -161,8 +165,17 @@ async function buildFetchResponse(
 
   if (isCinezoServer(serverId)) {
     // Cinezo stream resolution is handled cleanly server-side
-    return fetch(`/api/stream/resolve?${params.toString()}`, {
-      headers: getSidHeaders(),
+    return fetch("/api/stream/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getSidHeaders() },
+      body: JSON.stringify({
+        tmdbId: request.mediaId,
+        type: request.mediaType,
+        season: request.seasonNumber,
+        episode: request.episodeNumber,
+        server: serverId,
+        clientPublicKey,
+      }),
       signal: request.signal,
     });
   }
@@ -190,6 +203,7 @@ async function buildFetchResponse(
           vidyCiphertext: payload.ciphertext,
           vidySeed: payload.seed,
           vidyServerId: payload.serverId,
+          clientPublicKey,
         }),
         signal: request.signal,
       });
@@ -211,8 +225,17 @@ async function buildFetchResponse(
   }
 
   // Unrecognised provider or initial auto search — fall through to server-side
-  return fetch(`/api/stream/resolve?${params.toString()}`, {
-    headers: getSidHeaders(),
+  return fetch("/api/stream/resolve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getSidHeaders() },
+    body: JSON.stringify({
+      tmdbId: request.mediaId,
+      type: request.mediaType,
+      season: request.seasonNumber,
+      episode: request.episodeNumber,
+      server: serverId,
+      clientPublicKey,
+    }),
     signal: request.signal,
   });
 }
@@ -237,10 +260,11 @@ async function rewriteM3u8ToBlobUrl(
   signal?: AbortSignal
 ): Promise<string | null> {
   try {
+    const clientPublicKey = await getTabPublicKeyJwk();
     const rewriteRes = await fetch("/api/stream/m3u8", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...getSidHeaders() },
-      body: JSON.stringify({ url: m3u8Url, headers, sid: getTabSid() }),
+      body: JSON.stringify({ url: m3u8Url, headers, sid: getTabSid(), clientPublicKey }),
       signal,
     });
     if (!rewriteRes.ok) return null;

@@ -1,0 +1,178 @@
+import { describe, expect, it, beforeEach } from "vitest";
+
+import {
+  base64UrlToBytes,
+  buildCanonicalTarget,
+  buildSignaturePayload,
+  bytesToBase64Url,
+  getTabKeyPair,
+  getTabPublicKeyJwk,
+  resetTabCryptoStateForTests,
+  signSegmentUrl,
+  type ClientPublicKeyJwk,
+} from "@/lib/security/tabCrypto";
+import { createProxyDescriptor, readProxyDescriptor } from "@/lib/providers/signedProxy";
+
+async function verifyEcdsa(
+  pk: ClientPublicKeyJwk,
+  payload: string,
+  sigBase64Url: string
+): Promise<boolean> {
+  try {
+    const key = await crypto.subtle.importKey(
+      "jwk",
+      pk,
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["verify"]
+    );
+    const sigBytes = base64UrlToBytes(sigBase64Url);
+    const encoder = new TextEncoder();
+    return await crypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      key,
+      sigBytes as unknown as BufferSource,
+      encoder.encode(payload)
+    );
+  } catch {
+    return false;
+  }
+}
+
+describe("tabCrypto WebCrypto identity & JIT segment signing", () => {
+  beforeEach(() => {
+    process.env.STREAM_PROXY_SECRET = "test-secret-stream-proxy-key-1234567890123456";
+    resetTabCryptoStateForTests();
+  });
+
+  it("generates a non-extractable private key and cached public key JWK", async () => {
+    const keyPair = await getTabKeyPair();
+    expect(keyPair).not.toBeNull();
+    expect(keyPair?.privateKey.extractable).toBe(false);
+    expect(keyPair?.privateKey.algorithm.name).toBe("ECDSA");
+
+    const jwk = await getTabPublicKeyJwk();
+    expect(jwk).not.toBeNull();
+    expect(jwk?.kty).toBe("EC");
+    expect(jwk?.crv).toBe("P-256");
+    expect(typeof jwk?.x).toBe("string");
+    expect(typeof jwk?.y).toBe("string");
+    expect(jwk?.x.length).toBeGreaterThan(30);
+    expect(jwk?.y.length).toBeGreaterThan(30);
+
+    // Subsequent calls return cached instance
+    const jwk2 = await getTabPublicKeyJwk();
+    expect(jwk2).toEqual(jwk);
+  });
+
+  it("correctly normalizes canonical target by stripping existing sig and ts", () => {
+    const raw = "https://proxygloomy.cineby.group/?token=abc123xyz&ts=999999&sig=fakeSignature";
+    const canonical = buildCanonicalTarget(raw);
+    expect(canonical).toBe("/?token=abc123xyz");
+
+    const rawSubpath = "https://proxygloomy.cineby.group/stream/chunk.ts?token=abc123xyz&other=1";
+    const canonicalSubpath = buildCanonicalTarget(rawSubpath);
+    expect(canonicalSubpath).toBe("/stream/chunk.ts?token=abc123xyz&other=1");
+  });
+
+  it("signs a segment URL Just-In-Time and verifies successfully with public key", async () => {
+    const rawUrl = "https://proxygloomy.cineby.group/?token=testDescriptorToken";
+    const fixedTime = Date.now();
+    const signedUrl = await signSegmentUrl(rawUrl, fixedTime);
+
+    expect(signedUrl).toContain("?token=testDescriptorToken&ts=");
+    expect(signedUrl).toContain("&sig=");
+
+    const parsed = new URL(signedUrl);
+    const tsParam = parsed.searchParams.get("ts");
+    const sigParam = parsed.searchParams.get("sig");
+    expect(tsParam).toBe(String(fixedTime));
+    expect(sigParam).toBeTruthy();
+
+    const jwk = await getTabPublicKeyJwk();
+    expect(jwk).not.toBeNull();
+
+    const canonicalTarget = buildCanonicalTarget(signedUrl);
+    expect(canonicalTarget).toBe("/?token=testDescriptorToken");
+
+    const payload = buildSignaturePayload(canonicalTarget, Number(tsParam));
+    const isValid = await verifyEcdsa(jwk!, payload, sigParam!);
+    expect(isValid).toBe(true);
+  });
+
+  it("detects and rejects URL path / parameter tampering", async () => {
+    const rawUrl = "https://proxygloomy.cineby.group/?token=originalToken";
+    const fixedTime = Date.now();
+    const signedUrl = await signSegmentUrl(rawUrl, fixedTime);
+
+    const parsed = new URL(signedUrl);
+    const sigParam = parsed.searchParams.get("sig")!;
+    const jwk = await getTabPublicKeyJwk();
+
+    // Attacker modifies the token parameter
+    const tamperedCanonical = buildCanonicalTarget("https://proxygloomy.cineby.group/?token=tamperedToken");
+    const tamperedPayload = buildSignaturePayload(tamperedCanonical, fixedTime);
+
+    const isValid = await verifyEcdsa(jwk!, tamperedPayload, sigParam);
+    expect(isValid).toBe(false);
+  });
+
+  it("detects and rejects timestamp tampering", async () => {
+    const rawUrl = "https://proxygloomy.cineby.group/?token=originalToken";
+    const fixedTime = Date.now();
+    const signedUrl = await signSegmentUrl(rawUrl, fixedTime);
+
+    const parsed = new URL(signedUrl);
+    const sigParam = parsed.searchParams.get("sig")!;
+    const jwk = await getTabPublicKeyJwk();
+
+    const canonicalTarget = buildCanonicalTarget(signedUrl);
+    // Attacker changes timestamp in payload
+    const tamperedPayload = buildSignaturePayload(canonicalTarget, fixedTime + 10_000);
+
+    const isValid = await verifyEcdsa(jwk!, tamperedPayload, sigParam);
+    expect(isValid).toBe(false);
+  });
+
+  it("rejects signatures generated by a different tab key", async () => {
+    const rawUrl = "https://proxygloomy.cineby.group/?token=testToken";
+    const fixedTime = Date.now();
+    const signedUrl = await signSegmentUrl(rawUrl, fixedTime);
+    const sigParam = new URL(signedUrl).searchParams.get("sig")!;
+
+    // Generate a different key pair (e.g. attacker's key)
+    resetTabCryptoStateForTests();
+    const differentJwk = await getTabPublicKeyJwk();
+
+    const canonicalTarget = buildCanonicalTarget(signedUrl);
+    const payload = buildSignaturePayload(canonicalTarget, fixedTime);
+
+    const isValid = await verifyEcdsa(differentJwk!, payload, sigParam);
+    expect(isValid).toBe(false);
+  });
+
+  it("correctly embeds clientPublicKey inside signedProxy descriptor and verifies HMAC", async () => {
+    const jwk = await getTabPublicKeyJwk();
+    expect(jwk).not.toBeNull();
+
+    const token = createProxyDescriptor(
+      "https://upstream.cdn.net/hls/segment_001.ts",
+      { Referer: "https://upstream.cdn.net" },
+      "1.2.3.4",
+      "test-sid",
+      jwk!
+    );
+
+    const decoded = readProxyDescriptor(token);
+    expect(decoded).not.toBeNull();
+    expect(decoded?.url).toBe("https://upstream.cdn.net/hls/segment_001.ts");
+    expect(decoded?.ip).toBe("1.2.3.4");
+    expect(decoded?.sid).toBe("test-sid");
+    expect(decoded?.pk).toEqual(jwk);
+
+    // Tampered token fails HMAC verification
+    const [payload] = token.split(".");
+    const tamperedToken = `${payload}.invalidSignature`;
+    expect(readProxyDescriptor(tamperedToken)).toBeNull();
+  });
+});
