@@ -18,10 +18,18 @@
     "ALLOWED_IMAGE_HOSTS": "image.tmdb.org,cineby.group,www.cineby.group,lh3.googleusercontent.com"
   },
   "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "redact_query_string": false,
     "logs": {
-      "enabled": true,
+      "enabled": false,
       "head_sampling_rate": 1,
       "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": false,
+      "head_sampling_rate": 1,
       "persist": true
     }
   }
