@@ -44,9 +44,11 @@ export function attachHls(
 
   const hls = new Hls({
     enableWorker: true,
+    lowLatencyMode: false,
     backBufferLength: 30,
-    maxBufferLength: 20,
-    maxMaxBufferLength: 40,
+    maxBufferLength: 30,
+    maxMaxBufferLength: 60,
+    maxBufferSize: 60 * 1000 * 1000, // 60 MB buffer cap for mobile safety
     startLevel: -1,
     capLevelToPlayerSize: true,
     ...(options?.cache && options?.mediaKey

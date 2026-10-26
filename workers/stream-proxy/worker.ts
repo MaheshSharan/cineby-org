@@ -666,8 +666,13 @@ export default {
       return new Response(text, { status: upstreamRes.status, headers: responseHeaders });
     }
 
-    // Stream chunks directly
-    if (upstreamRes.headers.has("content-type")) {
+    // Stream chunks directly with sanitized Content-Type for media segments
+    const lowerUrl = rawTargetUrl.toLowerCase();
+    if (lowerUrl.includes(".ts") || lowerUrl.includes("/s/")) {
+      responseHeaders.set("Content-Type", "video/mp2t");
+    } else if (lowerUrl.includes(".m4s") || lowerUrl.includes(".mp4")) {
+      responseHeaders.set("Content-Type", "video/mp4");
+    } else if (upstreamRes.headers.has("content-type")) {
       responseHeaders.set("Content-Type", upstreamRes.headers.get("content-type")!);
     }
     if (upstreamRes.headers.has("content-length")) {
