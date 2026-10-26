@@ -62,7 +62,7 @@ function processProviderResponse(
       seenSourceUrls.add(source.url);
       collectedSources.push({
         ...source,
-        url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers, clientIp, sid, clientPublicKey),
+        url: buildStreamProxyUrl(source.url, source.headers, clientIp, sid, clientPublicKey),
         provider: {
           id: source.provider?.id || provider.id,
           name: source.provider?.name || provider.name,

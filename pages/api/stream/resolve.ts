@@ -11,7 +11,7 @@ import { applyCorsHeaders } from "@/lib/cors";
 import { isProviderEnabled } from "@/lib/env/server";
 import { isSidFlagged } from "@/lib/security/canaryStore";
 import { isValidSid } from "@/lib/security/sid";
-import type { ClientPublicKeyJwk } from "@/lib/security/tabCrypto";
+import { encryptStreamResponse, isEcP256Jwk, type EncryptedStreamEnvelope } from "@/lib/security/tabCrypto";
 
 function extractClientIp(req: NextApiRequest): string {
   const cfIp = req.headers["cf-connecting-ip"];
@@ -33,7 +33,7 @@ export default withApiContext(
   "api/stream/resolve",
   async (
     req: NextApiRequest,
-    res: NextApiResponse<StreamResponse | { error: string }>
+    res: NextApiResponse<StreamResponse | EncryptedStreamEnvelope | { error: string }>
   ) => {
     if (applyCorsHeaders(req, res)) {
       return;
@@ -63,22 +63,10 @@ export default withApiContext(
     const query = req.query;
 
     const rawPk = (body.clientPublicKey ?? query.clientPublicKey) as unknown;
-    let clientPublicKey: ClientPublicKeyJwk | undefined;
-    if (
-      rawPk &&
-      typeof rawPk === "object" &&
-      (rawPk as ClientPublicKeyJwk).kty === "EC" &&
-      (rawPk as ClientPublicKeyJwk).crv === "P-256" &&
-      typeof (rawPk as ClientPublicKeyJwk).x === "string" &&
-      typeof (rawPk as ClientPublicKeyJwk).y === "string"
-    ) {
-      clientPublicKey = {
-        kty: "EC",
-        crv: "P-256",
-        x: (rawPk as ClientPublicKeyJwk).x,
-        y: (rawPk as ClientPublicKeyJwk).y,
-      };
-    }
+    const clientPublicKey = isEcP256Jwk(rawPk) ? rawPk : undefined;
+
+    const rawEcdh = (body.clientEcdhKey ?? query.clientEcdhKey) as unknown;
+    const clientEcdhKey = isEcP256Jwk(rawEcdh) ? rawEcdh : undefined;
 
     const tmdbId = body.tmdbId ?? query.tmdbId;
     const type = body.type ?? query.type;
@@ -106,6 +94,18 @@ export default withApiContext(
     const targetServer = typeof server === "string" && server.trim() ? server.trim() : undefined;
 
     try {
+      const sendResponse = async (payload: StreamResponse) => {
+        if (clientEcdhKey) {
+          try {
+            const encrypted = await encryptStreamResponse(payload, clientEcdhKey);
+            res.status(200).json(encrypted);
+            return;
+          } catch (encErr) {
+            logger.warn("[resolve] Failed to encrypt stream response", { error: String(encErr) });
+          }
+        }
+        res.status(200).json(payload);
+      };
 
       // 1. If client provided a browser-fetched vixsrc embed HTML, parse and sign immediately.
       // Guard with ENABLE_VIXSRC so toggling the env flag also disables the client-assisted path.
@@ -116,11 +116,11 @@ export default withApiContext(
         if (source) {
           const finalSource = {
             ...source,
-            url: source.direct ? source.url : buildStreamProxyUrl(source.url, source.headers, clientIp, validatedSid, clientPublicKey),
+            url: buildStreamProxyUrl(source.url, source.headers, clientIp, validatedSid, clientPublicKey),
           };
 
           logger.debug(`[resolve] Vixsrc client-assisted resolution succeeded for tmdbId=${parsedTmdbId}`);
-          res.status(200).json({ sources: [finalSource], subtitles: [] });
+          await sendResponse({ sources: [finalSource], subtitles: [] });
           return;
         }
         logger.warn(`[resolve] Vixsrc client-provided embed HTML failed to parse, falling back to server`);
@@ -136,7 +136,7 @@ export default withApiContext(
         if (rawSources.length > 0) {
           const finalSources = rawSources.map((src) => ({
             ...src,
-            url: src.direct ? src.url : buildStreamProxyUrl(src.url, src.headers, clientIp, validatedSid, clientPublicKey),
+            url: buildStreamProxyUrl(src.url, src.headers, clientIp, validatedSid, clientPublicKey),
           }));
 
           const finalThumbnails = decrypted.thumbnails.map((thumb) => ({
@@ -161,7 +161,7 @@ export default withApiContext(
           const combinedSubtitles = [...payloadSubs, ...extraSubs];
 
           logger.debug(`[resolve] Vidy client-assisted resolution succeeded: ${finalSources.length} sources, ${combinedSubtitles.length} subtitles, ${finalThumbnails.length} thumbnails`);
-          res.status(200).json({ sources: finalSources, subtitles: combinedSubtitles, thumbnails: finalThumbnails });
+          await sendResponse({ sources: finalSources, subtitles: combinedSubtitles, thumbnails: finalThumbnails });
           return;
         }
         logger.warn(`[resolve] Vidy client-provided payload failed to decrypt any sources, falling back to server`);
@@ -181,7 +181,7 @@ export default withApiContext(
 
       logger.debug(`[resolve] First pass found ${result.sources?.length ?? 0} sources`);
 
-      res.status(200).json(result);
+      await sendResponse(result);
       return;
     } catch (error) {
       logger.error("[resolve] Fatal error in resolveAllStreams", error);

@@ -1,10 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { buildStreamProxyUrl } from "@/lib/providers/proxy";
+import { getSiteUrl } from "@/lib/env/public";
 import { isPrivateHost } from "@/lib/providers/allowlist";
 import { createProxyDescriptor, readProxyDescriptor } from "@/lib/providers/signedProxy";
 import { isSidFlagged } from "@/lib/security/canaryStore";
 import { isValidSid } from "@/lib/security/sid";
-import type { ClientPublicKeyJwk } from "@/lib/security/tabCrypto";
+import { isEcP256Jwk } from "@/lib/security/tabCrypto";
 
 /**
  * POST /api/stream/m3u8
@@ -77,9 +78,23 @@ export default withApiContext(
   const query = req.query;
 
   const token = typeof query.token === "string" ? query.token : null;
-  const descriptor = token ? readProxyDescriptor(token) : null;
+  let descriptor = token ? readProxyDescriptor(token) : null;
+  let urlToken: string | null = null;
 
-  if (token && !descriptor) {
+  if (!descriptor && typeof body.url === "string" && body.url.includes("token=")) {
+    try {
+      const base = getAppOrigin(req) || getSiteUrl();
+      const u = new URL(body.url, base);
+      urlToken = u.searchParams.get("token");
+      if (urlToken) {
+        descriptor = readProxyDescriptor(urlToken);
+      }
+    } catch {
+      // Malformed URL, token extraction skipped and deferred to targetUrl validation
+    }
+  }
+
+  if ((token || urlToken) && !descriptor) {
     res.status(403).json({ error: "Invalid or expired playlist token" });
     return;
   }
@@ -88,22 +103,7 @@ export default withApiContext(
   const sid = descriptor?.sid ?? bodySid;
 
   const rawPk = (body.clientPublicKey ?? descriptor?.pk) as unknown;
-  let clientPublicKey: ClientPublicKeyJwk | undefined;
-  if (
-    rawPk &&
-    typeof rawPk === "object" &&
-    (rawPk as ClientPublicKeyJwk).kty === "EC" &&
-    (rawPk as ClientPublicKeyJwk).crv === "P-256" &&
-    typeof (rawPk as ClientPublicKeyJwk).x === "string" &&
-    typeof (rawPk as ClientPublicKeyJwk).y === "string"
-  ) {
-    clientPublicKey = {
-      kty: "EC",
-      crv: "P-256",
-      x: (rawPk as ClientPublicKeyJwk).x,
-      y: (rawPk as ClientPublicKeyJwk).y,
-    };
-  }
+  const clientPublicKey = isEcP256Jwk(rawPk) ? rawPk : undefined;
 
   // A tab whose DevTools canary fired gets no new playlists. Segments already in a loaded playlist keep working.
   if (sid && (await isSidFlagged(sid))) {

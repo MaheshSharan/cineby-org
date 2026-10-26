@@ -1,5 +1,5 @@
 import { getSidHeaders, getTabSid } from "@/lib/security/sid";
-import { getTabPublicKeyJwk } from "@/lib/security/tabCrypto";
+import { decryptStreamResponse, getTabEcdhPublicKeyJwk, getTabPublicKeyJwk, type EncryptedStreamEnvelope } from "@/lib/security/tabCrypto";
 import type { Quality, StreamResponse } from "@/lib/providers/types";
 import { fetchVixsrcPayloadFromBrowser } from "@/lib/providers/sources/vixsrc/client";
 import { fetchVidyPayloadFromBrowser } from "@/lib/providers/sources/vidy/client";
@@ -58,8 +58,7 @@ function isVidyServer(serverId: string): boolean {
 
 async function buildFetchResponse(
   serverId: string,
-  request: StreamRequest,
-  params: URLSearchParams
+  request: StreamRequest
 ): Promise<Response> {
   // "default" — ask the server which providers are active, then call only
   // the matching client fetcher. This avoids wasting browser fetches on
@@ -103,13 +102,30 @@ async function buildFetchResponse(
     }
 
     // All client fetchers failed or no active providers — let server handle it
-    return fetch(`/api/stream/resolve?${params.toString()}`, {
-      headers: getSidHeaders(),
+    const [autoPk, autoEcdh] = await Promise.all([
+      getTabPublicKeyJwk(),
+      getTabEcdhPublicKeyJwk(),
+    ]);
+    return fetch("/api/stream/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getSidHeaders() },
+      body: JSON.stringify({
+        tmdbId: request.mediaId,
+        type: request.mediaType,
+        season: request.seasonNumber,
+        episode: request.episodeNumber,
+        server: serverId,
+        clientPublicKey: autoPk,
+        clientEcdhKey: autoEcdh,
+      }),
       signal: request.signal,
     });
   }
 
-  const clientPublicKey = await getTabPublicKeyJwk();
+  const [clientPublicKey, clientEcdhKey] = await Promise.all([
+    getTabPublicKeyJwk(),
+    getTabEcdhPublicKeyJwk(),
+  ]);
 
   if (isVixsrcServer(serverId)) {
     const payload = await fetchVixsrcPayloadFromBrowser({
@@ -132,7 +148,8 @@ async function buildFetchResponse(
           server: serverId,
           embedHtml: payload.embedHtml,
           clientPublicKey,
-        }),
+        clientEcdhKey,
+      }),
         signal: request.signal,
       });
     }
@@ -150,6 +167,7 @@ async function buildFetchResponse(
         episode: request.episodeNumber,
         server: serverId,
         clientPublicKey,
+        clientEcdhKey,
       }),
       signal: request.signal,
     });
@@ -179,7 +197,8 @@ async function buildFetchResponse(
           vidySeed: payload.seed,
           vidyServerId: payload.serverId,
           clientPublicKey,
-        }),
+        clientEcdhKey,
+      }),
         signal: request.signal,
       });
     }
@@ -210,7 +229,8 @@ async function buildFetchResponse(
       episode: request.episodeNumber,
       server: serverId,
       clientPublicKey,
-    }),
+        clientEcdhKey,
+      }),
     signal: request.signal,
   });
 }
@@ -220,7 +240,9 @@ function needsM3u8Rewrite(url: string): boolean {
   // Vidy-style CDNs that block datacenter IPs or require residential fetch
   return (
     /\.(top|workers\.dev|st|cc)\//i.test(url) ||
-    url.includes("echogate")
+    url.includes("echogate") ||
+    url.includes("/api/stream/proxy") ||
+    url.includes("token=")
   );
 }
 
@@ -256,22 +278,26 @@ export async function resolveStream(
   serverId: string,
   request: StreamRequest
 ): Promise<StreamResolutionResult> {
-  const params = new URLSearchParams({
-    tmdbId: request.mediaId.toString(),
-    type: request.mediaType,
-  });
-
-  if (request.seasonNumber) params.set("season", request.seasonNumber.toString());
-  if (request.episodeNumber) params.set("episode", request.episodeNumber.toString());
-  if (serverId && serverId !== "default") params.set("server", serverId);
-
   try {
-    const fetchRes = await buildFetchResponse(serverId, request, params);
+    const fetchRes = await buildFetchResponse(serverId, request);
 
     if (fetchRes.ok) {
       const data: unknown = await fetchRes.json().catch(() => null);
-      if (data && typeof data === "object" && "sources" in data) {
-        const payload = data as StreamResponse;
+      let payload: StreamResponse | null = null;
+      if (data && typeof data === "object") {
+        if ("encrypted" in data && (data as { encrypted: unknown }).encrypted === true) {
+          try {
+            payload = await decryptStreamResponse<StreamResponse>(data as EncryptedStreamEnvelope);
+          } catch {
+            // Decryption failure falls through to payload = null (signals empty stream result)
+            payload = null;
+          }
+        } else if ("sources" in data) {
+          payload = data as StreamResponse;
+        }
+      }
+
+      if (payload && "sources" in payload) {
 
         // Clean up previous stream's blobs before registering new stream
         revokeAllBlobs();

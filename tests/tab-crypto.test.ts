@@ -9,6 +9,9 @@ import {
   getTabPublicKeyJwk,
   resetTabCryptoStateForTests,
   signSegmentUrl,
+  getTabEcdhPublicKeyJwk,
+  encryptStreamResponse,
+  decryptStreamResponse,
   type ClientPublicKeyJwk,
 } from "@/lib/security/tabCrypto";
 import { createProxyDescriptor, readProxyDescriptor } from "@/lib/providers/signedProxy";
@@ -174,5 +177,43 @@ describe("tabCrypto WebCrypto identity & JIT segment signing", () => {
     const [payload] = token.split(".");
     const tamperedToken = `${payload}.invalidSignature`;
     expect(readProxyDescriptor(tamperedToken)).toBeNull();
+  });
+  it("generates an ECDH P-256 public key for tab session", async () => {
+    const ecdhJwk = await getTabEcdhPublicKeyJwk();
+    expect(ecdhJwk).not.toBeNull();
+    expect(ecdhJwk?.kty).toBe("EC");
+    expect(ecdhJwk?.crv).toBe("P-256");
+    expect(typeof ecdhJwk?.x).toBe("string");
+    expect(typeof ecdhJwk?.y).toBe("string");
+  });
+
+  it("encrypts with server ECDH and decrypts in tab memory with AES-256-GCM", async () => {
+    const tabEcdhKey = await getTabEcdhPublicKeyJwk();
+    expect(tabEcdhKey).not.toBeNull();
+
+    const originalPayload = {
+      sources: [
+        {
+          url: "https://proxy-edge.cineby.group/?token=test-token-123",
+          quality: "1080p",
+          type: "hls",
+        },
+      ],
+      subtitles: [],
+    };
+
+    const envelope = await encryptStreamResponse(originalPayload, tabEcdhKey!);
+    expect(envelope.encrypted).toBe(true);
+    expect(envelope.iv).toBeDefined();
+    expect(envelope.data).toBeDefined();
+    expect(envelope.serverKey.crv).toBe("P-256");
+
+    // Ciphertext does NOT contain plain URL strings
+    expect(envelope.data).not.toContain("https://");
+    expect(envelope.data).not.toContain("test-token-123");
+
+    // Decrypt in tab memory
+    const decrypted = await decryptStreamResponse<typeof originalPayload>(envelope);
+    expect(decrypted).toEqual(originalPayload);
   });
 });

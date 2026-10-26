@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { MediaSource, PlayerMedia, ServerGroup, ServerOption } from "../types";
-import { SERVERS, SERVER_GROUPS, preloadFlags } from "../constants";
+import { SERVERS, SERVER_GROUPS } from "../constants";
 import { resolveStream } from "../providers";
 import { getMediaKey } from "@/lib/utils/media";
 import { fetchActiveProviders } from "../providers/activeProviders";
@@ -62,10 +62,6 @@ export function usePlayerSource({
   const currentMediaKey = getMediaKey(media.mediaType, media.mediaId, currentSeason, currentEpisode);
   const lastMediaKeyRef = useRef<string>(currentMediaKey);
 
-  // Preload server/subtitle flag icons centrally
-  useEffect(() => {
-    preloadFlags(["us", "de", "fr", "in", "mx", "es", "ja", "ko", "it", "pt", "ru", "zh"]);
-  }, []);
 
   // Fetch enabled providers dynamically
   useEffect(() => {

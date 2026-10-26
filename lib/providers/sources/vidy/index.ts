@@ -287,7 +287,7 @@ async function scrapeServer(
         url: s.url,
         type: s.type === "mp4" ? "mp4" : s.type === "dash" ? "dash" : "hls",
         quality: parseQuality(s.quality),
-        direct: true,
+        direct: false,
         headers: {
           Referer: "https://www.vidy.st/",
           Origin: "https://www.vidy.st",
@@ -308,7 +308,7 @@ async function scrapeServer(
         url: payload.playlist,
         type: "hls",
         quality: "1080p",
-        direct: true,
+        direct: false,
         headers: {
           Referer: "https://www.vidy.st/",
           Origin: "https://www.vidy.st",
@@ -488,7 +488,7 @@ export function decryptVidyClientPayload(
         url: s.url,
         type: s.type === "mp4" ? "mp4" : s.type === "dash" ? "dash" : "hls",
         quality: parseQuality(s.quality),
-        direct: true,
+        direct: false,
         headers: {
           Referer: "https://www.vidy.st/",
           Origin: "https://www.vidy.st",
@@ -508,7 +508,7 @@ export function decryptVidyClientPayload(
         url: payload.playlist,
         type: "hls",
         quality: "1080p",
-        direct: true,
+        direct: false,
         headers: {
           Referer: "https://www.vidy.st/",
           Origin: "https://www.vidy.st",
