@@ -203,11 +203,14 @@ async function scrapeServer(
         for (let idx = 0; idx < raw.qualities.length; idx++) {
           const q = raw.qualities[idx];
           if (!q.url) continue;
+          const streamType = parseStreamType(q.type, q.url);
+          // Only serve playable HLS streams — HTML5 player cannot play MPEG-DASH without dash.js
+          if (streamType === "dash") continue;
 
           sources.push({
             url: q.url,
             direct: false,
-            type: parseStreamType(q.type, q.url),
+            type: streamType,
             quality: parseQuality(q.quality || raw.label),
             headers: commonHeaders,
             provider: {
@@ -220,17 +223,21 @@ async function scrapeServer(
 
       // If no qualities list was provided or qualities list was empty, use primary url
       if (sources.length === 0 && raw.url) {
-        sources.push({
-          url: raw.url,
-          direct: false,
-          type: parseStreamType(raw.type, raw.url),
-          quality: parseQuality(raw.label),
-          headers: commonHeaders,
-          provider: {
-            id: `${PROVIDER_ID}-${server.id}`,
-            name: `Cinezo - ${serverLabel}`,
-          },
-        });
+        const streamType = parseStreamType(raw.type, raw.url);
+        // Only serve playable HLS streams — skip MPEG-DASH
+        if (streamType !== "dash") {
+          sources.push({
+            url: raw.url,
+            direct: false,
+            type: streamType,
+            quality: parseQuality(raw.label),
+            headers: commonHeaders,
+            provider: {
+              id: `${PROVIDER_ID}-${server.id}`,
+              name: `Cinezo - ${serverLabel}`,
+            },
+          });
+        }
       }
     }
 

@@ -285,8 +285,8 @@ export async function resolveStream(
 
           // Only rewrite the primary active source (index 0) to avoid wasting network
           // requests and leaking orphaned Blobs for secondary sources.
-          // Applies only to proxy streams that require rewriting, NOT direct CORS-capable streams.
-          if (i === 0 && src.type === "hls" && !src.direct && needsM3u8Rewrite(src.url)) {
+          // Applies only to CDNs (e.g. moon.goldenkite.top) that require residential/proxy fetch.
+          if (i === 0 && src.type === "hls" && needsM3u8Rewrite(src.url)) {
             const blobUrl = await rewriteM3u8ToBlobUrl(
               src.url,
               src.headers ?? {},
