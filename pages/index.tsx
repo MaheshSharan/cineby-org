@@ -5,8 +5,12 @@ import Link from "next/link";
 import type { MediaSummary } from "@/lib/tmdb";
 import { deduplicateMediaPool, getMediaKey } from "@/lib/tmdb/deduplicate";
 import {
+  discoverMovies,
+  discoverTv,
   getGenres,
   getMediaLogo,
+  getTopRatedMovies,
+  getTopRatedTv,
   getTrending,
 } from "@/lib/tmdb/server";
 import { getHeroPicksMedia } from "@/lib/tmdb/server/heroPicks";
@@ -169,6 +173,12 @@ export default function Home({
 export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ res }) => {
   res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
 
+  const emptyPaginated = { results: [], page: 1, totalPages: 1, totalResults: 0 };
+  const safePaginated = <T extends { results: MediaSummary[] }>(p: Promise<T>): Promise<T> =>
+    p.catch(() => emptyPaginated as unknown as T);
+  const safeGenres = (p: Promise<{ genres: Array<{ id: number; name: string }> }>) =>
+    p.catch(() => ({ genres: [] }));
+
   const [
     heroPicks,
     heroP1,
@@ -177,14 +187,28 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
     trendingMoviesP2,
     movieGenres,
     tvGenres,
+    trendingSeriesP1,
+    trendingSeriesP2,
+    topTenWeek,
+    topRatedMoviesData,
+    topRatedSeriesData,
+    netflixMovies,
+    netflixTv,
   ] = await Promise.all([
-    getHeroPicksMedia(),
-    getTrending("all", "day", 1),
-    getTrending("all", "day", 2),
-    getTrending("movie", "day", 1),
-    getTrending("movie", "day", 2),
-    getGenres("movie"),
-    getGenres("tv"),
+    getHeroPicksMedia().catch(() => []),
+    safePaginated(getTrending("all", "day", 1)),
+    safePaginated(getTrending("all", "day", 2)),
+    safePaginated(getTrending("movie", "day", 1)),
+    safePaginated(getTrending("movie", "day", 2)),
+    safeGenres(getGenres("movie")),
+    safeGenres(getGenres("tv")),
+    safePaginated(getTrending("tv", "day", 1)),
+    safePaginated(getTrending("tv", "day", 2)),
+    safePaginated(getTrending("all", "week", 1)),
+    safePaginated(getTopRatedMovies(1)),
+    safePaginated(getTopRatedTv(1)),
+    safePaginated(discoverMovies({ providerId: 8, watchRegion: "US", sortBy: "popularity.desc", page: 1 })),
+    safePaginated(discoverTv({ providerId: 8, watchRegion: "US", sortBy: "popularity.desc", page: 1 })),
   ]);
 
   const seenKeys = new Set<string>();
@@ -206,6 +230,33 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
     genreNames[genre.id] = genre.name;
   }
 
+  const trendingSeriesPool = [...trendingSeriesP1.results, ...trendingSeriesP2.results];
+  const trendingSeries = deduplicateMediaPool(trendingSeriesPool, seenKeys, ROW_ITEMS);
+
+  const topTenRaw = topTenWeek.results.slice(0, 10);
+  const topTenItems = await Promise.all(
+    topTenRaw.map(async (item, idx) => {
+      if (idx === 0) {
+        return {
+          ...item,
+          logoPath: await getMediaLogo(item.mediaType, item.id).catch(() => null),
+        };
+      }
+      return item;
+    })
+  );
+
+  const netflixPool: MediaSummary[] = [];
+  const maxNetLen = Math.max(netflixMovies.results.length, netflixTv.results.length);
+  for (let i = 0; i < maxNetLen; i += 1) {
+    if (i < netflixMovies.results.length) netflixPool.push(netflixMovies.results[i]);
+    if (i < netflixTv.results.length) netflixPool.push(netflixTv.results[i]);
+  }
+  const onlyOnNetflix = deduplicateMediaPool(netflixPool, seenKeys, ROW_ITEMS);
+
+  const topRatedMovies = deduplicateMediaPool(topRatedMoviesData.results, seenKeys, ROW_ITEMS);
+  const topRatedSeries = deduplicateMediaPool(topRatedSeriesData.results, seenKeys, ROW_ITEMS);
+
   return {
     props: {
       heroItems: await Promise.all(
@@ -215,6 +266,11 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
         }))
       ),
       trendingMovies,
+      trendingSeries,
+      topTenItems,
+      onlyOnNetflix,
+      topRatedMovies,
+      topRatedSeries,
       genreNames,
     },
   };

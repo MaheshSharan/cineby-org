@@ -10,13 +10,16 @@ import type { ClientPublicKeyJwk } from "@/lib/security/tabCrypto";
 
 function buildCanonicalTarget(urlStr: string): string {
   try {
-    const parsed = new URL(urlStr, "https://cineby.internal");
-    parsed.searchParams.delete("sig");
-    parsed.searchParams.delete("ts");
-    return `${parsed.pathname}${parsed.search ? parsed.search : ""}`;
+    const [pathPart, queryPart] = urlStr.split("?");
+    const path = pathPart.includes("://") ? new URL(pathPart).pathname : pathPart;
+    if (!queryPart) return path;
+    const params = new URLSearchParams(queryPart);
+    params.delete("sig");
+    params.delete("ts");
+    const remaining = params.toString();
+    return remaining ? `${path}?${remaining}` : path;
   } catch {
-    const withoutQuery = urlStr.split("?")[0] || "/";
-    return withoutQuery;
+    return urlStr.split("?")[0] || "/";
   }
 }
 

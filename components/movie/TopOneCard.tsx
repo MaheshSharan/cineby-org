@@ -17,12 +17,13 @@ export function TopOneCard({ media, className = "" }: TopOneCardProps) {
   const { openDetailModal } = useDetailModal();
   const isModalDetail = settings.appearance.detailViewType === "modal";
 
-  const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [fetchedLogo, setFetchedLogo] = useState<string | null>(null);
+  const activeLogo = media.logoPath ?? fetchedLogo;
   const backdrop = getBackdropResponsiveUrls(media.backdropPath || media.posterPath);
   const href = getMediaHref(media.mediaType, media.id);
   const year = getYear(media.releaseDate);
   const typeLabel = getMediaTypeLabel(media.mediaType);
-  const logoUrl = getLogoUrl(logoPath);
+  const logoUrl = getLogoUrl(activeLogo);
 
   const handleCardClick = (e: React.MouseEvent) => {
     if (isModalDetail) {
@@ -35,22 +36,25 @@ export function TopOneCard({ media, className = "" }: TopOneCardProps) {
   };
 
   useEffect(() => {
-    if (logoPath) return;
+    setFetchedLogo(null);
+    if (media.logoPath) return;
 
     let isCurrent = true;
     fetch(`/api/tmdb/logo?mediaType=${media.mediaType}&id=${media.id}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (isCurrent && data?.logoPath) {
-          setLogoPath(data.logoPath);
+          setFetchedLogo(data.logoPath);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Safe to ignore: TopOneCard falls back to title text if logo fails to load
+      });
 
     return () => {
       isCurrent = false;
     };
-  }, [media.id, media.mediaType, logoPath]);
+  }, [media.id, media.mediaType, media.logoPath]);
 
   return (
     <div className={`group w-[280px] xs:w-[340px] md:w-[480px] lg:w-[616px] flex-shrink-0 ${className}`}>

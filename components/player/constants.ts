@@ -1,5 +1,4 @@
 import type { PlaybackRate, QualityLabel, ServerGroup, ServerOption } from "./types";
-import { getFlagsApiBaseUrl } from "@/lib/env/public";
 
 // Each save is a Worker request plus a database write, so keep the periodic save slow; pausing
 // or leaving the page saves immediately.
@@ -74,25 +73,10 @@ export function getFlagUrl(codeOrUrl?: string | null): string {
 
   const countryCode = (CODE_MAP[clean] || clean).toUpperCase();
   if (/^[A-Z]{2}$/.test(countryCode)) {
-    return `${getFlagsApiBaseUrl()}/${countryCode}/flat/24.png`;
+    return `/api/flags/${countryCode}`;
   }
 
   return FALLBACK_FLAG_URL;
-}
-
-const preloadedUrls = new Set<string>();
-
-export function preloadFlags(codesOrUrls: string[]): void {
-  if (typeof window === "undefined") return;
-
-  for (const item of codesOrUrls) {
-    const url = getFlagUrl(item);
-    if (!url || preloadedUrls.has(url) || url.startsWith("data:")) continue;
-
-    preloadedUrls.add(url);
-    const img = new Image();
-    img.src = url;
-  }
 }
 
 export const SERVER_GROUPS: ServerGroup[] = [
