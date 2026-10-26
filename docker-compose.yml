@@ -16,8 +16,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      secrets:
-        - env
     container_name: cineby-web
     restart: unless-stopped
     depends_on:
@@ -36,10 +34,6 @@ services:
       - ./data:/app/data
     networks:
       - deploy_default
-
-secrets:
-  env:
-    file: .env.production
 
 networks:
   deploy_default:

@@ -15,9 +15,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Mount .env.production as a build secret to read build-time variables without burning them into the layer
-RUN --mount=type=secret,id=env,target=/app/.env.production \
-    if [ -f /app/.env.production ]; then cp /app/.env.production /app/.env.local; fi && \
+# Use .env.production if present, otherwise fallback to .env.example to satisfy Next.js build-time collection
+RUN if [ -f .env.production ]; then cp .env.production .env.local; \
+    elif [ -f .env.example ]; then cp .env.example .env.local; fi && \
     bunx next build
 
 # 3. Production runner
