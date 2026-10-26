@@ -77,11 +77,13 @@ describe("environment configuration is unified", () => {
 
   it("conditional variables are only required when their switch is on", () => {
     const base = { ...process.env, CACHE_BACKEND: "memory", NEXT_PUBLIC_ENABLE_ANALYTICS: "false" };
-    const redis = { ...base, CACHE_BACKEND: "redis", UPSTASH_REDIS_REST_URL: "", UPSTASH_REDIS_REST_TOKEN: "" };
+    const redis = { ...base, CACHE_BACKEND: "redis", REDIS_URL: "redis://127.0.0.1:6379", UPSTASH_REDIS_REST_URL: "", UPSTASH_REDIS_REST_TOKEN: "" };
+    const upstash = { ...base, CACHE_BACKEND: "redis", REDIS_URL: "", UPSTASH_REDIS_REST_URL: "", UPSTASH_REDIS_REST_TOKEN: "" };
     const analytics = { ...base, NEXT_PUBLIC_ENABLE_ANALYTICS: "true", NEXT_PUBLIC_GA_MEASUREMENT_ID: "" };
 
     expect(validateEnv(base, "development")).toEqual([]);
-    expect(validateEnv(redis, "development")).toHaveLength(2);
+    expect(validateEnv(redis, "development")).toEqual([]);
+    expect(validateEnv(upstash, "development")).toHaveLength(3);
     expect(validateEnv(analytics, "development")).toHaveLength(1);
   });
 

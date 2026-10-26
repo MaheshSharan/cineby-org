@@ -111,18 +111,25 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
   // 6. Cache & Database
   { name: "CACHE_BACKEND", category: "cache", scope: "server", kind: ["memory", "redis"] },
   {
+    name: "REDIS_URL",
+    category: "cache",
+    scope: "server",
+    kind: "string",
+    requiredWhen: (env) => env.CACHE_BACKEND === "redis" && !env.UPSTASH_REDIS_REST_URL,
+  },
+  {
     name: "UPSTASH_REDIS_REST_URL",
     category: "cache",
     scope: "server",
     kind: "url",
-    requiredWhen: (env) => env.CACHE_BACKEND === "redis",
+    requiredWhen: (env) => env.CACHE_BACKEND === "redis" && !env.REDIS_URL,
   },
   {
     name: "UPSTASH_REDIS_REST_TOKEN",
     category: "cache",
     scope: "secret",
     kind: "string",
-    requiredWhen: (env) => env.CACHE_BACKEND === "redis",
+    requiredWhen: (env) => env.CACHE_BACKEND === "redis" && !env.REDIS_URL,
   },
   { name: "CACHE_MAX_ENTRIES", category: "cache", scope: "server", kind: "int" },
   // Production uses the D1 binding; a local SQLite file only exists in development.
