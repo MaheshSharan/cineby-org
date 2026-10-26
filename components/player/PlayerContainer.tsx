@@ -699,6 +699,8 @@ export function PlayerContainer({
             isActive={ads.isAdActive}
             needsTap={ads.needsTap}
             onTap={ads.startFromTap}
+            isPaused={ads.isPaused}
+            onResume={ads.resumeAd}
           />
 
           <PlayerHeader

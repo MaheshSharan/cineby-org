@@ -41,6 +41,8 @@ export interface AdsController {
   /** Call from a tap handler when `awaitingTap` was emitted. */
   startFromGesture(): void;
   skip(): void;
+  resume(): void;
+  pause(): void;
   setVolume(volume: number): void;
   resize(width: number, height: number, isFullscreen: boolean): void;
   destroy(): void;
@@ -384,6 +386,26 @@ export function createAdsController(options: AdsControllerOptions): AdsControlle
     skip() {
       if (manager && isStarted && manager.getAdSkippableState()) {
         manager.skip();
+      }
+    },
+
+    resume() {
+      if (manager && isStarted) {
+        try {
+          manager.resume();
+        } catch {
+          // Best effort resume
+        }
+      }
+    },
+
+    pause() {
+      if (manager && isStarted) {
+        try {
+          manager.pause();
+        } catch {
+          // Best effort pause
+        }
       }
     },
 

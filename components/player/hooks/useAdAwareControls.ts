@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import type { UseImaAdsResult } from "./useImaAds";
 import type { UsePlayerStateResult } from "./usePlayerState";
 
-type AdState = Pick<UseImaAdsResult, "isAdBreak">;
+type AdState = Pick<UseImaAdsResult, "isAdBreak" | "isAdActive" | "isPaused" | "resumeAd">;
 type ContentControls = Pick<
   UsePlayerStateResult,
   "play" | "pause" | "togglePlay" | "seekTo" | "seekBy" | "toggleMute"
@@ -14,14 +14,16 @@ type ContentControls = Pick<
  * muted from the player: only fullscreen and skip (when the ad allows it) stay available.
  */
 export function useAdAwareControls(ads: AdState, content: ContentControls): ContentControls {
-  const { isAdBreak } = ads;
+  const { isAdBreak, isAdActive, isPaused, resumeAd } = ads;
   const { play, pause, togglePlay, seekTo, seekBy, toggleMute } = content;
 
   const guardedPlay = useCallback(() => {
     if (!isAdBreak) {
       play();
+    } else if (isAdActive && isPaused) {
+      resumeAd();
     }
-  }, [isAdBreak, play]);
+  }, [isAdBreak, isAdActive, isPaused, play, resumeAd]);
   const guardedPause = useCallback(() => {
     if (!isAdBreak) {
       pause();
@@ -30,8 +32,10 @@ export function useAdAwareControls(ads: AdState, content: ContentControls): Cont
   const guardedTogglePlay = useCallback(() => {
     if (!isAdBreak) {
       togglePlay();
+    } else if (isAdActive && isPaused) {
+      resumeAd();
     }
-  }, [isAdBreak, togglePlay]);
+  }, [isAdBreak, isAdActive, isPaused, togglePlay, resumeAd]);
   const guardedSeekTo = useCallback(
     (time: number) => {
       if (!isAdBreak) {

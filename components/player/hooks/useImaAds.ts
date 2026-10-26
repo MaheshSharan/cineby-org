@@ -35,8 +35,11 @@ export interface UseImaAdsResult {
   isAdActive: boolean;
   isAdPlaying: boolean;
   needsTap: boolean;
+  isPaused: boolean;
   ad: AdViewState | null;
   startFromTap: () => void;
+  resumeAd: () => void;
+  pauseAd: () => void;
   skip: () => void;
 }
 
@@ -341,6 +344,8 @@ export function useImaAds({
   }, [isAdActive, isFullscreen, adContainerRef]);
 
   const startFromTap = useCallback(() => sessionRef.current?.controller?.startFromGesture(), []);
+  const resumeAd = useCallback(() => sessionRef.current?.controller?.resume(), []);
+  const pauseAd = useCallback(() => sessionRef.current?.controller?.pause(), []);
   const skip = useCallback(() => sessionRef.current?.controller?.skip(), []);
 
   const ad = useMemo(
@@ -356,8 +361,11 @@ export function useImaAds({
     isAdActive,
     isAdPlaying: phase === "playing",
     needsTap: phase === "awaitingTap",
+    isPaused: phase === "paused",
     ad,
     startFromTap,
+    resumeAd,
+    pauseAd,
     skip,
   };
 }
