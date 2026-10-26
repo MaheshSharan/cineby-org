@@ -1,0 +1,25 @@
+services:
+  cineby-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cineby-web
+    restart: unless-stopped
+    expose:
+      - "3487"
+    environment:
+      - PORT=3487
+      - NODE_ENV=production
+      - DATABASE_PATH=/app/data/cineby.db
+      - CACHE_BACKEND=memory
+    env_file:
+      - .env.production
+    volumes:
+      - ./data:/app/data
+    networks:
+      - deploy_default
+
+networks:
+  deploy_default:
+    name: deploy_default
+    external: true
