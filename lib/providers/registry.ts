@@ -168,6 +168,8 @@ export async function resolveAllStreams(
   return raceProviders(targetProviders, request, timeoutMs, options);
 }
 
+const PRIMARY_PROVIDER_GRACE_MS = 1_500;
+
 export async function raceProviders(
   providers: Provider[],
   request: StreamRequest,
@@ -190,8 +192,12 @@ export async function raceProviders(
   }
 
   try {
-    const providerPromises = providers.map(async (provider) => {
-      logger.debug(`[registry] Querying provider concurrently: ${provider.id}`);
+    const sorted = [...providers].sort((a, b) => a.priority - b.priority);
+    const primary = sorted[0];
+    const fallbacks = sorted.slice(1);
+
+    const queryProvider = async (provider: Provider): Promise<StreamResponse> => {
+      logger.debug(`[registry] Querying provider: ${provider.id}`);
       const res = await fetchWithTimeout(
         provider,
         {
@@ -214,9 +220,38 @@ export async function raceProviders(
       }
 
       throw new Error(`Provider ${provider.id} returned no playable sources`);
+    };
+
+    if (fallbacks.length === 0) {
+      const single = await queryProvider(primary);
+      return single;
+    }
+
+    // Stagger fallback queries: give the primary (priority 10 Vidy) up to PRIMARY_PROVIDER_GRACE_MS
+    // before launching fallbacks concurrently. If primary succeeds fast, zero wasted fallback load.
+    const primaryPromise = queryProvider(primary);
+
+    let graceTimer: ReturnType<typeof setTimeout> | undefined;
+    const graceTimeoutPromise = new Promise<never>((_, reject) => {
+      graceTimer = setTimeout(() => reject(new Error("Primary grace period elapsed")), PRIMARY_PROVIDER_GRACE_MS);
     });
 
-    const winner = await Promise.any(providerPromises);
+    try {
+      const primaryWinner = await Promise.race([primaryPromise, graceTimeoutPromise]);
+      clearTimeout(graceTimer);
+      raceController.abort();
+      return primaryWinner;
+    } catch {
+      clearTimeout(graceTimer);
+    }
+
+    if (raceController.signal.aborted || request.signal?.aborted) {
+      return { sources: [], subtitles: [] };
+    }
+
+    // Primary either failed or is still resolving past grace window: race primary against fallbacks
+    const fallbackPromises = fallbacks.map((f) => queryProvider(f));
+    const winner = await Promise.any([primaryPromise, ...fallbackPromises]);
     raceController.abort();
     return winner;
   } catch {

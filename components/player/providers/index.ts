@@ -73,34 +73,8 @@ async function buildFetchResponse(
     }
 
     // Try each active provider's client fetcher in the order the server returned
+    // Note: Vidy uses server-side resolution by default to avoid client-side CORS/WAF blocks.
     for (const providerId of activeProviderIds) {
-      if (providerId === "vidy") {
-        const payload = await fetchVidyPayloadFromBrowser({
-          tmdbId: request.mediaId,
-          type: request.mediaType,
-          season: request.seasonNumber ?? undefined,
-          episode: request.episodeNumber ?? undefined,
-          signal: request.signal,
-        });
-        if (payload) {
-          return fetch("/api/stream/resolve", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...getSidHeaders() },
-            body: JSON.stringify({
-              tmdbId: request.mediaId,
-              type: request.mediaType,
-              season: request.seasonNumber,
-              episode: request.episodeNumber,
-              server: serverId,
-              vidyCiphertext: payload.ciphertext,
-              vidySeed: payload.seed,
-              vidyServerId: payload.serverId,
-            }),
-            signal: request.signal,
-          });
-        }
-      }
-
       if (providerId === "vixsrc") {
         const payload = await fetchVixsrcPayloadFromBrowser({
           tmdbId: request.mediaId,
@@ -311,8 +285,8 @@ export async function resolveStream(
 
           // Only rewrite the primary active source (index 0) to avoid wasting network
           // requests and leaking orphaned Blobs for secondary sources.
-          // Applies only to Vidy-style CDNs that block direct browser/datacenter access.
-          if (i === 0 && src.type === "hls" && needsM3u8Rewrite(src.url)) {
+          // Applies only to proxy streams that require rewriting, NOT direct CORS-capable streams.
+          if (i === 0 && src.type === "hls" && !src.direct && needsM3u8Rewrite(src.url)) {
             const blobUrl = await rewriteM3u8ToBlobUrl(
               src.url,
               src.headers ?? {},

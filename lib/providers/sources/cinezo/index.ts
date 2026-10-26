@@ -121,6 +121,30 @@ function buildRequestHeaders(
   };
 }
 
+async function isStreamPlayable(url: string, headers: Record<string, string>, parentSignal?: AbortSignal): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 750);
+  const onParentAbort = () => controller.abort();
+  if (parentSignal) parentSignal.addEventListener("abort", onParentAbort);
+
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        ...headers,
+        Range: "bytes=0-100",
+      },
+      signal: controller.signal,
+    });
+    return res.status >= 200 && res.status < 400;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+    if (parentSignal) parentSignal.removeEventListener("abort", onParentAbort);
+  }
+}
+
 async function scrapeServer(
   server: ChildServerConfig,
   req: StreamRequest
@@ -163,6 +187,16 @@ async function scrapeServer(
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
       };
+
+      // Check whether Cinezo upstream source is currently playable before offering it
+      const probeUrl = raw.url || (Array.isArray(raw.qualities) && raw.qualities[0]?.url) || "";
+      if (probeUrl) {
+        const playable = await isStreamPlayable(probeUrl, commonHeaders, signal);
+        if (!playable) {
+          logger.warn(`[cinezo:${server.id}] Stream probe failed or returned non-2xx status`);
+          return { sources: [], subtitles: [] };
+        }
+      }
 
       // If the API returns multiple qualities, expose all available qualities
       if (Array.isArray(raw.qualities) && raw.qualities.length > 0) {
