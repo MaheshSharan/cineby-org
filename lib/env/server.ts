@@ -1,7 +1,6 @@
 // Server-only configuration. Never import this from components or hooks.
 //
-// Values come from process.env (local Node/Bun, `wrangler dev`, Next build) or from the Cloudflare
-// context when running on Workers. There are no defaults: a missing value throws a descriptive
+// Values come from process.env. There are no defaults: a missing value throws a descriptive
 // EnvConfigError. Optional features are disabled only by an explicit "false".
 
 import { SEGMENT_PROVIDER_NAMES, type SegmentProviderName } from "@/lib/segments/types";
@@ -16,28 +15,15 @@ import {
   requireValue,
 } from "./read";
 
-const CLOUDFLARE_CONTEXT = Symbol.for("__cloudflare-context__");
-
 export const CACHE_BACKENDS = ["memory", "redis"] as const;
 export type CacheBackend = (typeof CACHE_BACKENDS)[number];
 
 export const LOG_LEVELS = ["debug", "info", "warn", "error"] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
-/** Raw lookup: process.env first, then the OpenNext Cloudflare context (vars and secrets). */
+/** Server environment lookup. Reads process.env. */
 export function readServerEnv(name: string): string | undefined {
-  const fromProcess = process.env[name];
-
-  if (fromProcess !== undefined) {
-    return fromProcess;
-  }
-
-  const context = (globalThis as unknown as Record<symbol, { env?: Record<string, unknown> }>)[
-    CLOUDFLARE_CONTEXT
-  ];
-  const fromContext = context?.env?.[name];
-
-  return typeof fromContext === "string" ? fromContext : undefined;
+  return process.env[name];
 }
 
 // TMDB
@@ -107,15 +93,11 @@ export function getCacheMaxEntries(): number {
   return parsePositiveInteger("CACHE_MAX_ENTRIES", readServerEnv("CACHE_MAX_ENTRIES"));
 }
 
-export function getUpstashRedisRestUrl(): string {
-  return parseUrl("UPSTASH_REDIS_REST_URL", readServerEnv("UPSTASH_REDIS_REST_URL"));
+export function getRedisUrl(): string | undefined {
+  return readServerEnv("REDIS_URL")?.trim() || undefined;
 }
 
-export function getUpstashRedisRestToken(): string {
-  return requireValue("UPSTASH_REDIS_REST_TOKEN", readServerEnv("UPSTASH_REDIS_REST_TOKEN"));
-}
-
-/** Local SQLite file. Production uses the D1 binding, so this is read only outside Cloudflare. */
+/** Local SQLite file on VPS or local development. */
 export function getDatabasePath(): string {
   return requireValue("DATABASE_PATH", readServerEnv("DATABASE_PATH"));
 }

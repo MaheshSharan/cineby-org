@@ -19,5 +19,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "workers", "simple-proxy", "vercel-m3u8-fetcher"]
+  "exclude": ["node_modules", "simple-proxy", "vercel-m3u8-fetcher"]
 }

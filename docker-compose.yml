@@ -1,17 +1,32 @@
 services:
+  cineby-redis:
+    image: redis:7-alpine
+    container_name: cineby-redis
+    restart: unless-stopped
+    command: ["redis-server", "--port", "8492", "--appendonly", "yes", "--save", "60", "1"]
+    expose:
+      - "8492"
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - deploy_default
+
   cineby-web:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: cineby-web
     restart: unless-stopped
+    depends_on:
+      - cineby-redis
     expose:
       - "3487"
     environment:
       - PORT=3487
       - NODE_ENV=production
       - DATABASE_PATH=/app/data/cineby.db
-      - CACHE_BACKEND=memory
+      - CACHE_BACKEND=redis
+      - REDIS_URL=redis://cineby-redis:8492
     env_file:
       - .env.production
     volumes:

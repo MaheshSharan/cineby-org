@@ -2,8 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
-  // NEXT_PUBLIC_* values are inlined by Next.js from the build environment, which
-  // scripts/with-wrangler-vars.ts fills from wrangler.jsonc. No `env` mapping is needed here.
+  // NEXT_PUBLIC_* values are inlined by Next.js at build time. No `env` mapping is needed here.
   async headers() {
     return [
       {

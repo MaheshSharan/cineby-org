@@ -1,16 +1,15 @@
 // Single description of every environment variable the app reads. It drives:
-//   - scripts/check-env.ts and the build wrapper (validate before dev/build),
-//   - tests/env-config.test.ts (keeps .env.example and wrangler.jsonc identical to this list).
+//   - scripts/check-env.ts (validate before dev/build),
+//   - tests/env-config.test.ts (keeps .env.example identical to this list).
 //
-// Adding a variable means adding it here, to .env.example and (unless it is a secret or
-// development-only) to wrangler.jsonc vars. The drift test fails otherwise.
+// Adding a variable means adding it here, to .env.example and .env.production.example.
 
 export type EnvScope =
   /** Browser-visible, inlined into the client bundle at build time. */
   | "public"
-  /** Server-only, non-sensitive. Lives in wrangler.jsonc vars. */
+  /** Server-only, non-sensitive. */
   | "server"
-  /** Server-only credential. Never committed; set with `wrangler secret put`. */
+  /** Server-only credential. Provided via secure environment variables. */
   | "secret";
 
 export type EnvKind =
@@ -29,7 +28,7 @@ export interface EnvVariable {
   category: EnvCategoryId;
   scope: EnvScope;
   kind: EnvKind;
-  /** Defaults to both. Development-only variables are not part of wrangler.jsonc. */
+  /** Defaults to both. */
   environments?: readonly ("production" | "development")[];
   /** Variable is only required when this returns true. Absent means always required. */
   requiredWhen?: (env: EnvSource) => boolean;
@@ -111,27 +110,18 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
   // 6. Cache & Database
   { name: "CACHE_BACKEND", category: "cache", scope: "server", kind: ["memory", "redis"] },
   {
-    name: "UPSTASH_REDIS_REST_URL",
+    name: "REDIS_URL",
     category: "cache",
     scope: "server",
-    kind: "url",
-    requiredWhen: (env) => env.CACHE_BACKEND === "redis",
-  },
-  {
-    name: "UPSTASH_REDIS_REST_TOKEN",
-    category: "cache",
-    scope: "secret",
     kind: "string",
     requiredWhen: (env) => env.CACHE_BACKEND === "redis",
   },
   { name: "CACHE_MAX_ENTRIES", category: "cache", scope: "server", kind: "int" },
-  // Production uses the D1 binding; a local SQLite file only exists in development.
   {
     name: "DATABASE_PATH",
     category: "cache",
     scope: "server",
     kind: "string",
-    environments: ["development"],
   },
 
   // 7. Authentication & Integrations
@@ -159,8 +149,8 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
   { name: "VIDEO_AD_ECPM_USD", category: "ads", scope: "server", kind: "string", requiredWhen: videoAdsEnabled },
 ];
 
-/** Variables that belong in wrangler.jsonc `vars`: non-secret and used in production. */
-export function getWranglerVariables(): readonly EnvVariable[] {
+/** Non-secret variables used in production. */
+export function getProductionVariables(): readonly EnvVariable[] {
   return ENV_MANIFEST.filter(
     (variable) =>
       variable.scope !== "secret" &&

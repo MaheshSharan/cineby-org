@@ -1,10 +1,14 @@
 import type { CacheStats, CacheStore } from "./types";
 import { MemoryCacheStore } from "./memory";
-import { getCacheMaxEntries, getUpstashRedisRestToken, getUpstashRedisRestUrl } from "@/lib/env/server";
+import {
+  getCacheMaxEntries,
+  getRedisUrl,
+} from "@/lib/env/server";
 import { logger } from "@/lib/logger";
+import Redis from "ioredis";
 
 /**
- * Cineby Redis Cache Adapter (Upstash REST & Native Redis Compatible)
+ * Cineby Redis Cache Adapter (Local TCP Redis)
  *
  * Architecture:
  *                 Cineby
@@ -13,17 +17,10 @@ import { logger } from "@/lib/logger";
  *               CacheStore
  *              /          \
  *             /            \
- *      Memory LRU/TTL     Upstash REST / Redis
- *        (Fallback)            (Primary)
- *
- * Designed to seamlessly run on Edge / Cloudflare Workers using lightweight native fetch,
- * or connect with standard Redis client protocol without heavy TCP dependencies.
- *
- * If Redis is selected but unconfigured or fails, it gracefully falls back to MemoryCacheStore
- * and logs warnings rather than crashing Cineby.
+ *      Memory LRU/TTL     Local Redis (TCP)
+ *        (Fallback)          (Primary)
  */
-const MAX_ERROR_DETAIL_CHARS = 200;
-// Larger cache entries stay in memory only, so a few heavy titles cannot fill the Upstash quota.
+// Larger cache entries stay in memory only, so a few heavy titles cannot fill the Redis buffer.
 const MAX_REDIS_VALUE_CHARS = 100_000;
 
 export interface RedisClientLike {
@@ -33,67 +30,38 @@ export interface RedisClientLike {
   flushdb?(): Promise<unknown>;
 }
 
-export class UpstashRestClient implements RedisClientLike {
-  private url: string;
-  private token: string;
+export class NativeRedisClient implements RedisClientLike {
+  private redis: Redis;
 
-  constructor(url: string, token: string) {
-    this.url = url.replace(/\/+$/, "");
-    this.token = token;
-  }
-
-  private async executeCommand<T>(command: (string | number)[]): Promise<T | null> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    try {
-      const res = await fetch(this.url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(command),
-        signal: controller.signal,
-      });
-
-      if (!res.ok) {
-        // Upstash explains rejections (for example a full database) in the body.
-        const detail = (await res.text().catch(() => "")).slice(0, MAX_ERROR_DETAIL_CHARS);
-        throw new Error(`[UpstashRestClient] Request failed with HTTP ${res.status}${detail ? `: ${detail}` : ""}`);
-      }
-
-      const data = (await res.json()) as { result?: T; error?: string };
-      if (data.error) {
-        throw new Error(`[UpstashRestClient] Redis error: ${data.error}`);
-      }
-
-      return data.result ?? null;
-    } finally {
-      clearTimeout(timeoutId);
-    }
+  constructor(url: string) {
+    this.redis = new Redis(url, {
+      lazyConnect: true,
+      maxRetriesPerRequest: 1,
+      connectTimeout: 3000,
+      enableOfflineQueue: false,
+    });
+    this.redis.on("error", (err) => {
+      logger.warn("[NativeRedisClient] Redis connection error", undefined, err);
+    });
   }
 
   async get(key: string): Promise<string | null> {
-    const res = await this.executeCommand<unknown>(["GET", key]);
-    if (res === null || res === undefined) return null;
-    return typeof res === "string" ? res : JSON.stringify(res);
+    return this.redis.get(key);
   }
 
   async set(key: string, value: string, mode?: string, duration?: number): Promise<unknown> {
-    const cmd: (string | number)[] = ["SET", key, value];
-    if (mode && duration !== undefined) {
-      cmd.push(mode, duration);
+    if (mode === "EX" && duration !== undefined) {
+      return this.redis.set(key, value, "EX", duration);
     }
-    return this.executeCommand(cmd);
+    return this.redis.set(key, value);
   }
 
   async del(key: string): Promise<number> {
-    const res = await this.executeCommand<number>(["DEL", key]);
-    return typeof res === "number" ? res : 0;
+    return this.redis.del(key);
   }
 
   async flushdb(): Promise<unknown> {
-    return this.executeCommand(["FLUSHDB"]);
+    return this.redis.flushdb();
   }
 }
 
@@ -102,13 +70,21 @@ export class RedisCacheStore implements CacheStore {
   private client: RedisClientLike | null = null;
   private fallbackStore: CacheStore;
 
-  /**
-   * Upstash credentials are required: selecting the redis backend without them throws instead of
-   * silently degrading to memory. `fallbackStore` only covers runtime Redis request failures.
-   */
   constructor(client?: RedisClientLike, fallbackStore?: CacheStore) {
     this.fallbackStore = fallbackStore ?? new MemoryCacheStore(getCacheMaxEntries());
-    this.client = client ?? new UpstashRestClient(getUpstashRedisRestUrl(), getUpstashRedisRestToken());
+
+    if (client) {
+      this.client = client;
+      return;
+    }
+
+    const redisUrl = getRedisUrl();
+    if (redisUrl) {
+      this.client = new NativeRedisClient(redisUrl);
+      return;
+    }
+
+    logger.warn("[RedisCacheStore] REDIS_URL not configured, falling back to memory");
   }
 
   async get<T>(key: string): Promise<T | null> {
@@ -126,7 +102,6 @@ export class RedisCacheStore implements CacheStore {
             return raw as unknown as T;
           }
         }
-        // Redis miss: the entry may only exist in memory (oversized, or its Redis write failed).
       } catch (error) {
         logger.warn(`[RedisCacheStore] Failed to read key ${key} from Redis, falling back to memory`, undefined, error);
       }
@@ -155,7 +130,6 @@ export class RedisCacheStore implements CacheStore {
             return { value: raw as unknown as T, isStale: false };
           }
         }
-        // Redis miss: fall through to the memory store, as in get().
       } catch (error) {
         logger.warn(`[RedisCacheStore] Failed to get stale key ${key} from Redis, falling back to memory`, undefined, error);
       }
@@ -169,7 +143,6 @@ export class RedisCacheStore implements CacheStore {
         const staleAfter = staleSeconds !== undefined ? Date.now() + staleSeconds * 1000 : undefined;
         const payload = JSON.stringify({ value, staleAfter });
         if (payload.length > MAX_REDIS_VALUE_CHARS) {
-          // Oversized entries would eat the database quota; the memory store still keeps them.
           logger.debug(`[RedisCacheStore] Skipping Redis write for ${key}: ${payload.length} chars exceeds limit`);
         } else {
           await this.client.set(key, payload, "EX", Math.max(1, ttlSeconds));

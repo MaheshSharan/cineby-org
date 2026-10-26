@@ -1,6 +1,6 @@
 // Fails with the complete list of missing or invalid variables.
 //   bun scripts/check-env.ts           development (.env.local)  -> predev, `bun run check:env`
-//   bun scripts/check-env.ts --build   build-time subset         -> used by with-wrangler-vars.ts
+//   bun scripts/check-env.ts --build   build-time subset
 
 import { validateEnv, type EnvCheckMode } from "../lib/env/validate";
 

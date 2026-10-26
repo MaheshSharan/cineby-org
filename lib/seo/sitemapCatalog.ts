@@ -6,7 +6,7 @@ import { getPopularTv } from "@/lib/tmdb/server/tv";
 import { cachedFetch } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 
-const SITEMAP_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours in Upstash/Redis
+const SITEMAP_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours in Redis
 const MAX_PAGES = 10; // 10 pages * 20 items = 200 items per feed
 
 /**

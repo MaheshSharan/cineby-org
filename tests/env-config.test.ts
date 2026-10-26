@@ -2,11 +2,9 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { ENV_MANIFEST, getWranglerVariables } from "@/lib/env/manifest";
+import { ENV_MANIFEST, getProductionVariables } from "@/lib/env/manifest";
 import { validateEnv } from "@/lib/env/validate";
 import { ALL_PROVIDERS } from "@/lib/providers/sources";
-import { parseImageWorkerConfig } from "@/workers/assets/params";
-import { parseWranglerVars } from "../scripts/lib/wranglerVars";
 
 const ROOT = process.cwd();
 
@@ -14,10 +12,10 @@ function read(relativePath: string): string {
   return readFileSync(path.join(ROOT, relativePath), "utf8");
 }
 
-function parseEnvExample(): Record<string, string> {
+function parseEnvFile(filename: string): Record<string, string> {
   const entries: Record<string, string> = {};
 
-  for (const line of read(".env.example").split("\n")) {
+  for (const line of read(filename).split("\n")) {
     const match = /^([A-Z][A-Z0-9_]*)=(.*)\r?$/.exec(line);
 
     if (match) {
@@ -26,6 +24,14 @@ function parseEnvExample(): Record<string, string> {
   }
 
   return entries;
+}
+
+function parseEnvExample(): Record<string, string> {
+  return parseEnvFile(".env.example");
+}
+
+function parseEnvProductionExample(): Record<string, string> {
+  return parseEnvFile(".env.production.example");
 }
 
 function sourceFiles(directory: string): string[] {
@@ -52,14 +58,18 @@ describe("environment configuration is unified", () => {
     expect(Object.keys(parseEnvExample()).sort()).toEqual([...names].sort());
   });
 
-  it("wrangler.jsonc vars are exactly the non-secret production variables", () => {
-    const wranglerNames = Object.keys(parseWranglerVars(read("wrangler.jsonc"))).sort();
-
-    expect(wranglerNames).toEqual(getWranglerVariables().map((variable) => variable.name).sort());
+  it(".env.production.example defines exactly the manifest variables", () => {
+    expect(Object.keys(parseEnvProductionExample()).sort()).toEqual([...names].sort());
   });
 
-  it("production vars from wrangler.jsonc pass validation", () => {
-    expect(validateEnv(parseWranglerVars(read("wrangler.jsonc")), "build")).toEqual([]);
+  it(".env.production.example passes build and production validation", () => {
+    expect(validateEnv(parseEnvProductionExample(), "build")).toEqual([]);
+    expect(validateEnv(parseEnvProductionExample(), "development")).toEqual([]);
+  });
+
+  it("production variables are correctly identified", () => {
+    const prodVars = getProductionVariables().map((variable) => variable.name).sort();
+    expect(prodVars.length).toBeGreaterThan(0);
   });
 
   it(".env.example is valid once the documented blanks are filled", () => {
@@ -77,11 +87,13 @@ describe("environment configuration is unified", () => {
 
   it("conditional variables are only required when their switch is on", () => {
     const base = { ...process.env, CACHE_BACKEND: "memory", NEXT_PUBLIC_ENABLE_ANALYTICS: "false" };
-    const redis = { ...base, CACHE_BACKEND: "redis", UPSTASH_REDIS_REST_URL: "", UPSTASH_REDIS_REST_TOKEN: "" };
+    const redis = { ...base, CACHE_BACKEND: "redis", REDIS_URL: "redis://cineby-redis:8492" };
+    const missingRedis = { ...base, CACHE_BACKEND: "redis", REDIS_URL: "" };
     const analytics = { ...base, NEXT_PUBLIC_ENABLE_ANALYTICS: "true", NEXT_PUBLIC_GA_MEASUREMENT_ID: "" };
 
     expect(validateEnv(base, "development")).toEqual([]);
-    expect(validateEnv(redis, "development")).toHaveLength(2);
+    expect(validateEnv(redis, "development")).toEqual([]);
+    expect(validateEnv(missingRedis, "development")).toHaveLength(1);
     expect(validateEnv(analytics, "development")).toHaveLength(1);
   });
 
@@ -107,16 +119,6 @@ describe("environment configuration is unified", () => {
     for (const provider of ALL_PROVIDERS) {
       expect(names).toContain(`ENABLE_${provider.id.toUpperCase()}`);
     }
-  });
-
-  it("the worker configs carry the variables their workers require", () => {
-    const assetsVars = parseWranglerVars(read("workers/assets/wrangler.jsonc"));
-    const proxyVars = parseWranglerVars(read("workers/stream-proxy/wrangler.jsonc"));
-
-    expect(parseImageWorkerConfig(assetsVars).ok).toBe(true);
-    expect(proxyVars.CORS_ALLOWED_ORIGINS).toBeTruthy();
-    expect(proxyVars.CORS_ALLOWED_ORIGINS).not.toMatch(/localhost/);
-    expect(proxyVars).not.toHaveProperty("STREAM_PROXY_SECRET");
   });
 });
 

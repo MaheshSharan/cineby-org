@@ -12,7 +12,7 @@ export class EnvConfigError extends Error {
 }
 
 const MISSING_HINT =
-  "Set it in .env.local (development) or in wrangler.jsonc vars / wrangler secrets (production). See .env.example.";
+  "Set it in .env.local (development) or in .env.production (production). See .env.example.";
 
 export function requireValue(name: string, value: string | undefined): string {
   const trimmed = value?.trim();

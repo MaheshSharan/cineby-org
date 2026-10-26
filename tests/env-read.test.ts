@@ -17,7 +17,6 @@ import {
   getStreamProxyUrl,
   isProviderEnabled,
 } from "@/lib/env/server";
-import { parseWranglerVars, stripJsonComments } from "../scripts/lib/wranglerVars";
 
 const originalEnv = { ...process.env };
 
@@ -109,18 +108,5 @@ describe("env getters fail fast", () => {
   it("require a database path outside Cloudflare", () => {
     delete process.env.DATABASE_PATH;
     expect(() => getDatabasePath()).toThrow(/DATABASE_PATH/);
-  });
-});
-
-describe("wrangler.jsonc parsing", () => {
-  it("keeps // inside strings and removes comments and trailing commas", () => {
-    const jsonc = `{
-      // line comment
-      "$schema": "https://example.test/schema.json", /* block */
-      "vars": { "A": "1", "B": 2, },
-    }`;
-
-    expect(stripJsonComments(jsonc)).toContain("https://example.test/schema.json");
-    expect(parseWranglerVars(jsonc)).toEqual({ A: "1", B: "2" });
   });
 });
