@@ -284,7 +284,11 @@ export function createAdsController(options: AdsControllerOptions): AdsControlle
           endReason = "skipped";
         },
       ],
-      [eventTypes.PAUSED, () => emit({ type: "paused" })],
+      [eventTypes.PAUSED, () => {
+        if (isStarted) {
+          emit({ type: "paused" });
+        }
+      }],
       [eventTypes.RESUMED, () => emit({ type: "resumed" })],
       [eventTypes.CLICK, () => emit({ type: "clicked" })],
       [eventTypes.CONTENT_RESUME_REQUESTED, end],

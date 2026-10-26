@@ -210,7 +210,9 @@ export function useImaAds({
           setState((previous) => ({ ...previous, progress: event.progress }));
           break;
         case "paused":
-          setPhase("paused");
+          if (session.isReleased) {
+            setPhase("paused");
+          }
           break;
         case "resumed":
           setPhase("playing");
