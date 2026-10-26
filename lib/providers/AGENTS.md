@@ -311,3 +311,27 @@ Upstream streaming CDNs (such as those used by streaming sources) enforce two se
    - Autonomously verifies the HMAC-SHA256 token, validates SSRF/private host safety, and forwards the stamped provider headers (`vidy.st`, `vixsrc.to`, `cinezo.net`) directly to upstream CDNs.
    - Streams media directly through Cloudflare Edge with zero domain allowlist maintenance.
 
+---
+
+## 11. Known Gotchas & Production Fixes
+
+### 1. The Concurrent Scraper Race Hazard (Fast Failing Fallbacks)
+* **Problem**: Fast scrapers that return dead streams (e.g. Cinezo returning dead Flikhub links in ~200ms) would beat slower but functional primary scrapers (e.g. Vidy taking ~350ms) in an unconstrained `Promise.any` race. The client received dead links, causing HLS.js to retry HTTP 502s for 15–20 seconds before failing over.
+* **Resolution**: In [`lib/providers/registry.ts`](file:///d:/ProjectsDesk/cineby/lib/providers/registry.ts), introduced `PRIMARY_PROVIDER_GRACE_MS = 1500`. The primary provider (priority 10, Vidy) is granted a dedicated grace window to resolve before fallback providers are fired concurrently.
+
+### 2. Client-Side Browser Pre-flight CORS Blocks
+* **Problem**: Calling provider seed endpoints directly from the browser (e.g. `https://api.wecollege.net/seed`) causes Cloudflare WAF 403 Forbidden blocks because the browser enforces `Origin: https://cineby.group`.
+* **Resolution**: For `server === "default"` playback, do not invoke browser-side fetch routines in [`components/player/providers/index.ts`](file:///d:/ProjectsDesk/cineby/components/player/providers/index.ts). Always route through `/api/stream/resolve` server-side where the VPS sets `Origin: https://www.vidy.st` and resolves cleanly in ~200ms.
+
+### 3. Direct Flag vs. Playlist Referer Protection
+* **Problem**: Marking streams with `direct: true` caused the player to bypass M3U8 rewriting via `!src.direct && needsM3u8Rewrite(url)`. When the browser loaded `https://moon.goldenkite.top/...m3u8` directly, OpenResty returned `403 Forbidden` because browsers cannot forge `Referer: https://www.vidy.st/` on cross-origin requests.
+* **Resolution**: Vidy playlists on CDNs (`moon.goldenkite.top`, etc.) must always be rewritten via `/api/stream/m3u8` regardless of `direct`. The serverless fetcher (`M3U8_FETCHER_URL`) supplies the upstream referer and creates a local `blob:` playlist for HLS.js.
+
+### 4. Unplayable MPEG-DASH Manifests
+* **Problem**: Scrapers returning `.mpd` (DASH) manifests caused browser playback to stall on `readyState: 0` with an infinite loading spinner, as native HTML5 video and HLS.js cannot decode DASH without `dash.js`.
+* **Resolution**: In [`lib/providers/sources/cinezo/index.ts`](file:///d:/ProjectsDesk/cineby/lib/providers/sources/cinezo/index.ts), explicitly filter out `streamType === "dash"`, returning only native HLS (`.m3u8`) streams.
+
+### 5. Child Server Iteration in Vidy
+* **Problem**: In [`lib/providers/sources/vidy/index.ts`](file:///d:/ProjectsDesk/cineby/lib/providers/sources/vidy/index.ts), if child server `miami` returned empty sources for a title (e.g. Lupin `96677`), the scraper previously failed the entire Vidy provider instead of falling back to secondary child servers (`boise`, `atlanta`), which had working full-HD sources.
+* **Resolution**: Ensure Vidy iterates sequentially through child servers (`miami`, `boise`, `atlanta`, etc.) using the decrypted metadata and fresh seed until a server with playable sources is found.
+
