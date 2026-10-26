@@ -12,10 +12,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Mount .env.production as a secret build secret to read build-time variables without burning them into the layer
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+# Mount .env.production as a build secret to read build-time variables without burning them into the layer
 RUN --mount=type=secret,id=env,target=/app/.env.production \
     if [ -f /app/.env.production ]; then cp /app/.env.production /app/.env.local; fi && \
-    ENV NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production bunx next build
+    bunx next build
 
 # 3. Production runner
 FROM base AS runner
