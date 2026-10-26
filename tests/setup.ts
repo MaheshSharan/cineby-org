@@ -37,6 +37,13 @@ Object.assign(process.env, {
   NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED: "false",
   CORS_ALLOWED_ORIGINS: "https://cineby.group",
   LOG_LEVEL: "debug",
+  ENABLE_VIDEO_ADS: "true",
+  VIDEO_AD_TAG_URL: "https://ads.test/vast",
+  VIDEO_AD_ZONE_ID: "test-zone",
+  VIDEO_AD_COOLDOWN_MIN: "15",
+  VIDEO_AD_EPISODES_BETWEEN: "3",
+  VIDEO_AD_REQUEST_TIMEOUT_MS: "5000",
+  VIDEO_AD_ECPM_USD: "1.5",
 });
 
 // Reset test database cleanly before test session starts

@@ -61,6 +61,15 @@
     "UPSTASH_REDIS_REST_URL": "https://sought-cub-298860.upstash.io",
     "CACHE_MAX_ENTRIES": "5000",
 
+    // 8. Video Ads (set the real values at deploy time; keep ENABLE_VIDEO_ADS false until then)
+    "ENABLE_VIDEO_ADS": "false",
+    "VIDEO_AD_TAG_URL": "",
+    "VIDEO_AD_ZONE_ID": "7547805",
+    "VIDEO_AD_COOLDOWN_MIN": "15",
+    "VIDEO_AD_EPISODES_BETWEEN": "3",
+    "VIDEO_AD_REQUEST_TIMEOUT_MS": "5000",
+    "VIDEO_AD_ECPM_USD": "1.5",
+
     // 7. Authentication & Integrations
     "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "710500048793-55rctnc4coj15s1jvao7l2ouejvpftpn.apps.googleusercontent.com",
     "NEXT_PUBLIC_FLAGS_API_BASE_URL": "https://flagsapi.com",

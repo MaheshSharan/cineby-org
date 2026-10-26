@@ -65,7 +65,7 @@ export default function PrivacyPolicyPage() {
               <li>To safeguard against unauthorized access, abusive traffic, or malicious requests.</li>
             </ul>
             <p className="mt-2 text-white/90">
-              We do <strong>not</strong> sell, rent, trade, or monetize your personal information or Google user data. We do not use your information to serve personalized advertisements or build ad profiles.
+              We do <strong>not</strong> sell, rent, trade, or monetize your personal information or Google user data. We do not use your account information or Google user data to target advertisements or build ad profiles.
             </p>
           </section>
 
@@ -121,6 +121,9 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-lg font-semibold text-white">6. Third-Party Integrations & Metadata</h2>
             <p>
               Cineby acts as an informational interface and media discovery organizer. Media posters, descriptions, and episode information are retrieved dynamically via The Movie Database (TMDB) API. Cineby does not host or transmit unauthorized copyrighted media on its servers.
+            </p>
+            <p>
+              Cineby may show a short video advertisement part-way through a title. These ads are delivered by a third-party advertising partner (HilltopAds) through Google&apos;s Interactive Media Ads SDK. To deliver and measure an ad, the partner and the SDK may receive your IP address, browser details, and cookie or device identifiers, and may set their own cookies. Cineby does not share your account details with them. Video ads are not shown in regions where consent is required.
             </p>
           </section>
 

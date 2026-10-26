@@ -22,6 +22,9 @@ import { useIsFullscreen } from "./hooks/useIsFullscreen";
 import { useIsLandscape } from "./hooks/useIsLandscape";
 import { useMediaSession } from "./hooks/useMediaSession";
 import { useWakeLock } from "./hooks/useWakeLock";
+import { useAdAwareControls } from "./hooks/useAdAwareControls";
+import { useAdSchedule } from "./hooks/useAdSchedule";
+import { useImaAds } from "./hooks/useImaAds";
 import { usePlayerEpisodes } from "./hooks/usePlayerEpisodes";
 import { usePlayerSegments } from "./hooks/usePlayerSegments";
 import { useSettings } from "@/hooks/useSettings";
@@ -29,6 +32,9 @@ import { buildImageUrl } from "@/lib/tmdb/image";
 import { createSegmentByteCache } from "@/lib/player/media/segmentByteCache";
 import { trackEvent } from "@/lib/analytics/gtag";
 
+import { AdControls } from "./ui/AdControls";
+import { AdLayer } from "./ui/AdLayer";
+import { AdSkipButton } from "./ui/AdSkipButton";
 import { AudioSubtitlesPopover } from "./ui/AudioSubtitlesPopover";
 import { EpisodesDrawer } from "./ui/EpisodesDrawer";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
@@ -165,6 +171,44 @@ export function PlayerContainer({
   });
   const { setRate } = playerState;
 
+  const isFullscreen = useIsFullscreen();
+  const adContainerRef = useRef<HTMLDivElement>(null);
+  const adVideoRef = useRef<HTMLVideoElement>(null);
+  const adSchedule = useAdSchedule({
+    mediaKey,
+    mediaId: media.mediaId,
+    mediaType: media.mediaType,
+    durationSec: playerState.duration,
+    startTimeSec: initialSeekTime ?? 0,
+  });
+  const ads = useImaAds({
+    mediaKey,
+    schedule: adSchedule,
+    currentTimeSec: playerState.currentTime,
+    isContentPlaying: playerState.isPlaying,
+    pauseContent: playerState.pause,
+    resumeContent: playerState.play,
+    adContainerRef,
+    adVideoRef,
+    contentVideoRef: videoRef,
+    volume: playerState.volume,
+    isMuted: playerState.muted,
+    isFullscreen,
+  });
+  const playback = useAdAwareControls(ads, playerState);
+
+  useEffect(() => {
+    if (!ads.isAdBreak) {
+      return;
+    }
+
+    // Ads own the screen: release the lock and close anything that would sit above them.
+    setIsLocked(false);
+    setIsQualityOpen(false);
+    setIsAudioSubtitlesOpen(false);
+    setIsEpisodesOpen(false);
+  }, [ads.isAdBreak]);
+
   const subtitles = useSubtitles({
     videoRef,
     mediaId: media.mediaId,
@@ -190,7 +234,7 @@ export function PlayerContainer({
     isAudioSubtitlesOpen,
     isEpisodesOpen,
     onClosePopovers: closePopovers,
-    onSeekBy: playerState.seekBy,
+    onSeekBy: playback.seekBy,
   });
 
   function toggleFullscreen() {
@@ -222,10 +266,10 @@ export function PlayerContainer({
     containerRef,
     seekTime: appSettings.playback.seekTime,
     isLocked,
-    onTogglePlay: playerState.togglePlay,
-    onSeekBy: playerState.seekBy,
+    onTogglePlay: playback.togglePlay,
+    onSeekBy: playback.seekBy,
     onDoubleTapSeek: handleDoubleTapSeek,
-    onToggleMute: playerState.toggleMute,
+    onToggleMute: playback.toggleMute,
     onToggleFullscreen: toggleFullscreen,
     onToggleSettings: () => {
       setIsAudioSubtitlesOpen(false);
@@ -332,7 +376,7 @@ export function PlayerContainer({
     subtitle,
   ]);
 
-  useWakeLock(playerState.isPlaying);
+  useWakeLock(playerState.isPlaying || ads.isAdPlaying);
 
   const mediaSessionTitle = useMemo(() => {
     if (isTv) {
@@ -359,15 +403,15 @@ export function PlayerContainer({
     artist: isTv ? media.title : "Cineby",
     album: mediaSessionAlbum,
     artworkUrl: mediaSessionArtworkUrl,
-    isPlaying: playerState.isPlaying,
+    isPlaying: playerState.isPlaying || ads.isAdPlaying,
     currentTime: playerState.currentTime,
     duration: playerState.duration,
     playbackRate: settings.rate,
     seekTime: appSettings.playback.seekTime,
-    onPlay: playerState.play,
-    onPause: playerState.pause,
-    onSeekBy: playerState.seekBy,
-    onSeekTo: playerState.seekTo,
+    onPlay: playback.play,
+    onPause: playback.pause,
+    onSeekBy: playback.seekBy,
+    onSeekTo: playback.seekTo,
   });
 
   // Initial stream load whenever mediaKey changes
@@ -616,10 +660,9 @@ export function PlayerContainer({
 
   const isLoading = isResolvingStream && !stream.source;
   const isTouchDevice = useIsTouchDevice();
-  const isFullscreen = useIsFullscreen();
   const isLandscape = useIsLandscape();
   const shouldShowTouchVolume = isTouchDevice && isFullscreen && isLandscape;
-  const isSpinnerActive = isLoading || playerState.isBuffering;
+  const isSpinnerActive = isLoading || playerState.isBuffering || ads.isStarting;
   const areTouchControlsShown = isTouchDevice && controls.areControlsVisible && !isLocked;
 
   return (
@@ -650,6 +693,14 @@ export function PlayerContainer({
             />
           </div>
 
+          <AdLayer
+            containerRef={adContainerRef}
+            videoRef={adVideoRef}
+            isActive={ads.isAdActive}
+            needsTap={ads.needsTap}
+            onTap={ads.startFromTap}
+          />
+
           <PlayerHeader
             title={media.title}
             subtitle={computedHeaderSubtitle}
@@ -657,6 +708,7 @@ export function PlayerContainer({
             visible={controls.areControlsVisible && !isLocked}
             inert={isLocked}
             rightSlot={
+              ads.isAdBreak ? null : (
               <div className="flex items-center gap-1 md:gap-4 flex-shrink-0 relative">
                 <div
                   className="relative"
@@ -737,6 +789,7 @@ export function PlayerContainer({
                   </button>
                 ) : null}
               </div>
+              )
             }
           />
 
@@ -776,7 +829,13 @@ export function PlayerContainer({
             </div>
           ) : null}
 
-          {isLocked ? null : isIntroActive ? (
+          {ads.isAdActive && ads.ad?.canUseCustomUi ? (
+            <AdSkipButton
+              ad={ads.ad}
+              isControlsVisible={controls.areControlsVisible}
+              onSkip={ads.skip}
+            />
+          ) : isLocked || ads.isAdBreak ? null : isIntroActive ? (
             <PlayerActionButton
               label="Skip Intro"
               durationMs={5000}
@@ -798,6 +857,15 @@ export function PlayerContainer({
             />
           ) : null}
 
+          {ads.isAdActive ? (
+            ads.ad?.canUseCustomUi ? (
+              <AdControls
+                visible={controls.areControlsVisible}
+                ad={ads.ad}
+                onToggleFullscreen={toggleFullscreen}
+              />
+            ) : null
+          ) : (
           <PlayerControls
             visible={controls.areControlsVisible && !isLocked}
             inert={isLocked}
@@ -810,13 +878,14 @@ export function PlayerContainer({
             mediaKey={mediaKey}
             cache={segmentByteCache}
             hoverThumbnails={appSettings.playback.hoverThumbnails}
+            adCueSec={ads.cueMarkerSec}
             thumbnailTrack={stream.source?.thumbnail || stream.source?.thumbnails?.[0]?.url || null}
             volume={playerState.volume}
             muted={playerState.muted}
             seekTime={appSettings.playback.seekTime}
-            onTogglePlay={playerState.togglePlay}
-            onSeek={playerState.seekTo}
-            onSeekBy={playerState.seekBy}
+            onTogglePlay={playback.togglePlay}
+            onSeek={playback.seekTo}
+            onSeekBy={playback.seekBy}
             onVolumeChange={playerState.setVolume}
             onToggleMute={playerState.toggleMute}
             onToggleFullscreen={toggleFullscreen}
@@ -837,8 +906,9 @@ export function PlayerContainer({
               ) : null
             }
           />
+          )}
 
-          {isTouchDevice && !isLocked ? (
+          {isTouchDevice && !isLocked && !ads.isAdBreak ? (
             <>
               <TouchPlaybackControls
                 visible={controls.areControlsVisible}
@@ -846,8 +916,8 @@ export function PlayerContainer({
                 isBuffering={isSpinnerActive}
                 seekTime={appSettings.playback.seekTime}
                 activeSeekSide={seekFeedback?.side}
-                onTogglePlay={playerState.togglePlay}
-                onSeekBy={playerState.seekBy}
+                onTogglePlay={playback.togglePlay}
+                onSeekBy={playback.seekBy}
               />
               {shouldShowTouchVolume ? (
                 <TouchVolumeControl
@@ -861,7 +931,7 @@ export function PlayerContainer({
             </>
           ) : null}
 
-          {isLocked ? (
+          {ads.isAdBreak ? null : isLocked ? (
             <LockOverlay onUnlock={handleUnlock} />
           ) : !isTouchDevice || isLandscape ? (
             <LockButton visible={controls.areControlsVisible} onLock={handleLock} />

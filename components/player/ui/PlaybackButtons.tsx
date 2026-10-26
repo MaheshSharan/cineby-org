@@ -8,6 +8,7 @@ interface PlaybackButtonsProps {
   size?: PlaybackButtonsSize;
   isBuffering?: boolean;
   activeSeekSide?: "left" | "right" | null;
+  showSeekButtons?: boolean;
   onTogglePlay: () => void;
   onSeekBy: (seconds: number) => void;
 }
@@ -36,6 +37,7 @@ export function PlaybackButtons({
   size = "default",
   isBuffering = false,
   activeSeekSide = null,
+  showSeekButtons = true,
   onTogglePlay,
   onSeekBy,
 }: PlaybackButtonsProps) {
@@ -43,6 +45,8 @@ export function PlaybackButtons({
 
   return (
     <>
+      {showSeekButtons ? (
+        <>
       {/* Rewind */}
       <button
         type="button"
@@ -83,6 +87,8 @@ export function PlaybackButtons({
           </svg>
         </span>
       </button>
+        </>
+      ) : null}
 
       {/* Play / Pause / Loading Spinner */}
       <button
@@ -117,6 +123,8 @@ export function PlaybackButtons({
         </span>
       </button>
 
+      {showSeekButtons ? (
+        <>
       {/* Forward */}
       <button
         type="button"
@@ -157,6 +165,8 @@ export function PlaybackButtons({
           </svg>
         </span>
       </button>
+        </>
+      ) : null}
     </>
   );
 }

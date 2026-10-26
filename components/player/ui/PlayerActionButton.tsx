@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
-import { Spinner } from "@/components/ui/Spinner";
+import { PlayerActionButtonShell } from "./PlayerActionButtonShell";
 
 interface PlayerActionButtonProps {
   label: string;
@@ -103,63 +103,16 @@ export function PlayerActionButton({
   const progressPercent = Math.min(100, (elapsedMs / durationMs) * 100);
 
   return (
-    <div
-      data-player-ui
-      className={`absolute right-[calc(1rem+env(safe-area-inset-right,0px))] sm:right-8 md:right-12 z-40 transition-all duration-300 pointer-events-auto ${
-        isControlsVisible
-          ? "bottom-[calc(7.75rem+env(safe-area-inset-bottom,0px))] sm:bottom-32 md:bottom-32"
-          : "bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:bottom-8 md:bottom-10"
-      } ${
-        isExiting
-          ? "opacity-0 scale-90 pointer-events-none"
-          : "opacity-100 scale-100 animate-in fade-in zoom-in-95 duration-200"
-      } ${className}`}
-    >
-      <button
-        type="button"
-        disabled={isLoading}
-        onClick={isLoading ? undefined : onClick}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onTouchStart={() => setIsHovered(true)}
-        onTouchEnd={() => setIsHovered(false)}
-        onTouchCancel={() => setIsHovered(false)}
-        aria-label={label}
-        aria-disabled={isLoading}
-        aria-busy={isLoading}
-        className={`group relative overflow-hidden rounded-md border border-white/20 bg-white/95 px-4 sm:px-5 py-2 sm:py-2.5 text-black shadow-2xl shadow-black/70 backdrop-blur-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
-          isLoading
-            ? "cursor-wait opacity-90"
-            : "hover:scale-[1.04] hover:bg-white active:scale-95 cursor-pointer"
-        }`}
-      >
-        {/* Animated Progress Fill Background (moves left to right) */}
-        {!isLoading && shouldShowProgress ? (
-          <div
-            className="pointer-events-none absolute inset-y-0 left-0 bg-black/15 transition-[width] duration-75 ease-linear rounded-l-md"
-            style={{ width: `${progressPercent}%` }}
-          />
-        ) : null}
-
-        {/* Content */}
-        <div className="relative z-10 flex items-center gap-2 text-xs sm:text-sm font-bold tracking-wide select-none">
-          <span>{label}</span>
-          {isLoading ? (
-            <Spinner size="sm" className="text-black" />
-          ) : (
-            icon ?? (
-              <svg
-                className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform duration-200 group-hover:translate-x-0.5"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path d="M5.536 21.886a1.004 1.004 0 0 1-.77-.364 1.01 1.01 0 0 1-.227-.852l1.642-7.67H3a1 1 0 0 1-.822-1.57l10-14a1.003 1.003 0 0 1 1.488-.135 1.01 1.01 0 0 1 .292.836l-1.642 7.669H21a1 1 0 0 1 .822 1.57l-10 14a1 1 0 0 1-.286.516z" />
-              </svg>
-            )
-          )}
-        </div>
-      </button>
-    </div>
+    <PlayerActionButtonShell
+      label={label}
+      onClick={onClick}
+      icon={icon}
+      progressPercent={shouldShowProgress ? progressPercent : null}
+      isLoading={isLoading}
+      isExiting={isExiting}
+      isControlsVisible={isControlsVisible}
+      className={className}
+      onHoverChange={setIsHovered}
+    />
   );
 }

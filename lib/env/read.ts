@@ -88,6 +88,17 @@ export function parsePositiveInteger(name: string, value: string | undefined): n
   return parsed;
 }
 
+export function parseNonNegativeNumber(name: string, value: string | undefined): number {
+  const raw = requireValue(name, value);
+  const parsed = Number(raw);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw invalid(name, "a non-negative number", raw);
+  }
+
+  return parsed;
+}
+
 export function parseEnum<T extends string>(
   name: string,
   value: string | undefined,

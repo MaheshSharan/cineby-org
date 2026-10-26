@@ -13,6 +13,7 @@
         "react-dom": "^19",
       },
       "devDependencies": {
+        "@alugha/ima": "^2.2.1",
         "@opennextjs/cloudflare": "^1.20.6",
         "@types/node": "^24",
         "@types/react": "^19",
@@ -33,6 +34,8 @@
   ],
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
+
+    "@alugha/ima": ["@alugha/ima@2.2.1", "", {}, "sha512-mbBygFrnmk7Ov0GPOkuzfsjzK9mzA0VgGfemsx/RUyo6VBs0vlyFqXihNATVsjXDUqi6BwO7cHVnNK+B8Glf9w=="],
 
     "@ast-grep/napi": ["@ast-grep/napi@0.40.5", "", { "optionalDependencies": { "@ast-grep/napi-darwin-arm64": "0.40.5", "@ast-grep/napi-darwin-x64": "0.40.5", "@ast-grep/napi-linux-arm64-gnu": "0.40.5", "@ast-grep/napi-linux-arm64-musl": "0.40.5", "@ast-grep/napi-linux-x64-gnu": "0.40.5", "@ast-grep/napi-linux-x64-musl": "0.40.5", "@ast-grep/napi-win32-arm64-msvc": "0.40.5", "@ast-grep/napi-win32-ia32-msvc": "0.40.5", "@ast-grep/napi-win32-x64-msvc": "0.40.5" } }, "sha512-hJA62OeBKUQT68DD2gDyhOqJxZxycqg8wLxbqjgqSzYttCMSDL9tiAQ9abgekBYNHudbJosm9sWOEbmCDfpX2A=="],
 

@@ -28,6 +28,7 @@
     "react-dom": "^19"
   },
   "devDependencies": {
+    "@alugha/ima": "^2.2.1",
     "@opennextjs/cloudflare": "^1.20.6",
     "@types/node": "^24",
     "@types/react": "^19",

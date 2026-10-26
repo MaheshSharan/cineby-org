@@ -9,6 +9,7 @@ import {
   parseEnum,
   parseFlag,
   parseList,
+  parseNonNegativeNumber,
   parsePositiveInteger,
   parseUrl,
   parseUrlOrPath,
@@ -117,6 +118,42 @@ export function getUpstashRedisRestToken(): string {
 /** Local SQLite file. Production uses the D1 binding, so this is read only outside Cloudflare. */
 export function getDatabasePath(): string {
   return requireValue("DATABASE_PATH", readServerEnv("DATABASE_PATH"));
+}
+
+// Video ads
+
+export function isVideoAdsEnabled(): boolean {
+  return parseFlag("ENABLE_VIDEO_ADS", readServerEnv("ENABLE_VIDEO_ADS"));
+}
+
+export function getVideoAdTagUrl(): string {
+  return parseUrl("VIDEO_AD_TAG_URL", readServerEnv("VIDEO_AD_TAG_URL"));
+}
+
+export function getVideoAdZoneId(): string {
+  return requireValue("VIDEO_AD_ZONE_ID", readServerEnv("VIDEO_AD_ZONE_ID"));
+}
+
+export function getVideoAdCooldownMin(): number {
+  return parsePositiveInteger(
+    "VIDEO_AD_COOLDOWN_MIN",
+    readServerEnv("VIDEO_AD_COOLDOWN_MIN")
+  );
+}
+
+export function getVideoAdEpisodesBetween(): number {
+  return parsePositiveInteger("VIDEO_AD_EPISODES_BETWEEN", readServerEnv("VIDEO_AD_EPISODES_BETWEEN"));
+}
+
+export function getVideoAdRequestTimeoutMs(): number {
+  return parsePositiveInteger(
+    "VIDEO_AD_REQUEST_TIMEOUT_MS",
+    readServerEnv("VIDEO_AD_REQUEST_TIMEOUT_MS")
+  );
+}
+
+export function getVideoAdEcpmUsd(): number {
+  return parseNonNegativeNumber("VIDEO_AD_ECPM_USD", readServerEnv("VIDEO_AD_ECPM_USD"));
 }
 
 // Integrations and diagnostics

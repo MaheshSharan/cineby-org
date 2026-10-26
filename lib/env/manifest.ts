@@ -43,6 +43,7 @@ export const ENV_CATEGORIES = [
   { id: "segments", title: "Media Segment Services" },
   { id: "cache", title: "Cache & Database" },
   { id: "integrations", title: "Authentication & Integrations" },
+  { id: "ads", title: "Video Ads (VAST via Google IMA)" },
 ] as const;
 
 export type EnvCategoryId = (typeof ENV_CATEGORIES)[number]["id"];
@@ -51,6 +52,10 @@ function segmentProviderListed(env: EnvSource, provider: string): boolean {
   return (env.SEGMENT_PROVIDER_PRIORITY ?? "")
     .split(",")
     .some((entry) => entry.trim().toLowerCase() === provider);
+}
+
+function videoAdsEnabled(env: EnvSource): boolean {
+  return env.ENABLE_VIDEO_ADS?.trim().toLowerCase() === "true";
 }
 
 export const ENV_MANIFEST: readonly EnvVariable[] = [
@@ -143,6 +148,15 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
   },
   { name: "CORS_ALLOWED_ORIGINS", category: "integrations", scope: "server", kind: "list" },
   { name: "LOG_LEVEL", category: "integrations", scope: "server", kind: ["debug", "info", "warn", "error"] },
+
+  // 8. Video Ads
+  { name: "ENABLE_VIDEO_ADS", category: "ads", scope: "server", kind: "flag" },
+  { name: "VIDEO_AD_TAG_URL", category: "ads", scope: "server", kind: "url", requiredWhen: videoAdsEnabled },
+  { name: "VIDEO_AD_ZONE_ID", category: "ads", scope: "server", kind: "string", requiredWhen: videoAdsEnabled },
+  { name: "VIDEO_AD_COOLDOWN_MIN", category: "ads", scope: "server", kind: "int", requiredWhen: videoAdsEnabled },
+  { name: "VIDEO_AD_EPISODES_BETWEEN", category: "ads", scope: "server", kind: "int", requiredWhen: videoAdsEnabled },
+  { name: "VIDEO_AD_REQUEST_TIMEOUT_MS", category: "ads", scope: "server", kind: "int", requiredWhen: videoAdsEnabled },
+  { name: "VIDEO_AD_ECPM_USD", category: "ads", scope: "server", kind: "string", requiredWhen: videoAdsEnabled },
 ];
 
 /** Variables that belong in wrangler.jsonc `vars`: non-secret and used in production. */

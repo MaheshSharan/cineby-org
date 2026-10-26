@@ -14,6 +14,8 @@ interface SeekBarProps {
   cache?: SegmentByteCache | null;
   hoverThumbnails?: boolean;
   thumbnailTrack?: string | null;
+  /** Second where an ad is scheduled. Shown as a yellow mark on the track. */
+  adCueSec?: number | null;
   onSeek: (time: number) => void;
 }
 
@@ -43,6 +45,7 @@ export function SeekBar({
   cache,
   hoverThumbnails = false,
   thumbnailTrack,
+  adCueSec,
   onSeek,
 }: SeekBarProps) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -234,6 +237,15 @@ export function SeekBar({
               {/* Scrubber thumb circle */}
               <div className="absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 translate-x-1/2 rounded-full bg-white shadow-lg pointer-events-none scale-0 transition-transform duration-100 group-hover:scale-100" />
             </div>
+
+            {/* Ad cue mark */}
+            {adCueSec != null && duration > 0 && adCueSec < duration ? (
+              <div
+                aria-hidden="true"
+                className="absolute top-1/2 z-20 h-[9px] w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-sm bg-yellow-400 shadow pointer-events-none"
+                style={{ left: `${(adCueSec / duration) * 100}%` }}
+              />
+            ) : null}
           </div>
         </div>
       </div>
