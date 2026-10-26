@@ -42,6 +42,17 @@ export function getStreamProxyUrl(): string {
   return parseUrlOrPath("STREAM_PROXY_URL", readServerEnv("STREAM_PROXY_URL"));
 }
 
+export function getStreamProxyUrlPool(): string[] {
+  const rawPool = readServerEnv("STREAM_PROXY_URL_POOL");
+  if (rawPool && rawPool.trim()) {
+    const urls = parseList("STREAM_PROXY_URL_POOL", rawPool)
+      .map((u) => u.trim())
+      .filter(Boolean);
+    if (urls.length > 0) return urls;
+  }
+  return [getStreamProxyUrl()];
+}
+
 export function getStreamProxySecret(): string {
   return requireValue("STREAM_PROXY_SECRET", readServerEnv("STREAM_PROXY_SECRET"));
 }

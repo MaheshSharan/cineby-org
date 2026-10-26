@@ -11,6 +11,7 @@ import Hls, {
 
 import type { SegmentByteCache } from "./segmentByteCache";
 import { signSegmentUrl } from "@/lib/security/tabCrypto";
+import { registerWorkerOrigin, getFallbackProxyUrl } from "./clientProxyPool";
 
 function isFragmentContext(context: LoaderContext): context is FragmentLoaderContext {
   return "frag" in context && Boolean((context as FragmentLoaderContext).frag);
@@ -46,21 +47,42 @@ export function createCachingLoader(
     ): void {
       this.context = context;
 
+      // Learn live worker domains as URLs stream in
+      registerWorkerOrigin(context.url);
+
+      const resilientCallbacks: LoaderCallbacks<LoaderContext> = {
+        ...callbacks,
+        onError: (error, ctx, networkDetails, stats) => {
+          const status = error.code;
+          // HTTP 429 (Worker quota exhausted), 502, or 503
+          if (status === 429 || status === 502 || status === 503) {
+            const fallbackUrl = getFallbackProxyUrl(ctx.url);
+            if (fallbackUrl && fallbackUrl !== ctx.url) {
+              ctx.url = fallbackUrl;
+              // Retry immediately against alternative healthy worker or VPS proxy
+              this.defaultLoader.load(ctx, config, resilientCallbacks);
+              return;
+            }
+          }
+          callbacks.onError(error, ctx, networkDetails, stats);
+        },
+      };
+
       // Only cache media fragments (not manifests, playlists, keys, etc.)
       if (!isFragmentContext(context)) {
         if (context.url.includes("token=")) {
           void signSegmentUrl(context.url)
             .then((signedUrl) => {
               context.url = signedUrl;
-              this.defaultLoader.load(context, config, callbacks);
+              this.defaultLoader.load(context, config, resilientCallbacks);
             })
             .catch(() => {
-              this.defaultLoader.load(context, config, callbacks);
+              this.defaultLoader.load(context, config, resilientCallbacks);
             });
           return;
         }
 
-        this.defaultLoader.load(context, config, callbacks);
+        this.defaultLoader.load(context, config, resilientCallbacks);
         return;
       }
 
@@ -70,15 +92,15 @@ export function createCachingLoader(
           void signSegmentUrl(context.url)
             .then((signedUrl) => {
               context.url = signedUrl;
-              this.defaultLoader.load(context, config, callbacks);
+              this.defaultLoader.load(context, config, resilientCallbacks);
             })
             .catch(() => {
-              this.defaultLoader.load(context, config, callbacks);
+              this.defaultLoader.load(context, config, resilientCallbacks);
             });
           return;
         }
 
-        this.defaultLoader.load(context, config, callbacks);
+        this.defaultLoader.load(context, config, resilientCallbacks);
         return;
       }
 
@@ -109,7 +131,10 @@ export function createCachingLoader(
         return;
       }
 
-      // Cache miss: delegate to default loader and store segment on success
+      // Learn live worker domains as chunks stream in
+      registerWorkerOrigin(context.url);
+
+      // Cache miss: delegate to default loader with circuit breaker fallback on 429/network errors
       const wrappedCallbacks: LoaderCallbacks<LoaderContext> = {
         ...callbacks,
         onSuccess: (response, stats, ctx, networkDetails) => {
@@ -117,6 +142,20 @@ export function createCachingLoader(
             cache.set(cacheKey, response.data);
           }
           callbacks.onSuccess(response, stats, ctx, networkDetails);
+        },
+        onError: (error, ctx, networkDetails, stats) => {
+          const status = error.code;
+          // HTTP 429 (Worker quota exhausted), 502, or 503
+          if (status === 429 || status === 502 || status === 503) {
+            const fallbackUrl = getFallbackProxyUrl(ctx.url);
+            if (fallbackUrl && fallbackUrl !== ctx.url) {
+              ctx.url = fallbackUrl;
+              // Retry immediately against alternative healthy worker or VPS proxy
+              this.defaultLoader.load(ctx, config, wrappedCallbacks);
+              return;
+            }
+          }
+          callbacks.onError(error, ctx, networkDetails, stats);
         },
       };
 

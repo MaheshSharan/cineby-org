@@ -24,7 +24,8 @@ import type { ClientPublicKeyJwk } from "@/lib/security/tabCrypto";
  *
  * The client creates a Blob URL from the response and passes it to HLS.js.
  */
-import { getM3u8FetcherUrl } from "@/lib/env/server";
+import { getM3u8FetcherUrl, getStreamProxyUrlPool } from "@/lib/env/server";
+import { getActiveWorkerPool } from "@/lib/providers/workerPoolStore";
 
 function extractClientIp(req: NextApiRequest): string {
   const cfIp = req.headers["cf-connecting-ip"];
@@ -147,40 +148,67 @@ export default withApiContext(
     }
 
     baseUrl = targetUrl;
-    // Read outside the try block so a missing M3U8_FETCHER_URL is a configuration error, not a 502.
+    // Primary fetch via external M3U8 helper (Vercel) with VPS direct fallback
     const fetcherBase = getM3u8FetcherUrl();
-    try {
-      const explicitReferer = headers.Referer || headers.referer || refererQuery;
-      const explicitOrigin = headers.Origin || headers.origin || originQuery;
-      const targetOrigin = parsedTargetUrl ? parsedTargetUrl.origin : "";
-      const fetchReferer = explicitReferer || (targetOrigin ? `${targetOrigin}/` : "");
-      const fetchOrigin = explicitOrigin || targetOrigin;
+    const explicitReferer = headers.Referer || headers.referer || refererQuery;
+    const explicitOrigin = headers.Origin || headers.origin || originQuery;
+    const targetOrigin = parsedTargetUrl ? parsedTargetUrl.origin : "";
+    const fetchReferer = explicitReferer || (targetOrigin ? `${targetOrigin}/` : "");
+    const fetchOrigin = explicitOrigin || targetOrigin;
 
-      const params = new URLSearchParams({
-        url: targetUrl,
-        ...(fetchReferer ? { referer: fetchReferer } : {}),
-        ...(fetchOrigin ? { origin: fetchOrigin } : {}),
-      });
+    const params = new URLSearchParams({
+      url: targetUrl,
+      ...(fetchReferer ? { referer: fetchReferer } : {}),
+      ...(fetchOrigin ? { origin: fetchOrigin } : {}),
+    });
+
+    let fetchSuccess = false;
+
+    // 1. Try external M3U8 fetcher (Vercel)
+    try {
       const upstream = await fetch(`${fetcherBase}?${params.toString()}`, {
         headers: { Accept: "*/*" },
       });
 
-      if (!upstream.ok) {
-        res.status(502).json({ error: `Upstream returned ${upstream.status}` });
-        return;
+      if (upstream.ok) {
+        const text = await upstream.text();
+        if (text.trimStart().startsWith("#EXTM3U") || text.trimStart().startsWith("#EXT-X-")) {
+          m3u8Text = text;
+          fetchSuccess = true;
+        }
       }
-      m3u8Text = await upstream.text();
-    } catch (fetchErr: unknown) {
-      const status = (fetchErr as { status?: number })?.status;
-      if (status === 403) {
-        res.status(403).json({ error: "Stream host is private or internal" });
-        return;
+    } catch {
+      // Vercel helper failed, proceed to direct fallback
+    }
+
+    // 2. Fallback: if Vercel fails, attempt direct fetch from VPS
+    if (!fetchSuccess) {
+      try {
+        const directUpstream = await fetch(targetUrl, {
+          headers: {
+            Accept: "*/*",
+            ...(fetchReferer ? { Referer: fetchReferer } : {}),
+            ...(fetchOrigin ? { Origin: fetchOrigin } : {}),
+            "User-Agent":
+              headers["User-Agent"] ||
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+          },
+        });
+
+        if (directUpstream.ok) {
+          const text = await directUpstream.text();
+          if (text.trimStart().startsWith("#EXTM3U") || text.trimStart().startsWith("#EXT-X-")) {
+            m3u8Text = text;
+            fetchSuccess = true;
+          }
+        }
+      } catch {
+        // Direct fetch failed
       }
-      if (status === 400) {
-        res.status(400).json({ error: (fetchErr as Error)?.message || "Invalid stream URL" });
-        return;
-      }
-      res.status(502).json({ error: "Failed to fetch M3U8 from upstream" });
+    }
+
+    if (!fetchSuccess || !m3u8Text) {
+      res.status(502).json({ error: "Failed to fetch M3U8 from upstream or fetcher pool" });
       return;
     }
   } else if (typeof body.m3u8Text === "string") {
@@ -219,6 +247,10 @@ export default withApiContext(
     res.status(422).json({ error: "Provided text is not a valid M3U8 playlist" });
     return;
   }
+
+  // Query active edge worker pool from Redis (filters out workers marked exhausted)
+  const fullConfiguredPool = getStreamProxyUrlPool();
+  const activeWorkerPool = await getActiveWorkerPool(fullConfiguredPool);
 
   const resolveUrl = (relativeOrAbsolute: string): string => {
     if (!baseUrl) return relativeOrAbsolute;
@@ -375,7 +407,7 @@ export default withApiContext(
       }
     } else {
       if (!isPrivateHost(abs)) {
-        rewritten.push(toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey)));
+        rewritten.push(toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey, activeWorkerPool)));
       } else {
         rewritten.push(line);
       }

@@ -7,6 +7,7 @@ import type { MediaSource, QualityLabel, SubtitleTrack } from "../types";
 import type { StreamRequest, StreamResolutionResult } from "./types";
 import { createPlaylistBlob, revokeAllBlobs } from "../utils/blobPool";
 import { fetchActiveProviders } from "./activeProviders";
+import { registerPlaylistOrigins } from "@/lib/player/media/clientProxyPool";
 
 function toQualityLabel(quality?: Quality | string): QualityLabel | null {
   switch (quality) {
@@ -244,6 +245,7 @@ async function rewriteM3u8ToBlobUrl(
     if (!rewriteRes.ok) return null;
     const rewrittenText = await rewriteRes.text();
     if (!rewrittenText.trimStart().startsWith("#EXTM3U")) return null;
+    registerPlaylistOrigins(rewrittenText);
     return createPlaylistBlob(rewrittenText);
   } catch {
     return null;

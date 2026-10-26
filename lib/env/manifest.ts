@@ -79,6 +79,13 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
 
   // 3. Streaming Infrastructure & Proxy
   { name: "STREAM_PROXY_URL", category: "streaming", scope: "server", kind: "urlOrPath" },
+  {
+    name: "STREAM_PROXY_URL_POOL",
+    category: "streaming",
+    scope: "server",
+    kind: "list",
+    requiredWhen: () => false,
+  },
   { name: "STREAM_PROXY_SECRET", category: "streaming", scope: "secret", kind: "string" },
   { name: "M3U8_FETCHER_URL", category: "streaming", scope: "server", kind: "url" },
   { name: "NEXT_PUBLIC_TRAILER_API_URL", category: "streaming", scope: "public", kind: "url" },
