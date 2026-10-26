@@ -39,6 +39,7 @@ export default function Document() {
           />
         ))}
         <meta name="google-adsense-account" content="ca-pub-8925754855638542" />
+        <meta name="6a97888e-site-verification" content="a09985be3717c4b44c4f8b2f6614be2c" />
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8925754855638542"
