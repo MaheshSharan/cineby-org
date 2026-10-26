@@ -12,6 +12,7 @@ services:
       - deploy_default
 
   cineby-web:
+    image: ghcr.io/maheshsharan/cineby:latest
     build:
       context: .
       dockerfile: Dockerfile

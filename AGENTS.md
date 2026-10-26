@@ -1290,3 +1290,25 @@ tightly coupled
 Every new abstraction, dependency, state variable, effect, and file should have a reason to exist.
 
 **Make the code easy to understand before making it clever.**
+
+---
+
+## 45. Hosting, Architecture & Runtime Standards
+
+Cineby is deployed as a self-hosted Docker standalone container on an isolated production VPS behind a centralized Caddy reverse proxy on the `deploy_default` Docker network.
+
+Cloudflare Workers, OpenNext, and Upstash have been removed. Do not introduce Cloudflare Workers, OpenNext, or Edge runtime abstractions back into this project.
+
+### 1. Database & Cache Infrastructure
+- **Database**: Embedded local SQLite via `better-sqlite3` located at `DATABASE_PATH` (`/app/data/cineby.db`). Runs under unprivileged user `nextjs` (UID: 1001, GID: 1000).
+- **Cache**: Native TCP Redis via `ioredis` on internal port `8492` (`cineby-redis`), with in-memory fallback.
+- **Port Security**: Internal application and database ports (`3487`, `8492`) must never be bound to `0.0.0.0` or exposed publicly to the host.
+
+### 2. Reverse Proxy & SSL
+- Incoming HTTPS traffic is terminated by the host Caddy reverse proxy using Cloudflare Origin CA certificates (`Full (Strict)` mode in Cloudflare).
+- The application container `cineby-web:3487` communicates directly with Caddy via internal Docker network `deploy_default`.
+
+### 3. Build & Secret Management
+- Secrets must not be baked into Docker image layers.
+- Production builds mount `.env.production` via Docker BuildKit secret mounts (`--mount=type=secret,id=env,target=/app/.env.production`).
+
