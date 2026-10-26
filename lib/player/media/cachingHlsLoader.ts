@@ -54,8 +54,8 @@ export function createCachingLoader(
         ...callbacks,
         onError: (error, ctx, networkDetails, stats) => {
           const status = error.code;
-          // HTTP 429 (Worker quota exhausted), 502, or 503
-          if (status === 429 || status === 502 || status === 503) {
+          // HTTP 429 (Worker quota exhausted), 502, 503, or 0 (CORS / network fail when Cloudflare blocks worker)
+          if (status === 429 || status === 502 || status === 503 || status === 0) {
             const fallbackUrl = getFallbackProxyUrl(ctx.url);
             if (fallbackUrl && fallbackUrl !== ctx.url) {
               ctx.url = fallbackUrl;
@@ -145,8 +145,8 @@ export function createCachingLoader(
         },
         onError: (error, ctx, networkDetails, stats) => {
           const status = error.code;
-          // HTTP 429 (Worker quota exhausted), 502, or 503
-          if (status === 429 || status === 502 || status === 503) {
+          // HTTP 429 (Worker quota exhausted), 502, 503, or 0 (CORS / network fail when Cloudflare blocks worker)
+          if (status === 429 || status === 502 || status === 503 || status === 0) {
             const fallbackUrl = getFallbackProxyUrl(ctx.url);
             if (fallbackUrl && fallbackUrl !== ctx.url) {
               ctx.url = fallbackUrl;
