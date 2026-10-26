@@ -437,6 +437,7 @@ export default {
     // Fetch upstream media safely with redirect validation
     let currentUrl = targetUrl.toString();
     let upstreamRes: Response | null = null;
+    const lowerTarget = rawTargetUrl.toLowerCase();
     let redirects = 0;
     const MAX_REDIRECTS = 3;
 
@@ -459,11 +460,13 @@ export default {
         });
       }
 
+      const isMedia = lowerTarget.includes(".ts") || lowerTarget.includes("/s/") || lowerTarget.includes(".m4s") || lowerTarget.includes(".mp4");
       upstreamRes = await fetch(currentUrl, {
         method: req.method,
         headers: upstreamHeaders,
         redirect: "manual",
-      });
+        ...(isMedia ? { cf: { cacheEverything: true, cacheTtl: 86400 } } : {}),
+      } as RequestInit);
 
       if (upstreamRes.status >= 300 && upstreamRes.status < 400) {
         const location = upstreamRes.headers.get("Location") || upstreamRes.headers.get("location");
@@ -666,7 +669,10 @@ export default {
       return new Response(text, { status: upstreamRes.status, headers: responseHeaders });
     }
 
-    // Stream chunks directly with sanitized Content-Type for media segments
+    // Edge cache & stream chunks directly with sanitized Content-Type for media segments
+    if (lowerTarget.includes(".ts") || lowerTarget.includes("/s/") || lowerTarget.includes(".m4s") || lowerTarget.includes(".mp4")) {
+      responseHeaders.set("Cache-Control", "public, max-age=86400, s-maxage=86400, immutable");
+    }
     const lowerUrl = rawTargetUrl.toLowerCase();
     if (lowerUrl.includes(".ts") || lowerUrl.includes("/s/")) {
       responseHeaders.set("Content-Type", "video/mp2t");
