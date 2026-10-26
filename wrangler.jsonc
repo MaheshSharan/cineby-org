@@ -58,7 +58,6 @@
 
     // 6. Cache & Database (production database is the D1 binding below)
     "CACHE_BACKEND": "redis",
-    "REDIS_URL": "",
     "UPSTASH_REDIS_REST_URL": "https://sought-cub-298860.upstash.io",
     "CACHE_MAX_ENTRIES": "5000",
 

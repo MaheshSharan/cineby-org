@@ -107,17 +107,12 @@ export function getCacheMaxEntries(): number {
   return parsePositiveInteger("CACHE_MAX_ENTRIES", readServerEnv("CACHE_MAX_ENTRIES"));
 }
 
-export function getUpstashRedisRestUrl(): string | undefined {
-  const raw = readServerEnv("UPSTASH_REDIS_REST_URL");
-  return raw ? parseUrl("UPSTASH_REDIS_REST_URL", raw) : undefined;
+export function getUpstashRedisRestUrl(): string {
+  return parseUrl("UPSTASH_REDIS_REST_URL", readServerEnv("UPSTASH_REDIS_REST_URL"));
 }
 
-export function getUpstashRedisRestToken(): string | undefined {
-  return readServerEnv("UPSTASH_REDIS_REST_TOKEN")?.trim() || undefined;
-}
-
-export function getRedisUrl(): string | undefined {
-  return readServerEnv("REDIS_URL")?.trim() || undefined;
+export function getUpstashRedisRestToken(): string {
+  return requireValue("UPSTASH_REDIS_REST_TOKEN", readServerEnv("UPSTASH_REDIS_REST_TOKEN"));
 }
 
 /** Local SQLite file. Production uses the D1 binding, so this is read only outside Cloudflare. */
