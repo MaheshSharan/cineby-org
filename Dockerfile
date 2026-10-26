@@ -15,9 +15,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Use .env.production if present, otherwise fallback to .env.example to satisfy Next.js build-time collection
+# Use .env.production if present, otherwise fallback to .env.production.example to satisfy Next.js build-time collection
 RUN if [ -f .env.production ]; then cp .env.production .env.local; \
-    elif [ -f .env.example ]; then cp .env.example .env.local; fi && \
+    elif [ -f .env.production.example ]; then cp .env.production.example .env.local; fi && \
     bunx next build
 
 # 3. Production runner
