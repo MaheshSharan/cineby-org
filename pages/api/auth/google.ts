@@ -9,8 +9,7 @@ import {
 import { hashPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/db/sessions";
 import { findDefaultProfileId } from "@/lib/db/profiles";
-import { getDb } from "@/lib/db/connection";
-import { createUser, findUserByEmail, findUserByIdentifier, toPublicUser } from "@/lib/db/users";
+import { createUser, findUserByEmail, toPublicUser } from "@/lib/db/users";
 import { allowAuthAttempt, authClientKey } from "@/lib/auth/rateLimit";
 import { withApiContext } from "@/lib/validation";
 import { getGoogleClientId } from "@/lib/env/public";
@@ -45,17 +44,6 @@ export default withApiContext(
 
     let isNewUser = false;
     let user = await findUserByEmail(tokenPayload.email);
-
-    // Edge case: if email was not matched, check if an existing account's identifier matches the email username
-    if (!user) {
-      const emailPrefix = tokenPayload.email.split("@")[0].toLowerCase();
-      const existingByIdentifier = await findUserByIdentifier(emailPrefix);
-      if (existingByIdentifier && (!existingByIdentifier.email.includes("@") || existingByIdentifier.email === emailPrefix)) {
-        // Link the real Google email to this existing user
-        await getDb().run("UPDATE users SET email = ? WHERE id = ?", [tokenPayload.email, existingByIdentifier.id]);
-        user = await findUserByEmail(tokenPayload.email);
-      }
-    }
 
     if (!user) {
       isNewUser = true;
