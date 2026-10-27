@@ -322,7 +322,8 @@ export default {
       return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
     }
 
-    const url = new URL(req.url);
+    try {
+      const url = new URL(req.url);
     const rawToken = url.searchParams.get("token") || "";
 
     const secret = (env.STREAM_PROXY_SECRET ?? "").trim();
@@ -409,8 +410,9 @@ export default {
     }
 
     const customHeaders = descriptor.headers || {};
-    const defaultReferer = targetUrl.origin + "/";
-    const defaultOrigin = targetUrl.origin;
+    const isBright67 = targetUrl.hostname.includes("bright67.online");
+    const defaultReferer = isBright67 ? "https://cinejoy.pk/" : targetUrl.origin + "/";
+    const defaultOrigin = isBright67 ? "https://cinejoy.pk" : targetUrl.origin;
 
     const activeHeaders: Record<string, string> = {
       "User-Agent": customHeaders["User-Agent"] || DEFAULT_UA,
@@ -699,5 +701,11 @@ export default {
       status: upstreamRes.status,
       headers: responseHeaders,
     });
+    } catch (err: unknown) {
+      return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Internal proxy error" }), {
+        status: 502,
+        headers: { "Content-Type": "application/json", ...Object.fromEntries(corsHeaders) },
+      });
+    }
   },
 };

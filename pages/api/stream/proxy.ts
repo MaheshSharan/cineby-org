@@ -131,8 +131,9 @@ export default withApiContext("api/stream/proxy", async (req: NextApiRequest, re
     return;
   }
 
-  const defaultReferer = targetUrl.origin + "/";
-  const defaultOrigin = targetUrl.origin;
+  const isBright67 = targetUrl.hostname.includes("bright67.online");
+  const defaultReferer = isBright67 ? "https://cinejoy.pk/" : targetUrl.origin + "/";
+  const defaultOrigin = isBright67 ? "https://cinejoy.pk" : targetUrl.origin;
 
   const activeHeaders: Record<string, string> = {
     "User-Agent": customHeaders["User-Agent"] || DEFAULT_UA,

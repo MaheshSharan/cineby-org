@@ -68,9 +68,13 @@ async function scrapeServer(serverName: string, req: StreamRequest, is4k = false
     const sources: StreamSource[] = [
       {
         url: primary.playlist,
-        direct: true,
+        direct: false,
         type: "hls",
         quality,
+        headers: {
+          Referer: "https://cinejoy.pk/",
+          Origin: "https://cinejoy.pk",
+        },
         provider: {
           id: `cinejoy-${serverName.toLowerCase()}`,
           name: `Cinejoy - ${serverName}`,
@@ -84,6 +88,10 @@ async function scrapeServer(serverName: string, req: StreamRequest, is4k = false
       lang: c.language || "und",
       label: c.language ? c.language.toUpperCase() : `Subtitle ${idx + 1}`,
       format: "vtt",
+      headers: {
+        Referer: "https://cinejoy.pk/",
+        Origin: "https://cinejoy.pk",
+      },
     }));
 
     return { sources, subtitles };
