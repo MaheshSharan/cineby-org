@@ -20,6 +20,19 @@ async function requestActiveProviders(): Promise<ActiveProvider[]> {
 }
 
 /**
+ * Prime active providers cache with SSR-baked data to eliminate the client-side
+ * /api/stream/providers network request entirely.
+ */
+export function seedActiveProviders(providers: ActiveProvider[]): void {
+  if (providers && providers.length > 0) {
+    cached = {
+      fetchedAt: Date.now(),
+      request: Promise.resolve(providers),
+    };
+  }
+}
+
+/**
  * The enabled providers rarely change, and the player needs them twice per playback (to build the
  * server list and to choose a fetcher), so share one request across callers for a few minutes.
  * Failures are not cached.

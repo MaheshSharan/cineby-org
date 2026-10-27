@@ -12,7 +12,7 @@ export interface VidyServerConfig {
 export const VIDY_SERVERS: VidyServerConfig[] = [
   {
     id: "miami",
-    name: "Vidy - Miami",
+    name: "Server 1 - Miami",
     endpoint: "miami/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
@@ -20,7 +20,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "boise",
-    name: "Vidy - Boise",
+    name: "Server 1 - Boise",
     endpoint: "boise/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
@@ -28,7 +28,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "atlanta",
-    name: "Vidy - Atlanta",
+    name: "Server 1 - Atlanta",
     endpoint: "atlanta/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
@@ -36,7 +36,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "seattle",
-    name: "Vidy - Seattle",
+    name: "Server 1 - Seattle",
     endpoint: "seattle/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
@@ -44,7 +44,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "denver",
-    name: "Vidy - Denver",
+    name: "Server 1 - Denver",
     endpoint: "denver/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
@@ -52,7 +52,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "phoenix",
-    name: "Vidy - Phoenix",
+    name: "Server 1 - Phoenix",
     endpoint: "phoenix/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
@@ -60,7 +60,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "portland",
-    name: "Vidy - Portland",
+    name: "Server 1 - Portland",
     endpoint: "portland/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
@@ -68,7 +68,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "austin",
-    name: "Vidy - Austin",
+    name: "Server 1 - Austin",
     endpoint: "austin/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
@@ -76,7 +76,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "dallas",
-    name: "Vidy - Dallas",
+    name: "Server 1 - Dallas",
     endpoint: "dallas/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
@@ -84,7 +84,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "tampa",
-    name: "Vidy - Tampa",
+    name: "Server 1 - Tampa",
     endpoint: "tampa/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
@@ -92,7 +92,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "orlando",
-    name: "Vidy - Orlando",
+    name: "Server 1 - Orlando",
     endpoint: "orlando/sources",
     audioLanguage: "en",
     audioLabel: "English (Original)",
@@ -100,7 +100,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "munich",
-    name: "Vidy - Munich",
+    name: "Server 1 - Munich",
     endpoint: "munich/sources",
     audioLanguage: "de",
     audioLabel: "German (Deutsch)",
@@ -109,7 +109,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "berlin",
-    name: "Vidy - Berlin",
+    name: "Server 1 - Berlin",
     endpoint: "berlin/sources",
     audioLanguage: "de",
     audioLabel: "German (Deutsch)",
@@ -118,7 +118,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "paris",
-    name: "Vidy - Paris",
+    name: "Server 1 - Paris",
     endpoint: "paris/sources",
     audioLanguage: "fr",
     audioLabel: "French (Français)",
@@ -126,7 +126,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "delhi",
-    name: "Vidy - Delhi",
+    name: "Server 1 - Delhi",
     endpoint: "delhi/sources",
     audioLanguage: "hi",
     audioLabel: "Hindi (हिंदी)",
@@ -134,7 +134,7 @@ export const VIDY_SERVERS: VidyServerConfig[] = [
   },
   {
     id: "cancun",
-    name: "Vidy - Cancun",
+    name: "Server 1 - Cancun",
     endpoint: "cancun/sources",
     audioLanguage: "es",
     audioLabel: "Spanish (Español)",

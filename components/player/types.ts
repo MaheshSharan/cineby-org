@@ -1,4 +1,5 @@
 import type { SeasonEpisodes } from "@/lib/tmdb";
+import type { ActiveProvider } from "./providers/activeProviders";
 
 export type MediaType = "movie" | "tv";
 
@@ -81,6 +82,7 @@ export interface PlayerMedia {
   seasons?: PlayerSeason[];
   segments?: MediaSegment[];
   initialEpisodes?: SeasonEpisodes | null;
+  activeProviders?: ActiveProvider[];
 }
 
 export interface PlayerSeason {
