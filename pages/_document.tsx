@@ -40,6 +40,10 @@ export default function Document() {
         ))}
         <meta name="google-adsense-account" content="ca-pub-8925754855638542" />
         <meta name="6a97888e-site-verification" content="a09985be3717c4b44c4f8b2f6614be2c" />
+        <meta
+          httpEquiv="Delegate-CH"
+          content="Sec-CH-UA https://s.magsrv.com; Sec-CH-UA-Mobile https://s.magsrv.com; Sec-CH-UA-Arch https://s.magsrv.com; Sec-CH-UA-Model https://s.magsrv.com; Sec-CH-UA-Platform https://s.magsrv.com; Sec-CH-UA-Platform-Version https://s.magsrv.com; Sec-CH-UA-Bitness https://s.magsrv.com; Sec-CH-UA-Full-Version-List https://s.magsrv.com; Sec-CH-UA-Full-Version https://s.magsrv.com;"
+        />
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8925754855638542"
