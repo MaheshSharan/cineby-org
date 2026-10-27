@@ -185,10 +185,6 @@ export function useImaAds({
     }
 
     function handleEvent(event: AdControllerEvent): void {
-      if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("adDebug") === "1") {
-        console.log(`[AdDebug] Controller event: ${event.type}`, event);
-      }
-
       if (isCancelled) {
         return;
       }
@@ -236,10 +232,6 @@ export function useImaAds({
     async function preload(): Promise<void> {
       const sdkStartedAt = performance.now();
       let ima: ImaSdk;
-
-      if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("adDebug") === "1") {
-        console.log(`[AdDebug] Preloading ad before cue (${Math.round(cueSec)}s). Lead: ${AD_REQUEST_LEAD_SEC}s, Current: ${Math.round(currentTimeSec)}s`);
-      }
 
       setPhase("requesting");
 
