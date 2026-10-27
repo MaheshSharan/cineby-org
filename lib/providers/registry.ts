@@ -194,7 +194,14 @@ export async function raceProviders(
   }
 
   try {
-    const sorted = [...providers].sort((a, b) => a.priority - b.priority);
+    // Group providers by priority tier. Providers in the top tier (e.g. Vidy and Cinejoy at priority 10)
+    // are rotated per request for optimal bandwidth conservation and load balancing.
+    const sorted = [...providers].sort((a, b) => {
+      if (a.priority !== b.priority) {
+        return a.priority - b.priority;
+      }
+      return Math.random() - 0.5;
+    });
     const primary = sorted[0];
     const fallbacks = sorted.slice(1);
 

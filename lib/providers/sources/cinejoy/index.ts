@@ -15,7 +15,7 @@ import { selectM3u8FetcherUrl } from "../../m3u8PoolStore";
 
 const PROVIDER_ID = "cinejoy";
 const PROVIDER_NAME = "Server 3";
-const PROVIDER_PRIORITY = 5;
+const PROVIDER_PRIORITY = 10;
 
 /**
  * Normalizes Cinejoy child server identifier to the exact name expected by api.wing.st.
