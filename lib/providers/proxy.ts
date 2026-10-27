@@ -34,7 +34,8 @@ export function buildStreamProxyUrl(
   if (
     targetUrl.startsWith(cleanBase) ||
     targetUrl.startsWith("blob:") ||
-    targetUrl.startsWith("data:")
+    targetUrl.startsWith("data:") ||
+    targetUrl.includes("vercel.app")
   ) {
     return targetUrl;
   }

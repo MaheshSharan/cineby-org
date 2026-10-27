@@ -32,6 +32,7 @@ function cleanId(id: string): string {
 function isServerActive(serverId: string, activeId: string, defaultFallbackId?: string): boolean {
   if (serverId === activeId) return true;
   if (activeId === "default" && defaultFallbackId && serverId === defaultFallbackId) return true;
+  if ((activeId === "default" || activeId === "cinejoy") && serverId.startsWith("cinejoy-nebula")) return true;
   const cActive = cleanId(activeId);
   const cServer = cleanId(serverId);
   if (cActive.length > 0 && cActive === cServer) {

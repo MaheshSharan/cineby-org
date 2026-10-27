@@ -740,7 +740,7 @@ export function PlayerContainer({
                     onQualityChange={handleQualityChange}
                     serverGroups={filteredServerGroups}
                     servers={serverOptions}
-                    activeServerId={activeServerId}
+                    activeServerId={stream.source?.id || activeServerId}
                     pendingServerId={pendingServerId}
                     failedServerIds={failedServerIds}
                     onServerChange={handleServerChange}

@@ -285,6 +285,20 @@ export default withApiContext(
     Origin: explicitOrigin || fallbackOrigin,
   };
 
+  const isCinejoy =
+    proxyHeaders.Origin === "https://cinejoy.pk" ||
+    explicitOrigin === "https://cinejoy.pk" ||
+    Boolean(explicitReferer && explicitReferer.includes("cinejoy.pk")) ||
+    Boolean(baseUrl && baseUrl.includes("bright67.online")) ||
+    Boolean(targetUrl && targetUrl.includes("bright67.online"));
+
+  const buildCinejoyVercelUrl = (absUrl: string): string => {
+    const fetcher = getM3u8FetcherUrl();
+    const origin = proxyHeaders.Origin || "https://cinejoy.pk";
+    const referer = proxyHeaders.Referer || "https://cinejoy.pk/";
+    return `${fetcher}?url=${encodeURIComponent(absUrl)}&origin=${encodeURIComponent(origin)}&referer=${encodeURIComponent(referer)}`;
+  };
+
   // Sub-playlists are signed too, so the Network tab never shows the upstream URL.
   const buildPlaylistUrl = (playlistUrl: string): string =>
     `/api/stream/m3u8?token=${createProxyDescriptor(playlistUrl, proxyHeaders, clientIp, sid, clientPublicKey)}`;
@@ -309,7 +323,9 @@ export default withApiContext(
         const uri = match[1];
         const abs = resolveUrl(uri);
         if (!isPrivateHost(abs)) {
-          const proxyUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey));
+          const proxyUrl = isCinejoy
+            ? buildCinejoyVercelUrl(abs)
+            : toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey));
           rewritten.push(t.replace(/URI="[^"]+"/, `URI="${proxyUrl}"`));
         } else {
           rewritten.push(line);
@@ -327,7 +343,9 @@ export default withApiContext(
         const uri = match[1];
         const abs = resolveUrl(uri);
         if (!isPrivateHost(abs)) {
-          const mapUrl = toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey));
+          const mapUrl = isCinejoy
+            ? buildCinejoyVercelUrl(abs)
+            : toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey));
           rewritten.push(t.replace(/URI="[^"]+"/, `URI="${mapUrl}"`));
         } else {
           rewritten.push(line);
@@ -343,9 +361,11 @@ export default withApiContext(
         const uri = match[1];
         const abs = resolveUrl(uri);
         if (!isPrivateHost(abs)) {
-          const isMediaPlaylist = abs.includes(".m3u8");
+          const isMediaPlaylist = abs.includes(".m3u8") || abs.includes("playlist.jpg");
           const replacementUrl = isMediaPlaylist
             ? toAbsolute(buildPlaylistUrl(abs))
+            : isCinejoy
+            ? buildCinejoyVercelUrl(abs)
             : toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey));
           rewritten.push(t.replace(/URI="[^"]+"/, `URI="${replacementUrl}"`));
         } else {
@@ -407,7 +427,11 @@ export default withApiContext(
       }
     } else {
       if (!isPrivateHost(abs)) {
-        rewritten.push(toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey, activeWorkerPool)));
+        rewritten.push(
+          isCinejoy
+            ? buildCinejoyVercelUrl(abs)
+            : toAbsolute(buildStreamProxyUrl(abs, proxyHeaders, clientIp, sid, clientPublicKey, activeWorkerPool))
+        );
       } else {
         rewritten.push(line);
       }

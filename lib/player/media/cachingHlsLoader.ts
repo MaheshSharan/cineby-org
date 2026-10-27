@@ -68,9 +68,21 @@ export function createCachingLoader(
           if (status === 429 || status === 502 || status === 503 || status === 0) {
             const fallbackUrl = getFallbackProxyUrl(ctx.url);
             if (fallbackUrl && fallbackUrl !== ctx.url) {
-              ctx.url = fallbackUrl;
               this.defaultLoader.destroy();
               this.defaultLoader = new Hls.DefaultConfig.loader(this.hlsConfig);
+              if (fallbackUrl.includes("token=")) {
+                void signSegmentUrl(fallbackUrl)
+                  .then((signedFallback) => {
+                    ctx.url = signedFallback;
+                    this.defaultLoader.load(ctx, config, resilientCallbacks);
+                  })
+                  .catch(() => {
+                    ctx.url = fallbackUrl;
+                    this.defaultLoader.load(ctx, config, resilientCallbacks);
+                  });
+                return;
+              }
+              ctx.url = fallbackUrl;
               this.defaultLoader.load(ctx, config, resilientCallbacks);
               return;
             }
@@ -160,9 +172,21 @@ export function createCachingLoader(
           if (status === 429 || status === 502 || status === 503 || status === 0) {
             const fallbackUrl = getFallbackProxyUrl(ctx.url);
             if (fallbackUrl && fallbackUrl !== ctx.url) {
-              ctx.url = fallbackUrl;
               this.defaultLoader.destroy();
               this.defaultLoader = new Hls.DefaultConfig.loader(this.hlsConfig);
+              if (fallbackUrl.includes("token=")) {
+                void signSegmentUrl(fallbackUrl)
+                  .then((signedFallback) => {
+                    ctx.url = signedFallback;
+                    this.defaultLoader.load(ctx, config, wrappedCallbacks);
+                  })
+                  .catch(() => {
+                    ctx.url = fallbackUrl;
+                    this.defaultLoader.load(ctx, config, wrappedCallbacks);
+                  });
+                return;
+              }
+              ctx.url = fallbackUrl;
               this.defaultLoader.load(ctx, config, wrappedCallbacks);
               return;
             }

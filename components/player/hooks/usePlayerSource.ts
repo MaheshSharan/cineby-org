@@ -178,6 +178,11 @@ export function usePlayerSource({
         setAvailableSources(result.sources);
       }
 
+      if (source?.id) {
+        setActiveServerId(source.id);
+        lastWorkingServerIdRef.current = source.id;
+      }
+
       setStream({ source, isError: false });
     },
     [currentEpisode, currentMediaKey, currentSeason, isTv, media.mediaId, media.mediaType, triggerServerFailure, videoRef]
