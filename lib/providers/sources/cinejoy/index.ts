@@ -64,12 +64,6 @@ async function scrapeServer(serverName: string, req: StreamRequest, is4k = false
       return { sources: [], subtitles: [] };
     }
 
-    const playable = await isStreamPlayable(primary.playlist, req.signal);
-    if (!playable) {
-      logger.warn(`[cinejoy:${serverName}] Stream probe failed or returned non-2xx status`);
-      return { sources: [], subtitles: [] };
-    }
-
     const quality: Quality = is4k ? "2160p" : "1080p";
     const sources: StreamSource[] = [
       {
@@ -90,10 +84,6 @@ async function scrapeServer(serverName: string, req: StreamRequest, is4k = false
       lang: c.language || "und",
       label: c.language ? c.language.toUpperCase() : `Subtitle ${idx + 1}`,
       format: "vtt",
-      headers: {
-        Referer: "https://cinejoy.pk/",
-        Origin: "https://cinejoy.pk",
-      },
     }));
 
     return { sources, subtitles };

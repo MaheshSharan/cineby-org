@@ -23,10 +23,12 @@ export function createCachingLoader(
 ): typeof Hls.DefaultConfig.loader {
   return class CachingHlsLoader implements Loader<LoaderContext> {
     private defaultLoader: Loader<LoaderContext>;
+    private hlsConfig: HlsConfig;
     public context: LoaderContext | null = null;
     public stats: LoaderStats;
 
     constructor(config: HlsConfig) {
+      this.hlsConfig = config;
       this.defaultLoader = new Hls.DefaultConfig.loader(config);
       this.stats = this.defaultLoader.stats;
     }
@@ -67,7 +69,8 @@ export function createCachingLoader(
             const fallbackUrl = getFallbackProxyUrl(ctx.url);
             if (fallbackUrl && fallbackUrl !== ctx.url) {
               ctx.url = fallbackUrl;
-              // Retry immediately against alternative healthy worker or VPS proxy
+              this.defaultLoader.destroy();
+              this.defaultLoader = new Hls.DefaultConfig.loader(this.hlsConfig);
               this.defaultLoader.load(ctx, config, resilientCallbacks);
               return;
             }
@@ -158,7 +161,8 @@ export function createCachingLoader(
             const fallbackUrl = getFallbackProxyUrl(ctx.url);
             if (fallbackUrl && fallbackUrl !== ctx.url) {
               ctx.url = fallbackUrl;
-              // Retry immediately against alternative healthy worker or VPS proxy
+              this.defaultLoader.destroy();
+              this.defaultLoader = new Hls.DefaultConfig.loader(this.hlsConfig);
               this.defaultLoader.load(ctx, config, wrappedCallbacks);
               return;
             }
