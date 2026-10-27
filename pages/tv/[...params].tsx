@@ -1,7 +1,7 @@
 import type { GetServerSideProps } from "next";
 
-import type { TvDetails } from "@/lib/tmdb";
-import { getTvDetails, isTmdbNotFoundError } from "@/lib/tmdb/server";
+import type { SeasonEpisodes, TvDetails } from "@/lib/tmdb";
+import { getSeasonEpisodes, getTvDetails, isTmdbNotFoundError } from "@/lib/tmdb/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { listHistory } from "@/lib/db/history";
 import { logger } from "@/lib/logger";
@@ -12,6 +12,7 @@ import {
 } from "@/lib/seo/media";
 import { getMediaHref } from "@/lib/utils/media";
 import { extractIdFromSlug } from "@/lib/utils/slug";
+import { fetchTrailerUrlServer } from "@/lib/services/trailer.server";
 
 import { DetailPage } from "@/components/detail/DetailPage";
 import { PageSeo } from "@/components/seo/PageSeo";
@@ -21,11 +22,20 @@ interface TvPageProps {
   isPlaying: boolean;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
+  initialEpisodes?: SeasonEpisodes | null;
+  initialTrailerUrl?: string | null;
 }
 
 import { buildBreadcrumbJsonLd, buildTvSeriesJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 
-export default function TvPage({ details, isPlaying, seasonNumber, episodeNumber }: TvPageProps) {
+export default function TvPage({
+  details,
+  isPlaying,
+  seasonNumber,
+  episodeNumber,
+  initialEpisodes,
+  initialTrailerUrl,
+}: TvPageProps) {
   const schemas = [
     buildBreadcrumbJsonLd("tv", details.title, details.id),
     buildTvSeriesJsonLd(details),
@@ -49,6 +59,8 @@ export default function TvPage({ details, isPlaying, seasonNumber, episodeNumber
         isPlaying={isPlaying}
         seasonNumber={seasonNumber}
         episodeNumber={episodeNumber}
+        initialEpisodes={initialEpisodes}
+        initialTrailerUrl={initialTrailerUrl}
       />
     </>
   );
@@ -93,12 +105,22 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
       effectiveEpisode = effectiveEpisode ?? 1;
     }
 
+    const targetSeason =
+      effectiveSeason ?? details.seasons.find((s) => s.seasonNumber > 0)?.seasonNumber ?? 1;
+
+    const [initialEpisodes, initialTrailerUrl] = await Promise.all([
+      getSeasonEpisodes(details.id, targetSeason).catch(() => null),
+      details.imdbId ? fetchTrailerUrlServer(details.imdbId).catch(() => null) : Promise.resolve(null),
+    ]);
+
     return {
       props: {
         details,
         isPlaying,
         seasonNumber: effectiveSeason,
         episodeNumber: effectiveEpisode,
+        initialEpisodes,
+        initialTrailerUrl,
       },
     };
   } catch (error) {

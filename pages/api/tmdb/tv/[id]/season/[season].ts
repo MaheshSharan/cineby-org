@@ -2,6 +2,9 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getSeasonEpisodes } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 
+const ONE_HOUR_SECONDS = 3600;
+const ONE_DAY_SECONDS = 86400;
+
 export default withApiContext("api/tmdb/tv/[id]/season/[season]", async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
@@ -18,6 +21,7 @@ export default withApiContext("api/tmdb/tv/[id]/season/[season]", async (req: Ne
   }
 
   const result = await getSeasonEpisodes(id, seasonNumber);
+  res.setHeader("Cache-Control", `public, s-maxage=${ONE_HOUR_SECONDS}, stale-while-revalidate=${ONE_DAY_SECONDS}`);
   res.status(200).json(result);
 });
 

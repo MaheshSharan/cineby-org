@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Episode, PlayerSeason } from "../types";
+import type { SeasonEpisodes } from "@/lib/tmdb";
 import { getSeasonEpisodes } from "@/lib/api/episodes";
 
 interface UsePlayerEpisodesParams {
@@ -8,6 +9,7 @@ interface UsePlayerEpisodesParams {
   seasons: PlayerSeason[];
   initialSeason?: number;
   initialEpisode?: number;
+  initialEpisodes?: SeasonEpisodes | null;
   onNavigateEpisode?: (seasonNumber: number, episodeNumber: number) => void;
 }
 
@@ -17,12 +19,18 @@ export function usePlayerEpisodes({
   seasons,
   initialSeason = 1,
   initialEpisode = 1,
+  initialEpisodes,
   onNavigateEpisode,
 }: UsePlayerEpisodesParams) {
   const [currentSeason, setCurrentSeason] = useState<number>(initialSeason);
   const [currentEpisode, setCurrentEpisode] = useState<number>(initialEpisode);
   const [drawerSeason, setDrawerSeason] = useState<number>(initialSeason);
-  const [episodesBySeason, setEpisodesBySeason] = useState<Record<number, Episode[]>>({});
+  const [episodesBySeason, setEpisodesBySeason] = useState<Record<number, Episode[]>>(() => {
+    if (initialEpisodes && initialEpisodes.episodes.length > 0) {
+      return { [initialEpisodes.seasonNumber]: initialEpisodes.episodes };
+    }
+    return {};
+  });
   const [isEpisodesLoading, setIsEpisodesLoading] = useState(false);
 
   const activeSeasonInfo = useMemo(

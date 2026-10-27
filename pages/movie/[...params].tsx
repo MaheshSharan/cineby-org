@@ -10,6 +10,7 @@ import type { MovieDetails } from "@/lib/tmdb";
 import { getMovieDetails, isTmdbNotFoundError } from "@/lib/tmdb/server";
 import { getMediaHref } from "@/lib/utils/media";
 import { extractIdFromSlug } from "@/lib/utils/slug";
+import { fetchTrailerUrlServer } from "@/lib/services/trailer.server";
 
 import { DetailPage } from "@/components/detail/DetailPage";
 import { PageSeo } from "@/components/seo/PageSeo";
@@ -17,11 +18,12 @@ import { PageSeo } from "@/components/seo/PageSeo";
 interface MoviePageProps {
   details: MovieDetails;
   isPlaying: boolean;
+  initialTrailerUrl?: string | null;
 }
 
 import { buildBreadcrumbJsonLd, buildMovieJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 
-export default function MoviePage({ details, isPlaying }: MoviePageProps) {
+export default function MoviePage({ details, isPlaying, initialTrailerUrl }: MoviePageProps) {
   const schemas = [
     buildBreadcrumbJsonLd("movie", details.title, details.id),
     buildMovieJsonLd(details),
@@ -40,7 +42,7 @@ export default function MoviePage({ details, isPlaying }: MoviePageProps) {
         openGraphType="video.movie"
         jsonLd={sanitizeJsonLd(schemas)}
       />
-      <DetailPage details={details} isPlaying={isPlaying} />
+      <DetailPage details={details} isPlaying={isPlaying} initialTrailerUrl={initialTrailerUrl} />
     </>
   );
 }
@@ -55,11 +57,15 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (con
 
   try {
     const details = await getMovieDetails(id);
+    const initialTrailerUrl = details.imdbId
+      ? await fetchTrailerUrlServer(details.imdbId).catch(() => null)
+      : null;
 
     return {
       props: {
         details,
         isPlaying: context.query.play === "true",
+        initialTrailerUrl,
       },
     };
   } catch (error) {

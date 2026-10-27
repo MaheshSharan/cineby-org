@@ -1,3 +1,5 @@
+import type { SeasonEpisodes } from "@/lib/tmdb";
+
 export type MediaType = "movie" | "tv";
 
 export type ServerKind = "default" | "test" | "bunny";
@@ -78,6 +80,7 @@ export interface PlayerMedia {
   progress?: number | null;
   seasons?: PlayerSeason[];
   segments?: MediaSegment[];
+  initialEpisodes?: SeasonEpisodes | null;
 }
 
 export interface PlayerSeason {
