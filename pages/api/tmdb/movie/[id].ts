@@ -2,6 +2,9 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getMovieDetails } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 
+const ONE_DAY_SECONDS = 86400;
+const TWELVE_HOURS_SECONDS = 43200;
+
 export default withApiContext("api/tmdb/movie/[id]", async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
@@ -17,5 +20,9 @@ export default withApiContext("api/tmdb/movie/[id]", async (req: NextApiRequest,
   }
 
   const result = await getMovieDetails(id);
+  res.setHeader(
+    "Cache-Control",
+    `public, s-maxage=${ONE_DAY_SECONDS}, stale-while-revalidate=${TWELVE_HOURS_SECONDS}`
+  );
   res.status(200).json(result);
 });
