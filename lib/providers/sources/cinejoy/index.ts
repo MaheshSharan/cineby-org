@@ -10,6 +10,8 @@ import type {
 import { getActiveCinejoyServers } from "./servers";
 import { resolveWingStream } from "./resolver";
 import { encryptStreamToken } from "./token";
+import { getM3u8FetcherUrlPool } from "@/lib/env/server";
+import { selectM3u8FetcherUrl } from "../../m3u8PoolStore";
 
 const PROVIDER_ID = "cinejoy";
 const PROVIDER_NAME = "Server 3";
@@ -59,9 +61,12 @@ async function scrapeServer(serverName: string, req: StreamRequest, is4k = false
       },
     ];
 
+    const candidatePool = getM3u8FetcherUrlPool();
+    const fetcherUrl = await selectM3u8FetcherUrl(candidatePool);
+
     const subtitles: SubtitleTrack[] = (primary.captions ?? []).map((c, idx) => ({
       id: `cinejoy-sub-${idx}`,
-      url: `https://proxym3u8-tau.vercel.app/api/m3u8?token=${encodeURIComponent(encryptStreamToken(c.url))}`,
+      url: `${fetcherUrl}?token=${encodeURIComponent(encryptStreamToken(c.url))}`,
       lang: c.language || "und",
       label: c.language ? c.language.toUpperCase() : `Subtitle ${idx + 1}`,
       format: "vtt",

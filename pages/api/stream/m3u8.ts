@@ -25,8 +25,9 @@ import { isEcP256Jwk } from "@/lib/security/tabCrypto";
  *
  * The client creates a Blob URL from the response and passes it to HLS.js.
  */
-import { getM3u8FetcherUrl, getStreamProxyUrlPool } from "@/lib/env/server";
+import { getM3u8FetcherUrl, getM3u8FetcherUrlPool, getStreamProxySecret, getStreamProxyUrlPool } from "@/lib/env/server";
 import { getActiveWorkerPool } from "@/lib/providers/workerPoolStore";
+import { getActiveM3u8FetcherPool, markM3u8FetcherExhausted } from "@/lib/providers/m3u8PoolStore";
 import { encryptStreamToken } from "@/lib/providers/sources/cinejoy/token";
 
 function extractClientIp(req: NextApiRequest): string {
@@ -129,6 +130,9 @@ export default withApiContext(
   let m3u8Text: string | null = null;
   let baseUrl: string | null = null;
 
+  const rawFetcherPool = getM3u8FetcherUrlPool();
+  const activeFetcherPool = await getActiveM3u8FetcherPool(rawFetcherPool);
+
   if (targetUrl) {
     let parsedTargetUrl: URL;
     try {
@@ -149,8 +153,7 @@ export default withApiContext(
     }
 
     baseUrl = targetUrl;
-    // Primary fetch via external M3U8 helper (Vercel) with VPS direct fallback
-    const fetcherBase = getM3u8FetcherUrl();
+    // Primary fetch via external M3U8 helper pool (Vercel) with VPS direct fallback
     const explicitReferer = headers.Referer || headers.referer || refererQuery;
     const explicitOrigin = headers.Origin || headers.origin || originQuery;
     const targetOrigin = parsedTargetUrl ? parsedTargetUrl.origin : "";
@@ -165,21 +168,35 @@ export default withApiContext(
 
     let fetchSuccess = false;
 
-    // 1. Try external M3U8 fetcher (Vercel)
-    try {
-      const upstream = await fetch(`${fetcherBase}?${params.toString()}`, {
-        headers: { Accept: "*/*" },
-      });
+    const originSecret = getStreamProxySecret();
 
-      if (upstream.ok) {
-        const text = await upstream.text();
-        if (text.trimStart().startsWith("#EXTM3U") || text.trimStart().startsWith("#EXT-X-")) {
-          m3u8Text = text;
-          fetchSuccess = true;
+    // 1. Try external M3U8 fetchers from the pool
+    for (const fetcherBase of activeFetcherPool) {
+      try {
+        const upstream = await fetch(`${fetcherBase}?${params.toString()}`, {
+          headers: {
+            Accept: "*/*",
+            "x-cineby-origin-secret": originSecret,
+          },
+        });
+
+        if (upstream.status === 402 || upstream.status === 429) {
+          // Mark this fetcher exhausted so subsequent calls skip it immediately
+          void markM3u8FetcherExhausted(fetcherBase);
+          continue;
         }
+
+        if (upstream.ok) {
+          const text = await upstream.text();
+          if (text.trimStart().startsWith("#EXTM3U") || text.trimStart().startsWith("#EXT-X-")) {
+            m3u8Text = text;
+            fetchSuccess = true;
+            break;
+          }
+        }
+      } catch {
+        // Current fetcher failed, try next one in pool
       }
-    } catch {
-      // Vercel helper failed, proceed to direct fallback
     }
 
     // 2. Fallback: if Vercel fails, attempt direct fetch from VPS
@@ -297,8 +314,9 @@ export default withApiContext(
     Boolean(baseUrl && baseUrl.includes("cursed.st")) ||
     Boolean(targetUrl && targetUrl.includes("cursed.st"));
 
+  let fetcherIndex = 0;
   const buildCinejoyVercelUrl = (absUrl: string): string => {
-    const fetcher = getM3u8FetcherUrl();
+    const fetcher = activeFetcherPool[fetcherIndex++ % activeFetcherPool.length] || getM3u8FetcherUrl();
     const origin = proxyHeaders.Origin || "https://cinejoy.pk";
     const referer = proxyHeaders.Referer || "https://cinejoy.pk/";
     const token = encryptStreamToken(absUrl, origin, referer);

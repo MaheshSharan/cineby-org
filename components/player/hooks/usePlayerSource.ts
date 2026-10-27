@@ -107,11 +107,20 @@ export function usePlayerSource({
 
       setPendingServerId(null);
 
-      // Revert automatically to the last healthy fallback server
+      // Revert automatically to the last healthy fallback server, or pick the first available provider that didn't fail
       if (fallbackServerId && fallbackServerId !== failedServerId) {
         void loadStreamRef.current(fallbackServerId, { forcedTime: fallbackTime, isFallback: true });
       } else {
-        setStream({ source: null, isError: true });
+        // Find next available healthy server group
+        const alternativeGroup = SERVER_GROUPS.find(
+          (g) => g.id !== failedServerId && !failedServerId.startsWith(`${g.id}-`)
+        );
+        if (alternativeGroup) {
+          const nextTarget = alternativeGroup.children[0]?.id || alternativeGroup.id;
+          void loadStreamRef.current(nextTarget, { forcedTime: fallbackTime, isFallback: true });
+        } else {
+          setStream({ source: null, isError: true });
+        }
       }
     },
     []

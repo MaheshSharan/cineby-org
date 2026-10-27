@@ -61,6 +61,17 @@ export function getM3u8FetcherUrl(): string {
   return parseUrl("M3U8_FETCHER_URL", readServerEnv("M3U8_FETCHER_URL"));
 }
 
+export function getM3u8FetcherUrlPool(): string[] {
+  const rawPool = readServerEnv("M3U8_FETCHER_URL_POOL");
+  if (rawPool && rawPool.trim()) {
+    const urls = parseList("M3U8_FETCHER_URL_POOL", rawPool)
+      .map((u) => u.trim())
+      .filter(Boolean);
+    if (urls.length > 0) return urls;
+  }
+  return [getM3u8FetcherUrl()];
+}
+
 // Provider switches
 
 /** Reads ENABLE_{PROVIDER_ID}, e.g. ENABLE_CINEZO. Every registered provider needs its own flag. */
