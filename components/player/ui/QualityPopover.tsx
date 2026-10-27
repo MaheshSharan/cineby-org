@@ -26,7 +26,7 @@ const QUALITY_OPTIONS: { value: QualityLabel | null; label: string; badge?: stri
 ];
 
 function cleanId(id: string): string {
-  return id.replace(/^(vidy|cinezo|vixsrc)-/, "");
+  return id.replace(/^(vidy|cinejoy|cinezo|vixsrc)-/, "");
 }
 
 function isServerActive(serverId: string, activeId: string, defaultFallbackId?: string): boolean {
@@ -35,8 +35,8 @@ function isServerActive(serverId: string, activeId: string, defaultFallbackId?: 
   const cActive = cleanId(activeId);
   const cServer = cleanId(serverId);
   if (cActive.length > 0 && cActive === cServer) {
-    const activeHasPrefix = /^(vidy|cinezo|vixsrc)-/.test(activeId);
-    const serverHasPrefix = /^(vidy|cinezo|vixsrc)-/.test(serverId);
+    const activeHasPrefix = /^(vidy|cinejoy|cinezo|vixsrc)-/.test(activeId);
+    const serverHasPrefix = /^(vidy|cinejoy|cinezo|vixsrc)-/.test(serverId);
     if (activeHasPrefix && serverHasPrefix) return serverId === activeId;
     return true;
   }
@@ -49,8 +49,8 @@ function isServerPending(serverId: string, pendingId?: string | null): boolean {
   const cPending = cleanId(pendingId);
   const cServer = cleanId(serverId);
   if (cPending.length > 0 && cPending === cServer) {
-    const pendingHasPrefix = /^(vidy|cinezo|vixsrc)-/.test(pendingId);
-    const serverHasPrefix = /^(vidy|cinezo|vixsrc)-/.test(serverId);
+    const pendingHasPrefix = /^(vidy|cinejoy|cinezo|vixsrc)-/.test(pendingId);
+    const serverHasPrefix = /^(vidy|cinejoy|cinezo|vixsrc)-/.test(serverId);
     if (pendingHasPrefix && serverHasPrefix) return serverId === pendingId;
     return true;
   }

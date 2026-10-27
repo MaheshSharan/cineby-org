@@ -91,6 +91,7 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
   { name: "NEXT_PUBLIC_TRAILER_API_URL", category: "streaming", scope: "public", kind: "url" },
 
   // 4. Provider Switches
+  { name: "ENABLE_CINEJOY", category: "providers", scope: "server", kind: "flag" },
   { name: "ENABLE_CINEZO", category: "providers", scope: "server", kind: "flag" },
   { name: "ENABLE_VIDY", category: "providers", scope: "server", kind: "flag" },
   { name: "ENABLE_VIXSRC", category: "providers", scope: "server", kind: "flag" },

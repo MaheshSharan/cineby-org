@@ -21,6 +21,7 @@ Object.assign(process.env, {
   STREAM_PROXY_SECRET: "test-stream-proxy-secret",
   M3U8_FETCHER_URL: "https://m3u8.test/fetch",
   NEXT_PUBLIC_TRAILER_API_URL: "https://trailers.test/getOldestTrailer",
+  ENABLE_CINEJOY: "true",
   ENABLE_CINEZO: "true",
   ENABLE_VIDY: "true",
   ENABLE_VIXSRC: "false",

@@ -21,6 +21,10 @@ function toQualityLabel(quality?: Quality | string): QualityLabel | null {
   }
 }
 
+function isCinejoyServer(serverId: string): boolean {
+  return serverId === "cinejoy" || serverId.startsWith("cinejoy-");
+}
+
 function isCinezoServer(serverId: string): boolean {
   return serverId === "cinezo" || serverId.startsWith("cinezo-");
 }
@@ -153,6 +157,21 @@ async function buildFetchResponse(
         signal: request.signal,
       });
     }
+  }
+
+  if (isCinejoyServer(serverId)) {
+    return fetch("/api/stream/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getSidHeaders() },
+      body: JSON.stringify({
+        tmdbId: request.mediaId,
+        type: request.mediaType,
+        season: request.seasonNumber,
+        episode: request.episodeNumber,
+        server: serverId,
+      }),
+      signal: request.signal,
+    });
   }
 
   if (isCinezoServer(serverId)) {
