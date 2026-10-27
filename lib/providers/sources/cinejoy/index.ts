@@ -74,13 +74,9 @@ async function scrapeServer(serverName: string, req: StreamRequest, is4k = false
     const sources: StreamSource[] = [
       {
         url: primary.playlist,
-        direct: false,
+        direct: true,
         type: "hls",
         quality,
-        headers: {
-          Referer: "https://cinejoy.pk/",
-          Origin: "https://cinejoy.pk",
-        },
         provider: {
           id: `cinejoy-${serverName.toLowerCase()}`,
           name: `Cinejoy - ${serverName}`,

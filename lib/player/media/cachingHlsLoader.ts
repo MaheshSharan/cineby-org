@@ -47,6 +47,14 @@ export function createCachingLoader(
     ): void {
       this.context = context;
 
+      if (context.url.includes("bright67.online")) {
+        if (context.url.includes("master.m3u8") || context.url.includes("playlist.jpg")) {
+          context.responseType = "text";
+        } else {
+          context.responseType = "arraybuffer";
+        }
+      }
+
       // Learn live worker domains as URLs stream in
       registerWorkerOrigin(context.url);
 
