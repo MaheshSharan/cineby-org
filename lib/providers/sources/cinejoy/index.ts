@@ -12,7 +12,7 @@ import { resolveWingStream } from "./resolver";
 import { encryptStreamToken } from "./token";
 
 const PROVIDER_ID = "cinejoy";
-const PROVIDER_NAME = "Cinejoy";
+const PROVIDER_NAME = "Server 3";
 const PROVIDER_PRIORITY = 5;
 
 /**
@@ -78,7 +78,7 @@ async function scrapeServer(serverName: string, req: StreamRequest, is4k = false
         },
         provider: {
           id: `cinejoy-${serverName.toLowerCase()}`,
-          name: `Cinejoy - ${serverName}`,
+          name: `Server 3 - ${serverName}`,
         },
       },
     ];

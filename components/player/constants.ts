@@ -114,8 +114,20 @@ export const SERVER_GROUPS: ServerGroup[] = [
     ],
   },
   {
-    id: "vixsrc",
+    id: "cinejoy",
     name: "Server 3",
+    flagUrl: "us",
+    children: [
+      { id: "cinejoy-nebula", name: "Nebula", flagUrl: "us" },
+      { id: "cinejoy-secret", name: "Secret", flagUrl: "us" },
+      { id: "cinejoy-lisbon", name: "Lisbon", flagUrl: "us" },
+      { id: "cinejoy-solara", name: "Solara", flagUrl: "us" },
+      { id: "cinejoy-athens", name: "Athens", flagUrl: "us" },
+    ],
+  },
+  {
+    id: "vixsrc",
+    name: "Server 4",
     flagUrl: "us",
     children: [],
   },
