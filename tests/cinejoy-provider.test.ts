@@ -5,7 +5,7 @@ import { getActiveCinejoyServers } from "@/lib/providers/sources/cinejoy/servers
 describe("cinejoy provider", () => {
   it("defines standard provider properties", () => {
     expect(cinejoyProvider.id).toBe("cinejoy");
-    expect(cinejoyProvider.name).toBe("Cinejoy");
+    expect(cinejoyProvider.name).toBe("Server 3");
     expect(cinejoyProvider.priority).toBe(5);
     expect(typeof cinejoyProvider.fetch).toBe("function");
     expect(typeof cinejoyProvider.fetchSubtitles).toBe("function");

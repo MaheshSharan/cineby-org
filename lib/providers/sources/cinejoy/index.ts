@@ -1,4 +1,4 @@
-import { logger, logError } from "@/lib/logger";
+import { logError } from "@/lib/logger";
 import type {
   Provider,
   Quality,
@@ -23,30 +23,6 @@ function normalizeServerName(serverId?: string): string {
   if (!serverId) return "Nebula";
   const stripped = serverId.replace(/^cinejoy-/, "");
   return stripped.charAt(0).toUpperCase() + stripped.slice(1);
-}
-
-/**
- * Probe stream URL with a range request to ensure it is playable before returning to user.
- */
-async function isStreamPlayable(url: string, signal?: AbortSignal): Promise<boolean> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 750);
-  const onParentAbort = () => controller.abort();
-  if (signal) signal.addEventListener("abort", onParentAbort);
-
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: { Range: "bytes=0-100" },
-      signal: controller.signal,
-    });
-    return res.status >= 200 && res.status < 400;
-  } catch {
-    return false;
-  } finally {
-    clearTimeout(timer);
-    if (signal) signal.removeEventListener("abort", onParentAbort);
-  }
 }
 
 async function scrapeServer(serverName: string, req: StreamRequest, is4k = false): Promise<StreamResponse> {
