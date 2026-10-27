@@ -170,7 +170,7 @@ export default withApiContext("api/stream/proxy", async (req: NextApiRequest, re
       upstreamRes = await fetch(currentUrl, {
         method: req.method,
         headers: upstreamHeaders,
-        redirect: "manual",
+        redirect: "follow",
       });
 
       if (upstreamRes.status >= 300 && upstreamRes.status < 400) {
@@ -213,6 +213,10 @@ export default withApiContext("api/stream/proxy", async (req: NextApiRequest, re
 
     if (isM3u8) {
       const text = await upstreamRes.text();
+      if (!text.trimStart().startsWith("#EXTM3U")) {
+        res.status(upstreamRes.status).send(text);
+        return;
+      }
       const targetBase = rawTargetUrl.substring(0, rawTargetUrl.lastIndexOf("/") + 1);
 
       // Rewrite M3U8 lines so all child playlists, initialization segments, and media segments route through proxy

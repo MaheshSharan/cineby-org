@@ -464,7 +464,7 @@ export default {
       upstreamRes = await fetch(currentUrl, {
         method: req.method,
         headers: upstreamHeaders,
-        redirect: "manual",
+        redirect: "follow",
         ...(isMedia ? { cf: { cacheEverything: true, cacheTtl: 86400 } } : {}),
       } as RequestInit);
 
@@ -508,6 +508,9 @@ export default {
     // M3U8 Playlist rewriting
     if (isM3u8) {
       const text = await upstreamRes.text();
+      if (!text.trimStart().startsWith("#EXTM3U")) {
+        return new Response(text, { status: upstreamRes.status, headers: responseHeaders });
+      }
       const targetBase = rawTargetUrl.substring(0, rawTargetUrl.lastIndexOf("/") + 1);
       const workerOrigin = url.origin;
 
