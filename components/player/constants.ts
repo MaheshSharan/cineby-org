@@ -82,7 +82,7 @@ export function getFlagUrl(codeOrUrl?: string | null): string {
 export const SERVER_GROUPS: ServerGroup[] = [
   {
     id: "vidy",
-    name: "Vidy",
+    name: "Server 1",
     children: [
       { id: "vidy-miami", name: "Miami", flagUrl: "us" },
       { id: "vidy-boise", name: "Boise", flagUrl: "us" },
@@ -104,7 +104,7 @@ export const SERVER_GROUPS: ServerGroup[] = [
   },
   {
     id: "cinezo",
-    name: "Cinezo",
+    name: "Server 2",
     flagUrl: "us",
     children: [
       { id: "cinezo-berlin", name: "Berlin", flagUrl: "de" },
@@ -115,7 +115,7 @@ export const SERVER_GROUPS: ServerGroup[] = [
   },
   {
     id: "vixsrc",
-    name: "Vixsrc",
+    name: "Server 3",
     flagUrl: "us",
     children: [],
   },

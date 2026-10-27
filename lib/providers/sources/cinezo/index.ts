@@ -10,7 +10,7 @@ import type {
 import { logError, logger } from "@/lib/logger";
 
 const PROVIDER_ID = "cinezo";
-const PROVIDER_NAME = "Cinezo";
+const PROVIDER_NAME = "Server 2";
 const PLAYER_ORIGIN = "https://player.cinezo.live";
 
 interface ChildServerConfig {
@@ -215,7 +215,7 @@ async function scrapeServer(
             headers: commonHeaders,
             provider: {
               id: `${PROVIDER_ID}-${server.id}`,
-              name: `Cinezo - ${serverLabel}${q.quality && q.quality !== "Auto" ? ` (${q.quality})` : ""}`,
+              name: `Server 2 - ${serverLabel}${q.quality && q.quality !== "Auto" ? ` (${q.quality})` : ""}`,
             },
           });
         }
@@ -234,7 +234,7 @@ async function scrapeServer(
             headers: commonHeaders,
             provider: {
               id: `${PROVIDER_ID}-${server.id}`,
-              name: `Cinezo - ${serverLabel}`,
+              name: `Server 2 - ${serverLabel}`,
             },
           });
         }

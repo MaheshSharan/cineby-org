@@ -13,7 +13,7 @@ import { logError } from "@/lib/logger";
 import { getTmdbApiKey, getTmdbApiUrl } from "@/lib/env/server";
 
 const PROVIDER_ID = "vidy";
-const PROVIDER_NAME = "Vidy";
+const PROVIDER_NAME = "Server 1";
 const API_BASE = "https://api.wecollege.net";
 const SUBTITLES_BASE = "https://subtitles.vidy.st";
 

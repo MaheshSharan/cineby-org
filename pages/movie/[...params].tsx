@@ -11,6 +11,8 @@ import { getMovieDetails, isTmdbNotFoundError } from "@/lib/tmdb/server";
 import { getMediaHref } from "@/lib/utils/media";
 import { extractIdFromSlug } from "@/lib/utils/slug";
 import { fetchTrailerUrlServer } from "@/lib/services/trailer.server";
+import { listAvailableProviders } from "@/lib/providers/registry";
+import type { ActiveProvider } from "@/components/player/providers/activeProviders";
 
 import { DetailPage } from "@/components/detail/DetailPage";
 import { PageSeo } from "@/components/seo/PageSeo";
@@ -19,11 +21,12 @@ interface MoviePageProps {
   details: MovieDetails;
   isPlaying: boolean;
   initialTrailerUrl?: string | null;
+  activeProviders?: ActiveProvider[];
 }
 
 import { buildBreadcrumbJsonLd, buildMovieJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 
-export default function MoviePage({ details, isPlaying, initialTrailerUrl }: MoviePageProps) {
+export default function MoviePage({ details, isPlaying, initialTrailerUrl, activeProviders }: MoviePageProps) {
   const schemas = [
     buildBreadcrumbJsonLd("movie", details.title, details.id),
     buildMovieJsonLd(details),
@@ -42,7 +45,12 @@ export default function MoviePage({ details, isPlaying, initialTrailerUrl }: Mov
         openGraphType="video.movie"
         jsonLd={sanitizeJsonLd(schemas)}
       />
-      <DetailPage details={details} isPlaying={isPlaying} initialTrailerUrl={initialTrailerUrl} />
+      <DetailPage
+        details={details}
+        isPlaying={isPlaying}
+        initialTrailerUrl={initialTrailerUrl}
+        activeProviders={activeProviders}
+      />
     </>
   );
 }
@@ -60,12 +68,14 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (con
     const initialTrailerUrl = details.imdbId
       ? await fetchTrailerUrlServer(details.imdbId).catch(() => null)
       : null;
+    const activeProviders = listAvailableProviders();
 
     return {
       props: {
         details,
         isPlaying: context.query.play === "true",
         initialTrailerUrl,
+        activeProviders,
       },
     };
   } catch (error) {

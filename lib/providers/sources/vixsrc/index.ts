@@ -2,7 +2,7 @@ import type { Provider, StreamRequest, StreamResponse, StreamSource } from "../.
 import { logError } from "@/lib/logger";
 
 const PROVIDER_ID = "vixsrc";
-const PROVIDER_NAME = "Vixsrc";
+const PROVIDER_NAME = "Server 3";
 const BASE_URL = "https://vixsrc.to";
 
 const BROWSER_UA =

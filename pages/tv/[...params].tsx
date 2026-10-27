@@ -13,6 +13,8 @@ import {
 import { getMediaHref } from "@/lib/utils/media";
 import { extractIdFromSlug } from "@/lib/utils/slug";
 import { fetchTrailerUrlServer } from "@/lib/services/trailer.server";
+import { listAvailableProviders } from "@/lib/providers/registry";
+import type { ActiveProvider } from "@/components/player/providers/activeProviders";
 
 import { DetailPage } from "@/components/detail/DetailPage";
 import { PageSeo } from "@/components/seo/PageSeo";
@@ -24,6 +26,7 @@ interface TvPageProps {
   episodeNumber?: number | null;
   initialEpisodes?: SeasonEpisodes | null;
   initialTrailerUrl?: string | null;
+  activeProviders?: ActiveProvider[];
 }
 
 import { buildBreadcrumbJsonLd, buildTvSeriesJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
@@ -35,6 +38,7 @@ export default function TvPage({
   episodeNumber,
   initialEpisodes,
   initialTrailerUrl,
+  activeProviders,
 }: TvPageProps) {
   const schemas = [
     buildBreadcrumbJsonLd("tv", details.title, details.id),
@@ -61,6 +65,7 @@ export default function TvPage({
         episodeNumber={episodeNumber}
         initialEpisodes={initialEpisodes}
         initialTrailerUrl={initialTrailerUrl}
+        activeProviders={activeProviders}
       />
     </>
   );
@@ -113,6 +118,8 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
       details.imdbId ? fetchTrailerUrlServer(details.imdbId).catch(() => null) : Promise.resolve(null),
     ]);
 
+    const activeProviders = listAvailableProviders();
+
     return {
       props: {
         details,
@@ -121,6 +128,7 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
         episodeNumber: effectiveEpisode,
         initialEpisodes,
         initialTrailerUrl,
+        activeProviders,
       },
     };
   } catch (error) {
