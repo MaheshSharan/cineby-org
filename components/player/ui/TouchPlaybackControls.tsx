@@ -22,7 +22,7 @@ export function TouchPlaybackControls({
   return (
     <div
       data-player-ui
-      className={`absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-8 sm:gap-12 transition-opacity duration-300 ${
+      className={`absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-8 sm:gap-[3.75rem] transition-opacity duration-300 ${
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >

@@ -18,16 +18,29 @@ const BUTTON_CLASSES =
 
 const ICON_CLASSES = "flex items-center justify-center w-[1em] h-[1em]";
 
-const SIZE_CLASSES: Record<PlaybackButtonsSize, { button: string; playIcon: string; seekIcon: string }> = {
+const GLASS_CLASSES =
+  "border border-white/30 bg-gradient-to-b from-white/[0.12] to-white/[0.03] backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]";
+
+interface SizeClasses {
+  seekButton: string;
+  playButton: string;
+  playIcon: string;
+  seekIcon: string;
+}
+
+// "large" is the touch layout: three round glass buttons, the play button the biggest.
+const SIZE_CLASSES: Record<PlaybackButtonsSize, SizeClasses> = {
   default: {
-    button: "p-2",
+    seekButton: "p-2",
+    playButton: "p-2",
     playIcon: "text-3xl md:text-2xl",
     seekIcon: "text-3xl md:text-2xl",
   },
   large: {
-    button: "p-4 sm:p-5",
-    playIcon: "text-5xl sm:text-6xl",
-    seekIcon: "text-3xl sm:text-4xl",
+    seekButton: `h-[60px] w-[60px] sm:h-[72px] sm:w-[72px] ${GLASS_CLASSES}`,
+    playButton: `h-[72px] w-[72px] sm:h-[88px] sm:w-[88px] ${GLASS_CLASSES}`,
+    playIcon: "text-3xl sm:text-4xl",
+    seekIcon: "text-3xl sm:text-[2rem]",
   },
 };
 
@@ -53,7 +66,7 @@ export function PlaybackButtons({
         onClick={() => onSeekBy(-seekTime)}
         aria-label={`Rewind ${seekTime} seconds`}
         title={`Rewind ${seekTime} seconds (←)`}
-        className={`${BUTTON_CLASSES} ${sizeClasses.button} ${
+        className={`${BUTTON_CLASSES} ${sizeClasses.seekButton} ${
           activeSeekSide === "left" ? "scale-125 bg-white/30 text-white animate-pulse" : ""
         }`}
       >
@@ -97,7 +110,7 @@ export function PlaybackButtons({
         onClick={onTogglePlay}
         aria-label={isPlaying ? "Pause" : "Play"}
         title={isPlaying ? "Pause (space)" : "Play (space)"}
-        className={`${BUTTON_CLASSES} ${sizeClasses.button}`}
+        className={`${BUTTON_CLASSES} ${sizeClasses.playButton}`}
       >
         <span className={`${sizeClasses.playIcon} ${ICON_CLASSES}`}>
           {isBuffering ? (
@@ -131,7 +144,7 @@ export function PlaybackButtons({
         onClick={() => onSeekBy(seekTime)}
         aria-label={`Forward ${seekTime} seconds`}
         title={`Forward ${seekTime} seconds (→)`}
-        className={`${BUTTON_CLASSES} ${sizeClasses.button} ${
+        className={`${BUTTON_CLASSES} ${sizeClasses.seekButton} ${
           activeSeekSide === "right" ? "scale-125 bg-white/30 text-white animate-pulse" : ""
         }`}
       >

@@ -37,6 +37,9 @@ import { AdLayer } from "./ui/AdLayer";
 import { AdSkipButton } from "./ui/AdSkipButton";
 import { AudioSubtitlesPopover } from "./ui/AudioSubtitlesPopover";
 import { EpisodesDrawer } from "./ui/EpisodesDrawer";
+import { EpisodesTabButton } from "./ui/EpisodesTabButton";
+import { HeaderActionDivider } from "./ui/HeaderActionDivider";
+import { getHeaderActionClass, getHeaderActionsClass } from "./ui/headerActionStyles";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
 import { LockButton } from "./ui/LockButton";
 import { LockOverlay } from "./ui/LockOverlay";
@@ -44,6 +47,7 @@ import { PlayerActionButton } from "./ui/PlayerActionButton";
 import { PlayerControls } from "./ui/PlayerControls";
 import { PlayerHeader } from "./ui/PlayerHeader";
 import { QualityPopover } from "./ui/QualityPopover";
+import { TouchControlBar } from "./ui/TouchControlBar";
 import { TouchPlaybackControls } from "./ui/TouchPlaybackControls";
 import { TouchVolumeControl } from "./ui/TouchVolumeControl";
 import {
@@ -710,9 +714,10 @@ export function PlayerContainer({
             onBack={onBack}
             visible={controls.areControlsVisible && !isLocked}
             inert={isLocked}
+            variant={isTouchDevice ? "touch" : "default"}
             rightSlot={
               ads.isAdBreak ? null : (
-              <div className="flex items-center gap-1 md:gap-4 flex-shrink-0 relative">
+              <div className={getHeaderActionsClass(isTouchDevice)}>
                 <div
                   className="relative"
                   onMouseEnter={handleQualityMouseEnter}
@@ -724,13 +729,14 @@ export function PlayerContainer({
                       setIsAudioSubtitlesOpen(false);
                       setIsQualityOpen((prev) => !prev);
                     }}
-                    className={`tabbable flex items-center gap-2 p-2 md:px-3 md:py-2 rounded-lg text-white/90 hover:text-white hover:bg-white/10 transition-all text-sm font-semibold ${isQualityOpen ? "bg-white/20 text-white" : ""
-                      }`}
+                    className={getHeaderActionClass(isTouchDevice, isQualityOpen)}
                   >
                     <PlayerQualityIcon />
-                    <span className="hidden md:inline">Quality</span>
-                    <span className="hidden md:inline opacity-50 font-normal">
-                      {settings.quality ?? (activeAbrLevel ? `Auto (${activeAbrLevel})` : "Auto")}
+                    <span className={isTouchDevice ? "hidden md:flex flex-col items-start leading-tight" : "contents"}>
+                      <span className={isTouchDevice ? "" : "hidden md:inline"}>Quality</span>
+                      <span className={isTouchDevice ? "text-xs font-normal text-white/55" : "hidden md:inline opacity-50 font-normal"}>
+                        {settings.quality ?? (activeAbrLevel ? `Auto (${activeAbrLevel})` : "Auto")}
+                      </span>
                     </span>
                   </button>
 
@@ -750,6 +756,8 @@ export function PlayerContainer({
                   />
                 </div>
 
+                {isTouchDevice ? <HeaderActionDivider /> : null}
+
                 <div
                   className="relative"
                   onMouseEnter={handleAudioMouseEnter}
@@ -761,8 +769,7 @@ export function PlayerContainer({
                       setIsQualityOpen(false);
                       setIsAudioSubtitlesOpen((prev) => !prev);
                     }}
-                    className={`tabbable flex items-center gap-2 p-2 md:px-3 md:py-2 rounded-lg text-white/90 hover:text-white hover:bg-white/10 transition-all text-sm font-semibold ${isAudioSubtitlesOpen ? "bg-white/20 text-white" : ""
-                      }`}
+                    className={getHeaderActionClass(isTouchDevice, isAudioSubtitlesOpen)}
                   >
                     <PlayerAudioSubtitlesIcon />
                     <span className="hidden md:inline">Audio &amp; Subtitles</span>
@@ -782,14 +789,17 @@ export function PlayerContainer({
                 </div>
 
                 {isTv && hasNext ? (
-                  <button
-                    type="button"
-                    onClick={handleNextEpisode}
-                    className="tabbable flex items-center gap-2 p-2 md:px-3 md:py-2 rounded-lg text-white/90 hover:text-white hover:bg-white/10 transition-all text-sm font-semibold"
-                  >
-                    <PlayerNextEpisodeIcon />
-                    <span className="hidden md:inline">Next Episode</span>
-                  </button>
+                  <>
+                    {isTouchDevice ? <HeaderActionDivider /> : null}
+                    <button
+                      type="button"
+                      onClick={handleNextEpisode}
+                      className={getHeaderActionClass(isTouchDevice, false)}
+                    >
+                      <PlayerNextEpisodeIcon />
+                      <span className="hidden md:inline">Next Episode</span>
+                    </button>
+                  </>
                 ) : null}
               </div>
               )
@@ -868,11 +878,27 @@ export function PlayerContainer({
                 onToggleFullscreen={toggleFullscreen}
               />
             ) : null
+          ) : isTouchDevice ? (
+          <TouchControlBar
+            visible={controls.areControlsVisible && !isLocked}
+            inert={isLocked}
+            currentTime={playerState.currentTime}
+            duration={playerState.duration}
+            bufferedTime={playerState.bufferedTime}
+            src={stream.source?.url}
+            mediaKey={mediaKey}
+            cache={segmentByteCache}
+            hoverThumbnails={appSettings.playback.hoverThumbnails}
+            thumbnailTrack={stream.source?.thumbnail || stream.source?.thumbnails?.[0]?.url || null}
+            adCueSec={ads.cueMarkerSec}
+            onSeek={playback.seekTo}
+            onToggleFullscreen={toggleFullscreen}
+            tabSlot={isTv ? <EpisodesTabButton isOpen={isEpisodesOpen} onClick={() => setIsEpisodesOpen(true)} /> : null}
+          />
           ) : (
           <PlayerControls
             visible={controls.areControlsVisible && !isLocked}
             inert={isLocked}
-            showPlaybackControls={!isTouchDevice}
             isPlaying={playerState.isPlaying}
             currentTime={playerState.currentTime}
             duration={playerState.duration}
@@ -937,7 +963,11 @@ export function PlayerContainer({
           {ads.isAdBreak ? null : isLocked ? (
             <LockOverlay onUnlock={handleUnlock} />
           ) : !isTouchDevice || isLandscape ? (
-            <LockButton visible={controls.areControlsVisible} onLock={handleLock} />
+            <LockButton
+              visible={controls.areControlsVisible}
+              variant={isTouchDevice ? "touch" : "default"}
+              onLock={handleLock}
+            />
           ) : null}
 
           {isTv ? (

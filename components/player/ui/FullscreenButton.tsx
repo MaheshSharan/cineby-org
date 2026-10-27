@@ -1,8 +1,17 @@
 interface FullscreenButtonProps {
   onClick: () => void;
+  /** "glass" is the round, bordered button used inside the touch control bar. */
+  variant?: "default" | "glass";
 }
 
-export function FullscreenButton({ onClick }: FullscreenButtonProps) {
+const VARIANT_CLASSES = {
+  default:
+    "p-2 rounded-full hover:bg-white/20 active:bg-white/30",
+  glass:
+    "h-[50px] w-[50px] justify-center rounded-full border border-white/20 bg-gradient-to-b from-white/[0.12] to-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-white/15 active:bg-white/25",
+} as const;
+
+export function FullscreenButton({ onClick, variant = "default" }: FullscreenButtonProps) {
   return (
     <button
       type="button"
@@ -10,7 +19,7 @@ export function FullscreenButton({ onClick }: FullscreenButtonProps) {
       onClick={onClick}
       aria-label="Fullscreen"
       title="Fullscreen (f)"
-      className="tabbable p-2 rounded-full hover:bg-white/20 transition-transform duration-100 flex items-center gap-3 active:scale-110 active:bg-white/30 active:text-white"
+      className={`tabbable ${VARIANT_CLASSES[variant]} transition-transform duration-100 flex items-center gap-3 active:scale-110 active:text-white`}
     >
       <span className="text-3xl md:text-2xl flex items-center justify-center w-[1em] h-[1em]">
         <svg

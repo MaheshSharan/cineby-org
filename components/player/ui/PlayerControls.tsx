@@ -10,7 +10,6 @@ import type { SegmentByteCache } from "@/lib/player/media/segmentByteCache";
 interface PlayerControlsProps {
   visible: boolean;
   inert?: boolean;
-  showPlaybackControls?: boolean;
   isPlaying: boolean;
   currentTime: number;
   duration: number;
@@ -36,7 +35,6 @@ interface PlayerControlsProps {
 export function PlayerControls({
   visible,
   inert,
-  showPlaybackControls = true,
   isPlaying,
   currentTime,
   duration,
@@ -91,24 +89,20 @@ export function PlayerControls({
           <div className="relative flex items-center justify-between mt-1 sm:mt-2 md:mt-3">
             {/* Left Controls: Play/Pause, Rewind, Forward, Volume */}
             <div className="flex space-x-1 sm:space-x-2 md:space-x-3 items-center relative z-10">
-              {showPlaybackControls ? (
-                <>
-                  <PlaybackButtons
-                    isPlaying={isPlaying}
-                    seekTime={seekTime}
-                    onTogglePlay={onTogglePlay}
-                    onSeekBy={onSeekBy}
-                  />
+              <PlaybackButtons
+                isPlaying={isPlaying}
+                seekTime={seekTime}
+                onTogglePlay={onTogglePlay}
+                onSeekBy={onSeekBy}
+              />
 
-                  {/* Volume */}
-                  <VolumeControl
-                    volume={volume}
-                    muted={muted}
-                    onVolumeChange={onVolumeChange}
-                    onToggleMute={onToggleMute}
-                  />
-                </>
-              ) : null}
+              {/* Volume */}
+              <VolumeControl
+                volume={volume}
+                muted={muted}
+                onVolumeChange={onVolumeChange}
+                onToggleMute={onToggleMute}
+              />
             </div>
 
             {/* Center Controls: Episodes selector pill */}

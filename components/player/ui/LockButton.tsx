@@ -1,9 +1,17 @@
 interface LockButtonProps {
   visible: boolean;
+  /** "touch" is the tall glass pill used on touch devices. */
+  variant?: "default" | "touch";
   onLock: () => void;
 }
 
-export function LockButton({ visible, onLock }: LockButtonProps) {
+const VARIANT_CLASSES = {
+  default: "h-11 w-11 bg-white/10 backdrop-blur-md hover:bg-white/20",
+  touch:
+    "h-[72px] w-12 border border-white/15 bg-gradient-to-b from-white/[0.10] to-white/[0.02] backdrop-blur-md hover:bg-white/15",
+} as const;
+
+export function LockButton({ visible, variant = "default", onLock }: LockButtonProps) {
   return (
     <button
       type="button"
@@ -11,7 +19,7 @@ export function LockButton({ visible, onLock }: LockButtonProps) {
       onClick={onLock}
       aria-label="Lock screen"
       title="Lock screen"
-      className={`tabbable absolute left-[max(0.75rem,env(safe-area-inset-left,0px))] top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-[opacity,background-color,transform] duration-300 hover:bg-white/20 active:scale-95 ${
+      className={`tabbable absolute left-[max(0.75rem,env(safe-area-inset-left,0px))] top-1/2 z-30 flex -translate-y-1/2 items-center justify-center rounded-full text-white transition-[opacity,background-color,transform] duration-300 active:scale-95 ${VARIANT_CLASSES[variant]} ${
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >

@@ -16,6 +16,8 @@ interface SeekBarProps {
   thumbnailTrack?: string | null;
   /** Second where an ad is scheduled. Shown as a yellow mark on the track. */
   adCueSec?: number | null;
+  /** "touch" keeps the thumb visible at all times and uses a slightly thicker track. */
+  variant?: "default" | "touch";
   onSeek: (time: number) => void;
 }
 
@@ -46,8 +48,10 @@ export function SeekBar({
   hoverThumbnails = false,
   thumbnailTrack,
   adCueSec,
+  variant = "default",
   onSeek,
 }: SeekBarProps) {
+  const isTouchVariant = variant === "touch";
   const trackRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
@@ -208,10 +212,18 @@ export function SeekBar({
       )}
 
       <div className="absolute inset-y-0 left-0 right-0 flex items-center">
-        <div className="relative h-[3px] w-full overflow-visible rounded-full transition-all duration-150 group-hover:h-[5px]">
+        <div
+          className={`relative w-full overflow-visible rounded-full transition-all duration-150 ${
+            isTouchVariant ? "h-1" : "h-[3px] group-hover:h-[5px]"
+          }`}
+        >
           <div className="relative h-full w-full">
             {/* Background base track */}
-            <div className="absolute inset-0 rounded-full bg-white/20 transition-colors duration-150 group-hover:bg-white/25" />
+            <div
+              className={`absolute inset-0 rounded-full transition-colors duration-150 ${
+                isTouchVariant ? "bg-white/40" : "bg-white/20 group-hover:bg-white/25"
+              }`}
+            />
 
             {/* Buffer / Loaded progress bar (preloaded segments) */}
             {bufferedProgress > 0 ? (
@@ -235,7 +247,13 @@ export function SeekBar({
               style={{ width: `${progress}%` }}
             >
               {/* Scrubber thumb circle */}
-              <div className="absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 translate-x-1/2 rounded-full bg-white shadow-lg pointer-events-none scale-0 transition-transform duration-100 group-hover:scale-100" />
+              <div
+                className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 rounded-full pointer-events-none transition-transform duration-100 ${
+                  isTouchVariant
+                    ? `h-4 w-4 border border-white/50 bg-primary shadow-md ${dragTime !== null ? "scale-125" : "scale-100"}`
+                    : "h-3.5 w-3.5 bg-white shadow-lg scale-0 group-hover:scale-100"
+                }`}
+              />
             </div>
 
             {/* Ad cue mark */}
