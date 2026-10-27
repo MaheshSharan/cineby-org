@@ -116,6 +116,7 @@ export function PlayerContainer({
     seasons,
     initialSeason: media.seasonNumber ?? 1,
     initialEpisode: media.episodeNumber ?? 1,
+    initialEpisodes: media.initialEpisodes,
     onNavigateEpisode: (season, ep) => {
       setIsEpisodesOpen(false);
       onNavigateEpisode?.(season, ep);

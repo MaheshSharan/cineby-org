@@ -1,6 +1,6 @@
 import Link from "next/link";
 import * as Select from "@radix-ui/react-select";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Episode, Season, SeasonEpisodes } from "@/lib/tmdb";
 import { getSeasonEpisodes } from "@/lib/api/episodes";
@@ -14,6 +14,7 @@ import { DownloadIcon, PlayIcon } from "@/components/ui/icons";
 interface EpisodesSectionProps {
   tvId: number;
   seasons: Season[];
+  initialEpisodes?: SeasonEpisodes | null;
   onReady?: () => void;
 }
 
@@ -24,17 +25,24 @@ const CONTROL_SURFACE_STYLE = {
     "rgba(255, 255, 255, 0.05) 0px 1px 0px inset, rgba(0, 0, 0, 0.55) 0px 6px 14px -6px",
 } as const;
 
-export function EpisodesSection({ tvId, seasons, onReady }: EpisodesSectionProps) {
+export function EpisodesSection({ tvId, seasons, initialEpisodes, onReady }: EpisodesSectionProps) {
   const { settings } = useSettings();
   const episodeViewStyle = settings.appearance.episodeViewStyle;
 
   const defaultSeason =
     seasons.find((season) => season.seasonNumber > 0) ?? seasons[0];
 
+  const defaultSeasonNumber = defaultSeason?.seasonNumber ?? 0;
+
   const [selectedSeasonNumber, setSelectedSeasonNumber] = useState<number>(
-    defaultSeason?.seasonNumber ?? 0
+    defaultSeasonNumber
   );
-  const [episodes, setEpisodes] = useState<SeasonEpisodes | null>(null);
+  const [episodes, setEpisodes] = useState<SeasonEpisodes | null>(() => {
+    if (initialEpisodes && initialEpisodes.seasonNumber === defaultSeasonNumber) {
+      return initialEpisodes;
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [query, setQuery] = useState("");
@@ -43,7 +51,17 @@ export function EpisodesSection({ tvId, seasons, onReady }: EpisodesSectionProps
     null
   );
 
+  const isInitialMount = useRef(true);
+
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (initialEpisodes && initialEpisodes.seasonNumber === selectedSeasonNumber) {
+        onReady?.();
+        return;
+      }
+    }
+
     setIsLoading(true);
     setHasError(false);
 
@@ -71,7 +89,7 @@ export function EpisodesSection({ tvId, seasons, onReady }: EpisodesSectionProps
     return () => {
       isCurrent = false;
     };
-  }, [tvId, selectedSeasonNumber, onReady]);
+  }, [tvId, selectedSeasonNumber, initialEpisodes, onReady]);
 
   const visibleEpisodes = useMemo<Episode[]>(() => {
     if (!episodes) {

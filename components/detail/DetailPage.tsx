@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { MovieDetails, TvDetails } from "@/lib/tmdb";
+import type { MovieDetails, SeasonEpisodes, TvDetails } from "@/lib/tmdb";
 import { getBackdropResponsiveUrls, getHeroBackdropUrl, getLogoUrl } from "@/lib/tmdb/image";
 import type { HistoryEntry } from "@/lib/db/types";
 import { listHistory } from "@/lib/api/history";
@@ -42,6 +42,8 @@ interface DetailPageProps {
   episodeNumber?: number | null;
   variant?: "page" | "modal";
   onClose?: () => void;
+  initialEpisodes?: SeasonEpisodes | null;
+  initialTrailerUrl?: string | null;
 }
 
 const TRAILER_DELAY_MS = 5000;
@@ -53,6 +55,8 @@ export function DetailPage({
   episodeNumber,
   variant = "page",
   onClose,
+  initialEpisodes,
+  initialTrailerUrl,
 }: DetailPageProps) {
   const isModal = variant === "modal";
   const router = useRouter();
@@ -65,7 +69,7 @@ export function DetailPage({
   const [trailerReady, setTrailerReady] = useState(false);
   const [isPageReady, setIsPageReady] = useState(false);
   const [historyEpisode, setHistoryEpisode] = useState<{ season: number; episode: number } | null>(null);
-  const [directTrailerUrl, setDirectTrailerUrl] = useState<string | null>(null);
+  const [directTrailerUrl, setDirectTrailerUrl] = useState<string | null>(initialTrailerUrl ?? null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const heroBackdrop = getHeroBackdropUrl(details.backdropPath);
@@ -144,6 +148,10 @@ export function DetailPage({
       return;
     }
 
+    if (initialTrailerUrl !== undefined) {
+      return;
+    }
+
     let isCurrent = true;
 
     getTrailerUrl(details.imdbId).then((url) => {
@@ -155,7 +163,7 @@ export function DetailPage({
     return () => {
       isCurrent = false;
     };
-  }, [details.imdbId, isTrailerEnabled]);
+  }, [details.imdbId, initialTrailerUrl, isTrailerEnabled]);
 
   useEffect(() => {
     if (!directTrailerUrl || !isTrailerEnabled) {
@@ -283,6 +291,7 @@ export function DetailPage({
             : ("runtime" in details ? details.runtime ?? null : null),
           releaseYear,
           seasons: isTv && "seasons" in details ? toPlayerSeasons(details.seasons) : undefined,
+          initialEpisodes,
         }}
         onBack={() => router.push(getMediaHref(details.mediaType, details.id))}
         onNavigateEpisode={(season, episode) =>
@@ -729,6 +738,7 @@ export function DetailPage({
           <EpisodesSection
             tvId={details.id}
             seasons={details.seasons}
+            initialEpisodes={initialEpisodes}
             onReady={handleEpisodeReady}
           />
         ) : null}
