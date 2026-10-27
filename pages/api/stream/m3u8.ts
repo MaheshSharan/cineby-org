@@ -27,6 +27,7 @@ import { isEcP256Jwk } from "@/lib/security/tabCrypto";
  */
 import { getM3u8FetcherUrl, getStreamProxyUrlPool } from "@/lib/env/server";
 import { getActiveWorkerPool } from "@/lib/providers/workerPoolStore";
+import { encryptStreamToken } from "@/lib/providers/sources/cinejoy/token";
 
 function extractClientIp(req: NextApiRequest): string {
   const cfIp = req.headers["cf-connecting-ip"];
@@ -290,13 +291,18 @@ export default withApiContext(
     explicitOrigin === "https://cinejoy.pk" ||
     Boolean(explicitReferer && explicitReferer.includes("cinejoy.pk")) ||
     Boolean(baseUrl && baseUrl.includes("bright67.online")) ||
-    Boolean(targetUrl && targetUrl.includes("bright67.online"));
+    Boolean(targetUrl && targetUrl.includes("bright67.online")) ||
+    Boolean(baseUrl && baseUrl.includes("lightspeed.st")) ||
+    Boolean(targetUrl && targetUrl.includes("lightspeed.st")) ||
+    Boolean(baseUrl && baseUrl.includes("cursed.st")) ||
+    Boolean(targetUrl && targetUrl.includes("cursed.st"));
 
   const buildCinejoyVercelUrl = (absUrl: string): string => {
     const fetcher = getM3u8FetcherUrl();
     const origin = proxyHeaders.Origin || "https://cinejoy.pk";
     const referer = proxyHeaders.Referer || "https://cinejoy.pk/";
-    return `${fetcher}?url=${encodeURIComponent(absUrl)}&origin=${encodeURIComponent(origin)}&referer=${encodeURIComponent(referer)}`;
+    const token = encryptStreamToken(absUrl, origin, referer);
+    return `${fetcher}?token=${encodeURIComponent(token)}`;
   };
 
   // Sub-playlists are signed too, so the Network tab never shows the upstream URL.

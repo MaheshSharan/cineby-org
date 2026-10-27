@@ -9,6 +9,7 @@ import type {
 } from "@/lib/providers/types";
 import { getActiveCinejoyServers } from "./servers";
 import { resolveWingStream } from "./resolver";
+import { encryptStreamToken } from "./token";
 
 const PROVIDER_ID = "cinejoy";
 const PROVIDER_NAME = "Cinejoy";
@@ -84,7 +85,7 @@ async function scrapeServer(serverName: string, req: StreamRequest, is4k = false
 
     const subtitles: SubtitleTrack[] = (primary.captions ?? []).map((c, idx) => ({
       id: `cinejoy-sub-${idx}`,
-      url: `https://proxym3u8-tau.vercel.app/api/m3u8?url=${encodeURIComponent(c.url)}&origin=https%3A%2F%2Fcinejoy.pk&referer=https%3A%2F%2Fcinejoy.pk%2F`,
+      url: `https://proxym3u8-tau.vercel.app/api/m3u8?token=${encodeURIComponent(encryptStreamToken(c.url))}`,
       lang: c.language || "und",
       label: c.language ? c.language.toUpperCase() : `Subtitle ${idx + 1}`,
       format: "vtt",
