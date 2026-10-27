@@ -487,6 +487,7 @@ export default {
     const contentType = upstreamRes.headers.get("content-type") || "";
     const isM3u8 =
       rawTargetUrl.includes(".m3u8") ||
+      rawTargetUrl.includes("playlist.jpg") ||
       contentType.includes("mpegurl") ||
       contentType.includes("application/x-mpegURL");
 
