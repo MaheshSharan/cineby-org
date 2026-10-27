@@ -110,6 +110,9 @@ export function useAdSchedule({
     });
 
     if (!decision.shouldPlay) {
+      if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("adDebug") === "1") {
+        console.warn("[AdDebug] Decision not to play:", decision.reason);
+      }
       analytics.recordDecision(decision);
 
       if (countsAsSkippedEpisode(isTv, decision.reason)) {
@@ -123,9 +126,16 @@ export function useAdSchedule({
     const cueSec = pickMidrollCue({ durationSec, startTimeSec });
 
     if (cueSec === null) {
+      if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("adDebug") === "1") {
+        console.warn("[AdDebug] Cue was null (outside window). Duration:", durationSec, "Start:", startTimeSec);
+      }
       analytics.recordDecision({ shouldPlay: false, reason: "outside_window" });
       settle({ status: "none" });
       return;
+    }
+
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("adDebug") === "1") {
+      console.log(`[AdDebug] Mid-roll scheduled at ${Math.round(cueSec)}s (${Math.floor(cueSec / 60)}m ${Math.round(cueSec % 60)}s). Tag: ${config.tagUrl}`);
     }
 
     analytics.recordDecision(decision);
