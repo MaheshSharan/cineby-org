@@ -18,7 +18,8 @@ export async function resolveWingStream(
   episode?: number | null,
   signal?: AbortSignal
 ): Promise<WingStreamItem[]> {
-  const path = `/${serverName}/${mediaType}`;
+  const endpointType = mediaType === "tv" ? "series" : "movie";
+  const path = `/${serverName}/${endpointType}`;
   const payload: Record<string, string> = { tmdb: String(tmdbId) };
   if (mediaType === "tv" && season != null && episode != null) {
     payload.season = String(season);
