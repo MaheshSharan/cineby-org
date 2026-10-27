@@ -4,7 +4,7 @@ import type { MediaSource, PlayerMedia, ServerGroup, ServerOption } from "../typ
 import { SERVERS, SERVER_GROUPS } from "../constants";
 import { resolveStream } from "../providers";
 import { getMediaKey } from "@/lib/utils/media";
-import { fetchActiveProviders, seedActiveProviders } from "../providers/activeProviders";
+import { fetchActiveProviders, seedActiveProviders, type ActiveProvider } from "../providers/activeProviders";
 
 export interface StreamState {
   source: MediaSource | null;
@@ -50,7 +50,7 @@ export function usePlayerSource({
   const [pendingServerId, setPendingServerId] = useState<string | null>(null);
   const [failedServerIds, setFailedServerIds] = useState<Record<string, boolean>>({});
   const [availableSources, setAvailableSources] = useState<MediaSource[]>([]);
-  const [activeProviders, setActiveProviders] = useState<{ id: string; name: string }[]>(() => {
+  const [activeProviders, setActiveProviders] = useState<ActiveProvider[]>(() => {
     if (media.activeProviders && media.activeProviders.length > 0) {
       seedActiveProviders(media.activeProviders);
       return media.activeProviders;
