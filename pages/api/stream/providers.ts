@@ -1,10 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { listAvailableProviders } from "@/lib/providers/registry";
+import { listAvailableProvidersWithChildren } from "@/lib/providers/registry";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
 
 interface ProvidersResponse {
-  providers: { id: string; name: string }[];
+  providers: {
+    id: string;
+    name: string;
+    children?: { id: string; name: string; flagUrl?: string }[];
+  }[];
 }
 
 /**
@@ -32,7 +36,7 @@ export default withApiContext(
     // changes to propagate within a minute.
     res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
 
-    const providers = listAvailableProviders();
+    const providers = await listAvailableProvidersWithChildren();
     res.status(200).json({ providers });
   }
 );

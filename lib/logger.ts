@@ -83,9 +83,8 @@ export class Logger {
   private activePriority: number | null = null;
 
   private shouldLog(level: LogLevel): boolean {
-    this.activePriority ??= LOG_LEVEL_PRIORITY[getLogLevel()];
-
-    return LOG_LEVEL_PRIORITY[level] >= this.activePriority;
+    const active = LOG_LEVEL_PRIORITY[getLogLevel()] ?? LOG_LEVEL_PRIORITY.info;
+    return LOG_LEVEL_PRIORITY[level] >= active;
   }
 
   private write(level: LogLevel, message: string, meta?: Record<string, unknown>, error?: unknown): void {

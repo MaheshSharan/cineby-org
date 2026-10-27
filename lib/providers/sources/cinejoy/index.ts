@@ -1,4 +1,4 @@
-import { logger } from "@/lib/logger";
+import { logger, logError } from "@/lib/logger";
 import type {
   Provider,
   Quality,
@@ -90,17 +90,21 @@ async function scrapeServer(serverName: string, req: StreamRequest, is4k = false
       lang: c.language || "und",
       label: c.language ? c.language.toUpperCase() : `Subtitle ${idx + 1}`,
       format: "vtt",
+      headers: {
+        Referer: "https://cinejoy.pk/",
+        Origin: "https://cinejoy.pk",
+      },
     }));
 
     return { sources, subtitles };
   } catch (err) {
-    logger.warn(`[cinejoy:${serverName}] scrapeServer error: ${err instanceof Error ? err.message : String(err)}`);
+    logError(`Provider:cinejoy:${serverName}`, err);
     return { sources: [], subtitles: [] };
   }
 }
 
 async function scrape(req: StreamRequest): Promise<StreamResponse> {
-  if (req.serverId) {
+  if (req.serverId && req.serverId !== "default" && req.serverId !== "cinejoy") {
     const serverName = normalizeServerName(req.serverId);
     const is4k = serverName.toLowerCase() === "secret" || serverName.toLowerCase() === "lisbon";
     return scrapeServer(serverName, req, is4k);
@@ -123,10 +127,20 @@ async function fetchSubtitlesOnly(req: StreamRequest): Promise<SubtitleTrack[]> 
   return res.subtitles;
 }
 
+async function getCinejoyChildServers(signal?: AbortSignal) {
+  const servers = await getActiveCinejoyServers(signal);
+  return servers.map((s) => ({
+    id: `cinejoy-${s.name.toLowerCase()}`,
+    name: s.name,
+    flagUrl: s.language || undefined,
+  }));
+}
+
 export const cinejoyProvider: Provider = {
   id: PROVIDER_ID,
   name: PROVIDER_NAME,
   priority: PROVIDER_PRIORITY,
   fetch: scrape,
   fetchSubtitles: fetchSubtitlesOnly,
+  getChildServers: getCinejoyChildServers,
 };

@@ -52,10 +52,17 @@ export interface StreamResponse {
   thumbnails?: ThumbnailTrack[];
 }
 
+export interface ProviderChildServer {
+  id: string;
+  name: string;
+  flagUrl?: string;
+}
+
 export interface Provider {
   id: string;
   name: string;
   priority: number;
   fetch: (request: StreamRequest) => Promise<StreamResponse>;
   fetchSubtitles?: (request: StreamRequest) => Promise<SubtitleTrack[]>;
+  getChildServers?: (signal?: AbortSignal) => Promise<ProviderChildServer[]>;
 }

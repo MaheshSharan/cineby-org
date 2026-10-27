@@ -62,7 +62,9 @@ function processProviderResponse(
       seenSourceUrls.add(source.url);
       collectedSources.push({
         ...source,
-        url: buildStreamProxyUrl(source.url, source.headers, clientIp, sid, clientPublicKey),
+        url: source.direct
+          ? source.url
+          : buildStreamProxyUrl(source.url, source.headers, clientIp, sid, clientPublicKey),
         provider: {
           id: source.provider?.id || provider.id,
           name: source.provider?.name || provider.name,
@@ -262,6 +264,22 @@ export async function raceProviders(
       request.signal.removeEventListener("abort", onCallerAbort);
     }
   }
+}
+
+export async function listAvailableProvidersWithChildren(): Promise<
+  { id: string; name: string; children?: { id: string; name: string; flagUrl?: string }[] }[]
+> {
+  const active = ALL_PROVIDERS.filter((p) => isProviderEnabled(p.id) && !isCircuitOpen(p.id));
+  return Promise.all(
+    active.map(async (p) => {
+      const children = p.getChildServers ? await p.getChildServers().catch(() => []) : undefined;
+      return {
+        id: p.id,
+        name: p.name,
+        children: children && children.length > 0 ? children : undefined,
+      };
+    })
+  );
 }
 
 export function listAvailableProviders(): { id: string; name: string }[] {

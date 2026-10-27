@@ -13,7 +13,7 @@ import {
 import { getMediaHref } from "@/lib/utils/media";
 import { extractIdFromSlug } from "@/lib/utils/slug";
 import { fetchTrailerUrlServer } from "@/lib/services/trailer.server";
-import { listAvailableProviders } from "@/lib/providers/registry";
+import { listAvailableProvidersWithChildren } from "@/lib/providers/registry";
 import type { ActiveProvider } from "@/components/player/providers/activeProviders";
 
 import { DetailPage } from "@/components/detail/DetailPage";
@@ -118,7 +118,7 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
       details.imdbId ? fetchTrailerUrlServer(details.imdbId).catch(() => null) : Promise.resolve(null),
     ]);
 
-    const activeProviders = listAvailableProviders();
+    const activeProviders = await listAvailableProvidersWithChildren();
 
     return {
       props: {

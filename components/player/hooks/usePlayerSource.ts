@@ -300,11 +300,16 @@ export function usePlayerSource({
     const enabledProviderIds = new Set(activeProviders.map((p) => p.id));
     const result: ServerGroup[] = SERVER_GROUPS.filter((g) => enabledProviderIds.has(g.id));
     for (const provider of activeProviders) {
-      if (!result.some((g) => g.id === provider.id)) {
+      const existing = result.find((g) => g.id === provider.id);
+      if (existing) {
+        if ((!existing.children || existing.children.length === 0) && provider.children && provider.children.length > 0) {
+          existing.children = provider.children;
+        }
+      } else {
         result.push({
           id: provider.id,
           name: provider.name,
-          children: [],
+          children: provider.children ?? [],
         });
       }
     }

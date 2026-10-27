@@ -18,4 +18,13 @@ describe("cinejoy provider", () => {
     const hasNebula = servers.some((s) => s.name.toLowerCase() === "nebula");
     expect(hasNebula).toBe(true);
   });
+
+  it("resolves a stream directly via fetch", async () => {
+    const res = await cinejoyProvider.fetch({
+      tmdbId: 550,
+      type: "movie",
+    });
+    console.log("Cinejoy live fetch result:", JSON.stringify(res, null, 2));
+    expect(res).toBeDefined();
+  }, 15000);
 });
