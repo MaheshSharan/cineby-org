@@ -6,7 +6,7 @@ describe("cinejoy provider", () => {
   it("defines standard provider properties", () => {
     expect(cinejoyProvider.id).toBe("cinejoy");
     expect(cinejoyProvider.name).toBe("Server 3");
-    expect(cinejoyProvider.priority).toBe(5);
+    expect(cinejoyProvider.priority).toBe(10);
     expect(typeof cinejoyProvider.fetch).toBe("function");
     expect(typeof cinejoyProvider.fetchSubtitles).toBe("function");
   });
