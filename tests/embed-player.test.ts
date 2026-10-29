@@ -600,3 +600,62 @@ describe("Edge Cases & Normalization", () => {
     expect(vixsrcEmbed.iframe.referrerPolicy).toBe("origin");
   });
 });
+
+describe("Player Onboarding & AdBlock Configuration", () => {
+  it("uses the correct localStorage key for player onboarding ads modal", async () => {
+    const { ONBOARD_ADS_PLAYER_INFO_KEY } = await import("@/components/player/types");
+    expect(ONBOARD_ADS_PLAYER_INFO_KEY).toBe("onboard_ads_player_info");
+  });
+
+  it("exports official AdGuard Webstore link in AdBlockModal", async () => {
+    const { ADGUARD_CHROME_STORE_URL } = await import("@/components/player/types");
+    expect(ADGUARD_CHROME_STORE_URL).toBe(
+      "https://chromewebstore.google.com/detail/adguard-adblocker/bgnkhhnnamicmpeenaelnjfhikgbkllg?hl=en&pli=1"
+    );
+  });
+
+  it("ensures Vidy provider generates nextEpisode, episodeSelector, and autoplayNextEpisode parameters for series/anime", () => {
+    const tvUrl = vidyEmbed.buildUrl({
+      type: "tv",
+      tmdbId: 1399,
+      season: 3,
+      episode: 9,
+      nextEpisode: true,
+      episodeSelector: true,
+      autoplayNextEpisode: true,
+    });
+    const parsedTv = new URL(tvUrl);
+    expect(parsedTv.pathname).toBe("/tv/1399/3/9");
+    expect(parsedTv.searchParams.get("nextEpisode")).toBe("true");
+    expect(parsedTv.searchParams.get("episodeSelector")).toBe("true");
+    expect(parsedTv.searchParams.get("autoplayNextEpisode")).toBe("true");
+
+    const animeUrl = vidyEmbed.buildUrl({
+      type: "anime",
+      anilistId: 21,
+      episode: 15,
+      nextEpisode: true,
+      episodeSelector: true,
+      autoplayNextEpisode: true,
+    });
+    const parsedAnime = new URL(animeUrl);
+    expect(parsedAnime.pathname).toBe("/anime/21/15");
+    expect(parsedAnime.searchParams.get("nextEpisode")).toBe("true");
+    expect(parsedAnime.searchParams.get("episodeSelector")).toBe("true");
+    expect(parsedAnime.searchParams.get("autoplayNextEpisode")).toBe("true");
+  });
+
+  it("ensures Vixsrc provider formats TV route with season and episode without unwanted extra params", () => {
+    const vixTvUrl = vixsrcEmbed.buildUrl({
+      type: "tv",
+      tmdbId: 1399,
+      season: 4,
+      episode: 2,
+    });
+    const parsed = new URL(vixTvUrl);
+    expect(parsed.pathname).toBe("/tv/1399/4/2");
+    expect(parsed.searchParams.get("nextEpisode")).toBeNull();
+    expect(parsed.searchParams.get("episodeSelector")).toBeNull();
+  });
+});
+

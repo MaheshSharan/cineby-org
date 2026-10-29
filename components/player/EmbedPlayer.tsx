@@ -3,11 +3,15 @@ import { buildImageUrl } from "@/lib/tmdb/image";
 import { trackEvent } from "@/lib/analytics/gtag";
 
 import type { PlayerMedia } from "./types";
+import { ONBOARD_ADS_PLAYER_INFO_KEY } from "./types";
 import { PlayerHeader } from "./ui/PlayerHeader";
 import { ServerDrawer } from "./ui/ServerDrawer";
+import { AdBlockModal } from "./ui/AdBlockModal";
 import { useEmbedBridge } from "./hooks/useEmbedBridge";
 import { getEmbedProvider } from "@/lib/embeds/registry";
 import type { PlayerServerOption } from "@/lib/player/modeConfig";
+
+export { ONBOARD_ADS_PLAYER_INFO_KEY };
 
 interface EmbedPlayerProps {
   media: PlayerMedia;
@@ -37,11 +41,25 @@ export function EmbedPlayer({
   onNavigateEpisode,
 }: EmbedPlayerProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAdBlockModalOpen, setIsAdBlockModalOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasTimedOut, setHasTimedOut] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const startedRef = useRef(false);
   const reachedMilestonesRef = useRef<Set<number>>(new Set());
+
+  // First-run AdBlock Onboarding Modal check
+  useEffect(() => {
+    try {
+      const hasSeenOnboarding = localStorage.getItem(ONBOARD_ADS_PLAYER_INFO_KEY);
+      if (!hasSeenOnboarding) {
+        setIsAdBlockModalOpen(true);
+        localStorage.setItem(ONBOARD_ADS_PLAYER_INFO_KEY, "true");
+      }
+    } catch {
+      // Ignore localStorage availability issues in private/restricted modes
+    }
+  }, []);
 
   const provider = useMemo(() => getEmbedProvider(currentServerId), [currentServerId]);
 
@@ -381,6 +399,13 @@ export function EmbedPlayer({
         servers={servers}
         currentServerId={currentServerId}
         onSelectServer={handleServerSelect}
+        onOpenAdBlockGuide={() => setIsAdBlockModalOpen(true)}
+      />
+
+      {/* AdBlock Onboarding / Help Modal */}
+      <AdBlockModal
+        isOpen={isAdBlockModalOpen}
+        onClose={() => setIsAdBlockModalOpen(false)}
       />
     </div>
   );
