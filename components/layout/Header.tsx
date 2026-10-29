@@ -88,8 +88,9 @@ export function Header() {
             <Link href="/" className="group relative z-10 flex items-center gap-2" aria-label="Cineby home">
               <picture>
                 <img
-                  src="/logo.png"
-                  alt="Cineby"
+                  src="/cineby-logo.png"
+                  alt="Cineby - Free Movies & TV Shows"
+                  title="Cineby Online Streaming"
                   width={40}
                   height={40}
                   className="h-8 w-8 transition-transform duration-300 group-hover:scale-[1.06] md:h-10 md:w-10"

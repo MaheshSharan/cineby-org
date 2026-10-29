@@ -20,8 +20,9 @@ export function PageLoader({ className = "", fullScreen = true }: PageLoaderProp
         <picture>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo.png"
-            alt=""
+            src="/cineby-logo.png"
+            alt="Cineby Loading"
+            title="Cineby"
             width={28}
             height={28}
             className="h-7 w-7 object-contain opacity-80"

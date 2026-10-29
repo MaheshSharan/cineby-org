@@ -87,7 +87,8 @@ export function MediaPosterCard({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={backdrop.mobile}
-                  alt={title}
+                  alt={`${title} - Cineby`}
+                  title={`${title} on Cineby`}
                   loading="lazy"
                   decoding="async"
                   className="block h-full w-full object-cover"
@@ -188,7 +189,8 @@ export function MediaPosterCard({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={poster.mobile}
-                alt={title}
+                alt={`${title} - Cineby`}
+                title={`${title} on Cineby`}
                 loading="lazy"
                 decoding="async"
                 className="block h-full w-full object-cover transition-all duration-300 lg:group-hover/card:brightness-50"
