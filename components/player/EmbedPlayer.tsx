@@ -7,6 +7,7 @@ import { ONBOARD_ADS_PLAYER_INFO_KEY } from "./types";
 import { ServerDrawer } from "./ui/ServerDrawer";
 import { AdBlockModal } from "./ui/AdBlockModal";
 import { useEmbedBridge } from "./hooks/useEmbedBridge";
+import { initAntiRedirectShield, setAntiRedirectShieldActive } from "@/lib/security/antiRedirect";
 import { getEmbedProvider } from "@/lib/embeds/registry";
 import type { PlayerServerOption } from "@/lib/player/modeConfig";
 
@@ -41,6 +42,7 @@ export function EmbedPlayer({
   const [isAdBlockModalOpen, setIsAdBlockModalOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasTimedOut, setHasTimedOut] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const startedRef = useRef(false);
   const reachedMilestonesRef = useRef<Set<number>>(new Set());
@@ -64,6 +66,7 @@ export function EmbedPlayer({
   useEffect(() => {
     startedRef.current = false;
     reachedMilestonesRef.current.clear();
+    setHasUserInteracted(false);
   }, [media.mediaId, media.seasonNumber, media.episodeNumber, currentServerId]);
 
   // Immediately terminate previous server stream on server change, media change, or unmount
@@ -78,19 +81,12 @@ export function EmbedPlayer({
     };
   }, [currentServerId, media.mediaId, media.seasonNumber, media.episodeNumber]);
 
-  // Intercept window.open on top window to block rogue third-party popups (allowing only authorized URLs like AdGuard)
+  // Initialize anti-redirect & anti-popup shield
   useEffect(() => {
-    const originalOpen = window.open;
-    window.open = function (url?: string | URL, target?: string, features?: string) {
-      const targetUrl = typeof url === "string" ? url : url instanceof URL ? url.href : "";
-      if (targetUrl && targetUrl.startsWith("https://chromewebstore.google.com/detail/adguard-adblocker")) {
-        return originalOpen.call(window, url, target, features);
-      }
-      console.warn("[Cineby] Blocked unauthorized popup window attempt:", targetUrl);
-      return null;
-    };
+    initAntiRedirectShield();
+    setAntiRedirectShieldActive(true);
     return () => {
-      window.open = originalOpen;
+      setAntiRedirectShieldActive(false);
     };
   }, []);
 
@@ -106,6 +102,7 @@ export function EmbedPlayer({
         } catch {}
       }
       setIsLoaded(false);
+      setHasUserInteracted(false);
       onSelectServer(serverId);
     },
     [currentServerId, onSelectServer]
@@ -165,6 +162,16 @@ export function EmbedPlayer({
     return () => clearTimeout(timer);
   }, [embedUrl, loadTimeoutMs]);
 
+  // Smooth dismiss handler when iframe HTML loads
+  const handleIframeLoad = useCallback(() => {
+    // Dismiss the heavy spinner overlay after a graceful 600ms transition
+    // so the provider's internal UI takes over without visual stall
+    const dismissTimer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 600);
+    return () => clearTimeout(dismissTimer);
+  }, []);
+
   // Track embed_not_available if timeout occurs
   useEffect(() => {
     if (hasTimedOut) {
@@ -211,7 +218,15 @@ export function EmbedPlayer({
     return () => clearTimeout(timer);
   }, [provider, media, onTimeUpdate]);
 
-  // Bridge postMessage events
+  const handleBurnerClick = useCallback(() => {
+    setHasUserInteracted(true);
+    // Send standard play postMessage to trigger video without letting ad scripts capture the click
+    if (iframeRef.current?.contentWindow) {
+      try {
+        iframeRef.current.contentWindow.postMessage({ type: "play", event: "play" }, "*");
+      } catch {}
+    }
+  }, []);
   useEmbedBridge({
     serverId: currentServerId,
     iframeRef,
@@ -317,52 +332,62 @@ export function EmbedPlayer({
         </button>
       )}
 
-      {/* Loading & Timeout Overlay */}
-      {!isLoaded && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-none">
-          {media.backdropPath && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={buildImageUrl(media.backdropPath, "original") || ""}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
-            />
-          )}
-
-
-          {!hasTimedOut ? (
-            <div className="relative z-10 flex flex-col items-center gap-3">
-              <div className="w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm font-medium text-white/70">Connecting to {provider?.name ?? "stream"}...</p>
-            </div>
-          ) : (
-            <div className="relative z-10 flex flex-col items-center gap-4 text-center px-4 max-w-md pointer-events-auto">
-              <div className="p-3 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">Playback taking longer than expected</h3>
-                <p className="text-xs text-white/60 mt-1">
-                  The current server might be experiencing high load or restrictions.
-                </p>
-              </div>
-              {nextServer && (
-                <button
-                  type="button"
-                  onClick={() => handleServerSelect(nextServer.id)}
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium text-xs transition-colors shadow-lg shadow-red-600/30"
-                >
-                  Switch to {nextServer.name}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+      {/* First-Click Burner Shield: Absorbs rogue 1-time ad click on unsandboxed iframes */}
+      {!hasUserInteracted && isLoaded && (
+        <div
+          onClick={handleBurnerClick}
+          className="absolute inset-0 z-15 cursor-pointer bg-transparent"
+          title="Click to play"
+        />
       )}
+
+      {/* Loading & Timeout Overlay */}
+      <div
+        className={`absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm transition-opacity duration-500 ${
+          isLoaded && !hasTimedOut ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"
+        }`}
+      >
+        {media.backdropPath && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={buildImageUrl(media.backdropPath, "original") || ""}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
+          />
+        )}
+
+        {!hasTimedOut ? (
+          <div className="relative z-10 flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-medium text-white/70">Connecting to {provider?.name ?? "stream"}...</p>
+          </div>
+        ) : (
+          <div className="relative z-10 flex flex-col items-center gap-4 text-center px-4 max-w-md pointer-events-auto">
+            <div className="p-3 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">Playback taking longer than expected</h3>
+              <p className="text-xs text-white/60 mt-1">
+                The current server might be experiencing high load or restrictions.
+              </p>
+            </div>
+            {nextServer && (
+              <button
+                type="button"
+                onClick={() => handleServerSelect(nextServer.id)}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium text-xs transition-colors shadow-lg shadow-red-600/30"
+              >
+                Switch to {nextServer.name}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Embedded Player Iframe */}
       {embedUrl ? (
@@ -376,7 +401,7 @@ export function EmbedPlayer({
           referrerPolicy={provider?.iframe.referrerPolicy ?? "origin"}
           sandbox={provider?.iframe.sandbox}
           className="w-full h-full border-0"
-          onLoad={() => setIsLoaded(true)}
+          onLoad={handleIframeLoad}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-white/50 text-sm">
