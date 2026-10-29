@@ -64,12 +64,6 @@ export function isAnalyticsEnabled(): boolean {
   return parseFlag("NEXT_PUBLIC_ENABLE_ANALYTICS", process.env.NEXT_PUBLIC_ENABLE_ANALYTICS);
 }
 
-export function isDevtoolsGuardEnabled(): boolean {
-  return parseFlag(
-    "NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED",
-    process.env.NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED
-  );
-}
 
 /** GA4 measurement ID. Only required, and only read, while analytics is enabled. */
 export function getGaMeasurementId(): string {

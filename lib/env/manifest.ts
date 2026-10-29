@@ -64,6 +64,7 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
     requiredWhen: (env) => env.NEXT_PUBLIC_IMAGE_MODE !== "tmdb",
   },
   { name: "NEXT_PUBLIC_TMDB_IMAGE_BASE_URL", category: "tmdb", scope: "public", kind: "url" },
+  { name: "NEXT_PUBLIC_TRAILER_API_URL", category: "tmdb", scope: "public", kind: "url" },
 
   // 3. Player Mode & Embeds
   { name: "PLAYER_MODE", category: "player", scope: "server", kind: ["embed"] },
@@ -115,7 +116,6 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
   { name: "NEXT_PUBLIC_GOOGLE_CLIENT_ID", category: "integrations", scope: "public", kind: "string" },
   { name: "NEXT_PUBLIC_FLAGS_API_BASE_URL", category: "integrations", scope: "public", kind: "url" },
   { name: "NEXT_PUBLIC_ENABLE_ANALYTICS", category: "integrations", scope: "public", kind: "flag" },
-  { name: "NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED", category: "integrations", scope: "public", kind: "flag" },
   {
     name: "NEXT_PUBLIC_GA_MEASUREMENT_ID",
     category: "integrations",
