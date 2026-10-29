@@ -82,3 +82,15 @@ export function getGoogleSiteVerification(): string | undefined {
   return process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim() || undefined;
 }
 
+/**
+ * Whether DevTools guard is enabled.
+ * Defaults to true in production unless explicitly set to "false".
+ */
+export function isDevtoolsGuardEnabled(): boolean {
+  if (process.env.NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED !== undefined) {
+    return process.env.NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED === "true";
+  }
+  return process.env.NODE_ENV === "production";
+}
+
+

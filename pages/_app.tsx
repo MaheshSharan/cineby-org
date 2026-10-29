@@ -14,6 +14,8 @@ import { UpdateToast } from "@/components/pwa/UpdateToast";
 import { ScrollEdgeButton } from "@/components/ui/ScrollEdgeButton";
 import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
 import { getActiveGaMeasurementId, pageView, trackEvent, setUserProperties } from "@/lib/analytics/gtag";
+import { isDevtoolsGuardEnabled } from "@/lib/env/public";
+import { initDevtoolsGuard } from "@/lib/security/devtoolsGuard";
 
 import "../styles/globals.css";
 
@@ -57,6 +59,13 @@ export function reportWebVitals(metric: NextWebVitalsMetric) {
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const gaMeasurementId = getActiveGaMeasurementId();
+
+  useEffect(() => {
+    const teardown = initDevtoolsGuard({
+      enabled: isDevtoolsGuardEnabled(),
+    });
+    return teardown;
+  }, []);
 
   useEffect(() => {
     if (!gaMeasurementId) return;

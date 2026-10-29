@@ -130,6 +130,13 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
     kind: "string",
     requiredWhen: () => false,
   },
+  {
+    name: "NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED",
+    category: "integrations",
+    scope: "public",
+    kind: "flag",
+    requiredWhen: () => false,
+  },
   { name: "CORS_ALLOWED_ORIGINS", category: "integrations", scope: "server", kind: "list" },
   { name: "LOG_LEVEL", category: "integrations", scope: "server", kind: ["debug", "info", "warn", "error"] },
 ];
