@@ -76,3 +76,9 @@ export function getGaMeasurementId(): string {
 export function getTrailerApiUrl(): string {
   return parseUrl("NEXT_PUBLIC_TRAILER_API_URL", process.env.NEXT_PUBLIC_TRAILER_API_URL);
 }
+
+/** Google Search Console verification token. Optional. */
+export function getGoogleSiteVerification(): string | undefined {
+  return process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim() || undefined;
+}
+

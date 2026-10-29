@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import Image from "next/image";
 import { buildImageUrl } from "@/lib/tmdb/image";
+import { trackEvent } from "@/lib/analytics/gtag";
 
 import type { PlayerMedia } from "./types";
 import { PlayerHeader } from "./ui/PlayerHeader";
@@ -40,8 +40,16 @@ export function EmbedPlayer({
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasTimedOut, setHasTimedOut] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const startedRef = useRef(false);
+  const reachedMilestonesRef = useRef<Set<number>>(new Set());
 
   const provider = useMemo(() => getEmbedProvider(currentServerId), [currentServerId]);
+
+  // Reset tracking state on media or server change
+  useEffect(() => {
+    startedRef.current = false;
+    reachedMilestonesRef.current.clear();
+  }, [media.mediaId, media.seasonNumber, media.episodeNumber, currentServerId]);
 
   // Construct iframe URL
   const embedUrl = useMemo(() => {
@@ -75,6 +83,37 @@ export function EmbedPlayer({
     return () => clearTimeout(timer);
   }, [embedUrl, loadTimeoutMs]);
 
+  // Track embed_not_available if timeout occurs
+  useEffect(() => {
+    if (hasTimedOut) {
+      trackEvent({
+        action: "embed_not_available",
+        params: {
+          content_id: String(media.mediaId),
+          media_type: media.mediaType,
+          title: media.title,
+        },
+      });
+    }
+  }, [hasTimedOut, media]);
+
+  // Track media_start on first load
+  useEffect(() => {
+    if (isLoaded && !startedRef.current) {
+      startedRef.current = true;
+      trackEvent({
+        action: "media_start",
+        params: {
+          content_id: String(media.mediaId),
+          media_type: media.mediaType,
+          title: media.title,
+          season: media.seasonNumber ?? undefined,
+          episode: media.episodeNumber ?? undefined,
+        },
+      });
+    }
+  }, [isLoaded, media]);
+
   // Fallback 60s progress check for providers without events
   useEffect(() => {
     if (provider?.capabilities.events) return;
@@ -101,6 +140,26 @@ export function EmbedPlayer({
         seasonNumber: media.seasonNumber ?? undefined,
         episodeNumber: media.episodeNumber ?? undefined,
       });
+
+      if (duration > 0) {
+        const percent = Math.floor((current / duration) * 100);
+        const milestones = [25, 50, 75, 90, 100] as const;
+        for (const m of milestones) {
+          if (percent >= m && !reachedMilestonesRef.current.has(m)) {
+            reachedMilestonesRef.current.add(m);
+            trackEvent({
+              action: "media_milestone",
+              params: {
+                content_id: String(media.mediaId),
+                media_type: media.mediaType,
+                milestone: m,
+                duration: Math.round(duration),
+                title: media.title,
+              },
+            });
+          }
+        }
+      }
     },
     onEnded: () => {
       onEnded?.();
@@ -151,12 +210,11 @@ export function EmbedPlayer({
       {!isLoaded && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-none">
           {media.backdropPath && (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={buildImageUrl(media.backdropPath, "original") || ""}
               alt=""
-              fill
-              priority
-              className="object-cover opacity-20 pointer-events-none"
+              className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
             />
           )}
 

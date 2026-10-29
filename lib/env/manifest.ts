@@ -123,6 +123,13 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
     kind: "string",
     requiredWhen: (env) => env.NEXT_PUBLIC_ENABLE_ANALYTICS === "true",
   },
+  {
+    name: "NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION",
+    category: "integrations",
+    scope: "public",
+    kind: "string",
+    requiredWhen: () => false,
+  },
   { name: "CORS_ALLOWED_ORIGINS", category: "integrations", scope: "server", kind: "list" },
   { name: "LOG_LEVEL", category: "integrations", scope: "server", kind: ["debug", "info", "warn", "error"] },
 ];

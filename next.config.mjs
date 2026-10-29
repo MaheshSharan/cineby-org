@@ -2,6 +2,23 @@
 const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
+  images: {
+    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "wsrv.nl",
+      },
+      {
+        protocol: "https",
+        hostname: "image.tmdb.org",
+      },
+      {
+        protocol: "https",
+        hostname: "assets.cineby.group",
+      },
+    ],
+  },
   // NEXT_PUBLIC_* values are inlined by Next.js at build time. No `env` mapping is needed here.
   async headers() {
     return [
