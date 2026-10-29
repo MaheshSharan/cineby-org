@@ -332,19 +332,10 @@ export function EmbedPlayer({
         </button>
       )}
 
-      {/* First-Click Burner Shield: Absorbs rogue 1-time ad click on unsandboxed iframes */}
-      {!hasUserInteracted && isLoaded && (
-        <div
-          onClick={handleBurnerClick}
-          className="absolute inset-0 z-15 cursor-pointer bg-transparent"
-          title="Click to play"
-        />
-      )}
-
       {/* Loading & Timeout Overlay */}
       <div
-        className={`absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm transition-opacity duration-500 ${
-          isLoaded && !hasTimedOut ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"
+        className={`absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm transition-opacity duration-500 pointer-events-none ${
+          isLoaded && !hasTimedOut ? "opacity-0" : "opacity-100"
         }`}
       >
         {media.backdropPath && (

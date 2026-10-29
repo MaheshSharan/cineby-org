@@ -26,11 +26,12 @@
   "vars": {
     "PLAYER_MODE": "embed",
     "ENABLE_EMBED_PLAYERS": "true",
-    "EMBED_SERVER_PRIORITY": "vixsrc,vidy",
+    "EMBED_SERVER_PRIORITY": "vixsrc,vidy,vidnest",
     "EMBED_DEFAULT_SERVER": "vixsrc",
     "EMBED_LOAD_TIMEOUT_MS": "12000",
     "VIXSRC_EMBED_HOST": "https://vixsrc.to",
     "VIDY_EMBED_HOST": "https://vidy.st",
+    "VIDNEST_EMBED_HOST": "https://vidnest.fun",
     "CACHE_BACKEND": "kv",
     "CACHE_MAX_ENTRIES": "5000",
     "NEXT_PUBLIC_SITE_URL": "https://cineby.group",
