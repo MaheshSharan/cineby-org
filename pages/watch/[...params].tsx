@@ -10,14 +10,16 @@ import { formatRuntime, getEpisodeHref, getYear, toPlayerSeasons } from "@/lib/u
 import { PlayerShell } from "@/components/player/PlayerShell";
 import type { PlayerMedia } from "@/components/player/types";
 import { PageSeo } from "@/components/seo/PageSeo";
+import { getPlayerModeConfig, type PlayerModeConfig } from "@/lib/player/modeConfig";
 
 interface WatchPageProps {
   title: string;
   subtitle?: string;
   media: PlayerMedia;
+  modeConfig: PlayerModeConfig;
 }
 
-export default function WatchPage({ title, subtitle, media }: WatchPageProps) {
+export default function WatchPage({ title, subtitle, media, modeConfig }: WatchPageProps) {
   const router = useRouter();
 
   return (
@@ -27,6 +29,7 @@ export default function WatchPage({ title, subtitle, media }: WatchPageProps) {
         title={title}
         subtitle={subtitle}
         media={media}
+        modeConfig={modeConfig}
         onNavigateEpisode={(season, episode) =>
           router.push(getEpisodeHref(media.mediaId, season, episode))
         }
@@ -34,6 +37,7 @@ export default function WatchPage({ title, subtitle, media }: WatchPageProps) {
     </>
   );
 }
+
 
 export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (context) => {
   const params = context.params?.params ?? [];
@@ -89,6 +93,7 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
             releaseYear: getYear(details.releaseDate),
             seasons: toPlayerSeasons(details.seasons),
           },
+          modeConfig: getPlayerModeConfig(),
         },
       };
     }
@@ -112,8 +117,10 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
           runtime: details.runtime ?? null,
           releaseYear,
         },
+        modeConfig: getPlayerModeConfig(),
       },
     };
+
   } catch (error) {
     if (isTmdbNotFoundError(error)) {
       return { notFound: true };
