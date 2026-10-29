@@ -89,7 +89,7 @@ export const vidnestEmbed: EmbedProvider = {
   iframe: {
     allow: "encrypted-media; autoplay *; fullscreen *",
     referrerPolicy: "origin-when-cross-origin",
-    // Test with DEFAULT_EMBED_SANDBOX: if anti-sandbox is triggered, can be relaxed to undefined
-    sandbox: DEFAULT_EMBED_SANDBOX,
+    // Sandbox omitted because VidNest anti-sandbox detection (document.domain & PDF probe) wipes player when sandboxed
+    sandbox: undefined,
   },
 };

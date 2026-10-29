@@ -30,7 +30,9 @@ export function getPlayerModeConfig(): PlayerModeConfig {
   );
 
   const rawPriority = readServerEnv("EMBED_SERVER_PRIORITY") || "";
-  const priorityList = rawPriority ? parseList("EMBED_SERVER_PRIORITY", rawPriority) : ["vixsrc", "vidy"];
+  const priorityList = rawPriority
+    ? parseList("EMBED_SERVER_PRIORITY", rawPriority)
+    : ["vixsrc", "vidy", "vidnest"];
 
   const servers: PlayerServerOption[] = [];
   const embedProviders = listAvailableEmbedProviders(priorityList);

@@ -24,25 +24,19 @@ export const vixsrcEmbed: EmbedProvider = {
   },
   get allowedOrigins(): string[] {
     const host = getVixsrcHost();
+    const origins = [
+      "https://vixsrc.to",
+      "https://www.vixsrc.to",
+      "https://vixcloud.co",
+      "https://www.vixcloud.co",
+      "https://vidsrc.stream",
+      "https://www.vidsrc.stream",
+    ];
     try {
       const url = new URL(host);
-      return Array.from(
-        new Set([
-          url.origin,
-          "https://vixsrc.to",
-          "https://www.vixsrc.to",
-          "https://vixcloud.co",
-          "https://www.vixcloud.co",
-        ])
-      );
-    } catch {
-      return [
-        "https://vixsrc.to",
-        "https://www.vixsrc.to",
-        "https://vixcloud.co",
-        "https://www.vixcloud.co",
-      ];
-    }
+      origins.push(url.origin);
+    } catch {}
+    return Array.from(new Set(origins));
   },
   buildUrl(opts: EmbedBuildUrlOptions): string {
     const host = getVixsrcHost();

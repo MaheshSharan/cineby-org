@@ -112,6 +112,7 @@ export function PlayerShell({
   const servers = modeConfig?.servers ?? [
     { id: "vixsrc", name: "Server 1 (VixSrc)", type: "embed", startAtSupported: true, eventsSupported: true },
     { id: "vidy", name: "Server 2 (Vidy)", type: "embed", startAtSupported: true, eventsSupported: true },
+    { id: "vidnest", name: "Server 3 (VidNest)", type: "embed", startAtSupported: true, eventsSupported: true },
   ];
 
   return (

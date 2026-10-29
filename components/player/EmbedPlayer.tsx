@@ -4,7 +4,6 @@ import { trackEvent } from "@/lib/analytics/gtag";
 
 import type { PlayerMedia } from "./types";
 import { ONBOARD_ADS_PLAYER_INFO_KEY } from "./types";
-import { PlayerHeader } from "./ui/PlayerHeader";
 import { ServerDrawer } from "./ui/ServerDrawer";
 import { AdBlockModal } from "./ui/AdBlockModal";
 import { useEmbedBridge } from "./hooks/useEmbedBridge";
@@ -29,12 +28,10 @@ interface EmbedPlayerProps {
 
 export function EmbedPlayer({
   media,
-  subtitle,
   servers,
   currentServerId,
   loadTimeoutMs,
   initialTime = 0,
-  onBack,
   onSelectServer,
   onTimeUpdate,
   onEnded,
@@ -81,11 +78,15 @@ export function EmbedPlayer({
     };
   }, [currentServerId, media.mediaId, media.seasonNumber, media.episodeNumber]);
 
-  // Intercept window.open on top window to block rogue third-party popups
+  // Intercept window.open on top window to block rogue third-party popups (allowing only authorized URLs like AdGuard)
   useEffect(() => {
     const originalOpen = window.open;
-    window.open = function (...args: Parameters<typeof originalOpen>) {
-      console.warn("[Cineby] Blocked unauthorized popup window attempt:", args[0]);
+    window.open = function (url?: string | URL, target?: string, features?: string) {
+      const targetUrl = typeof url === "string" ? url : url instanceof URL ? url.href : "";
+      if (targetUrl && targetUrl.startsWith("https://chromewebstore.google.com/detail/adguard-adblocker")) {
+        return originalOpen.call(window, url, target, features);
+      }
+      console.warn("[Cineby] Blocked unauthorized popup window attempt:", targetUrl);
       return null;
     };
     return () => {
@@ -109,15 +110,6 @@ export function EmbedPlayer({
     },
     [currentServerId, onSelectServer]
   );
-
-  const handleBack = useCallback(() => {
-    if (iframeRef.current) {
-      try {
-        iframeRef.current.src = "about:blank";
-      } catch {}
-    }
-    onBack?.();
-  }, [onBack]);
 
   // Construct iframe URL
   const embedUrl = useMemo(() => {
@@ -299,31 +291,31 @@ export function EmbedPlayer({
 
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden select-none">
-      {/* Header with Server selector */}
-      <PlayerHeader
-        title={media.title}
-        subtitle={subtitle}
-        onBack={handleBack}
-        visible={true}
-        variant="touch"
-        rightSlot={
-          <div className="flex items-center gap-2">
-            {servers.length > 1 && (
-              <button
-                type="button"
-                onClick={() => setIsDrawerOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 bg-black/40 backdrop-blur-md text-white/90 hover:text-white hover:bg-white/10 text-xs font-semibold transition-all shadow-lg"
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Server: {provider?.name ?? currentServerId}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            )}
-          </div>
-        }
-      />
+      {/* Floating mid-right edge server trigger */}
+      {servers.length > 1 && (
+        <button
+          type="button"
+          onClick={() => setIsDrawerOpen(true)}
+          aria-label="Switch streaming server"
+          title={`Server: ${provider?.name ?? currentServerId}`}
+          className="group absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 pl-2.5 pr-1.5 py-3 rounded-l-2xl border-l border-y border-white/20 bg-black/60 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/85 transition-all duration-200 translate-x-3 hover:translate-x-0 shadow-2xl shadow-black/80 focus:translate-x-0 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:animate-pulse" />
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="transition-transform duration-200 group-hover:-translate-x-0.5"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+      )}
 
       {/* Loading & Timeout Overlay */}
       {!isLoaded && (

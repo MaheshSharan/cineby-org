@@ -40,8 +40,15 @@ export function useEmbedBridge({
         return;
       }
 
-      // 2. Source window verification (if source and iframe are available)
-      if (iframeRef.current?.contentWindow && e.source && e.source !== iframeRef.current.contentWindow) {
+      // 2. Source window verification:
+      // Allow if source is directly our iframe window OR if the event arrives from an allowed
+      // origin (handles nested child iframes from upstream streaming CDNs like vixcloud.co).
+      if (
+        iframeRef.current?.contentWindow &&
+        e.source &&
+        e.source !== iframeRef.current.contentWindow &&
+        !isOriginAllowed(e.origin, provider.allowedOrigins)
+      ) {
         return;
       }
 
