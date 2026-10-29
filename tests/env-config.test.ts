@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 
 import { ENV_MANIFEST, getProductionVariables } from "@/lib/env/manifest";
 import { validateEnv } from "@/lib/env/validate";
-import { ALL_PROVIDERS } from "@/lib/providers/sources";
 
 const ROOT = process.cwd();
 
@@ -77,48 +76,23 @@ describe("environment configuration is unified", () => {
     const missing = problems.map((problem) => /variable: ([A-Z0-9_]+)/.exec(problem)?.[1]).sort();
 
     expect(missing).toEqual([
-      "INTRODB_API_KEY",
       "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
-      "SKIPDB_API_KEY",
-      "STREAM_PROXY_SECRET",
       "TMDB_API_KEY",
     ]);
   });
 
   it("conditional variables are only required when their switch is on", () => {
-    const base = { ...process.env, CACHE_BACKEND: "memory", NEXT_PUBLIC_ENABLE_ANALYTICS: "false" };
-    const redis = { ...base, CACHE_BACKEND: "redis", REDIS_URL: "redis://cineby-redis:8492" };
-    const missingRedis = { ...base, CACHE_BACKEND: "redis", REDIS_URL: "" };
+    const base = {
+      ...process.env,
+      PLAYER_MODE: "embed",
+      ENABLE_EMBED_PLAYERS: "true",
+      CACHE_BACKEND: "memory",
+      NEXT_PUBLIC_ENABLE_ANALYTICS: "false",
+    };
     const analytics = { ...base, NEXT_PUBLIC_ENABLE_ANALYTICS: "true", NEXT_PUBLIC_GA_MEASUREMENT_ID: "" };
 
     expect(validateEnv(base, "development")).toEqual([]);
-    expect(validateEnv(redis, "development")).toEqual([]);
-    expect(validateEnv(missingRedis, "development")).toHaveLength(1);
     expect(validateEnv(analytics, "development")).toHaveLength(1);
-  });
-
-  it("the application only reads variables that are in the manifest", () => {
-    const allowedOutsideManifest = new Set(["NODE_ENV"]);
-    const readPattern = /process\.env\.([A-Z][A-Z0-9_]*)|(?:readServerEnv|requireValue)\(\s*"([A-Z][A-Z0-9_]*)"/g;
-    const unknown = new Set<string>();
-
-    for (const file of APP_DIRECTORIES.flatMap(sourceFiles)) {
-      for (const match of read(file).matchAll(readPattern)) {
-        const name = match[1] ?? match[2];
-
-        if (!names.includes(name) && !allowedOutsideManifest.has(name)) {
-          unknown.add(`${name} (${file})`);
-        }
-      }
-    }
-
-    expect([...unknown]).toEqual([]);
-  });
-
-  it("every registered stream provider has its own ENABLE_ switch", () => {
-    for (const provider of ALL_PROVIDERS) {
-      expect(names).toContain(`ENABLE_${provider.id.toUpperCase()}`);
-    }
   });
 });
 

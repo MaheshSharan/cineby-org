@@ -1,4 +1,3 @@
-import type { AdAnalyticsEvent } from "@/lib/ads/analyticsEvents";
 import { getGaMeasurementId, isAnalyticsEnabled } from "@/lib/env/public";
 
 /** GA4 measurement ID, or null while analytics is explicitly disabled (NEXT_PUBLIC_ENABLE_ANALYTICS=false). */
@@ -152,8 +151,7 @@ export type GTagEvent =
         message: string;
         fatal?: boolean;
       };
-    }
-  | AdAnalyticsEvent;
+    };
 
 export interface UserProperties {
   auth_status?: "authenticated" | "guest";

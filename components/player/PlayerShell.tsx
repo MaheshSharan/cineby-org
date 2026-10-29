@@ -2,7 +2,6 @@ import { useCallback, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/router";
 
 import type { PlayerMedia } from "./types";
-import { PlayerContainer } from "./PlayerContainer";
 import { EmbedPlayer } from "./EmbedPlayer";
 import { saveHistory } from "@/lib/api/history";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -38,7 +37,8 @@ export function PlayerShell({
   const initialServer =
     queryServer ||
     modeConfig?.defaultServer ||
-    (modeConfig?.nativeEnabled ? "native" : modeConfig?.servers[0]?.id || "vixsrc");
+    modeConfig?.servers[0]?.id ||
+    "vixsrc";
 
   const [currentServerId, setCurrentServerId] = useState<string>(initialServer);
 
@@ -52,14 +52,10 @@ export function PlayerShell({
     (newServerId: string) => {
       setCurrentServerId(newServerId);
       const url = new URL(window.location.href);
-      if (newServerId === "native" && modeConfig?.nativeEnabled) {
-        url.searchParams.delete("server");
-      } else {
-        url.searchParams.set("server", newServerId);
-      }
+      url.searchParams.set("server", newServerId);
       router.replace(url.pathname + url.search, undefined, { shallow: true });
     },
-    [router, modeConfig]
+    [router]
   );
 
   const handleTimeUpdate = useCallback(
@@ -105,31 +101,21 @@ export function PlayerShell({
   );
 
   const initialTimeSec = typeof router.query.t === "string" ? Number.parseInt(router.query.t, 10) || 0 : 0;
-  const isEmbedActive = currentServerId !== "native" || !modeConfig?.nativeEnabled;
-
-  if (isEmbedActive && modeConfig) {
-    return (
-      <EmbedPlayer
-        media={media ?? defaultMedia(title)}
-        subtitle={subtitle}
-        servers={modeConfig.servers}
-        currentServerId={currentServerId}
-        loadTimeoutMs={modeConfig.loadTimeoutMs}
-        initialTime={initialTimeSec}
-        onBack={onBack}
-        onSelectServer={handleSelectServer}
-        onTimeUpdate={handleTimeUpdate}
-        onEnded={onEnded}
-        onNavigateEpisode={onNavigateEpisode}
-      />
-    );
-  }
+  const servers = modeConfig?.servers ?? [
+    { id: "vixsrc", name: "Server 1 (VixSrc)", type: "embed", startAtSupported: true, eventsSupported: true },
+    { id: "vidy", name: "Server 2 (Vidy)", type: "embed", startAtSupported: false, eventsSupported: false },
+  ];
 
   return (
-    <PlayerContainer
+    <EmbedPlayer
       media={media ?? defaultMedia(title)}
       subtitle={subtitle}
+      servers={servers}
+      currentServerId={currentServerId}
+      loadTimeoutMs={modeConfig?.loadTimeoutMs ?? 12000}
+      initialTime={initialTimeSec}
       onBack={onBack}
+      onSelectServer={handleSelectServer}
       onTimeUpdate={handleTimeUpdate}
       onEnded={onEnded}
       onNavigateEpisode={onNavigateEpisode}

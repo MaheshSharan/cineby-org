@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
-import { useIsTouchDevice } from "@/components/player/hooks/useIsTouchDevice";
 import { XIcon } from "@/components/ui/icons";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import {
@@ -16,8 +15,14 @@ import {
 
 export function InstallBanner() {
   const router = useRouter();
-  const isTouchDevice = useIsTouchDevice();
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const { canPromptInstall, isIos, isStandalone, promptInstall } = useInstallPrompt();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsTouchDevice(window.matchMedia("(hover: none) and (pointer: coarse)").matches);
+    }
+  }, []);
   const [isDelayElapsed, setIsDelayElapsed] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 

@@ -13,9 +13,6 @@ import {
 import {
   getCacheBackend,
   getDatabasePath,
-  getStreamProxySecret,
-  getStreamProxyUrl,
-  isProviderEnabled,
 } from "@/lib/env/server";
 
 const originalEnv = { ...process.env };
@@ -86,21 +83,7 @@ describe("env getters fail fast", () => {
     expect(() => getGaMeasurementId()).toThrow(/NEXT_PUBLIC_GA_MEASUREMENT_ID/);
   });
 
-  it("require secrets and stream proxy settings", () => {
-    delete process.env.STREAM_PROXY_SECRET;
-    expect(() => getStreamProxySecret()).toThrow(/STREAM_PROXY_SECRET/);
-
-    delete process.env.STREAM_PROXY_URL;
-    expect(() => getStreamProxyUrl()).toThrow(/STREAM_PROXY_URL/);
-  });
-
-  it("require an explicit provider switch and cache backend", () => {
-    delete process.env.ENABLE_VIDY;
-    expect(() => isProviderEnabled("vidy")).toThrow(/ENABLE_VIDY/);
-
-    process.env.ENABLE_VIDY = "0";
-    expect(() => isProviderEnabled("vidy")).toThrow(EnvConfigError);
-
+  it("require an explicit cache backend", () => {
     process.env.CACHE_BACKEND = "inferred";
     expect(() => getCacheBackend()).toThrow(/CACHE_BACKEND/);
   });

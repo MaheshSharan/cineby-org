@@ -1,69 +1,10 @@
 import type { SeasonEpisodes } from "@/lib/tmdb";
-import type { ActiveProvider } from "./providers/activeProviders";
 
 export type MediaType = "movie" | "tv";
-
-export type ServerKind = "default" | "test" | "bunny";
-
-export type StreamFormat = "hls" | "dash" | "mp4" | "webm" | "mkv" | "unknown";
 
 export type QualityLabel = "2160p" | "1080p" | "720p" | "480p";
 
 export type PlaybackRate = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2;
-
-export interface ThumbnailTrack {
-  url: string;
-  headers?: Record<string, string>;
-}
-
-export interface MediaSource {
-  id: string;
-  kind: ServerKind;
-  name: string;
-  url: string;
-  format: StreamFormat;
-  quality: QualityLabel | null;
-  headers?: Record<string, string>;
-  thumbnail?: string | null;
-  thumbnails?: ThumbnailTrack[];
-}
-
-export interface ServerOption {
-  id: string;
-  name: string;
-  description?: string;
-  kind: ServerKind;
-  flagUrl?: string;
-}
-
-export interface ServerChild {
-  id: string;
-  name: string;
-  flagUrl?: string;
-}
-
-export interface ServerGroup {
-  id: string;
-  name: string;
-  flagUrl?: string;
-  children: ServerChild[];
-}
-
-export interface SubtitleTrack {
-  id: string;
-  lang: string;
-  label: string;
-  url: string | null;
-  flagUrl?: string;
-}
-
-export type SegmentType = "intro" | "recap" | "outro" | "preview" | "post-credits";
-
-export interface MediaSegment {
-  type: SegmentType;
-  start: number;
-  end: number;
-}
 
 export interface PlayerMedia {
   mediaType: MediaType;
@@ -80,9 +21,7 @@ export interface PlayerMedia {
   releaseYear?: string | null;
   progress?: number | null;
   seasons?: PlayerSeason[];
-  segments?: MediaSegment[];
   initialEpisodes?: SeasonEpisodes | null;
-  activeProviders?: ActiveProvider[];
 }
 
 export interface PlayerSeason {

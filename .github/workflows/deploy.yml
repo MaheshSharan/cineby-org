@@ -26,6 +26,9 @@ jobs:
       - name: Run Test Suite
         run: bun run test
 
+      - name: Run TypeScript Typecheck
+        run: bun run typecheck
+
   deploy-cloudflare:
     name: Deploy to Cloudflare Workers
     needs: test
@@ -49,14 +52,6 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: d1 migrations apply cineby-prod --remote
         continue-on-error: true
-
-      - name: Deploy Stream Proxy Worker
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: workers/stream-proxy
-          command: deploy
 
       - name: Deploy Main Web Application
         uses: cloudflare/wrangler-action@v3

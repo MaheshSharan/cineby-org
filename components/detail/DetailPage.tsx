@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { MovieDetails, SeasonEpisodes, TvDetails } from "@/lib/tmdb";
-import type { ActiveProvider } from "@/components/player/providers/activeProviders";
 import { getBackdropResponsiveUrls, getHeroBackdropUrl, getLogoUrl } from "@/lib/tmdb/image";
 import type { HistoryEntry } from "@/lib/db/types";
 import { listHistory } from "@/lib/api/history";
@@ -45,7 +44,6 @@ interface DetailPageProps {
   onClose?: () => void;
   initialEpisodes?: SeasonEpisodes | null;
   initialTrailerUrl?: string | null;
-  activeProviders?: ActiveProvider[];
 }
 
 const TRAILER_DELAY_MS = 5000;
@@ -59,7 +57,6 @@ export function DetailPage({
   onClose,
   initialEpisodes,
   initialTrailerUrl,
-  activeProviders,
 }: DetailPageProps) {
   const isModal = variant === "modal";
   const router = useRouter();
@@ -295,10 +292,9 @@ export function DetailPage({
           releaseYear,
           seasons: isTv && "seasons" in details ? toPlayerSeasons(details.seasons) : undefined,
           initialEpisodes,
-          activeProviders,
         }}
         onBack={() => router.push(getMediaHref(details.mediaType, details.id))}
-        onNavigateEpisode={(season, episode) =>
+        onNavigateEpisode={(season: number, episode: number) =>
           router.push(getEpisodeHref(details.id, season, episode))
         }
       />

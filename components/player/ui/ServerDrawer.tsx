@@ -98,8 +98,8 @@ export function ServerDrawer({
                     />
                     <div>
                       <div className="text-sm font-medium">{server.name}</div>
-                      <div className="text-[11px] text-white/40 capitalize">
-                        {server.type === "native" ? "Native HLS Stream" : "External Embed"}
+                      <div className="text-[11px] text-white/40">
+                        External Embed Server
                       </div>
                     </div>
                   </div>

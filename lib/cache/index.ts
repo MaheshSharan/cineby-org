@@ -1,8 +1,6 @@
 import { getCacheBackend, getCacheMaxEntries } from "@/lib/env/server";
 import { logger } from "@/lib/logger";
 import { MemoryCacheStore } from "./memory";
-import { RedisCacheStore } from "./redis";
-
 import { KVCacheStore, type KVNamespaceBinding } from "./kv";
 import { SingleFlight } from "./singleFlight";
 import type { CacheStore } from "./types";
@@ -22,9 +20,7 @@ const singleFlight = new SingleFlight();
 export function getCacheStore(): CacheStore {
   if (!globalCacheStore) {
     const backend = getCacheBackend();
-    if (backend === "redis") {
-      globalCacheStore = new RedisCacheStore();
-    } else if (backend === "kv") {
+    if (backend === "kv") {
       // Look for Cloudflare KV binding
       const cfContext = (globalThis as unknown as Record<symbol, { env?: { CACHE_KV?: KVNamespaceBinding } }>)[
         Symbol.for("__cloudflare-context__")
