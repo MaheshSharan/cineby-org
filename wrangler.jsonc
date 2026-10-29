@@ -13,14 +13,14 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "cineby-prod",
-      "database_id": "cineby-prod-d1-id"
+      "database_name": "cineby-db",
+      "database_id": "d9b17c57-accb-42b2-af82-65a3ef942575"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "CACHE_KV",
-      "id": "cineby-cache-kv-id"
+      "id": "aba23fb855ef4dd489de81586c5b4f56"
     }
   ],
   "vars": {
