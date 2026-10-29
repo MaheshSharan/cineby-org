@@ -1,4 +1,5 @@
 import type { EmbedBuildUrlOptions, EmbedNormalizedEvent, EmbedProvider } from "../types";
+import { DEFAULT_EMBED_SANDBOX } from "../types";
 import { cleanHexColor, parseEmbedMessage } from "../common";
 
 function getVidyHost(): string {
@@ -36,19 +37,22 @@ export const vidyEmbed: EmbedProvider = {
   buildUrl(opts: EmbedBuildUrlOptions): string {
     const host = getVidyHost();
 
+    const season = opts.season && opts.season > 0 ? Math.floor(opts.season) : 1;
+    const episode = opts.episode && opts.episode > 0 ? Math.floor(opts.episode) : 1;
+
     let path = "";
     if (opts.type === "anime") {
       const animeId = opts.anilistId ?? opts.tmdbId;
       if (!animeId) {
         throw new Error("[vidyEmbed] anilistId or tmdbId is required for anime");
       }
-      path = `/anime/${animeId}/${opts.episode ?? 1}`;
+      path = `/anime/${animeId}/${episode}`;
     } else if (opts.type === "tv") {
       const id = opts.tmdbId;
       if (!id) {
         throw new Error("[vidyEmbed] tmdbId is required for tv");
       }
-      path = `/tv/${id}/${opts.season ?? 1}/${opts.episode ?? 1}`;
+      path = `/tv/${id}/${season}/${episode}`;
     } else {
       const id = opts.tmdbId;
       if (!id) {
@@ -95,5 +99,6 @@ export const vidyEmbed: EmbedProvider = {
   iframe: {
     allow: "encrypted-media; autoplay *; fullscreen *",
     referrerPolicy: "origin",
+    sandbox: DEFAULT_EMBED_SANDBOX,
   },
 };

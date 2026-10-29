@@ -51,12 +51,11 @@ export function useEmbedBridge({
 
       onEventRef.current?.(parsed);
 
-      if (
-        (parsed.event === "timeupdate" || parsed.event === "media_data" || parsed.event === "seeked") &&
-        typeof parsed.currentTime === "number"
-      ) {
+      if (typeof parsed.currentTime === "number") {
         onTimeUpdateRef.current?.(parsed.currentTime, parsed.duration ?? 0);
-      } else if (parsed.event === "ended") {
+      }
+
+      if (parsed.event === "ended" || parsed.event === "next") {
         onEndedRef.current?.();
       }
     }

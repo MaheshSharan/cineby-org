@@ -484,4 +484,95 @@ describe("Edge Cases & Normalization", () => {
       videoId: "999",
     });
   });
+
+  it("handles stringified inner data inside PLAYER_EVENT", () => {
+    const res = parseEmbedMessage("https://vixsrc.to", allowed, {
+      type: "PLAYER_EVENT",
+      data: JSON.stringify({
+        event: "timeupdate",
+        currentTime: 77,
+        duration: 200,
+        video_id: "vid-1",
+      }),
+    });
+    expect(res).toEqual({
+      event: "timeupdate",
+      currentTime: 77,
+      duration: 200,
+      videoId: "vid-1",
+    });
+  });
+
+  it("extracts progress from serialized array in MEDIA_DATA", () => {
+    const arrayHistory = JSON.stringify({
+      type: "MEDIA_DATA",
+      data: JSON.stringify([
+        { id: "100", currentTime: 10, duration: 100 },
+        { id: "200", currentTime: 350, duration: 1800 },
+      ]),
+    });
+    const parsed = parseEmbedMessage("https://vidy.st", allowed, arrayHistory);
+    expect(parsed?.event).toBe("media_data");
+    expect(parsed?.currentTime).toBe(350);
+    expect(parsed?.duration).toBe(1800);
+  });
+
+  it("normalizes next, nextEpisode and next_episode events", () => {
+    const e1 = parseEmbedMessage(
+      "https://vidy.st",
+      allowed,
+      JSON.stringify({ event: "nextEpisode" })
+    );
+    expect(e1?.event).toBe("next");
+
+    const e2 = parseEmbedMessage(
+      "https://vidy.st",
+      allowed,
+      JSON.stringify({ event: "next_episode" })
+    );
+    expect(e2?.event).toBe("next");
+
+    const e3 = parseEmbedMessage(
+      "https://vidy.st",
+      allowed,
+      JSON.stringify({ event: "next" })
+    );
+    expect(e3?.event).toBe("next");
+  });
+
+  it("safely verifies subdomain origins while rejecting lookalikes and protocol mismatches", () => {
+    const baseAllowed = ["https://vixcloud.co", "https://vidy.st"];
+    expect(isOriginAllowed("https://s1.vixcloud.co", baseAllowed)).toBe(true);
+    expect(isOriginAllowed("https://stream.edge2.vixcloud.co", baseAllowed)).toBe(true);
+    expect(isOriginAllowed("https://player.vidy.st", baseAllowed)).toBe(true);
+    expect(isOriginAllowed("https://evil-vidy.st", baseAllowed)).toBe(false);
+    expect(isOriginAllowed("https://vixcloud.co.attacker.com", baseAllowed)).toBe(false);
+    expect(isOriginAllowed("http://vidy.st", baseAllowed)).toBe(false);
+  });
+
+  it("defaults non-positive season and episode values to 1 for both providers", () => {
+    const vidyZero = vidyEmbed.buildUrl({
+      type: "tv",
+      tmdbId: 100,
+      season: 0,
+      episode: -5,
+    });
+    expect(vidyZero).toBe("https://vidy.st/tv/100/1/1");
+
+    const vixZero = vixsrcEmbed.buildUrl({
+      type: "tv",
+      tmdbId: 100,
+      season: 0,
+      episode: 0,
+    });
+    expect(vixZero).toBe("https://vixsrc.to/tv/100/1/1");
+  });
+
+  it("configures proper sandbox permissions on iframe options", () => {
+    expect(vidyEmbed.iframe.sandbox).toContain("allow-scripts");
+    expect(vidyEmbed.iframe.sandbox).toContain("allow-same-origin");
+    expect(vidyEmbed.iframe.sandbox).toContain("allow-presentation");
+    expect(vixsrcEmbed.iframe.sandbox).toContain("allow-scripts");
+    expect(vixsrcEmbed.iframe.sandbox).toContain("allow-same-origin");
+  });
 });

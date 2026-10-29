@@ -39,7 +39,11 @@ export type EmbedEventType =
   | "seeked"
   | "timeupdate"
   | "ended"
+  | "next"
   | "media_data";
+
+export const DEFAULT_EMBED_SANDBOX =
+  "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox";
 
 export interface EmbedNormalizedEvent {
   event: EmbedEventType;

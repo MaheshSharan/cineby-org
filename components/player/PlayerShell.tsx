@@ -100,7 +100,15 @@ export function PlayerShell({
     [media, onTimeUpdate, title, user]
   );
 
-  const initialTimeSec = typeof router.query.t === "string" ? Number.parseInt(router.query.t, 10) || 0 : 0;
+  const queryTime = typeof router.query.t === "string" ? Number.parseInt(router.query.t, 10) || 0 : 0;
+  const initialTimeSec =
+    queryTime > 0
+      ? queryTime
+      : media?.progressSeconds && media.progressSeconds > 0
+      ? media.progressSeconds
+      : media?.progress && media.runtime
+      ? Math.round((media.progress / 100) * media.runtime * 60)
+      : 0;
   const servers = modeConfig?.servers ?? [
     { id: "vixsrc", name: "Server 1 (VixSrc)", type: "embed", startAtSupported: true, eventsSupported: true },
     { id: "vidy", name: "Server 2 (Vidy)", type: "embed", startAtSupported: true, eventsSupported: true },

@@ -10,6 +10,7 @@ export interface PlayerMedia {
   mediaType: MediaType;
   mediaId: number;
   imdbId?: string | null;
+  anilistId?: number | string | null;
   title: string;
   posterPath?: string | null;
   backdropPath?: string | null;
@@ -20,6 +21,7 @@ export interface PlayerMedia {
   runtime?: number | null;
   releaseYear?: string | null;
   progress?: number | null;
+  progressSeconds?: number | null;
   seasons?: PlayerSeason[];
   initialEpisodes?: SeasonEpisodes | null;
 }

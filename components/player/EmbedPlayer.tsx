@@ -7,6 +7,7 @@ import { PlayerHeader } from "./ui/PlayerHeader";
 import { ServerDrawer } from "./ui/ServerDrawer";
 import { useEmbedBridge } from "./hooks/useEmbedBridge";
 import { getEmbedProvider } from "@/lib/embeds/registry";
+import { DEFAULT_EMBED_SANDBOX } from "@/lib/embeds/types";
 import type { PlayerServerOption } from "@/lib/player/modeConfig";
 
 interface EmbedPlayerProps {
@@ -55,13 +56,24 @@ export function EmbedPlayer({
   const embedUrl = useMemo(() => {
     if (!provider) return "";
     try {
+      const isAnime = Boolean(media.anilistId);
+      const effectiveType = isAnime ? "anime" : media.mediaType;
+      const resumeSec =
+        initialTime > 0
+          ? initialTime
+          : media.progressSeconds && media.progressSeconds > 0
+          ? media.progressSeconds
+          : undefined;
+
       return provider.buildUrl({
-        type: media.mediaType,
+        type: effectiveType,
         tmdbId: media.mediaId,
         imdbId: media.imdbId ?? undefined,
-        season: media.seasonNumber ?? 1,
-        episode: media.episodeNumber ?? 1,
-        startAtSec: initialTime > 0 ? initialTime : undefined,
+        anilistId: media.anilistId ?? undefined,
+        season: media.seasonNumber && media.seasonNumber > 0 ? media.seasonNumber : 1,
+        episode: media.episodeNumber && media.episodeNumber > 0 ? media.episodeNumber : 1,
+        startAtSec: resumeSec,
+        progress: resumeSec,
         autoplay: true,
         theme: {
           primary: "DC2626",
@@ -197,6 +209,14 @@ export function EmbedPlayer({
       onEnded?.();
       // Auto navigate to next episode if available
       if (media.mediaType === "tv" && media.seasonNumber && media.episodeNumber && onNavigateEpisode) {
+        const currentSeason = media.seasons?.find((s) => s.seasonNumber === media.seasonNumber);
+        if (currentSeason && currentSeason.episodeCount && media.episodeNumber >= currentSeason.episodeCount) {
+          const nextSeason = media.seasons?.find((s) => s.seasonNumber > media.seasonNumber!);
+          if (nextSeason) {
+            onNavigateEpisode(nextSeason.seasonNumber, 1);
+            return;
+          }
+        }
         onNavigateEpisode(media.seasonNumber, media.episodeNumber + 1);
       }
     },
@@ -295,7 +315,7 @@ export function EmbedPlayer({
           allow={provider?.iframe.allow ?? "encrypted-media; autoplay *; fullscreen *"}
           allowFullScreen
           referrerPolicy={provider?.iframe.referrerPolicy ?? "origin"}
-          sandbox={provider?.iframe.sandbox}
+          sandbox={provider?.iframe.sandbox ?? DEFAULT_EMBED_SANDBOX}
           className="w-full h-full border-0"
           onLoad={() => setIsLoaded(true)}
         />

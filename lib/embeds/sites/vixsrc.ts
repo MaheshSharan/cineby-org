@@ -1,4 +1,5 @@
 import type { EmbedBuildUrlOptions, EmbedNormalizedEvent, EmbedProvider } from "../types";
+import { DEFAULT_EMBED_SANDBOX } from "../types";
 import { cleanHexColor, parseEmbedMessage } from "../common";
 
 function getVixsrcHost(): string {
@@ -51,10 +52,11 @@ export const vixsrcEmbed: EmbedProvider = {
       throw new Error("[vixsrcEmbed] Either tmdbId or imdbId is required");
     }
 
-    const path =
-      opts.type === "tv"
-        ? `/tv/${id}/${opts.season ?? 1}/${opts.episode ?? 1}`
-        : `/movie/${id}`;
+    const season = opts.season && opts.season > 0 ? Math.floor(opts.season) : 1;
+    const episode = opts.episode && opts.episode > 0 ? Math.floor(opts.episode) : 1;
+    const isShow = opts.type === "tv" || (opts.type === "anime" && (opts.season !== undefined || opts.episode !== undefined));
+
+    const path = isShow ? `/tv/${id}/${season}/${episode}` : `/movie/${id}`;
 
     const url = new URL(`${host}${path}`);
 
@@ -88,5 +90,6 @@ export const vixsrcEmbed: EmbedProvider = {
   iframe: {
     allow: "encrypted-media; autoplay *; fullscreen *",
     referrerPolicy: "origin",
+    sandbox: DEFAULT_EMBED_SANDBOX,
   },
 };
