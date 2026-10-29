@@ -1295,20 +1295,24 @@ Every new abstraction, dependency, state variable, effect, and file should have 
 
 ## 45. Hosting, Architecture & Runtime Standards
 
-Cineby is deployed as a self-hosted Docker standalone container on an isolated production VPS behind a centralized Caddy reverse proxy on the `deploy_default` Docker network.
+Cineby supports dual deployment models:
+1. **Cloudflare Workers (Primary Target)**: Deployed to Cloudflare Workers (`cineby-web`) with OpenNext (`nodejs_compat`), utilizing Cloudflare D1 for database storage, Cloudflare KV / Cache API for caching, and GitHub Actions with Wrangler for automated edge deployments.
+2. **Self-Hosted Standalone (Native VPS / Docker Compatible)**: Compatible with standalone Node.js container environments (Docker, Caddy reverse proxy, local SQLite via `DATABASE_PATH`, and Redis/in-memory cache).
 
-Cloudflare Workers, OpenNext, and Upstash have been removed. Do not introduce Cloudflare Workers, OpenNext, or Edge runtime abstractions back into this project.
+Do not remove or break compatibility with native standalone deployment (e.g. SQLite schema, container configurations), ensuring Cineby can seamlessly operate in both Cloudflare Workers edge and native self-hosted environments.
 
 ### 1. Database & Cache Infrastructure
-- **Database**: Embedded local SQLite via `better-sqlite3` located at `DATABASE_PATH` (`/app/data/cineby.db`). Runs under unprivileged user `nextjs` (UID: 1001, GID: 1000).
-- **Cache**: Native TCP Redis via `ioredis` on internal port `8492` (`cineby-redis`), with in-memory fallback.
-- **Port Security**: Internal application and database ports (`3487`, `8492`) must never be bound to `0.0.0.0` or exposed publicly to the host.
+- **Cloudflare Edge**: Cloudflare D1 via standard OpenNext / Cloudflare bindings (`DB`), with KV / in-memory cache fallback.
+- **Native VPS/Docker**: Embedded local SQLite via `node:sqlite` or `DATABASE_PATH` (`/app/data/cineby.db`), native TCP Redis (`ioredis`) or in-memory LRU.
+- **Port Security**: For native Docker environments, internal application and database ports (`3487`, `8492`) must never be bound to `0.0.0.0` or exposed publicly to the host.
 
-### 2. Reverse Proxy & SSL
-- Incoming HTTPS traffic is terminated by the host Caddy reverse proxy using Cloudflare Origin CA certificates (`Full (Strict)` mode in Cloudflare).
-- The application container `cineby-web:3487` communicates directly with Caddy via internal Docker network `deploy_default`.
+### 2. Reverse Proxy & Edge Routing
+- For Cloudflare Workers, edge routing and SSL termination are handled directly by Cloudflare.
+- For self-hosted VPS, incoming HTTPS traffic is terminated by Caddy reverse proxy on the `deploy_default` network.
 
 ### 3. Build & Secret Management
-- Secrets must not be baked into Docker image layers.
-- Production builds mount `.env.production` via Docker BuildKit secret mounts (`--mount=type=secret,id=env,target=/app/.env.production`).
+- Secrets must never be committed to Git or embedded in build layers.
+- On Cloudflare Workers: Managed via `wrangler secret put` and repository secrets in CI/CD.
+- On native VPS: Managed via `.env.production` BuildKit secret mounts or secure environment injection.
+
 
