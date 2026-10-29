@@ -1,5 +1,4 @@
 import type { EmbedBuildUrlOptions, EmbedNormalizedEvent, EmbedProvider } from "../types";
-import { DEFAULT_EMBED_SANDBOX } from "../types";
 import { parseEmbedMessage } from "../common";
 
 function getVidnestHost(): string {

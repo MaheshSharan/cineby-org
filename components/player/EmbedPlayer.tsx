@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { buildImageUrl } from "@/lib/tmdb/image";
 import { trackEvent } from "@/lib/analytics/gtag";
 
 import type { PlayerMedia } from "./types";
@@ -42,7 +41,6 @@ export function EmbedPlayer({
   const [isAdBlockModalOpen, setIsAdBlockModalOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasTimedOut, setHasTimedOut] = useState(false);
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const startedRef = useRef(false);
   const reachedMilestonesRef = useRef<Set<number>>(new Set());
@@ -66,7 +64,6 @@ export function EmbedPlayer({
   useEffect(() => {
     startedRef.current = false;
     reachedMilestonesRef.current.clear();
-    setHasUserInteracted(false);
   }, [media.mediaId, media.seasonNumber, media.episodeNumber, currentServerId]);
 
   // Immediately terminate previous server stream on server change, media change, or unmount
@@ -102,7 +99,6 @@ export function EmbedPlayer({
         } catch {}
       }
       setIsLoaded(false);
-      setHasUserInteracted(false);
       onSelectServer(serverId);
     },
     [currentServerId, onSelectServer]
@@ -218,15 +214,6 @@ export function EmbedPlayer({
     return () => clearTimeout(timer);
   }, [provider, media, onTimeUpdate]);
 
-  const handleBurnerClick = useCallback(() => {
-    setHasUserInteracted(true);
-    // Send standard play postMessage to trigger video without letting ad scripts capture the click
-    if (iframeRef.current?.contentWindow) {
-      try {
-        iframeRef.current.contentWindow.postMessage({ type: "play", event: "play" }, "*");
-      } catch {}
-    }
-  }, []);
   useEmbedBridge({
     serverId: currentServerId,
     iframeRef,
@@ -295,14 +282,6 @@ export function EmbedPlayer({
       }
     },
   });
-
-  const nextServer = useMemo(() => {
-    const currentIndex = servers.findIndex((s) => s.id === currentServerId);
-    if (currentIndex >= 0 && currentIndex + 1 < servers.length) {
-      return servers[currentIndex + 1];
-    }
-    return servers.find((s) => s.id !== currentServerId);
-  }, [servers, currentServerId]);
 
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden select-none">
