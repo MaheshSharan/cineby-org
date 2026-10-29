@@ -657,5 +657,26 @@ describe("Player Onboarding & AdBlock Configuration", () => {
     expect(parsed.searchParams.get("nextEpisode")).toBeNull();
     expect(parsed.searchParams.get("episodeSelector")).toBeNull();
   });
+
+  it("builds correct movie and tv URLs for VidNest", async () => {
+    const { vidnestEmbed } = await import("@/lib/embeds/sites/vidnest");
+    const movieUrl = vidnestEmbed.buildUrl({
+      type: "movie",
+      tmdbId: 324857,
+      startAtSec: 120,
+    });
+    const parsedMovie = new URL(movieUrl);
+    expect(parsedMovie.pathname).toBe("/movie/324857");
+    expect(parsedMovie.searchParams.get("startAt")).toBe("120");
+
+    const tvUrl = vidnestEmbed.buildUrl({
+      type: "tv",
+      tmdbId: 94997,
+      season: 2,
+      episode: 5,
+    });
+    const parsedTv = new URL(tvUrl);
+    expect(parsedTv.pathname).toBe("/tv/94997/2/5");
+  });
 });
 
