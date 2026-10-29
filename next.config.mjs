@@ -17,6 +17,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "assets.cineby.group",
       },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
     ],
   },
   // NEXT_PUBLIC_* values are inlined by Next.js at build time. No `env` mapping is needed here.

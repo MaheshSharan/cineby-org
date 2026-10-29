@@ -10,6 +10,8 @@ import {
   getStillThumbUrl,
   getSeasonPosterThumbUrl,
 } from "@/lib/tmdb/image";
+import fs from "node:fs";
+import path from "node:path";
 import { getTmdbImageBaseUrl, getImageProxyUrl } from "@/lib/env/public";
 
 describe("TMDB & Asset Proxy Image URL resolution", () => {
@@ -120,5 +122,13 @@ describe("TMDB & Asset Proxy Image URL resolution", () => {
 
     delete process.env.NEXT_PUBLIC_IMAGE_PROXY_URL;
     expect(() => getImageProxyUrl()).toThrow(/NEXT_PUBLIC_IMAGE_PROXY_URL/);
+  });
+
+  it("configures unoptimized images and allows wsrv.nl and TMDB hostnames in next.config.mjs", () => {
+    const configContent = fs.readFileSync(path.join(process.cwd(), "next.config.mjs"), "utf8");
+    expect(configContent).toContain("unoptimized: true");
+    expect(configContent).toContain('"wsrv.nl"');
+    expect(configContent).toContain('"image.tmdb.org"');
+    expect(configContent).toContain('"assets.cineby.group"');
   });
 });

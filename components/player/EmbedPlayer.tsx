@@ -54,16 +54,20 @@ export function EmbedPlayer({
   // Construct iframe URL
   const embedUrl = useMemo(() => {
     if (!provider) return "";
-    return provider.buildUrl({
-      type: media.mediaType,
-      tmdbId: media.mediaId,
-      imdbId: media.imdbId ?? undefined,
-      season: media.seasonNumber ?? 1,
-      episode: media.episodeNumber ?? 1,
-      startAtSec: initialTime > 0 ? initialTime : undefined,
-      autoplay: true,
-      lang: "en",
-    });
+    try {
+      return provider.buildUrl({
+        type: media.mediaType,
+        tmdbId: media.mediaId,
+        imdbId: media.imdbId ?? undefined,
+        season: media.seasonNumber ?? 1,
+        episode: media.episodeNumber ?? 1,
+        startAtSec: initialTime > 0 ? initialTime : undefined,
+        autoplay: true,
+        lang: "en",
+      });
+    } catch {
+      return "";
+    }
   }, [provider, media, initialTime]);
 
   // Handle load timeout
@@ -133,6 +137,27 @@ export function EmbedPlayer({
   useEmbedBridge({
     serverId: currentServerId,
     iframeRef,
+    onEvent: (event) => {
+      if (event.event === "play") {
+        trackEvent({
+          action: "media_play",
+          params: {
+            content_id: String(media.mediaId),
+            media_type: media.mediaType,
+            current_time: Math.round(event.currentTime ?? 0),
+          },
+        });
+      } else if (event.event === "pause") {
+        trackEvent({
+          action: "media_pause",
+          params: {
+            content_id: String(media.mediaId),
+            media_type: media.mediaType,
+            current_time: Math.round(event.currentTime ?? 0),
+          },
+        });
+      }
+    },
     onTimeUpdate: (current, duration) => {
       setIsLoaded(true);
       setHasTimedOut(false);

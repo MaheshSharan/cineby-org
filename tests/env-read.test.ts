@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getGaMeasurementId, getImageProxyUrl, getImageMode, isAnalyticsEnabled } from "@/lib/env/public";
+import {
+  getGaMeasurementId,
+  getGoogleSiteVerification,
+  getImageProxyUrl,
+  getImageMode,
+  isAnalyticsEnabled,
+} from "@/lib/env/public";
 import {
   EnvConfigError,
   parseEnum,
@@ -91,5 +97,16 @@ describe("env getters fail fast", () => {
   it("require a database path outside Cloudflare", () => {
     delete process.env.DATABASE_PATH;
     expect(() => getDatabasePath()).toThrow(/DATABASE_PATH/);
+  });
+
+  it("reads optional Google site verification token", () => {
+    delete process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+    expect(getGoogleSiteVerification()).toBeUndefined();
+
+    process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION = "   ";
+    expect(getGoogleSiteVerification()).toBeUndefined();
+
+    process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION = "  google-test-token  ";
+    expect(getGoogleSiteVerification()).toBe("google-test-token");
   });
 });
