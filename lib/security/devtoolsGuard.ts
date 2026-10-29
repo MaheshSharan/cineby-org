@@ -14,8 +14,9 @@ export interface DevtoolsGuardOptions {
 }
 
 const DEFAULT_REDIRECT_URL = "about:blank";
-const TIMING_THRESHOLD_MS = 100;
-const DIMENSION_THRESHOLD_PX = 160;
+const TIMING_THRESHOLD_MS = 250;
+const DIMENSION_THRESHOLD_PX = 320;
+const REQUIRED_CONSECUTIVE_HITS = 2;
 
 /**
  * Executes neutralization: clears document content and redirects.
@@ -50,13 +51,12 @@ export function triggerDevtoolsNeutralization(redirectUrl: string = DEFAULT_REDI
 /**
  * Check 1: Timing delta via debugger execution.
  * When DevTools is closed, `debugger` statement execution takes < 5-10ms.
- * When DevTools is open, debugger pause/hook introduces >= 100ms delta.
+ * When DevTools is open, debugger pause/hook introduces >= 250ms delta.
  */
 export function checkDebuggerTiming(thresholdMs: number = TIMING_THRESHOLD_MS): boolean {
   if (typeof window === "undefined") return false;
 
   const start = performance.now();
-  // Call Function constructor or debugger statement
   // eslint-disable-next-line no-debugger
   debugger;
   const delta = performance.now() - start;
@@ -114,8 +114,6 @@ export function createConsoleTrap(onTrigger: () => void): { trap: () => void } {
   const trap = () => {
     if (detected) return;
     try {
-      // Trigger console inspection
-      // Console methods in DevTools invoke getters/toString for formatted display
       console.debug(element);
       console.dir(regExp);
     } catch {
@@ -150,25 +148,43 @@ export function initDevtoolsGuard(options: DevtoolsGuardOptions = {}): () => voi
   let isDestroyed = false;
   let intervalId: ReturnType<typeof setInterval> | null = null;
   let rafId: number | null = null;
+  let consecutiveHits = 0;
+  const startTime = typeof performance !== "undefined" ? performance.now() : Date.now();
 
-  const handleDetection = () => {
-    if (isDestroyed) return;
-    isDestroyed = true;
-    if (intervalId) clearInterval(intervalId);
-    if (rafId) cancelAnimationFrame(rafId);
-    onDetect();
+  const recordHit = () => {
+    consecutiveHits += 1;
+    if (consecutiveHits >= REQUIRED_CONSECUTIVE_HITS) {
+      if (isDestroyed) return;
+      isDestroyed = true;
+      if (intervalId) clearInterval(intervalId);
+      if (rafId !== null && typeof cancelAnimationFrame === "function") {
+        cancelAnimationFrame(rafId);
+      }
+      onDetect();
+    }
   };
 
-  const { trap: triggerConsoleTrap } = createConsoleTrap(handleDetection);
+  const recordClear = () => {
+    consecutiveHits = 0;
+  };
+
+  const { trap: triggerConsoleTrap } = createConsoleTrap(recordHit);
 
   const runAllChecks = () => {
     if (isDestroyed) return;
 
-    if (checkDebuggerTiming() || checkDimensionDelta()) {
-      handleDetection();
+    // Grace period: ignore during first 1.5s of page load/hydration to prevent CPU spike false positives
+    const elapsed = (typeof performance !== "undefined" ? performance.now() : Date.now()) - startTime;
+    if (elapsed < 1500) {
       return;
     }
 
+    if (checkDebuggerTiming()) {
+      recordHit();
+      return;
+    }
+
+    recordClear();
     triggerConsoleTrap();
   };
 
@@ -191,10 +207,12 @@ export function initDevtoolsGuard(options: DevtoolsGuardOptions = {}): () => voi
   intervalId = setInterval(runAllChecks, checkIntervalMs);
   scheduleRafCheck();
 
-  // Resize listener for instant dock detection
+  // Resize listener for docked devtools detection (evaluated only on actual user resize)
   const onResize = () => {
     if (checkDimensionDelta()) {
-      handleDetection();
+      recordHit();
+    } else {
+      recordClear();
     }
   };
 
