@@ -23,17 +23,46 @@ export function escapeXml(str: string): string {
 }
 
 /**
+ * Strict regex for W3C sitemap date: YYYY-MM-DD.
+ */
+const ISO_DATE_REGEX = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
+
+/**
  * Normalizes ISO date string to YYYY-MM-DD for sitemap <lastmod>.
+ * Strictly ensures only valid W3C standard YYYY-MM-DD strings are emitted,
+ * preventing Google Search Console "Invalid date" sitemap errors.
  */
 export function formatLastmod(dateStr?: string | null): string {
-  if (!dateStr) {
+  if (!dateStr || typeof dateStr !== "string" || !dateStr.trim()) {
     return new Date().toISOString().split("T")[0];
   }
-  const parsed = new Date(dateStr);
-  if (isNaN(parsed.getTime())) {
-    return new Date().toISOString().split("T")[0];
+
+  const trimmed = dateStr.trim();
+
+  // If already exactly YYYY-MM-DD and matches calendar constraints
+  if (ISO_DATE_REGEX.test(trimmed)) {
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) {
+      const year = parsed.getUTCFullYear();
+      if (year >= 1900 && year <= 2100) {
+        return trimmed;
+      }
+    }
   }
-  return parsed.toISOString().split("T")[0];
+
+  try {
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) {
+      const year = parsed.getUTCFullYear();
+      if (year >= 1900 && year <= 2100) {
+        return parsed.toISOString().split("T")[0];
+      }
+    }
+  } catch {
+    // Ignore parsing errors and fall back to today's date
+  }
+
+  return new Date().toISOString().split("T")[0];
 }
 
 /**
