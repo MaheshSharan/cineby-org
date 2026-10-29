@@ -6,7 +6,9 @@
     "predev": "bun scripts/check-env.ts",
     "dev": "next dev",
     "check:env": "bun scripts/check-env.ts",
-    "build": "next build",
+    "build": "bun scripts/with-wrangler-vars.ts bunx next build",
+    "build:worker": "bun scripts/with-wrangler-vars.ts bunx opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
+    "deploy:app": "bun run build:worker && bunx wrangler deploy",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -22,6 +24,7 @@
     "react-dom": "^19"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -31,7 +34,8 @@
     "postcss": "^8",
     "tailwindcss": "^3.4",
     "typescript": "^5",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "wrangler": "^4.155.0"
   },
   "packageManager": "bun@1.3.14",
   "trustedDependencies": [
