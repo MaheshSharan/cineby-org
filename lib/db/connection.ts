@@ -1,11 +1,5 @@
-import { mkdirSync } from "node:fs";
-import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
-
-import { initializeSchema } from "./schema";
-import { type DbClient, D1DbAdapter, LocalSqliteAdapter, type D1DatabaseBinding } from "./adapter";
-import { logger } from "@/lib/logger";
-import { getDatabasePath } from "@/lib/env/server";
+import { type DbClient, D1DbAdapter, type D1DatabaseBinding } from "./adapter";
+import { getLocalSqliteDb } from "./nodeSqlite";
 
 let clientInstance: DbClient | null = null;
 
@@ -56,22 +50,10 @@ export function getDb(): DbClient {
     throw new Error("[DB] D1 Database binding 'DB' was not found in Cloudflare Worker context.");
   }
 
-  const dbPath = getDatabasePath();
-  try {
-    mkdirSync(path.dirname(dbPath), { recursive: true });
-    const rawDb = new DatabaseSync(dbPath);
-    rawDb.exec("PRAGMA journal_mode = WAL;");
-    rawDb.exec("PRAGMA foreign_keys = ON;");
-
-    initializeSchema(rawDb);
-
-    clientInstance = new LocalSqliteAdapter(rawDb);
-    return clientInstance;
-  } catch (err) {
-    logger.error("[DB] Failed to initialize local SQLite database", err);
-    throw new Error("[DB] Database initialization failed: local filesystem unavailable and no D1 binding provided.");
-  }
+  clientInstance = getLocalSqliteDb();
+  return clientInstance;
 }
+
 
 /**
  * Allow explicit injection of D1 binding (e.g. from Cloudflare Pages / Workers request context)

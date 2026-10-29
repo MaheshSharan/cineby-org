@@ -2,25 +2,18 @@ import { getCacheBackend, getCacheMaxEntries } from "@/lib/env/server";
 import { logger } from "@/lib/logger";
 import { MemoryCacheStore } from "./memory";
 import { RedisCacheStore } from "./redis";
+
+import { KVCacheStore, type KVNamespaceBinding } from "./kv";
 import { SingleFlight } from "./singleFlight";
 import type { CacheStore } from "./types";
 
 export * from "./types";
 export * from "./policy";
 export * from "./singleFlight";
+export * from "./kv";
 
 /**
  * Cineby Global CacheStore Instance
- *
- * Architecture:
- *                 Cineby
- *                    │
- *                    ▼
- *               CacheStore
- *              /          \
- *             /            \
- *      Memory LRU/TTL     Redis adapter
- *        (NOW)             (LATER)
  */
 
 let globalCacheStore: CacheStore | null = null;
@@ -28,13 +21,31 @@ const singleFlight = new SingleFlight();
 
 export function getCacheStore(): CacheStore {
   if (!globalCacheStore) {
-    globalCacheStore =
-      getCacheBackend() === "redis"
-        ? new RedisCacheStore()
-        : new MemoryCacheStore(getCacheMaxEntries());
+    const backend = getCacheBackend();
+    if (backend === "redis") {
+      globalCacheStore = new RedisCacheStore();
+    } else if (backend === "kv") {
+      // Look for Cloudflare KV binding
+      const cfContext = (globalThis as unknown as Record<symbol, { env?: { CACHE_KV?: KVNamespaceBinding } }>)[
+        Symbol.for("__cloudflare-context__")
+      ];
+      const kv =
+        cfContext?.env?.CACHE_KV ||
+        (globalThis as unknown as { CACHE_KV?: KVNamespaceBinding }).CACHE_KV;
+
+      if (kv && typeof kv.get === "function") {
+        globalCacheStore = new KVCacheStore(kv);
+      } else {
+        logger.warn("[Cache] KV binding 'CACHE_KV' not found, falling back to MemoryCacheStore");
+        globalCacheStore = new MemoryCacheStore(getCacheMaxEntries());
+      }
+    } else {
+      globalCacheStore = new MemoryCacheStore(getCacheMaxEntries());
+    }
   }
   return globalCacheStore;
 }
+
 
 export interface CachedFetchOptions<T> {
   key: string;

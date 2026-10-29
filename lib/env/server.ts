@@ -15,8 +15,9 @@ import {
   requireValue,
 } from "./read";
 
-export const CACHE_BACKENDS = ["memory", "redis"] as const;
+export const CACHE_BACKENDS = ["memory", "redis", "kv"] as const;
 export type CacheBackend = (typeof CACHE_BACKENDS)[number];
+
 
 export const LOG_LEVELS = ["debug", "info", "warn", "error"] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];

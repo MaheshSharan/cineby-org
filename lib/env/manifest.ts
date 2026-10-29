@@ -239,7 +239,8 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
   },
 
   // 7. Cache & Database
-  { name: "CACHE_BACKEND", category: "cache", scope: "server", kind: ["memory", "redis"] },
+  { name: "CACHE_BACKEND", category: "cache", scope: "server", kind: ["memory", "redis", "kv"] },
+
   {
     name: "REDIS_URL",
     category: "cache",
