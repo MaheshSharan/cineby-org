@@ -43,7 +43,7 @@ export type EmbedEventType =
   | "media_data";
 
 export const DEFAULT_EMBED_SANDBOX =
-  "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox";
+  "allow-scripts allow-same-origin allow-forms allow-presentation";
 
 export interface EmbedNormalizedEvent {
   event: EmbedEventType;

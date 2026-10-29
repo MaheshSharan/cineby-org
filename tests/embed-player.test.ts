@@ -3,6 +3,7 @@ import { getEmbedProvider, listAvailableEmbedProviders } from "@/lib/embeds/regi
 import { vixsrcEmbed } from "@/lib/embeds/sites/vixsrc";
 import { vidyEmbed } from "@/lib/embeds/sites/vidy";
 import { cleanHexColor, isOriginAllowed, parseEmbedMessage } from "@/lib/embeds/common";
+import { DEFAULT_EMBED_SANDBOX } from "@/lib/embeds/types";
 import { getPlayerModeConfig } from "@/lib/player/modeConfig";
 
 describe("Shared Embed Helpers", () => {
@@ -568,11 +569,34 @@ describe("Edge Cases & Normalization", () => {
     expect(vixZero).toBe("https://vixsrc.to/tv/100/1/1");
   });
 
-  it("configures proper sandbox permissions on iframe options", () => {
-    expect(vidyEmbed.iframe.sandbox).toContain("allow-scripts");
-    expect(vidyEmbed.iframe.sandbox).toContain("allow-same-origin");
-    expect(vidyEmbed.iframe.sandbox).toContain("allow-presentation");
-    expect(vixsrcEmbed.iframe.sandbox).toContain("allow-scripts");
-    expect(vixsrcEmbed.iframe.sandbox).toContain("allow-same-origin");
+  it("configures strict sandbox permissions excluding popups and top navigation", () => {
+    const sandboxConfigs = [
+      { name: "DEFAULT_EMBED_SANDBOX", sandbox: DEFAULT_EMBED_SANDBOX },
+      { name: "vidyEmbed", sandbox: vidyEmbed.iframe.sandbox },
+      { name: "vixsrcEmbed", sandbox: vixsrcEmbed.iframe.sandbox },
+    ];
+
+    for (const { name, sandbox } of sandboxConfigs) {
+      expect(sandbox, `${name} must be defined`).toBeDefined();
+
+      // Required playback flags must be present
+      expect(sandbox, `${name} should include allow-scripts`).toContain("allow-scripts");
+      expect(sandbox, `${name} should include allow-same-origin`).toContain("allow-same-origin");
+      expect(sandbox, `${name} should include allow-forms`).toContain("allow-forms");
+      expect(sandbox, `${name} should include allow-presentation`).toContain("allow-presentation");
+
+      // Popups and top navigation must be strictly excluded
+      expect(sandbox, `${name} must not allow popups`).not.toContain("allow-popups");
+      expect(sandbox, `${name} must not allow popups to escape sandbox`).not.toContain(
+        "allow-popups-to-escape-sandbox"
+      );
+      expect(sandbox, `${name} must not allow top navigation`).not.toContain("allow-top-navigation");
+      expect(sandbox, `${name} must not allow top navigation by user activation`).not.toContain(
+        "allow-top-navigation-by-user-activation"
+      );
+
+      // Verify exact strict sandbox configuration string
+      expect(sandbox).toBe("allow-scripts allow-same-origin allow-forms allow-presentation");
+    }
   });
 });

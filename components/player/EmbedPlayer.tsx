@@ -7,7 +7,6 @@ import { PlayerHeader } from "./ui/PlayerHeader";
 import { ServerDrawer } from "./ui/ServerDrawer";
 import { useEmbedBridge } from "./hooks/useEmbedBridge";
 import { getEmbedProvider } from "@/lib/embeds/registry";
-import { DEFAULT_EMBED_SANDBOX } from "@/lib/embeds/types";
 import type { PlayerServerOption } from "@/lib/player/modeConfig";
 
 interface EmbedPlayerProps {
@@ -315,7 +314,7 @@ export function EmbedPlayer({
           allow={provider?.iframe.allow ?? "encrypted-media; autoplay *; fullscreen *"}
           allowFullScreen
           referrerPolicy={provider?.iframe.referrerPolicy ?? "origin"}
-          sandbox={provider?.iframe.sandbox ?? DEFAULT_EMBED_SANDBOX}
+          sandbox={provider?.iframe.sandbox || "allow-scripts allow-same-origin allow-forms allow-presentation"}
           className="w-full h-full border-0"
           onLoad={() => setIsLoaded(true)}
         />
