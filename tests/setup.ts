@@ -38,6 +38,13 @@ Object.assign(process.env, {
   NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED: "false",
   CORS_ALLOWED_ORIGINS: "https://cineby.group",
   LOG_LEVEL: "debug",
+  PLAYER_MODE: "native",
+  ENABLE_EMBED_PLAYERS: "false",
+  EMBED_SERVER_PRIORITY: "vixsrc,vidy",
+  EMBED_DEFAULT_SERVER: "native",
+  EMBED_LOAD_TIMEOUT_MS: "12000",
+  VIXSRC_EMBED_HOST: "https://vixsrc.to",
+  VIDY_EMBED_HOST: "https://vidy.st",
   ENABLE_VIDEO_ADS: "true",
   VIDEO_AD_TAG_URL: "https://ads.test/vast",
   VIDEO_AD_ZONE_ID: "test-zone",
@@ -45,6 +52,7 @@ Object.assign(process.env, {
   VIDEO_AD_EPISODES_BETWEEN: "3",
   VIDEO_AD_REQUEST_TIMEOUT_MS: "5000",
   VIDEO_AD_ECPM_USD: "1.5",
+
 });
 
 // Reset test database cleanly before test session starts

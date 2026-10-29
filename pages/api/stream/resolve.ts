@@ -12,6 +12,8 @@ import { isProviderEnabled } from "@/lib/env/server";
 import { isSidFlagged } from "@/lib/security/canaryStore";
 import { isValidSid } from "@/lib/security/sid";
 import { encryptStreamResponse, isEcP256Jwk, type EncryptedStreamEnvelope } from "@/lib/security/tabCrypto";
+import { getPlayerModeConfig } from "@/lib/player/modeConfig";
+
 
 function extractClientIp(req: NextApiRequest): string {
   const cfIp = req.headers["cf-connecting-ip"];
@@ -38,6 +40,13 @@ export default withApiContext(
     if (applyCorsHeaders(req, res)) {
       return;
     }
+
+    const modeConfig = getPlayerModeConfig();
+    if (!modeConfig.nativeEnabled) {
+      res.status(404).json({ error: "native_player_disabled" });
+      return;
+    }
+
 
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
 

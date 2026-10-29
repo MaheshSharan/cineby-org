@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { withApiContext } from "@/lib/validation";
 import { markWorkerExhausted } from "@/lib/providers/workerPoolStore";
 import { getStreamProxyUrlPool } from "@/lib/env/server";
+import { getPlayerModeConfig } from "@/lib/player/modeConfig";
 
 interface FeedbackBody {
   workerUrl?: unknown;
@@ -17,11 +18,18 @@ interface FeedbackBody {
 export default withApiContext(
   "api/stream/feedback",
   async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
+    const modeConfig = getPlayerModeConfig();
+    if (!modeConfig.nativeEnabled) {
+      res.status(404).json({ error: "native_player_disabled" });
+      return;
+    }
+
     if (req.method !== "POST") {
       res.setHeader("Allow", "POST");
       res.status(405).json({ error: "Method Not Allowed" });
       return;
     }
+
 
     const body = (req.body ?? {}) as FeedbackBody;
     const workerUrl = typeof body.workerUrl === "string" ? body.workerUrl.trim() : "";

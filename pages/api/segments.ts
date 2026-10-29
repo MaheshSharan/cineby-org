@@ -6,6 +6,7 @@ import { getCacheStore, SingleFlight } from "@/lib/cache";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
 import { logger } from "@/lib/logger";
+import { getPlayerModeConfig } from "@/lib/player/modeConfig";
 
 interface SegmentsResponse {
   segments: MediaSegment[];
@@ -36,11 +37,18 @@ export default withApiContext(
       return;
     }
 
+    const modeConfig = getPlayerModeConfig();
+    if (!modeConfig.nativeEnabled) {
+      res.status(404).json({ segments: [], error: "native_player_disabled" });
+      return;
+    }
+
     if (req.method !== "GET") {
       res.setHeader("Allow", ["GET"]);
       res.status(405).json({ segments: [], error: "Method Not Allowed" });
       return;
     }
+
 
     const store = getCacheStore();
     const { imdb_id, imdbId, tmdb_id, tmdbId, media_type, mediaType, season, episode, duration } = req.query;

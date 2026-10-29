@@ -57,6 +57,8 @@ async function verifyEcdsaSignature(
   }
 }
 
+import { getPlayerModeConfig } from "@/lib/player/modeConfig";
+
 export const config = {
   api: {
     responseLimit: false,
@@ -72,11 +74,18 @@ export default withApiContext("api/stream/proxy", async (req: NextApiRequest, re
     return;
   }
 
+  const modeConfig = getPlayerModeConfig();
+  if (!modeConfig.nativeEnabled) {
+    res.status(404).json({ error: "native_player_disabled" });
+    return;
+  }
+
   if (req.method !== "GET" && req.method !== "HEAD") {
     res.setHeader("Allow", ["GET", "HEAD", "OPTIONS"]);
     res.status(405).end();
     return;
   }
+
 
   const rawToken = typeof req.query.token === "string" ? req.query.token : "";
   const descriptor = rawToken ? readProxyDescriptor(rawToken) : null;

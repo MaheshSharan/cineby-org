@@ -3,6 +3,8 @@ import { listAvailableProvidersWithChildren } from "@/lib/providers/registry";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
 
+import { getPlayerModeConfig } from "@/lib/player/modeConfig";
+
 interface ProvidersResponse {
   providers: {
     id: string;
@@ -21,8 +23,14 @@ interface ProvidersResponse {
  */
 export default withApiContext(
   "api/stream/providers",
-  async (req: NextApiRequest, res: NextApiResponse<ProvidersResponse>) => {
+  async (req: NextApiRequest, res: NextApiResponse<ProvidersResponse | { error: string }>) => {
     if (applyCorsHeaders(req, res)) {
+      return;
+    }
+
+    const modeConfig = getPlayerModeConfig();
+    if (!modeConfig.nativeEnabled) {
+      res.status(404).json({ error: "native_player_disabled" });
       return;
     }
 
@@ -31,6 +39,7 @@ export default withApiContext(
       res.status(405).end();
       return;
     }
+
 
     // Short cache — providers don't change at runtime, but allow quick env var
     // changes to propagate within a minute.

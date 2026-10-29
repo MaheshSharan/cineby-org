@@ -4,6 +4,7 @@ import type { MediaType, SubtitleTrack } from "@/lib/providers/types";
 import { fetchProviderSubtitles } from "@/lib/providers/registry";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
+import { getPlayerModeConfig } from "@/lib/player/modeConfig";
 
 export default withApiContext(
   "api/stream/subtitles",
@@ -15,6 +16,12 @@ export default withApiContext(
       return;
     }
 
+    const modeConfig = getPlayerModeConfig();
+    if (!modeConfig.nativeEnabled) {
+      res.status(404).json({ error: "native_player_disabled" });
+      return;
+    }
+
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
 
     if (req.method !== "GET") {
@@ -22,6 +29,7 @@ export default withApiContext(
       res.status(405).json({ error: `Method ${req.method} Not Allowed` });
       return;
     }
+
 
     const { tmdbId, type, season, episode, server } = req.query;
 
