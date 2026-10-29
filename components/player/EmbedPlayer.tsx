@@ -63,7 +63,14 @@ export function EmbedPlayer({
         episode: media.episodeNumber ?? 1,
         startAtSec: initialTime > 0 ? initialTime : undefined,
         autoplay: true,
+        theme: {
+          primary: "DC2626",
+          secondary: "170000",
+        },
         lang: "en",
+        nextEpisode: true,
+        episodeSelector: true,
+        autoplayNextEpisode: true,
       });
     } catch {
       return "";
@@ -285,7 +292,8 @@ export function EmbedPlayer({
           ref={iframeRef}
           src={embedUrl}
           title={media.title}
-          allow={provider?.iframe.allow ?? "fullscreen"}
+          allow={provider?.iframe.allow ?? "encrypted-media; autoplay *; fullscreen *"}
+          allowFullScreen
           referrerPolicy={provider?.iframe.referrerPolicy ?? "origin"}
           sandbox={provider?.iframe.sandbox}
           className="w-full h-full border-0"

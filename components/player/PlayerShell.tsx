@@ -103,7 +103,7 @@ export function PlayerShell({
   const initialTimeSec = typeof router.query.t === "string" ? Number.parseInt(router.query.t, 10) || 0 : 0;
   const servers = modeConfig?.servers ?? [
     { id: "vixsrc", name: "Server 1 (VixSrc)", type: "embed", startAtSupported: true, eventsSupported: true },
-    { id: "vidy", name: "Server 2 (Vidy)", type: "embed", startAtSupported: false, eventsSupported: false },
+    { id: "vidy", name: "Server 2 (Vidy)", type: "embed", startAtSupported: true, eventsSupported: true },
   ];
 
   return (

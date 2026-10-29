@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { EmbedNormalizedEvent } from "@/lib/embeds/types";
 import { getEmbedProvider } from "@/lib/embeds/registry";
+import { isOriginAllowed } from "@/lib/embeds/common";
 
 interface UseEmbedBridgeOptions {
   serverId: string;
@@ -32,13 +33,15 @@ export function useEmbedBridge({
     if (!provider) return;
 
     function handleWindowMessage(e: MessageEvent) {
+      if (!provider) return;
+
       // 1. Origin verification
-      if (!provider || !provider.allowedOrigins.includes(e.origin)) {
+      if (!isOriginAllowed(e.origin, provider.allowedOrigins)) {
         return;
       }
 
-      // 2. Source window verification
-      if (iframeRef.current && e.source !== iframeRef.current.contentWindow) {
+      // 2. Source window verification (if source and iframe are available)
+      if (iframeRef.current?.contentWindow && e.source && e.source !== iframeRef.current.contentWindow) {
         return;
       }
 
@@ -48,7 +51,10 @@ export function useEmbedBridge({
 
       onEventRef.current?.(parsed);
 
-      if (parsed.event === "timeupdate" && typeof parsed.currentTime === "number") {
+      if (
+        (parsed.event === "timeupdate" || parsed.event === "media_data" || parsed.event === "seeked") &&
+        typeof parsed.currentTime === "number"
+      ) {
         onTimeUpdateRef.current?.(parsed.currentTime, parsed.duration ?? 0);
       } else if (parsed.event === "ended") {
         onEndedRef.current?.();

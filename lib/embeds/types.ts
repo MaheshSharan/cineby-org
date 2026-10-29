@@ -7,25 +7,46 @@ export interface EmbedCapabilities {
   autoplay: boolean;
   lang: boolean;
   idType: "tmdb" | "imdb" | "both";
+  anime?: boolean;
+  tvControls?: boolean;
+}
+
+export interface EmbedThemeConfig {
+  primary?: string;
+  secondary?: string;
 }
 
 export interface EmbedBuildUrlOptions {
   tmdbId?: number | string;
   imdbId?: string;
-  type: "movie" | "tv";
+  anilistId?: number | string;
+  type: "movie" | "tv" | "anime";
   season?: number;
   episode?: number;
   startAtSec?: number;
-  theme?: { primary?: string; secondary?: string };
+  progress?: number;
+  theme?: EmbedThemeConfig;
   lang?: string;
   autoplay?: boolean;
+  nextEpisode?: boolean;
+  episodeSelector?: boolean;
+  autoplayNextEpisode?: boolean;
 }
 
+export type EmbedEventType =
+  | "play"
+  | "pause"
+  | "seeked"
+  | "timeupdate"
+  | "ended"
+  | "media_data";
+
 export interface EmbedNormalizedEvent {
-  event: "play" | "pause" | "seeked" | "timeupdate" | "ended";
+  event: EmbedEventType;
   currentTime?: number;
   duration?: number;
   videoId?: string;
+  rawData?: unknown;
 }
 
 export interface EmbedIframeOptions {
