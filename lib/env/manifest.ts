@@ -101,6 +101,13 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
     kind: "url",
     requiredWhen: () => false,
   },
+  {
+    name: "VIDNEST_EMBED_HOST",
+    category: "player",
+    scope: "server",
+    kind: "url",
+    requiredWhen: () => false,
+  },
 
   // 4. Cache & Database
   { name: "CACHE_BACKEND", category: "cache", scope: "server", kind: ["memory", "kv"] },
