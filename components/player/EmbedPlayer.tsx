@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { buildImageUrl } from "@/lib/tmdb/image";
 import { trackEvent } from "@/lib/analytics/gtag";
 
@@ -50,6 +50,56 @@ export function EmbedPlayer({
     startedRef.current = false;
     reachedMilestonesRef.current.clear();
   }, [media.mediaId, media.seasonNumber, media.episodeNumber, currentServerId]);
+
+  // Immediately terminate previous server stream on server change, media change, or unmount
+  useEffect(() => {
+    const currentIframe = iframeRef.current;
+    return () => {
+      if (currentIframe) {
+        try {
+          currentIframe.src = "about:blank";
+        } catch {}
+      }
+    };
+  }, [currentServerId, media.mediaId, media.seasonNumber, media.episodeNumber]);
+
+  // Intercept window.open on top window to block rogue third-party popups
+  useEffect(() => {
+    const originalOpen = window.open;
+    window.open = function (...args: Parameters<typeof originalOpen>) {
+      console.warn("[Cineby] Blocked unauthorized popup window attempt:", args[0]);
+      return null;
+    };
+    return () => {
+      window.open = originalOpen;
+    };
+  }, []);
+
+  const handleServerSelect = useCallback(
+    (serverId: string) => {
+      if (serverId === currentServerId) {
+        setIsDrawerOpen(false);
+        return;
+      }
+      if (iframeRef.current) {
+        try {
+          iframeRef.current.src = "about:blank";
+        } catch {}
+      }
+      setIsLoaded(false);
+      onSelectServer(serverId);
+    },
+    [currentServerId, onSelectServer]
+  );
+
+  const handleBack = useCallback(() => {
+    if (iframeRef.current) {
+      try {
+        iframeRef.current.src = "about:blank";
+      } catch {}
+    }
+    onBack?.();
+  }, [onBack]);
 
   // Construct iframe URL
   const embedUrl = useMemo(() => {
@@ -235,7 +285,7 @@ export function EmbedPlayer({
       <PlayerHeader
         title={media.title}
         subtitle={subtitle}
-        onBack={onBack}
+        onBack={handleBack}
         visible={true}
         variant="touch"
         rightSlot={
@@ -293,7 +343,7 @@ export function EmbedPlayer({
               {nextServer && (
                 <button
                   type="button"
-                  onClick={() => onSelectServer(nextServer.id)}
+                  onClick={() => handleServerSelect(nextServer.id)}
                   className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium text-xs transition-colors shadow-lg shadow-red-600/30"
                 >
                   Switch to {nextServer.name}
@@ -314,7 +364,7 @@ export function EmbedPlayer({
           allow={provider?.iframe.allow ?? "encrypted-media; autoplay *; fullscreen *"}
           allowFullScreen
           referrerPolicy={provider?.iframe.referrerPolicy ?? "origin"}
-          sandbox={provider?.iframe.sandbox || "allow-scripts allow-same-origin allow-forms allow-presentation"}
+          sandbox={provider?.iframe.sandbox}
           className="w-full h-full border-0"
           onLoad={() => setIsLoaded(true)}
         />
@@ -330,7 +380,7 @@ export function EmbedPlayer({
         onClose={() => setIsDrawerOpen(false)}
         servers={servers}
         currentServerId={currentServerId}
-        onSelectServer={onSelectServer}
+        onSelectServer={handleServerSelect}
       />
     </div>
   );

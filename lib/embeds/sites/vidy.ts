@@ -1,5 +1,4 @@
 import type { EmbedBuildUrlOptions, EmbedNormalizedEvent, EmbedProvider } from "../types";
-import { DEFAULT_EMBED_SANDBOX } from "../types";
 import { cleanHexColor, parseEmbedMessage } from "../common";
 
 function getVidyHost(): string {
@@ -99,6 +98,7 @@ export const vidyEmbed: EmbedProvider = {
   iframe: {
     allow: "encrypted-media; autoplay *; fullscreen *",
     referrerPolicy: "origin",
-    sandbox: DEFAULT_EMBED_SANDBOX,
+    // Vidy actively detects iframe sandbox restrictions and rejects playback
+    sandbox: undefined,
   },
 };

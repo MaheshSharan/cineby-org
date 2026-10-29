@@ -1,5 +1,4 @@
 import type { EmbedBuildUrlOptions, EmbedNormalizedEvent, EmbedProvider } from "../types";
-import { DEFAULT_EMBED_SANDBOX } from "../types";
 import { cleanHexColor, parseEmbedMessage } from "../common";
 
 function getVixsrcHost(): string {
@@ -90,6 +89,7 @@ export const vixsrcEmbed: EmbedProvider = {
   iframe: {
     allow: "encrypted-media; autoplay *; fullscreen *",
     referrerPolicy: "origin",
-    sandbox: DEFAULT_EMBED_SANDBOX,
+    // Vixsrc actively detects iframe sandbox restrictions and rejects playback with "Please Disable Sandbox"
+    sandbox: undefined,
   },
 };

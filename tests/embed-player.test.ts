@@ -569,34 +569,34 @@ describe("Edge Cases & Normalization", () => {
     expect(vixZero).toBe("https://vixsrc.to/tv/100/1/1");
   });
 
-  it("configures strict sandbox permissions excluding popups and top navigation", () => {
-    const sandboxConfigs = [
-      { name: "DEFAULT_EMBED_SANDBOX", sandbox: DEFAULT_EMBED_SANDBOX },
-      { name: "vidyEmbed", sandbox: vidyEmbed.iframe.sandbox },
-      { name: "vixsrcEmbed", sandbox: vixsrcEmbed.iframe.sandbox },
-    ];
+  it("configures strict sandbox permissions on DEFAULT_EMBED_SANDBOX excluding popups and top navigation", () => {
+    // Required playback flags must be present
+    expect(DEFAULT_EMBED_SANDBOX).toContain("allow-scripts");
+    expect(DEFAULT_EMBED_SANDBOX).toContain("allow-same-origin");
+    expect(DEFAULT_EMBED_SANDBOX).toContain("allow-forms");
+    expect(DEFAULT_EMBED_SANDBOX).toContain("allow-presentation");
 
-    for (const { name, sandbox } of sandboxConfigs) {
-      expect(sandbox, `${name} must be defined`).toBeDefined();
+    // Popups and top navigation must be strictly excluded
+    expect(DEFAULT_EMBED_SANDBOX).not.toContain("allow-popups");
+    expect(DEFAULT_EMBED_SANDBOX).not.toContain("allow-popups-to-escape-sandbox");
+    expect(DEFAULT_EMBED_SANDBOX).not.toContain("allow-top-navigation");
+    expect(DEFAULT_EMBED_SANDBOX).not.toContain("allow-top-navigation-by-user-activation");
 
-      // Required playback flags must be present
-      expect(sandbox, `${name} should include allow-scripts`).toContain("allow-scripts");
-      expect(sandbox, `${name} should include allow-same-origin`).toContain("allow-same-origin");
-      expect(sandbox, `${name} should include allow-forms`).toContain("allow-forms");
-      expect(sandbox, `${name} should include allow-presentation`).toContain("allow-presentation");
+    // Verify exact strict sandbox configuration string
+    expect(DEFAULT_EMBED_SANDBOX).toBe("allow-scripts allow-same-origin allow-forms allow-presentation");
+  });
 
-      // Popups and top navigation must be strictly excluded
-      expect(sandbox, `${name} must not allow popups`).not.toContain("allow-popups");
-      expect(sandbox, `${name} must not allow popups to escape sandbox`).not.toContain(
-        "allow-popups-to-escape-sandbox"
-      );
-      expect(sandbox, `${name} must not allow top navigation`).not.toContain("allow-top-navigation");
-      expect(sandbox, `${name} must not allow top navigation by user activation`).not.toContain(
-        "allow-top-navigation-by-user-activation"
-      );
+  it("omits sandbox on Vidy and Vixsrc providers to prevent anti-sandbox lockout errors", () => {
+    // Both Vidy and Vixsrc actively inspect the iframe and crash/block playback if sandboxed
+    expect(vidyEmbed.iframe.sandbox).toBeUndefined();
+    expect(vixsrcEmbed.iframe.sandbox).toBeUndefined();
 
-      // Verify exact strict sandbox configuration string
-      expect(sandbox).toBe("allow-scripts allow-same-origin allow-forms allow-presentation");
-    }
+    // Verify standard allow and referrerPolicy permissions are intact
+    expect(vidyEmbed.iframe.allow).toContain("autoplay");
+    expect(vidyEmbed.iframe.allow).toContain("fullscreen");
+    expect(vixsrcEmbed.iframe.allow).toContain("autoplay");
+    expect(vixsrcEmbed.iframe.allow).toContain("fullscreen");
+    expect(vidyEmbed.iframe.referrerPolicy).toBe("origin");
+    expect(vixsrcEmbed.iframe.referrerPolicy).toBe("origin");
   });
 });
