@@ -2,7 +2,7 @@ import type { CacheStore, CacheStats } from "./types";
 import { logger } from "@/lib/logger";
 
 export interface KVNamespaceBinding {
-  get(key: string, type?: "text" | "json" | "arrayBuffer" | "stream"): Promise<any>;
+  get(key: string, type?: "text" | "json" | "arrayBuffer" | "stream"): Promise<unknown>;
   put(key: string, value: string | ArrayBuffer | ReadableStream, options?: { expirationTtl?: number }): Promise<void>;
   delete(key: string): Promise<void>;
 }

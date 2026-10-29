@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { buildImageUrl } from "@/lib/tmdb/image";
 
-import type { PlayerMedia } from "../types";
+import type { PlayerMedia } from "./types";
 import { PlayerHeader } from "./ui/PlayerHeader";
 import { ServerDrawer } from "./ui/ServerDrawer";
 import { useEmbedBridge } from "./hooks/useEmbedBridge";
@@ -49,7 +49,7 @@ export function EmbedPlayer({
     return provider.buildUrl({
       type: media.mediaType,
       tmdbId: media.mediaId,
-      imdbId: media.imdbId,
+      imdbId: media.imdbId ?? undefined,
       season: media.seasonNumber ?? 1,
       episode: media.episodeNumber ?? 1,
       startAtSec: initialTime > 0 ? initialTime : undefined,
@@ -82,8 +82,8 @@ export function EmbedPlayer({
     // After 60 seconds of playback, register that it started
     const timer = setTimeout(() => {
       onTimeUpdate?.(60, 0, {
-        seasonNumber: media.seasonNumber,
-        episodeNumber: media.episodeNumber,
+        seasonNumber: media.seasonNumber ?? undefined,
+        episodeNumber: media.episodeNumber ?? undefined,
       });
     }, 60000);
 
@@ -98,8 +98,8 @@ export function EmbedPlayer({
       setIsLoaded(true);
       setHasTimedOut(false);
       onTimeUpdate?.(current, duration, {
-        seasonNumber: media.seasonNumber,
-        episodeNumber: media.episodeNumber,
+        seasonNumber: media.seasonNumber ?? undefined,
+        episodeNumber: media.episodeNumber ?? undefined,
       });
     },
     onEnded: () => {
@@ -152,7 +152,7 @@ export function EmbedPlayer({
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-none">
           {media.backdropPath && (
             <Image
-              src={buildImageUrl(media.backdropPath, "backdrop", "original") || ""}
+              src={buildImageUrl(media.backdropPath, "original") || ""}
               alt=""
               fill
               priority

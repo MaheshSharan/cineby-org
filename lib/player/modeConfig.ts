@@ -1,4 +1,4 @@
-import { parseEnum, parseFlag, parseList, parsePositiveInteger, requireValue } from "@/lib/env/read";
+import { parseEnum, parseFlag, parseList, parsePositiveInteger } from "@/lib/env/read";
 import { readServerEnv } from "@/lib/env/server";
 import { listAvailableEmbedProviders } from "@/lib/embeds/registry";
 import type { PlayerMode } from "@/lib/embeds/types";

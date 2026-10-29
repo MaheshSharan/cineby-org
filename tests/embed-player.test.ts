@@ -89,4 +89,30 @@ describe("Embed Providers Registry & Capabilities", () => {
     expect(config.servers.length).toBeGreaterThan(0);
     expect(config.servers[0].id).toBe("native");
   });
+
+  it("handles hybrid and embed mode configurations", () => {
+    const prevMode = process.env.PLAYER_MODE;
+    const prevEmbed = process.env.ENABLE_EMBED_PLAYERS;
+    try {
+      process.env.PLAYER_MODE = "hybrid";
+      process.env.ENABLE_EMBED_PLAYERS = "true";
+      const hybridConfig = getPlayerModeConfig();
+      expect(hybridConfig.mode).toBe("hybrid");
+      expect(hybridConfig.nativeEnabled).toBe(true);
+      expect(hybridConfig.embedEnabled).toBe(true);
+      expect(hybridConfig.servers.some((s) => s.id === "native")).toBe(true);
+      expect(hybridConfig.servers.some((s) => s.id === "vixsrc")).toBe(true);
+
+      process.env.PLAYER_MODE = "embed";
+      const embedConfig = getPlayerModeConfig();
+      expect(embedConfig.mode).toBe("embed");
+      expect(embedConfig.nativeEnabled).toBe(false);
+      expect(embedConfig.embedEnabled).toBe(true);
+      expect(embedConfig.servers.some((s) => s.id === "native")).toBe(false);
+      expect(embedConfig.servers[0].id).toBe("vixsrc");
+    } finally {
+      process.env.PLAYER_MODE = prevMode;
+      process.env.ENABLE_EMBED_PLAYERS = prevEmbed;
+    }
+  });
 });

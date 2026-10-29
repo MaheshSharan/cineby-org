@@ -17,6 +17,18 @@ export function ServerDrawer({
   onSelectServer,
 }: ServerDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
+      closeButtonRef.current?.focus();
+    } else if (previousFocusRef.current) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -49,6 +61,7 @@ export function ServerDrawer({
               <p className="text-xs text-white/50 mt-0.5">Choose your stream or embed source</p>
             </div>
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={onClose}
               aria-label="Close server drawer"
