@@ -71,8 +71,18 @@ export function PlayerShell({
       const now = Date.now();
       const last = lastSavedRef.current;
 
-      // Throttle: Save at most once every 5 seconds (or on significant seek)
-      if (!last || now - last.time >= 5000 || Math.abs(currentTime - last.seconds) >= 10) {
+      // Hard minimum throttle: never hit the API more often than once every 10 seconds, even on seeks
+      const timeSinceLastSave = last ? now - last.time : Infinity;
+      if (timeSinceLastSave < 10000) {
+        onTimeUpdate?.(currentTime, duration);
+        return;
+      }
+
+      // Polling interval: Save every 30 seconds (or after 10s if a significant 15s+ seek occurred)
+      const isSignificantSeek = last ? Math.abs(currentTime - last.seconds) >= 15 : false;
+      const shouldSave = !last || timeSinceLastSave >= 30000 || isSignificantSeek;
+
+      if (shouldSave) {
         lastSavedRef.current = { time: now, seconds: currentTime };
 
         const calculatedPercent = Math.round((currentTime / Math.max(1, duration)) * 100);
