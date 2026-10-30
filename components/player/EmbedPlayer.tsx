@@ -6,6 +6,9 @@ import { ONBOARD_ADS_PLAYER_INFO_KEY } from "./types";
 import { ServerDrawer } from "./ui/ServerDrawer";
 import { AdBlockModal } from "./ui/AdBlockModal";
 import { useEmbedBridge } from "./hooks/useEmbedBridge";
+import { useIsLandscape } from "./hooks/useIsLandscape";
+import { useIsFullscreen } from "./hooks/useIsFullscreen";
+import { useIsTouchDevice } from "./hooks/useIsTouchDevice";
 import { initAntiRedirectShield, setAntiRedirectShieldActive } from "@/lib/security/antiRedirect";
 import { getEmbedProvider } from "@/lib/embeds/registry";
 import type { PlayerServerOption } from "@/lib/player/modeConfig";
@@ -44,6 +47,47 @@ export function EmbedPlayer({
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const startedRef = useRef(false);
   const reachedMilestonesRef = useRef<Set<number>>(new Set());
+
+  const isTouchDevice = useIsTouchDevice();
+  const isLandscape = useIsLandscape();
+  const isFullscreen = useIsFullscreen();
+
+  // Fullscreen + Landscape rotation action for mobile portrait mode
+  const handleToggleFullscreen = useCallback(() => {
+    try {
+      if (!document.fullscreenElement) {
+        const root = document.documentElement;
+        if (root.requestFullscreen) {
+          void root.requestFullscreen().catch(() => {});
+        } else if ((root as unknown as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
+          void (root as unknown as { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen().catch(() => {});
+        }
+
+        const orientation = window.screen.orientation as {
+          lock?: (orientation: string) => Promise<void>;
+        };
+        if (typeof orientation?.lock === "function") {
+          void orientation.lock("landscape").catch(() => {});
+        }
+      } else {
+        if (document.exitFullscreen) {
+          void document.exitFullscreen().catch(() => {});
+        } else if ((document as unknown as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
+          void (document as unknown as { webkitExitFullscreen: () => Promise<void> }).webkitExitFullscreen().catch(() => {});
+        }
+        const orientation = window.screen.orientation as {
+          unlock?: () => void;
+        };
+        if (typeof orientation?.unlock === "function") {
+          try {
+            orientation.unlock();
+          } catch {}
+        }
+      }
+    } catch {
+      // Ignore unsupported platforms
+    }
+  }, []);
 
   // First-run AdBlock Onboarding Modal check
   useEffect(() => {
@@ -308,6 +352,21 @@ export function EmbedPlayer({
           >
             <path d="M15 18l-6-6 6-6" />
           </svg>
+        </button>
+      )}
+
+      {/* Mobile Portrait Quick Fullscreen / Auto-Rotate Action Pill */}
+      {isTouchDevice && !isLandscape && !isFullscreen && (
+        <button
+          type="button"
+          onClick={handleToggleFullscreen}
+          aria-label="Rotate to Landscape Fullscreen"
+          className="absolute top-4 right-4 z-30 flex items-center gap-2 px-3.5 py-2 rounded-full bg-black/75 hover:bg-black/90 border border-white/20 backdrop-blur-md text-white text-xs font-semibold shadow-xl shadow-black/80 transition-all active:scale-95 cursor-pointer"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+          </svg>
+          <span>Fullscreen</span>
         </button>
       )}
 
