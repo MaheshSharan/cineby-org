@@ -9,6 +9,7 @@ interface LayoutProps {
 }
 
 const FULL_BLEED_ROUTES = [
+  "/watch/[...params]",
   "/movie/[...params]",
   "/tv/[...params]",
   "/profiles",

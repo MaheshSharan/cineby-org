@@ -284,7 +284,7 @@ export function EmbedPlayer({
   });
 
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden select-none">
+    <div className="relative w-full h-[100dvh] bg-black overflow-hidden select-none">
       {/* Floating mid-right edge server trigger */}
       {servers.length > 1 && (
         <button
