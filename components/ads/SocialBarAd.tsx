@@ -5,31 +5,56 @@ import { useRouter } from "next/router";
 const SOCIAL_BAR_SRC = "https://bicea.org/14/6fa9ccc24c9972e71deaa2ad60a46e55";
 const LOAD_DELAY_MS = 2500; // 2.5s delay for smooth initial paint and higher perceived value
 
+function purgeActiveSocialBarWidgets() {
+  if (typeof document === "undefined") return;
+
+  // Clean any floating notifications, message boxes, or chat heads created by the Adsterra script
+  const selectors = [
+    'div[class*="sb_"]',
+    'div[id*="sb_"]',
+    'div[class*="bicea"]',
+    'div[id*="bicea"]',
+    'iframe[src*="bicea"]',
+    'div[class*="container-"][style*="fixed"]',
+    'div[class*="container-"][style*="absolute"]'
+  ];
+
+  selectors.forEach((sel) => {
+    try {
+      const elements = document.querySelectorAll(sel);
+      elements.forEach((el) => el.remove());
+    } catch {
+      // Ignore query errors
+    }
+  });
+}
+
 export function SocialBarAd() {
   const router = useRouter();
   const [shouldLoad, setShouldLoad] = useState(false);
 
-  // Strict rule: skip all player/detail streaming routes
-  const isPlayerRoute =
+  // Precision Check: Only treat as player when actively watching playback (?play=true or /watch/...)
+  const isWatchingVideo =
     router.pathname.startsWith("/watch") ||
-    router.pathname.startsWith("/movie") ||
-    router.pathname.startsWith("/tv");
+    router.query.play === "true" ||
+    router.asPath.includes("play=true");
 
   useEffect(() => {
-    if (isPlayerRoute) {
+    if (isWatchingVideo) {
       setShouldLoad(false);
+      purgeActiveSocialBarWidgets();
       return;
     }
 
-    // Delay loading Social Bar so visitors experience fast, clean initial page load first
+    // Delay loading Social Bar so visitors experience clean initial paint first
     const timer = setTimeout(() => {
       setShouldLoad(true);
     }, LOAD_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [isPlayerRoute]);
+  }, [isWatchingVideo, router.asPath]);
 
-  if (isPlayerRoute || !shouldLoad) {
+  if (isWatchingVideo || !shouldLoad) {
     return null;
   }
 
