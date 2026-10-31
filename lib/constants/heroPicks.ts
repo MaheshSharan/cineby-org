@@ -13,10 +13,16 @@ export interface HeroPickItem {
  * are automatically backfilled with top trending releases.
  */
 export const HERO_SPOTLIGHT_PICKS: readonly HeroPickItem[] = [
-  { mediaType: "movie", id: 537915 }, // After
-  { mediaType: "tv", id: 34524 }, // Teen Wolf
-  { mediaType: "tv", id: 5920 }, // The Mentalist
-  { mediaType: "tv", id: 1396 }, // Breaking Bad
-  { mediaType: "tv", id: 108978 }, // Reacher
-  { mediaType: "movie", id: 10229 }, // A Walk to Remember
+  { mediaType: "tv", id: 276161 },   // Teach You a Lesson (2026)
+  { mediaType: "tv", id: 1396 },     // Breaking Bad
+  { mediaType: "movie", id: 155 },   // The Dark Knight
+  { mediaType: "tv", id: 200709 },   // Weak Hero
+  { mediaType: "movie", id: 1726 },  // Iron Man (2008)
+  { mediaType: "tv", id: 273240 },   // Off Campus (2026)
+  { mediaType: "tv", id: 108978 },   // Reacher
+  { mediaType: "tv", id: 5920 },     // The Mentalist
+  { mediaType: "tv", id: 1399 },     // Game of Thrones
+  { mediaType: "tv", id: 34524 },    // Teen Wolf
+  { mediaType: "tv", id: 278573 },   // Perfect Crown (2026)
+  { mediaType: "tv", id: 127529 },   // Bloodhounds
 ] as const;
