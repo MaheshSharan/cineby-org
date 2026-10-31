@@ -18,6 +18,11 @@ export default withApiContext("api/tmdb/search", async (req: NextApiRequest, res
   }
 
   const result = await searchMulti(query, page);
+  // Cache popular search results at the Cloudflare edge: 1 hour edge cache, 10 min browser
+  res.setHeader(
+    "Cache-Control",
+    "public, max-age=600, s-maxage=3600, stale-while-revalidate=86400"
+  );
   res.status(200).json(result);
 });
 

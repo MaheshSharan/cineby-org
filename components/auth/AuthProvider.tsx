@@ -45,6 +45,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refresh = useCallback(async () => {
+    // Fast Client-Side Check: If visitor has no session cookie, they are guest.
+    // Skips firing an unnecessary /api/auth/me edge Worker invocation on every page load.
+    if (typeof document !== "undefined" && !document.cookie.includes("cineby_session=")) {
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/auth/me");
 

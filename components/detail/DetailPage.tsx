@@ -89,7 +89,7 @@ export function DetailPage({
     let isCurrent = true;
 
     const fetchHistory = () => {
-      listHistory()
+      listHistory(Boolean(user))
         .then((historyList) => {
           if (!isCurrent) return;
           const match = historyList.find(
