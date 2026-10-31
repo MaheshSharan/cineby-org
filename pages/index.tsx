@@ -168,6 +168,11 @@ export default function Home({
           initialItems={topRatedSeries}
           fetchUrl="/api/tmdb/browse?mediaType=tv&sortBy=vote_average.desc"
         />
+
+        <NativeBannerAd
+          id="container-7f39a089ecb822ed1c9d27240135d8fd-home-bottom"
+          className="my-2"
+        />
       </div>
     </>
   );

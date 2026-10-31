@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "@/lib/analytics/gtag";
 
 interface NativeBannerAdProps {
@@ -12,6 +12,7 @@ const AD_UNIT_NAME = "native_banner";
 export function NativeBannerAd({ className = "", id = "container-7f39a089ecb822ed1c9d27240135d8fd" }: NativeBannerAdProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const impressionTrackedRef = useRef(false);
+  const [hasAdLoaded, setHasAdLoaded] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -41,13 +42,25 @@ export function NativeBannerAd({ className = "", id = "container-7f39a089ecb822e
       observer.observe(container);
     }
 
-    // Avoid double injecting script into the same ad container
-    if (container.querySelector(`script[src*="7f39a089ecb822ed1c9d27240135d8fd"]`)) {
-      return () => {
-        observer?.disconnect();
-      };
+    // Observe child DOM mutations inside the ad container to detect when Adsterra actually populates content
+    let mutationObserver: MutationObserver | null = null;
+    if (typeof MutationObserver !== "undefined") {
+      mutationObserver = new MutationObserver(() => {
+        // If an iframe or stand child div with actual content has been inserted, show the ad wrapper
+        const hasContent = Boolean(
+          container.querySelector("iframe") ||
+          container.querySelector('div[class*="__stand"]') ||
+          container.querySelector('div[class*="__bn-container"]')
+        );
+        if (hasContent) {
+          setHasAdLoaded(true);
+        }
+      });
+      mutationObserver.observe(container, { childList: true, subtree: true });
     }
 
+    // Re-inject script into this container instance
+    container.innerHTML = "";
     const script = document.createElement("script");
     script.async = true;
     script.setAttribute("data-cfasync", "false");
@@ -57,6 +70,7 @@ export function NativeBannerAd({ className = "", id = "container-7f39a089ecb822e
 
     return () => {
       observer?.disconnect();
+      mutationObserver?.disconnect();
       if (container) {
         container.innerHTML = "";
       }
@@ -76,13 +90,15 @@ export function NativeBannerAd({ className = "", id = "container-7f39a089ecb822e
 
   return (
     <div
-      className={`native-ad-wrapper mx-auto w-full max-w-[1360px] overflow-hidden rounded-2xl border border-white/5 bg-white/[0.015] p-2 sm:p-3 text-center ${className}`}
+      className={`native-ad-wrapper mx-auto w-full max-w-[1360px] overflow-x-auto rounded-2xl border border-white/5 bg-white/[0.015] p-2 sm:p-3 text-center no-scrollbar ${className} ${
+        hasAdLoaded ? "block" : "hidden"
+      }`}
       onClick={handleClick}
     >
       <div
         ref={containerRef}
         id={id}
-        className="w-full flex items-center justify-center min-h-[90px]"
+        className="w-full flex items-center justify-center min-h-[90px] overflow-x-auto"
       />
     </div>
   );

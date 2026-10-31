@@ -407,13 +407,16 @@
 .native-ad-wrapper {
   contain: layout paint;
   max-width: 100% !important;
-  overflow-x: hidden !important;
 }
 
-.native-ad-wrapper iframe,
 .native-ad-wrapper [id^="container-"] {
   max-width: 100% !important;
-  overflow-x: hidden !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.native-ad-wrapper iframe {
+  max-width: 100% !important;
 }
 
 .native-ad-wrapper [id^="container-"] div[class*="__stand"] {

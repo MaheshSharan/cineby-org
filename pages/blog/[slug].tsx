@@ -149,7 +149,7 @@ export default function BlogPostPage({ post, relatedPosts }: BlogPostPageProps) 
 
         {/* In-Content Native Ad */}
         <div className="mt-12">
-          <NativeBannerAd />
+          <NativeBannerAd id="container-7f39a089ecb822ed1c9d27240135d8fd-blog-top" />
         </div>
 
         {/* Related Guides */}
@@ -172,6 +172,11 @@ export default function BlogPostPage({ post, relatedPosts }: BlogPostPageProps) 
             </div>
           </div>
         )}
+
+        {/* Bottom Post Native Ad */}
+        <div className="mt-12">
+          <NativeBannerAd id="container-7f39a089ecb822ed1c9d27240135d8fd-blog-bottom" />
+        </div>
       </article>
     </>
   );
