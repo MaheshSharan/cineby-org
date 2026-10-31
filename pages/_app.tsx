@@ -143,17 +143,7 @@ export default function App({ Component, pageProps }: AppProps) {
         </>
       )}
 
-      {/* Non-intrusive In-Page Push banner (suppressed on player/watch routes to protect video UX) */}
-      {!isPlayerRoute && (
-        <Script
-          id="inpage-push-tag"
-          strategy="lazyOnload"
-          dangerouslySetInnerHTML={{
-            __html: `(function(s){s.dataset.zone='12157004',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')));`,
-          }}
-        />
-      )}
-
+      {/* Non-intrusive In-Page Push banner suppression placeholder */}
       <SettingsProvider>
         <DetailModalProvider>
           <RouteProgressBar />
