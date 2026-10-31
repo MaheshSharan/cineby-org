@@ -400,3 +400,51 @@
   font-display: swap;
   src: url('https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Bd.woff2') format('woff2');
 }
+
+/* Responsive Native Ad Styling: Prevents huge vertical stacking on mobile */
+.native-ad-wrapper [id^="container-"] div[class*="__stand"] {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  padding-bottom: 6px !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) {
+  .native-ad-wrapper [id^="container-"] div[class*="__stand"] {
+    flex-flow: row wrap !important;
+    justify-content: space-around !important;
+    overflow-x: visible !important;
+  }
+}
+
+.native-ad-wrapper [id^="container-"] div[class*="__bn-container"] {
+  flex: 0 0 auto !important;
+  width: 260px !important;
+  max-width: 80vw !important;
+  padding: 4px !important;
+}
+
+@media (min-width: 768px) {
+  .native-ad-wrapper [id^="container-"] div[class*="__bn-container"] {
+    width: auto !important;
+    flex: 1 1 220px !important;
+    max-width: 320px !important;
+    padding: 8px !important;
+  }
+}
+
+.native-ad-wrapper [id^="container-"] div[class*="__title"] {
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+  max-height: 2.6em !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}

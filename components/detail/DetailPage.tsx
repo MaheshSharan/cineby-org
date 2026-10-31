@@ -23,6 +23,7 @@ import { PlayerShell } from "@/components/player/PlayerShell";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PlayButton } from "@/components/ui/PlayButton";
 import { ShareButton } from "@/components/detail/ShareButton";
+import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { trackEvent } from "@/lib/analytics/gtag";
 import {
   CheckIcon,
@@ -744,6 +745,9 @@ export function DetailPage({
         ) : null}
         <div>
           <CastRow cast={details.cast} />
+        </div>
+        <div className="my-6">
+          <NativeBannerAd id={isModal ? "container-7f39a089ecb822ed1c9d27240135d8fd-modal" : "container-7f39a089ecb822ed1c9d27240135d8fd"} />
         </div>
         <div id="recommendations-section" className="scroll-mt-24">
           <RecommendationsRow
