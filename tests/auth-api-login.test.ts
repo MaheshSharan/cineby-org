@@ -103,12 +103,14 @@ describe("E2E API Route: Real Password Login & Session Generation", () => {
     // 3. Produces a real Set-Cookie header with the session token
     const setCookie = response.headers["set-cookie"];
     expect(setCookie).toBeDefined();
-    expect(setCookie).toContain("cineby_session=");
-    expect(setCookie).toContain("HttpOnly");
-    expect(setCookie).toContain("SameSite=Lax");
+    const cookieString = Array.isArray(setCookie) ? setCookie.join("; ") : String(setCookie);
+    expect(cookieString).toContain("cineby_session=");
+    expect(cookieString).toContain("cineby_logged_in=1");
+    expect(cookieString).toContain("HttpOnly");
+    expect(cookieString).toContain("SameSite=Lax");
 
     // Extract raw token from cookie
-    const tokenMatch = setCookie.match(/cineby_session=([0-9a-f]{64})/);
+    const tokenMatch = cookieString.match(/cineby_session=([0-9a-f]{64})/);
     expect(tokenMatch).not.toBeNull();
     const sessionToken = tokenMatch![1];
 

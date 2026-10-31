@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { verifyGoogleIdToken } from "@/lib/auth/google";
 import {
-  buildSessionCookie,
+  buildAuthCookies,
   createSessionToken,
   SESSION_TTL_MS,
 } from "@/lib/auth/session";
@@ -81,7 +81,7 @@ export default withApiContext(
     const existingDefault = await findDefaultProfileId(user.id);
     const hasProfiles = existingDefault !== null;
 
-    res.setHeader("Set-Cookie", buildSessionCookie(sessionToken));
+    res.setHeader("Set-Cookie", buildAuthCookies(sessionToken));
     res.status(200).json({
       user: toPublicUser(user, hasProfiles),
       isNewUser,

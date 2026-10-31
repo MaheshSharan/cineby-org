@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { hashPassword } from "@/lib/auth/password";
 import {
-  buildSessionCookie,
+  buildAuthCookies,
   createSessionToken,
   SESSION_TTL_MS,
 } from "@/lib/auth/session";
@@ -71,7 +71,7 @@ export default withApiContext("api/auth/register", async (req: NextApiRequest, r
   const userAgent = typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"].slice(0, 500) : null;
   await createSession(user.id, token, new Date(Date.now() + SESSION_TTL_MS).toISOString(), userAgent);
 
-  res.setHeader("Set-Cookie", buildSessionCookie(token));
+  res.setHeader("Set-Cookie", buildAuthCookies(token));
   res.status(201).json({ user: toPublicUser(user, false) });
 });
 

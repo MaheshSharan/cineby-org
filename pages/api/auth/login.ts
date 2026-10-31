@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { verifyPassword } from "@/lib/auth/password";
 import {
-  buildSessionCookie,
+  buildAuthCookies,
   createSessionToken,
   SESSION_TTL_MS,
 } from "@/lib/auth/session";
@@ -58,7 +58,7 @@ export default withApiContext("api/auth/login", async (req: NextApiRequest, res:
   const existingDefault = await findDefaultProfileId(user.id);
   const hasProfiles = existingDefault !== null;
 
-  res.setHeader("Set-Cookie", buildSessionCookie(token));
+  res.setHeader("Set-Cookie", buildAuthCookies(token));
   res.status(200).json({
     user: toPublicUser(user, hasProfiles),
     redirectTo: hasProfiles ? "/profiles" : "/profiles?create=true",

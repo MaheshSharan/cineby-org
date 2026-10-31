@@ -125,6 +125,8 @@
   body {
     scrollbar-width: none;
     -ms-overflow-style: none;
+    overflow-x: clip;
+    max-width: 100vw;
   }
 
   * {
@@ -402,6 +404,18 @@
 }
 
 /* Responsive Native Ad Styling: Prevents huge vertical stacking on mobile */
+.native-ad-wrapper {
+  contain: layout paint;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+.native-ad-wrapper iframe,
+.native-ad-wrapper [id^="container-"] {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
 .native-ad-wrapper [id^="container-"] div[class*="__stand"] {
   display: flex !important;
   flex-flow: row nowrap !important;

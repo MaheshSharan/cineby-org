@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { verifyPassword } from "@/lib/auth/password";
-import { clearSessionCookie } from "@/lib/auth/session";
+import { clearAuthCookies } from "@/lib/auth/session";
 import { deleteUser, findUserById } from "@/lib/db/users";
 import { withApiContext, validate, sendValidationError } from "@/lib/validation";
 import { deleteAccountSchema } from "@/lib/validation/auth";
@@ -45,7 +45,7 @@ export default withApiContext("api/auth/delete-account", async (req: NextApiRequ
 
   await deleteUser(currentUser.id);
 
-  res.setHeader("Set-Cookie", clearSessionCookie());
+  res.setHeader("Set-Cookie", clearAuthCookies());
   res.status(200).json({
     success: true,
     message: "Account deleted successfully.",

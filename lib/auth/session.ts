@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 export const SESSION_COOKIE = "cineby_session";
+export const LOGGED_IN_COOKIE = "cineby_logged_in";
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function createSessionToken(): string {
@@ -23,8 +24,35 @@ export function buildSessionCookie(token: string): string {
   return parts.join("; ");
 }
 
+export function buildLoggedInCookie(): string {
+  const parts = [
+    `${LOGGED_IN_COOKIE}=1`,
+    "Path=/",
+    "SameSite=Lax",
+    `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`,
+  ];
+
+  if (process.env.NODE_ENV === "production") {
+    parts.push("Secure");
+  }
+
+  return parts.join("; ");
+}
+
 export function clearSessionCookie(): string {
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+}
+
+export function clearLoggedInCookie(): string {
+  return `${LOGGED_IN_COOKIE}=; Path=/; SameSite=Lax; Max-Age=0`;
+}
+
+export function buildAuthCookies(token: string): string[] {
+  return [buildSessionCookie(token), buildLoggedInCookie()];
+}
+
+export function clearAuthCookies(): string[] {
+  return [clearSessionCookie(), clearLoggedInCookie()];
 }
 
 export interface CookieRequest {

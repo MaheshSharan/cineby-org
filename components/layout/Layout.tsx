@@ -31,9 +31,9 @@ export function Layout({ children }: LayoutProps) {
   const hideFooter = NO_FOOTER_ROUTES.includes(router.pathname);
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-clip">
       <Header />
-      <main className="flex-1 flex flex-col">{children}</main>
+      <main className="flex-1 flex flex-col overflow-x-clip">{children}</main>
       {!hideFooter && <Footer />}
     </div>
   );
