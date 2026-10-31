@@ -163,7 +163,7 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={desktop || mobile || ""}
-              alt=""
+              alt={`${item.title} background blur`}
               className="absolute inset-0 h-full w-full object-cover scale-125 blur-[70px] saturate-150 opacity-40 transition-opacity duration-1000"
             />
           </div>

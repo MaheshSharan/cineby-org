@@ -114,7 +114,7 @@ export function OnlyOnRow({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={selectedProvider.logo}
-              alt=""
+              alt={selectedProvider.name}
               className="w-full h-full object-cover"
             />
           </span>
@@ -164,7 +164,7 @@ export function OnlyOnRow({
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={provider.logo}
-                          alt=""
+                          alt={provider.name}
                           className="w-full h-full object-cover"
                         />
                       </span>

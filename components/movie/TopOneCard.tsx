@@ -67,8 +67,7 @@ export function TopOneCard({ media, className = "" }: TopOneCardProps) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={backdrop.desktop || backdrop.mobile}
-                alt=""
-                aria-hidden="true"
+                alt={`${media.title} backdrop`}
                 loading="lazy"
                 decoding="async"
                 className="h-full w-full object-cover object-center transition-transform duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
