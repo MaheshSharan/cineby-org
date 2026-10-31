@@ -176,7 +176,7 @@ export function EpisodesSection({ tvId, seasons, initialEpisodes, onReady }: Epi
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={posterUrl}
-                            alt=""
+                            alt={season.name}
                             loading="lazy"
                             className="w-full h-full object-cover"
                           />
@@ -357,7 +357,7 @@ function EpisodeCard({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={still}
-                alt=""
+                alt={`Episode ${episode.episodeNumber} - ${episode.name}`}
                 title={episode.name}
                 loading="lazy"
                 decoding="async"
@@ -403,7 +403,7 @@ function EpisodeCard({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={still}
-                alt=""
+                alt={`Episode ${episode.episodeNumber} - ${episode.name}`}
                 title={episode.name}
                 loading="lazy"
                 decoding="async"
@@ -514,7 +514,7 @@ function EpisodeCarouselCard({ tvId, episode }: EpisodeCarouselCardProps) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={still}
-            alt=""
+            alt={`Episode ${episode.episodeNumber} - ${episode.name}`}
             title={episode.name}
             loading="lazy"
             decoding="async"

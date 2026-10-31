@@ -317,14 +317,14 @@ export function DetailPage({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               className="w-full h-full object-cover scale-[1.2] blur-[80px] saturate-100 opacity-50"
-              alt=""
+              alt={`${details.title} ambient background`}
               src={heroBackdrop}
             />
             <div className="absolute top-0 left-0 w-full h-[40vh] mix-blend-screen opacity-20 hidden lg:block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className="w-full h-full object-cover scale-[1.2] blur-[50px] saturate-100"
-                alt=""
+                alt={`${details.title} backdrop glow`}
                 style={{
                   maskImage: "linear-gradient(to bottom, black 0%, transparent 100%)",
                   WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 100%)",
@@ -377,8 +377,7 @@ export function DetailPage({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={mobile}
-                alt=""
-                aria-hidden="true"
+                alt={`${details.title} backdrop`}
                 className="h-full w-full object-cover object-top"
               />
             </picture>
@@ -386,8 +385,7 @@ export function DetailPage({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={heroBackdrop}
-              alt=""
-              aria-hidden="true"
+              alt={`${details.title} backdrop`}
               className="h-full w-full object-cover object-top"
             />
           ) : (

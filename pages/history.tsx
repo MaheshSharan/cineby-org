@@ -106,8 +106,7 @@ export default function HistoryPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/popcorn.svg"
-              alt=""
-              aria-hidden="true"
+              alt="Empty history illustration"
               className="mb-4 h-36 w-36 select-none opacity-80 drop-shadow-2xl"
             />
             <h1 className="mb-1 text-xl font-semibold text-white md:text-2xl">No watch history found</h1>

@@ -4,6 +4,7 @@ import type { Genre, MediaSummary, Paginated } from "@/lib/tmdb";
 
 import { MovieCard } from "@/components/movie/MovieCard";
 import { SkeletonCardGrid } from "@/components/skeleton/SkeletonCard";
+import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 
 type MediaType = "movie" | "tv";
 type SortKey = "popular" | "rating" | "recent";
@@ -193,6 +194,8 @@ export function BrowseGrid({ mediaType, genres, initialItems }: BrowseGridProps)
           </div>
         ) : null}
       </div>
+
+      <NativeBannerAd className="my-4" />
 
       {/* Grid of Movie/TV Cards */}
       {items.length === 0 && !isLoading ? (

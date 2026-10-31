@@ -3,6 +3,8 @@ import { useState } from "react";
 
 import { PageSeo } from "@/components/seo/PageSeo";
 import { BlogCard } from "@/components/blog/BlogCard";
+import { DisplayBannerAd } from "@/components/ads/DisplayBannerAd";
+import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { getAllPosts, getAllTags } from "@/lib/blog/posts";
 import type { BlogPostMeta } from "@/lib/blog/types";
 import { sanitizeJsonLd } from "@/lib/seo/jsonLd";
@@ -106,16 +108,26 @@ export default function BlogIndexPage({ posts, tags }: BlogIndexProps) {
 
         {/* Featured Post (shown when no tag filter is active) */}
         {!selectedTag && featuredPost && (
-          <div className="mb-12">
+          <div className="mb-8">
             <BlogCard post={featuredPost} featured={true} />
           </div>
         )}
+
+        {/* In-Feed Native Banner */}
+        <div className="my-8">
+          <NativeBannerAd />
+        </div>
 
         {/* Posts Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {filteredPosts.map((post) => (
             <BlogCard key={post.slug} post={post} />
           ))}
+        </div>
+
+        {/* Bottom Display Banner */}
+        <div className="mt-12">
+          <DisplayBannerAd />
         </div>
       </div>
     </>

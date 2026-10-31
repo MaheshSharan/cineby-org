@@ -25,8 +25,11 @@ import { TopTenRow } from "@/components/home/TopTenRow";
 import { UpcomingRow } from "@/components/home/UpcomingRow";
 import { DisplayBannerAd } from "@/components/ads/DisplayBannerAd";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
+import { FaqSection } from "@/components/home/FaqSection";
+import { SeoContentSection } from "@/components/home/SeoContentSection";
 import { PageSeo } from "@/components/seo/PageSeo";
 import { buildSiteNavigationJsonLd, buildWebSiteJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
+import { buildFaqJsonLd } from "@/lib/seo/faqSchema";
 
 const HERO_ITEMS = 12;
 const ROW_ITEMS = 20;
@@ -128,7 +131,7 @@ export default function Home({
         title="Cineby: Watch Free Movies & TV Shows Online"
         description="Watch free movies and TV shows online. Stream trending movies, top-rated TV series, and track your watchlist on Cineby."
         path="/"
-        jsonLd={sanitizeJsonLd([buildWebSiteJsonLd(), buildSiteNavigationJsonLd()])}
+        jsonLd={sanitizeJsonLd([buildWebSiteJsonLd(), buildSiteNavigationJsonLd(), buildFaqJsonLd()])}
       />
 
       <h1 className="sr-only">Cineby: Watch Free Movies & TV Shows Online</h1>
@@ -179,6 +182,10 @@ export default function Home({
         />
 
         <DisplayBannerAd className="my-2" />
+
+        <FaqSection />
+
+        <SeoContentSection />
       </div>
     </>
   );

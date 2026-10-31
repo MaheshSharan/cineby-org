@@ -17,7 +17,7 @@ export default function ServerErrorPage() {
         <div aria-hidden="true" className="absolute inset-0 z-0 overflow-hidden">
           <Image
             src="/assets/pages/error_code/500.webp"
-            alt=""
+            alt="500 Server Error Background"
             fill
             priority
             sizes="100vw"

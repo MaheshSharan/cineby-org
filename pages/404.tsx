@@ -17,7 +17,7 @@ export default function NotFoundPage() {
         <div aria-hidden="true" className="absolute inset-0 z-0 overflow-hidden">
           <Image
             src="/assets/pages/error_code/404.webp"
-            alt=""
+            alt="404 Page Not Found Background"
             fill
             priority
             sizes="100vw"
