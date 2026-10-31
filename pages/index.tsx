@@ -125,8 +125,8 @@ export default function Home({
   return (
     <>
       <PageSeo
-        title="Cineby: Watch Free Movies & TV Shows Online | Streaming Platform"
-        description="Watch free movies and TV shows online. Browse trending titles, top-rated series and popular streaming providers, and keep your own watchlist on Cineby."
+        title="Cineby: Watch Free Movies & TV Shows Online"
+        description="Watch free movies and TV shows online. Stream trending movies, top-rated TV series, and track your watchlist on Cineby."
         path="/"
         jsonLd={sanitizeJsonLd([buildWebSiteJsonLd(), buildSiteNavigationJsonLd()])}
       />
