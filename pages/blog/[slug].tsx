@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Streamdown } from "streamdown";
 
 import { PageSeo } from "@/components/seo/PageSeo";
+import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { getAllPosts, getPostBySlug } from "@/lib/blog/posts";
 import type { BlogPost } from "@/lib/blog/types";
 import { buildBlogPostJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
@@ -141,6 +142,11 @@ export default function BlogPostPage({ post, relatedPosts }: BlogPostPageProps) 
         {/* Article Body Rendered via Streamdown */}
         <div className="mt-10 streamdown-container prose prose-invert max-w-none text-white/80 leading-relaxed">
           <Streamdown>{post.content}</Streamdown>
+        </div>
+
+        {/* In-Content Native Ad */}
+        <div className="mt-12">
+          <NativeBannerAd />
         </div>
 
         {/* Related Guides */}

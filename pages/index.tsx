@@ -21,6 +21,7 @@ import { HeroCarousel } from "@/components/home/HeroCarousel";
 import { LazyContentRow } from "@/components/home/LazyContentRow";
 import { OnlyOnRow } from "@/components/home/OnlyOnRow";
 import { TopTenRow } from "@/components/home/TopTenRow";
+import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { PageSeo } from "@/components/seo/PageSeo";
 import { buildSiteNavigationJsonLd, buildWebSiteJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 
@@ -144,6 +145,8 @@ export default function Home({
           fetchUrl="/api/tmdb/trending?mediaType=tv&timeWindow=day"
           action={viewAllTvLink}
         />
+
+        <NativeBannerAd className="my-2" />
 
         <TopTenRow items={topTenItems} />
 
