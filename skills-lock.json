@@ -103,6 +103,12 @@
       "skillPath": "skills/sandbox-stable/SKILL.md",
       "computedHash": "e63fce16e4a67d796689891263a3083aa34e747573a2787e4cfa5af9a2e85c32"
     },
+    "streamdown": {
+      "source": "vercel/streamdown",
+      "sourceType": "github",
+      "skillPath": "skills/streamdown/SKILL.md",
+      "computedHash": "2f8292ddf03ef22a271acb22c852f06ea9105d05d000adbbf2d21b4bd71c7447"
+    },
     "turnstile-spin": {
       "source": "cloudflare/skills",
       "sourceType": "github",

@@ -17,6 +17,8 @@ const FULL_BLEED_ROUTES = [
   "/register",
 ];
 
+const NO_FOOTER_ROUTES = ["/404", "/500"];
+
 export function Layout({ children }: LayoutProps) {
   const router = useRouter();
   const isFullBleed =
@@ -26,11 +28,13 @@ export function Layout({ children }: LayoutProps) {
     return <main className="flex-1">{children}</main>;
   }
 
+  const hideFooter = NO_FOOTER_ROUTES.includes(router.pathname);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1">{children}</main>
-      <Footer />
+      <main className="flex-1 flex flex-col">{children}</main>
+      {!hideFooter && <Footer />}
     </div>
   );
 }

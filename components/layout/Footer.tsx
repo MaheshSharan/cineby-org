@@ -33,6 +33,12 @@ export function Footer() {
           {/* Navigation Links */}
           <nav className="flex items-center gap-6 font-semibold uppercase tracking-wider text-white/60">
             <Link
+              href="/blog"
+              className="transition-colors hover:text-white"
+            >
+              Blog
+            </Link>
+            <Link
               href="/privacy"
               className="transition-colors hover:text-white"
             >

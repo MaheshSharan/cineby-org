@@ -74,6 +74,91 @@ export function buildWebSiteJsonLd(): JsonLdData {
 }
 
 /**
+ * Generates SiteNavigationElement schema for Google SERP expanded sitelinks (sub-navigation under search result).
+ */
+export function buildSiteNavigationJsonLd(): JsonLdData {
+  const baseUrl = getSiteUrl();
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: [
+      {
+        "@type": "SiteNavigationElement",
+        position: 1,
+        name: "Movies",
+        description: "Browse popular movies, trending releases and top-rated cinema.",
+        url: `${baseUrl}/browse/movie`,
+      },
+      {
+        "@type": "SiteNavigationElement",
+        position: 2,
+        name: "TV Shows",
+        description: "Explore trending television series, dramas, and anime episodes.",
+        url: `${baseUrl}/browse/tv`,
+      },
+      {
+        "@type": "SiteNavigationElement",
+        position: 3,
+        name: "Editorial & Guides",
+        description: "Expert streaming guides, movie recommendations, and buffering fixes.",
+        url: `${baseUrl}/blog`,
+      },
+      {
+        "@type": "SiteNavigationElement",
+        position: 4,
+        name: "Watchlist",
+        description: "Save and organize your favorite movies and shows to watch later.",
+        url: `${baseUrl}/watchlist`,
+      },
+    ],
+  };
+}
+
+/**
+ * Generates Schema.org BlogPosting for E-E-A-T search engine validation.
+ */
+export function buildBlogPostJsonLd(post: {
+  slug: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  updatedAt?: string;
+  author: { name: string; role?: string };
+  coverImage?: string;
+}): JsonLdData {
+  const postUrl = buildAbsoluteUrl(`/blog/${post.slug}`);
+  const imageUrl = post.coverImage ? buildAbsoluteUrl(post.coverImage) : buildAbsoluteUrl("/screenshots/home-wide.png");
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.description,
+    image: imageUrl,
+    datePublished: post.publishedAt,
+    dateModified: post.updatedAt ?? post.publishedAt,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": postUrl,
+    },
+    author: {
+      "@type": "Person",
+      name: post.author.name,
+      jobTitle: post.author.role,
+      url: getSiteUrl(),
+    },
+    publisher: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      logo: {
+        "@type": "ImageObject",
+        url: buildAbsoluteUrl("/logo.png"),
+      },
+    },
+  };
+}
+
+/**
  * Generates Schema.org Movie structured data with compliant WatchAction EntryPoint.
  */
 export function buildMovieJsonLd(movie: MovieDetails): JsonLdData {

@@ -160,6 +160,28 @@ export function ProfileDropdown({
             <PartyPopperIcon size={15} className="shrink-0 text-white/55" />
             <span>Watch Party</span>
           </button>
+
+          <Link
+            href="/blog"
+            onClick={onClose}
+            role="menuitem"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/[0.07] transition-colors duration-150 text-left"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="shrink-0 text-white/55"
+            >
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+              <path d="M6 6h10" />
+              <path d="M6 10h10" />
+            </svg>
+            <span>Blog & Guides</span>
+          </Link>
         </div>
 
         <div className="mx-3 h-px bg-white/10" />

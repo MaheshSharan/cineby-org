@@ -9,6 +9,7 @@ const config: Config = {
     "./hooks/**/*.{ts,tsx}",
     "./lib/**/*.{ts,tsx}",
     "./types/**/*.{ts,tsx}",
+    "./node_modules/streamdown/dist/*.js",
   ],
   theme: {
     extend: {

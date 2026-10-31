@@ -22,7 +22,7 @@ import { LazyContentRow } from "@/components/home/LazyContentRow";
 import { OnlyOnRow } from "@/components/home/OnlyOnRow";
 import { TopTenRow } from "@/components/home/TopTenRow";
 import { PageSeo } from "@/components/seo/PageSeo";
-import { buildWebSiteJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
+import { buildSiteNavigationJsonLd, buildWebSiteJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 
 const HERO_ITEMS = 12;
 const ROW_ITEMS = 20;
@@ -117,13 +117,13 @@ export default function Home({
   return (
     <>
       <PageSeo
-        title="Cineby - Watch Free Movies & TV Shows Online"
+        title="Cineby: Watch Free Movies & TV Shows Online | Streaming Platform"
         description="Watch free movies and TV shows online. Browse trending titles, top-rated series and popular streaming providers, and keep your own watchlist on Cineby."
         path="/"
-        jsonLd={sanitizeJsonLd(buildWebSiteJsonLd())}
+        jsonLd={sanitizeJsonLd([buildWebSiteJsonLd(), buildSiteNavigationJsonLd()])}
       />
 
-      <h1 className="sr-only">Cineby - Watch Free Movies & TV Shows Online</h1>
+      <h1 className="sr-only">Cineby: Watch Free Movies & TV Shows Online</h1>
 
       <HeroCarousel items={heroItems} genreNames={genreNames} />
 
