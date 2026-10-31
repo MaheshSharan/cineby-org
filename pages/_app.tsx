@@ -146,7 +146,8 @@ export default function App({ Component, pageProps }: AppProps) {
       <SettingsProvider>
         <DetailModalProvider>
           <RouteProgressBar />
-          <SocialBarAd />
+          {/* Social Bar Ad temporarily commented out per user request */}
+          {/* <SocialBarAd /> */}
           <Layout>
             <Component {...pageProps} />
           </Layout>
