@@ -1,6 +1,6 @@
 import type { MediaSummary, MediaType } from "@/lib/tmdb";
 import { getTrending } from "@/lib/tmdb/server/trending";
-import { discoverMovies, discoverTv } from "@/lib/tmdb/server/discover";
+import { discoverMovies, discoverTv, getUpcomingMedia } from "@/lib/tmdb/server/discover";
 import { getPopularMovies } from "@/lib/tmdb/server/movies";
 import { getPopularTv } from "@/lib/tmdb/server/tv";
 import { cachedFetch } from "@/lib/cache";
@@ -85,6 +85,21 @@ export async function getSitemapMediaCatalog(
           }
         } catch (err) {
           logger.warn(`[sitemap] Error discovering ${mediaType} p${p}`, {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          break;
+        }
+      }
+
+      // 4. Anticipatory Pre-Release Indexation: Upcoming Releases (Next 35 days)
+      for (let p = 1; p <= Math.min(maxPages, 5); p++) {
+        try {
+          const res = await getUpcomingMedia({ mediaType, daysAhead: 35, page: p });
+          for (const item of res.results) {
+            addItem(item);
+          }
+        } catch (err) {
+          logger.warn(`[sitemap] Error fetching upcoming pre-release ${mediaType} p${p}`, {
             error: err instanceof Error ? err.message : String(err),
           });
           break;

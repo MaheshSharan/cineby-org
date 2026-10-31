@@ -15,6 +15,8 @@ export interface DiscoverOptions {
   voteCountGte?: number;
   voteAverageGte?: number;
   withKeywords?: string;
+  releaseDateGte?: string;
+  releaseDateLte?: string;
 }
 
 export async function discoverMovies(options: DiscoverOptions = {}): Promise<Paginated<MediaSummary>> {
@@ -25,12 +27,47 @@ export async function discoverTv(options: DiscoverOptions = {}): Promise<Paginat
   return discover("/discover/tv", "tv", options);
 }
 
+export interface UpcomingOptions {
+  mediaType: MediaType;
+  daysAhead?: number;
+  page?: number;
+}
+
+export async function getUpcomingMedia({
+  mediaType,
+  daysAhead = 35,
+  page = 1,
+}: UpcomingOptions): Promise<Paginated<MediaSummary>> {
+  const now = new Date();
+  const future = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+
+  const formatDate = (d: Date) => d.toISOString().split("T")[0];
+  const todayStr = formatDate(now);
+  const futureStr = formatDate(future);
+
+  if (mediaType === "movie") {
+    return discoverMovies({
+      page,
+      sortBy: "popularity.desc",
+      releaseDateGte: todayStr,
+      releaseDateLte: futureStr,
+    });
+  }
+
+  return discoverTv({
+    page,
+    sortBy: "popularity.desc",
+    releaseDateGte: todayStr,
+    releaseDateLte: futureStr,
+  });
+}
+
 async function discover(
   path: string,
   mediaType: MediaType,
   options: DiscoverOptions
 ): Promise<Paginated<MediaSummary>> {
-  const queryStr = `g${options.genreId ?? 0}_p${options.providerId ?? 0}_s${options.sortBy ?? "pop"}_pg${options.page ?? 1}_y${options.year ?? 0}_vc${options.voteCountGte ?? 0}_va${options.voteAverageGte ?? 0}_k${options.withKeywords ?? ""}`;
+  const queryStr = `g${options.genreId ?? 0}_p${options.providerId ?? 0}_s${options.sortBy ?? "pop"}_pg${options.page ?? 1}_y${options.year ?? 0}_vc${options.voteCountGte ?? 0}_va${options.voteAverageGte ?? 0}_k${options.withKeywords ?? ""}_dg${options.releaseDateGte ?? ""}_dl${options.releaseDateLte ?? ""}`;
 
   return cachedFetch({
     key: tmdbCacheKeys.discover(mediaType, queryStr),
@@ -38,6 +75,17 @@ async function discover(
     staleSeconds: TMDB_STALE_SECONDS.discover,
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
+
+      const dateParams: Record<string, string | undefined> =
+        mediaType === "movie"
+          ? {
+              "primary_release_date.gte": options.releaseDateGte,
+              "primary_release_date.lte": options.releaseDateLte,
+            }
+          : {
+              "first_air_date.gte": options.releaseDateGte,
+              "first_air_date.lte": options.releaseDateLte,
+            };
 
       const raw = await tmdbGet<unknown>({
         path,
@@ -52,6 +100,7 @@ async function discover(
           "vote_count.gte": options.voteCountGte,
           "vote_average.gte": options.voteAverageGte,
           with_keywords: options.withKeywords,
+          ...dateParams,
         },
       });
 

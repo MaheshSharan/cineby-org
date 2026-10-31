@@ -514,6 +514,19 @@ export function DetailPage({
                 </span>
               ) : null}
 
+              {/* Pre-Release Countdown Badge */}
+              {details.releaseDate && new Date(details.releaseDate) > new Date() ? (() => {
+                const diffDays = Math.ceil(
+                  (new Date(details.releaseDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                );
+                return (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-white/[0.14] to-white/[0.05] text-white/95 border border-white/20 backdrop-blur-md shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
+                    <span>{diffDays <= 1 ? "Releasing Tomorrow" : `Releases in ${diffDays} days`}</span>
+                  </span>
+                );
+              })() : null}
+
               {"runtime" in details && details.runtime ? (
                 <span className="inline-flex items-center gap-2">
                   <span className="text-white/40 select-none">•</span>

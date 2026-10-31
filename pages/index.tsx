@@ -13,6 +13,7 @@ import {
   getTopRatedTv,
   getTrending,
 } from "@/lib/tmdb/server";
+import { getUpcomingMedia } from "@/lib/tmdb/server/discover";
 import { getHeroPicksMedia } from "@/lib/tmdb/server/heroPicks";
 
 import { BrowseByProviderRow } from "@/components/home/BrowseByProviderRow";
@@ -21,6 +22,7 @@ import { HeroCarousel } from "@/components/home/HeroCarousel";
 import { LazyContentRow } from "@/components/home/LazyContentRow";
 import { OnlyOnRow } from "@/components/home/OnlyOnRow";
 import { TopTenRow } from "@/components/home/TopTenRow";
+import { UpcomingRow } from "@/components/home/UpcomingRow";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { PageSeo } from "@/components/seo/PageSeo";
 import { buildSiteNavigationJsonLd, buildWebSiteJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
@@ -38,6 +40,8 @@ interface HomePageProps {
   trendingSeries?: MediaSummary[];
   topRatedMovies?: MediaSummary[];
   topRatedSeries?: MediaSummary[];
+  upcomingMovies?: MediaSummary[];
+  upcomingTv?: MediaSummary[];
 }
 
 export default function Home({
@@ -48,6 +52,8 @@ export default function Home({
   trendingSeries,
   topRatedMovies,
   topRatedSeries,
+  upcomingMovies = [],
+  upcomingTv = [],
   genreNames,
 }: HomePageProps) {
   const [activeProviderId, setActiveProviderId] = useState<number>(8);
@@ -157,6 +163,8 @@ export default function Home({
           onProviderChange={(id) => setActiveProviderId(id)}
         />
 
+        <UpcomingRow movies={upcomingMovies} tv={upcomingTv} />
+
         <LazyContentRow
           title="Top Rated Movies"
           initialItems={topRatedMovies}
@@ -202,6 +210,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
     topRatedSeriesData,
     netflixMovies,
     netflixTv,
+    upcomingMoviesData,
+    upcomingTvData,
   ] = await Promise.all([
     getHeroPicksMedia().catch(() => []),
     safePaginated(getTrending("all", "day", 1)),
@@ -217,6 +227,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
     safePaginated(getTopRatedTv(1)),
     safePaginated(discoverMovies({ providerId: 8, watchRegion: "US", sortBy: "popularity.desc", page: 1 })),
     safePaginated(discoverTv({ providerId: 8, watchRegion: "US", sortBy: "popularity.desc", page: 1 })),
+    safePaginated(getUpcomingMedia({ mediaType: "movie", daysAhead: 35, page: 1 })),
+    safePaginated(getUpcomingMedia({ mediaType: "tv", daysAhead: 35, page: 1 })),
   ]);
 
   const seenKeys = new Set<string>();
@@ -264,6 +276,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
 
   const topRatedMovies = deduplicateMediaPool(topRatedMoviesData.results, seenKeys, ROW_ITEMS);
   const topRatedSeries = deduplicateMediaPool(topRatedSeriesData.results, seenKeys, ROW_ITEMS);
+  const upcomingMovies = deduplicateMediaPool(upcomingMoviesData.results, seenKeys, ROW_ITEMS);
+  const upcomingTv = deduplicateMediaPool(upcomingTvData.results, seenKeys, ROW_ITEMS);
 
   return {
     props: {
@@ -279,6 +293,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
       onlyOnNetflix,
       topRatedMovies,
       topRatedSeries,
+      upcomingMovies,
+      upcomingTv,
       genreNames,
     },
   };
