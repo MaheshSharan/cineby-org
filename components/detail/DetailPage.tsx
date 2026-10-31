@@ -23,6 +23,7 @@ import { PlayerShell } from "@/components/player/PlayerShell";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PlayButton } from "@/components/ui/PlayButton";
 import { ShareButton } from "@/components/detail/ShareButton";
+import { DisplayBannerAd } from "@/components/ads/DisplayBannerAd";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { trackEvent } from "@/lib/analytics/gtag";
 import {
@@ -771,7 +772,7 @@ export function DetailPage({
           />
         </div>
         <div className="my-6">
-          <NativeBannerAd id={isModal ? "container-7f39a089ecb822ed1c9d27240135d8fd-modal-bottom" : "container-7f39a089ecb822ed1c9d27240135d8fd-detail-bottom"} />
+          <DisplayBannerAd />
         </div>
       </div>
     </div>

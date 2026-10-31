@@ -23,6 +23,7 @@ import { LazyContentRow } from "@/components/home/LazyContentRow";
 import { OnlyOnRow } from "@/components/home/OnlyOnRow";
 import { TopTenRow } from "@/components/home/TopTenRow";
 import { UpcomingRow } from "@/components/home/UpcomingRow";
+import { DisplayBannerAd } from "@/components/ads/DisplayBannerAd";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { PageSeo } from "@/components/seo/PageSeo";
 import { buildSiteNavigationJsonLd, buildWebSiteJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
@@ -177,10 +178,7 @@ export default function Home({
           fetchUrl="/api/tmdb/browse?mediaType=tv&sortBy=vote_average.desc"
         />
 
-        <NativeBannerAd
-          id="container-7f39a089ecb822ed1c9d27240135d8fd-home-bottom"
-          className="my-2"
-        />
+        <DisplayBannerAd className="my-2" />
       </div>
     </>
   );
