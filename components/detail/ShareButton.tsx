@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CheckIcon, Share2Icon } from "@/components/ui/icons";
 import { trackEvent } from "@/lib/analytics/gtag";
+import { buildShareUrl } from "@/lib/utils/share";
 
 interface ShareButtonProps {
   title: string;
@@ -27,7 +28,10 @@ export function ShareButton({
     e.preventDefault();
     e.stopPropagation();
 
-    const fullUrl = url.startsWith("http") ? url : `${window.location.origin}${url}`;
+    const taggedUrl = buildShareUrl(url);
+    const fullUrl = taggedUrl.startsWith("http")
+      ? taggedUrl
+      : `${window.location.origin}${taggedUrl.startsWith("/") ? taggedUrl : `/${taggedUrl}`}`;
 
     if (navigator.share) {
       try {

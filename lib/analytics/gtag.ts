@@ -145,6 +145,22 @@ export type GTagEvent =
       };
     }
   | {
+      action: "ad_impression";
+      params: {
+        ad_unit: string;
+        ad_id?: string;
+        format?: string;
+      };
+    }
+  | {
+      action: "ad_click";
+      params: {
+        ad_unit: string;
+        ad_id?: string;
+        format?: string;
+      };
+    }
+  | {
       action: "system_exception";
       params: {
         error_type: string;

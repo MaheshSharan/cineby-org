@@ -55,6 +55,9 @@ export default function BlogPostPage({ post, relatedPosts }: BlogPostPageProps) 
         description={post.description}
         path={`/blog/${post.slug}`}
         imageUrl={post.coverImage}
+        imageWidth={1200}
+        imageHeight={630}
+        openGraphType="article"
         jsonLd={jsonLd}
       />
 

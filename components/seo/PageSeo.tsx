@@ -2,7 +2,7 @@ import Head from "next/head";
 
 import { buildAbsoluteUrl, DEFAULT_OG_IMAGE_PATH, SITE_NAME } from "@/lib/seo/site";
 
-type OpenGraphType = "website" | "video.movie" | "video.tv_show";
+type OpenGraphType = "website" | "video.movie" | "video.tv_show" | "article";
 
 interface IndexablePageSeoProps {
   title: string;
