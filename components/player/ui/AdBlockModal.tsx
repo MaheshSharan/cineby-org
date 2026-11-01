@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import Image from "next/image";
-import { ADGUARD_CHROME_STORE_URL, SPONSOR_DIRECT_LINK_URL } from "../types";
+import { ADGUARD_CHROME_STORE_URL } from "../types";
 
-export { ADGUARD_CHROME_STORE_URL, SPONSOR_DIRECT_LINK_URL };
+export { ADGUARD_CHROME_STORE_URL };
 
 interface AdBlockModalProps {
   isOpen: boolean;
@@ -243,40 +243,6 @@ export function AdBlockModal({ isOpen, onClose }: AdBlockModalProps) {
                 </div>
               </div>
             </div>
-
-            {/* Option 4: High-Speed Streaming VPN / Direct Link Offer */}
-            <a
-              href={SPONSOR_DIRECT_LINK_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center justify-between p-2.5 md:p-3 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 transition-all cursor-pointer"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-1.5 flex-shrink-0 group-hover:scale-105 transition-transform">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12 8v4" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12 16h.01" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12.5px] sm:text-[13px] font-semibold text-white tracking-tight">VIP Shield & Fast Mirror</span>
-                    <span className="text-[9px] sm:text-[9.5px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">
-                      Recommended
-                    </span>
-                  </div>
-                  <div className="text-[10.5px] sm:text-[11px] text-white/50 truncate mt-0.5">
-                    Fast streaming booster & privacy protection.
-                  </div>
-                </div>
-              </div>
-              <div className="text-white/30 group-hover:text-white/80 group-hover:translate-x-0.5 transition-all pl-2 flex-shrink-0">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-            </a>
           </div>
 
           {/* Bottom Actions: Glow Button & Caption */}

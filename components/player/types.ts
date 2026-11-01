@@ -7,8 +7,6 @@ export const ONBOARD_ADS_PLAYER_INFO_KEY = "onboard_ads_player_info";
 export const ADGUARD_CHROME_STORE_URL =
   "https://chromewebstore.google.com/detail/adguard-adblocker/bgnkhhnnamicmpeenaelnjfhikgbkllg?hl=en&pli=1";
 
-export const SPONSOR_DIRECT_LINK_URL = "https://uplcm.com/4/12157005";
-
 export type QualityLabel = "2160p" | "1080p" | "720p" | "480p";
 
 export type PlaybackRate = 0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2;
