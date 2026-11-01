@@ -4,7 +4,6 @@ import Image from "next/image";
 import { Streamdown } from "streamdown";
 
 import { PageSeo } from "@/components/seo/PageSeo";
-import { DisplayBannerAd } from "@/components/ads/DisplayBannerAd";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { getAllPosts, getPostBySlug } from "@/lib/blog/posts";
 import type { BlogPost } from "@/lib/blog/types";
@@ -173,11 +172,6 @@ export default function BlogPostPage({ post, relatedPosts }: BlogPostPageProps) 
             </div>
           </div>
         )}
-
-        {/* Bottom Post Display Ad */}
-        <div className="mt-12">
-          <DisplayBannerAd />
-        </div>
       </article>
     </>
   );

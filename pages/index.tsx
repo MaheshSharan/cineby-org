@@ -23,7 +23,6 @@ import { LazyContentRow } from "@/components/home/LazyContentRow";
 import { OnlyOnRow } from "@/components/home/OnlyOnRow";
 import { TopTenRow } from "@/components/home/TopTenRow";
 import { UpcomingRow } from "@/components/home/UpcomingRow";
-import { DisplayBannerAd } from "@/components/ads/DisplayBannerAd";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { FaqSection } from "@/components/home/FaqSection";
 import { SeoContentSection } from "@/components/home/SeoContentSection";
@@ -180,8 +179,6 @@ export default function Home({
           initialItems={topRatedSeries}
           fetchUrl="/api/tmdb/browse?mediaType=tv&sortBy=vote_average.desc"
         />
-
-        <DisplayBannerAd className="my-2" />
 
         <FaqSection />
 

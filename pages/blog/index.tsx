@@ -3,7 +3,6 @@ import { useState } from "react";
 
 import { PageSeo } from "@/components/seo/PageSeo";
 import { BlogCard } from "@/components/blog/BlogCard";
-import { DisplayBannerAd } from "@/components/ads/DisplayBannerAd";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { getAllPosts, getAllTags } from "@/lib/blog/posts";
 import type { BlogPostMeta } from "@/lib/blog/types";
@@ -123,11 +122,6 @@ export default function BlogIndexPage({ posts, tags }: BlogIndexProps) {
           {filteredPosts.map((post) => (
             <BlogCard key={post.slug} post={post} />
           ))}
-        </div>
-
-        {/* Bottom Display Banner */}
-        <div className="mt-12">
-          <DisplayBannerAd />
         </div>
       </div>
     </>

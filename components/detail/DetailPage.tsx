@@ -23,7 +23,6 @@ import { PlayerShell } from "@/components/player/PlayerShell";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PlayButton } from "@/components/ui/PlayButton";
 import { ShareButton } from "@/components/detail/ShareButton";
-import { DisplayBannerAd } from "@/components/ads/DisplayBannerAd";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { trackEvent } from "@/lib/analytics/gtag";
 import {
@@ -768,9 +767,6 @@ export function DetailPage({
               details.similar.length > 0 ? details.similar : details.recommendations
             }
           />
-        </div>
-        <div className="my-6">
-          <DisplayBannerAd />
         </div>
       </div>
     </div>
