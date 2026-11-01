@@ -52,12 +52,6 @@ export default function Document() {
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8925754855638542"
           crossOrigin="anonymous"
         />
-        {/* Monetag Vignette */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(s){s.dataset.zone='12166904',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')));`,
-          }}
-        />
       </Head>
       <body className="bg-background">
         <script
