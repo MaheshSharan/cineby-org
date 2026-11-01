@@ -144,8 +144,8 @@ export function BrowseGrid({ mediaType, genres, initialItems }: BrowseGridProps)
   const overflowGenres = genres.slice(12);
 
   return (
-    <section className="mx-auto max-w-[1360px] px-4 pt-24 pb-12 md:pt-28">
-      <div className={`no-scrollbar mb-8 flex items-center gap-6 border-b border-white/10 pb-3 ${isMoreOpen ? "overflow-visible" : "overflow-x-auto"}`}>
+    <section className="mx-auto w-full max-w-[1360px] overflow-x-hidden px-3 sm:px-4 pt-24 pb-12 md:pt-28">
+      <div className={`no-scrollbar mb-8 flex w-full max-w-full items-center gap-6 border-b border-white/10 pb-3 ${isMoreOpen ? "overflow-visible" : "overflow-x-auto"}`}>
         {SORT_OPTIONS.map((option) => (
           <TabOptionBtn
             key={option.key}
@@ -195,13 +195,15 @@ export function BrowseGrid({ mediaType, genres, initialItems }: BrowseGridProps)
         ) : null}
       </div>
 
-      <NativeBannerAd className="my-4" />
+      <div className="w-full max-w-full overflow-hidden my-4">
+        <NativeBannerAd />
+      </div>
 
       {/* Grid of Movie/TV Cards */}
       {items.length === 0 && !isLoading ? (
         <p className="py-12 text-center text-sm text-text-mid">No results found.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-x-3 xs:gap-x-4 gap-y-7 sm:gap-x-4 sm:gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 justify-items-center">
           {items.map((item) => (
             <MovieCard key={`${item.mediaType}-${item.id}`} media={item} variant="catalog" />
           ))}
