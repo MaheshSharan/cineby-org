@@ -407,6 +407,7 @@
 .native-ad-wrapper {
   contain: layout paint;
   max-width: 100% !important;
+  overflow: hidden !important;
 }
 
 .native-ad-wrapper [id^="container-"] {
