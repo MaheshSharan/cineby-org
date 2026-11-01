@@ -38,7 +38,7 @@ export function PlayerShell({
     queryServer ||
     modeConfig?.defaultServer ||
     modeConfig?.servers[0]?.id ||
-    "vixsrc";
+    "vidy";
 
   const [currentServerId, setCurrentServerId] = useState<string>(initialServer);
 
@@ -120,9 +120,9 @@ export function PlayerShell({
       ? Math.round((media.progress / 100) * media.runtime * 60)
       : 0;
   const servers = modeConfig?.servers ?? [
-    { id: "vixsrc", name: "Server 1 (VixSrc)", type: "embed", startAtSupported: true, eventsSupported: true },
-    { id: "vidy", name: "Server 2 (Vidy)", type: "embed", startAtSupported: true, eventsSupported: true },
-    { id: "vidnest", name: "Server 3 (VidNest)", type: "embed", startAtSupported: true, eventsSupported: true },
+    { id: "vidy", name: "Server 1 (Vidy)", type: "embed", startAtSupported: true, eventsSupported: true },
+    { id: "vidnest", name: "Server 2 (VidNest)", type: "embed", startAtSupported: true, eventsSupported: true },
+    { id: "vixsrc", name: "Server 3 (VixSrc)", type: "embed", startAtSupported: true, eventsSupported: true },
   ];
 
   return (
