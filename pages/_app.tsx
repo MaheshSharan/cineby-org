@@ -13,7 +13,6 @@ import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { UpdateToast } from "@/components/pwa/UpdateToast";
 import { ScrollEdgeButton } from "@/components/ui/ScrollEdgeButton";
 import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
-import { MonetagVignette } from "@/components/ads/MonetagVignette";
 import { getActiveGaMeasurementId, pageView, trackEvent, setUserProperties } from "@/lib/analytics/gtag";
 import { isDevtoolsGuardEnabled } from "@/lib/env/public";
 import { initDevtoolsGuard } from "@/lib/security/devtoolsGuard";
@@ -141,9 +140,6 @@ export default function App({ Component, pageProps }: AppProps) {
           />
         </>
       )}
-
-      {/* Monetag Vignette Banner */}
-      <MonetagVignette zoneId="12166904" />
 
       {/* Non-intrusive In-Page Push banner suppression placeholder */}
       <SettingsProvider>
