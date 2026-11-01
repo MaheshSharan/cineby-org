@@ -79,6 +79,11 @@ export default function Document() {
         />
         <Main />
         <NextScript />
+        {/* Adsterra Social Bar */}
+        <script
+          data-cfasync="false"
+          src="https://bicea.org/14/6fa9ccc24c9972e71deaa2ad60a46e55"
+        />
       </body>
     </Html>
   );
