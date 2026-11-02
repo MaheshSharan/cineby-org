@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
 import { PageSeo } from "@/components/seo/PageSeo";
@@ -8,6 +8,7 @@ import { LiveSportsRow } from "@/components/sports/LiveSportsRow";
 import { TrophyIcon } from "@/components/ui/icons";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { sanitizeJsonLd } from "@/lib/seo/jsonLd";
+import { initAntiRedirectShield, setAntiRedirectShieldActive } from "@/lib/security/antiRedirect";
 
 interface SportWatchPageProps {
   match: SportMatch;
@@ -17,6 +18,15 @@ interface SportWatchPageProps {
 export default function SportWatchPage({ match, relatedMatches }: SportWatchPageProps) {
   // Server switching: server 0 = main (HD), server 1..n = substreams (e.g. SD 540p / mirrors)
   const [activeServerIndex, setActiveServerIndex] = useState(0);
+
+  // Activate Cineby anti-redirect & anti-popup shield
+  useEffect(() => {
+    initAntiRedirectShield();
+    setAntiRedirectShieldActive(true);
+    return () => {
+      setAntiRedirectShieldActive(false);
+    };
+  }, []);
 
   const servers = [
     {
