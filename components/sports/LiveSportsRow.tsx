@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ContentRow } from "@/components/content/ContentRow";
 import { SportCard } from "./SportCard";
 import type { SportMatch } from "@/lib/sports/types";
+import { getHomepageDiversifiedMatches } from "@/lib/sports/sportsService";
 import { useInView } from "@/hooks/useInView";
 import { fetchSportsClientSide } from "@/hooks/useSportsData";
 
@@ -13,7 +14,9 @@ interface LiveSportsRowProps {
 
 export function LiveSportsRow({ initialMatches, sourceLocation = "homepage_row" }: LiveSportsRowProps) {
   const { ref, isInView } = useInView();
-  const [matches, setMatches] = useState<SportMatch[]>(initialMatches ?? []);
+  const [matches, setMatches] = useState<SportMatch[]>(
+    initialMatches ? getHomepageDiversifiedMatches(initialMatches, 15) : []
+  );
   const [isLoading, setIsLoading] = useState(!initialMatches || initialMatches.length === 0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -27,7 +30,7 @@ export function LiveSportsRow({ initialMatches, sourceLocation = "homepage_row" 
       const data = await fetchSportsClientSide(true);
       if (data) {
         const liveItems = Array.isArray(data.liveNow) && data.liveNow.length > 0 ? data.liveNow : data.all ?? [];
-        setMatches(liveItems.slice(0, 15));
+        setMatches(getHomepageDiversifiedMatches(liveItems, 15));
       }
     } finally {
       setIsRefreshing(false);
@@ -36,7 +39,7 @@ export function LiveSportsRow({ initialMatches, sourceLocation = "homepage_row" 
 
   useEffect(() => {
     if (initialMatches && initialMatches.length > 0) {
-      setMatches(initialMatches);
+      setMatches(getHomepageDiversifiedMatches(initialMatches, 15));
       setIsLoading(false);
       return;
     }
@@ -50,7 +53,7 @@ export function LiveSportsRow({ initialMatches, sourceLocation = "homepage_row" 
       .then((data) => {
         if (!isCurrent || !data) return;
         const liveItems = Array.isArray(data.liveNow) && data.liveNow.length > 0 ? data.liveNow : data.all ?? [];
-        setMatches(liveItems.slice(0, 15));
+        setMatches(getHomepageDiversifiedMatches(liveItems, 15));
       })
       .catch(() => {})
       .finally(() => {

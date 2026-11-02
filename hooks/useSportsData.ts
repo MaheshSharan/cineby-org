@@ -1,14 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { FlattenedSportsData } from "@/lib/sports/types";
-import { processStreamsPayload } from "@/lib/sports/sportsService";
-
-const CLIENT_PPV_ENDPOINTS = [
-  "https://api.ppv.st/api/streams",
-  "https://api.ppv.rw/api/streams",
-  "https://api.ppv.ms/api/streams",
-  "https://api.ppv.bi/api/streams",
-  "https://api.ppv.ug/api/streams",
-];
+import { processStreamsPayload, getActiveEndpoints } from "@/lib/sports/sportsService";
 
 // 5 minutes client cache TTL (300,000 ms)
 const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -68,8 +60,9 @@ async function executeFetch(bypassCache = false): Promise<FlattenedSportsData | 
     // Continue to direct browser fetch
   }
 
-  // 2. Direct browser fallback to CORS-enabled mirrors (fast 3.5s abort timeout per mirror)
-  for (const endpoint of CLIENT_PPV_ENDPOINTS) {
+  // 2. Direct browser fallback to active mirrors (with fast 3.5s abort timeout per mirror)
+  const endpoints = await getActiveEndpoints();
+  for (const endpoint of endpoints) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);

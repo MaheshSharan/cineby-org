@@ -8,69 +8,231 @@ const PPV_STREAMS_ENDPOINTS = [
   "https://api.ppv.ug/api/streams",
 ];
 
-const MAJOR_LEAGUES_KEYWORDS = [
-  "champions league",
-  "premier league",
-  "la liga",
-  "serie a",
-  "bundesliga",
-  "ligue 1",
-  "world cup",
-  "euro",
-  "copa",
-  "nba",
-  "nfl",
-  "ufc",
-  "boxing",
-  "cricket",
-  "ipl",
-  "f1",
-  "formula 1",
-  "wwe",
+const PPV_PING_ENDPOINTS = [
+  "https://api.ppv.st/api/ping",
+  "https://api.ppv.rw/api/ping",
+  "https://api.ppv.ms/api/ping",
 ];
 
-const FAMOUS_TEAMS_KEYWORDS = [
+let discoveredEndpoints: string[] = [...PPV_STREAMS_ENDPOINTS];
+let lastPingTime = 0;
+const PING_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Resolves active endpoints, dynamically discovering domains via /api/ping if cached list is stale
+ */
+export async function getActiveEndpoints(): Promise<string[]> {
+  const now = Date.now();
+  if (discoveredEndpoints.length > 0 && now - lastPingTime < PING_CACHE_TTL_MS) {
+    return discoveredEndpoints;
+  }
+
+  for (const pingUrl of PPV_PING_ENDPOINTS) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch(pingUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const json = (await res.json()) as { success?: boolean; domains?: string[] };
+        if (json?.success && Array.isArray(json.domains) && json.domains.length > 0) {
+          discoveredEndpoints = json.domains.map((d) =>
+            d.startsWith("http") ? `${d}/api/streams` : `https://${d}/api/streams`
+          );
+          lastPingTime = now;
+          return discoveredEndpoints;
+        }
+      }
+    } catch {
+      // Ignore ping failure, try next
+    }
+  }
+
+  return PPV_STREAMS_ENDPOINTS;
+}
+
+/**
+ * Competition Tiers:
+ * Tier 1 (Elite: +3500): Champions League, Premier League, World Cup, NBA, F1, UFC, IPL Cricket, NFL
+ * Tier 2 (High: +2200): La Liga, Serie A, Bundesliga, Europa League, EuroLeague
+ * Tier 3 (Medium: +1200): Ligue 1, Eredivisie, FA Cup, Copa del Rey, DFB Pokal, MLS, Copa Libertadores
+ * Tier 4 (Standard: +400): Other regional cups/leagues
+ */
+const TIER_1_COMPETITIONS = [
+  "champions league",
+  "premier league",
+  "world cup",
+  "fifa world cup",
+  "uefa champions league",
+  "nba",
+  "formula 1",
+  "formula one",
+  "f1",
+  "ufc",
+  "ipl",
+  "indian premier league",
+  "nfl",
+];
+
+const TIER_2_COMPETITIONS = [
+  "la liga",
+  "laliga",
+  "serie a",
+  "bundesliga",
+  "europa league",
+  "uefa europa league",
+  "euroleague",
+];
+
+const TIER_3_COMPETITIONS = [
+  "ligue 1",
+  "eredivisie",
+  "fa cup",
+  "copa del rey",
+  "dfb-pokal",
+  "dfb pokal",
+  "mls",
+  "major league soccer",
+  "copa libertadores",
+  "conference league",
+];
+
+/**
+ * Team & Participant Popularity Weights:
+ * Tier 1 (Global Giants: +2500)
+ * Tier 2 (Major Clashes: +1400)
+ * Tier 3 (Mid-tier: +600)
+ */
+const TIER_1_TEAMS = [
   "real madrid",
   "barcelona",
-  "manchester",
+  "manchester united",
+  "man united",
+  "manchester city",
+  "man city",
   "liverpool",
   "arsenal",
   "chelsea",
   "bayern",
-  "juventus",
-  "milan",
-  "inter",
+  "bayern munich",
   "psg",
   "paris saint-germain",
-  "tottenham",
-  "newcastle",
-  "atletico",
-  "dortmund",
   "lakers",
+  "los angeles lakers",
   "warriors",
+  "golden state warriors",
   "celtics",
-  "bulls",
-  "heat",
-  "knicks",
-  "chiefs",
-  "cowboys",
-  "patriots",
-  "eagles",
-  "49ers",
-  "packers",
+  "boston celtics",
+  "ferrari",
+  "red bull",
+  "red bull racing",
   "india",
-  "pakistan",
   "australia",
-  "england",
 ];
+
+const TIER_2_TEAMS = [
+  "tottenham",
+  "tottenham hotspur",
+  "newcastle",
+  "newcastle united",
+  "aston villa",
+  "atletico",
+  "atletico madrid",
+  "juventus",
+  "inter",
+  "inter milan",
+  "milan",
+  "ac milan",
+  "dortmund",
+  "borussia dortmund",
+  "heat",
+  "miami heat",
+  "bucks",
+  "milwaukee bucks",
+  "knicks",
+  "mclaren",
+  "mercedes",
+  "pakistan",
+  "england",
+  "chiefs",
+  "49ers",
+  "cowboys",
+];
+
+const TIER_3_TEAMS = [
+  "west ham",
+  "everton",
+  "roma",
+  "as roma",
+  "napoli",
+  "lazio",
+  "bayer leverkusen",
+  "leverkusen",
+  "rb leipzig",
+  "leipzig",
+  "monaco",
+  "lyon",
+  "marseille",
+  "sevilla",
+  "athletic club",
+  "valencia",
+  "real betis",
+  "bulls",
+  "76ers",
+];
+
+export function getCompetitionTierScore(text: string): number {
+  const lower = text.toLowerCase();
+  for (const comp of TIER_1_COMPETITIONS) {
+    if (lower.includes(comp)) return 3500;
+  }
+  for (const comp of TIER_2_COMPETITIONS) {
+    if (lower.includes(comp)) return 2200;
+  }
+  for (const comp of TIER_3_COMPETITIONS) {
+    if (lower.includes(comp)) return 1200;
+  }
+  return 400;
+}
+
+export function getTeamPopularityScore(teamName: string): number {
+  const lower = teamName.toLowerCase().trim();
+  if (!lower) return 150;
+  for (const t of TIER_1_TEAMS) {
+    if (lower.includes(t)) return 2500;
+  }
+  for (const t of TIER_2_TEAMS) {
+    if (lower.includes(t)) return 1400;
+  }
+  for (const t of TIER_3_TEAMS) {
+    if (lower.includes(t)) return 600;
+  }
+  return 150;
+}
+
+/**
+ * Extracts participant names from match string e.g. "Arsenal vs Chelsea" or "Lakers at Celtics"
+ */
+export function extractParticipants(matchName: string): [string, string] {
+  const delimiters = [" vs ", " v ", " - ", " at ", " @ "];
+  for (const d of delimiters) {
+    if (matchName.includes(d)) {
+      const parts = matchName.split(d);
+      if (parts.length >= 2) {
+        return [parts[0].trim(), parts[1].trim()];
+      }
+    }
+  }
+  return [matchName.trim(), ""];
+}
 
 export function isFamousMatch(match: SportMatch): boolean {
   const text = `${match.name} ${match.tag}`.toLowerCase();
-  for (const team of FAMOUS_TEAMS_KEYWORDS) {
+  for (const team of TIER_1_TEAMS) {
     if (text.includes(team)) return true;
   }
-  for (const league of ["champions league", "premier league", "la liga", "nba", "nfl", "ufc", "ipl"]) {
-    if (text.includes(league)) return true;
+  for (const comp of TIER_1_COMPETITIONS) {
+    if (text.includes(comp)) return true;
   }
   return false;
 }
@@ -89,6 +251,11 @@ export function isMatchUpcoming(match: SportMatch, nowSec: number = Math.floor(D
   return match.starts_at > nowSec;
 }
 
+/**
+ * Dynamic Match Ranking System:
+ * Score = Base + EventPopularity + Traffic + Urgency
+ * EventPopularity = max(P_t1, P_t2) * 0.6 + min(P_t1, P_t2) * 0.4 + P_competition
+ */
 export function calculateMatchScore(match: SportMatch, nowSec: number = Math.floor(Date.now() / 1000)): number {
   let score = 0;
   const isLive = isMatchLive(match, nowSec);
@@ -96,35 +263,76 @@ export function calculateMatchScore(match: SportMatch, nowSec: number = Math.flo
     score += 10000;
   }
 
-  const nameAndTag = `${match.name} ${match.tag} ${match.category_name}`.toLowerCase();
-  for (const keyword of MAJOR_LEAGUES_KEYWORDS) {
-    if (nameAndTag.includes(keyword)) {
-      score += 2000;
-      break;
-    }
-  }
+  // 1. Competition tier score (Premier League +3500 vs Serie A +2200 vs Ligue 1 +1200)
+  const fullMeta = `${match.name} ${match.tag} ${match.category_name}`;
+  const compScore = getCompetitionTierScore(fullMeta);
 
-  // Bonus for non-24/7 specific real matches over static 24/7 channels
+  // 2. Team popularity score
+  const [t1, t2] = extractParticipants(match.name);
+  const p1 = getTeamPopularityScore(t1);
+  const p2 = t2 ? getTeamPopularityScore(t2) : 150;
+  const maxTeam = Math.max(p1, p2);
+  const minTeam = Math.min(p1, p2);
+  const eventPopularity = Math.round(maxTeam * 0.6 + minTeam * 0.4) + compScore;
+
+  score += eventPopularity;
+
+  // Bonus for dedicated events over continuous 24/7 channels
   if (match.tag !== "24/7 channel" && match.category_name !== "24/7 Streams") {
     score += 500;
   }
 
+  // 3. Traffic / Viewers
   const viewers = typeof match.viewers === "string" ? Number.parseInt(match.viewers, 10) : Number(match.viewers || 0);
   if (!Number.isNaN(viewers) && viewers > 0) {
     score += Math.min(viewers * 10, 1500);
   }
 
-  // If upcoming, prioritize soonest matches
+  // 4. Upcoming kickoff urgency
   if (!isLive && match.starts_at > nowSec) {
     const diffHours = (match.starts_at - nowSec) / 3600;
-    if (diffHours <= 6) {
-      score += 300;
+    if (diffHours <= 2) {
+      score += 400;
+    } else if (diffHours <= 6) {
+      score += 200;
     } else if (diffHours <= 24) {
-      score += 100;
+      score += 50;
     }
   }
 
   return score;
+}
+
+/**
+ * Diversifies top matches so a single league/competition does not monopolize all initial slots.
+ */
+export function getHomepageDiversifiedMatches(matches: SportMatch[], limit: number = 15): SportMatch[] {
+  if (matches.length <= 1) return matches;
+
+  const result: SportMatch[] = [];
+  const compCounts = new Map<string, number>();
+  const deferred: SportMatch[] = [];
+
+  for (const m of matches) {
+    const compKey = (m.tag || m.category_name || "other").toLowerCase();
+    const count = compCounts.get(compKey) || 0;
+
+    // In top 10 positions, allow max 4 matches from the same competition
+    if (result.length < 10 && count >= 4) {
+      deferred.push(m);
+    } else {
+      result.push(m);
+      compCounts.set(compKey, count + 1);
+      if (result.length >= limit) break;
+    }
+  }
+
+  // Fill remainder from deferred if under limit
+  while (result.length < limit && deferred.length > 0) {
+    result.push(deferred.shift()!);
+  }
+
+  return result;
 }
 
 export function processStreamsPayload(data: SportsApiResponse): FlattenedSportsData {
@@ -156,7 +364,7 @@ export function processStreamsPayload(data: SportsApiResponse): FlattenedSportsD
     return true;
   });
 
-  // Sort by priority score
+  // Sort by dynamic match score
   uniqueMatches.sort((a, b) => calculateMatchScore(b, nowSec) - calculateMatchScore(a, nowSec));
 
   const liveNow = uniqueMatches.filter((m) => isMatchLive(m, nowSec));
@@ -174,7 +382,9 @@ export async function fetchSportsData(): Promise<FlattenedSportsData> {
   let lastError: Error | null = null;
   let data: SportsApiResponse | null = null;
 
-  for (const endpoint of PPV_STREAMS_ENDPOINTS) {
+  const endpoints = await getActiveEndpoints();
+
+  for (const endpoint of endpoints) {
     try {
       const res = await fetch(endpoint, {
         headers: {
