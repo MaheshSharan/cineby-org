@@ -37,7 +37,7 @@
     "DATABASE_PATH": "data/cineby.db",
     "NEXT_PUBLIC_SITE_URL": "https://cineby.group",
     "NEXT_PUBLIC_CONTACT_EMAIL": "contact@cineby.group",
-    "NEXT_PUBLIC_LEGAL_CONTACT_EMAIL": "maheshsharan28@gmail.com",
+    "NEXT_PUBLIC_LEGAL_CONTACT_EMAIL": "contact@cineby.group",
     "TMDB_API_URL": "https://db.wecollege.net/3",
     "NEXT_PUBLIC_TMDB_DEFAULT_LANGUAGE": "en",
     "NEXT_PUBLIC_IMAGE_MODE": "wsrv",
