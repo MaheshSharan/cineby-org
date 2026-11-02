@@ -29,6 +29,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     { loc: `${baseUrl}/`, lastmod: now, changefreq: "daily", priority: 1.0 },
     { loc: `${baseUrl}/browse/movie`, lastmod: now, changefreq: "daily", priority: 0.9 },
     { loc: `${baseUrl}/browse/tv`, lastmod: now, changefreq: "daily", priority: 0.9 },
+    { loc: `${baseUrl}/app`, lastmod: now, changefreq: "weekly", priority: 0.9 },
     { loc: `${baseUrl}/blog`, lastmod: now, changefreq: "weekly", priority: 0.8 },
     ...blogPosts,
     { loc: `${baseUrl}/privacy`, lastmod: now, changefreq: "monthly", priority: 0.3 },
