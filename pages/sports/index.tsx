@@ -15,7 +15,7 @@ interface SportsPageProps {
 }
 
 export default function SportsPage({ initialData }: SportsPageProps) {
-  const { data: sportsData, isLoading } = useSportsData(initialData);
+  const { data: sportsData, isLoading, isRefreshing, refresh } = useSportsData(initialData);
   const [activeTab, setActiveTab] = useState<"live" | "upcoming" | "all">("live");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -139,18 +139,52 @@ export default function SportsPage({ initialData }: SportsPageProps) {
             <span className="text-white font-medium">Sports</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-              <TrophyIcon size={20} />
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                <TrophyIcon size={20} />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                  Live Sports Hub
+                </h1>
+                <p className="text-xs sm:text-sm text-white/50">
+                  Live matches, ongoing tournaments, and upcoming game streams
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                Live Sports Hub
-              </h1>
-              <p className="text-xs sm:text-sm text-white/50">
-                Live matches, ongoing tournaments, and upcoming game streams
-              </p>
-            </div>
+
+            {/* Stateful Hard-Refresh Button */}
+            <button
+              type="button"
+              onClick={() => refresh()}
+              disabled={isRefreshing || isLoading}
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-200 ${
+                isRefreshing
+                  ? "bg-white/10 text-white/50 border-white/10 cursor-not-allowed"
+                  : "bg-white/[0.04] text-white/80 hover:text-white hover:bg-white/10 border-white/10 active:scale-95"
+              }`}
+              title="Fetch latest matches and kickoff times"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={isRefreshing ? "animate-spin text-primary" : ""}
+              >
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                <path d="M16 16h5v5" />
+              </svg>
+              <span>{isRefreshing ? "Refreshing..." : "Refresh Live"}</span>
+            </button>
           </div>
         </div>
 
@@ -333,7 +367,7 @@ export default function SportsPage({ initialData }: SportsPageProps) {
 }
 
 export const getServerSideProps: GetServerSideProps<SportsPageProps> = async ({ res }) => {
-  res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
+  res.setHeader("Cache-Control", "public, s-maxage=120, stale-while-revalidate=300");
 
   try {
     const data = await fetchSportsData();
