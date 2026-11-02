@@ -16,6 +16,7 @@ import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
 import { getActiveGaMeasurementId, pageView, trackEvent, setUserProperties } from "@/lib/analytics/gtag";
 import { isDevtoolsGuardEnabled } from "@/lib/env/public";
 import { initDevtoolsGuard } from "@/lib/security/devtoolsGuard";
+import { PopunderAd } from "@/components/ads/PopunderAd";
 
 import "../styles/globals.css";
 
@@ -142,6 +143,7 @@ export default function App({ Component, pageProps }: AppProps) {
       )}
 
       {/* Non-intrusive In-Page Push banner suppression placeholder */}
+      <PopunderAd />
       <SettingsProvider>
         <DetailModalProvider>
           <RouteProgressBar />
