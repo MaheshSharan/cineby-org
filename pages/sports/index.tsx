@@ -198,6 +198,9 @@ export default function SportsPage({ initialData }: SportsPageProps) {
           </div>
         ) : null}
 
+        {/* Ad Placement: Just under Hero section and above main category filters */}
+        <NativeBannerAd className="my-6" />
+
         {/* Category Pills (Horizontal Scrollable on Mobile) */}
         <div className="mb-8 w-full max-w-full overflow-hidden">
           <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-2 pt-1 w-full -mx-4 px-4 sm:mx-0 sm:px-0">
@@ -383,9 +386,6 @@ export default function SportsPage({ initialData }: SportsPageProps) {
             </div>
           )}
         </div>
-
-        {/* Ad Placement */}
-        <NativeBannerAd className="my-10" />
 
         {/* Explore by League (Matching Reference Card Section) */}
         <div className="mt-8 mb-12">
