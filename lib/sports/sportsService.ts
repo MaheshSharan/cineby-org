@@ -1,6 +1,12 @@
 import type { FlattenedSportsData, SportCategoryGroup, SportMatch, SportsApiResponse } from "./types";
 
-const PPV_STREAMS_URL = "https://api.ppv.st/api/streams";
+const PPV_STREAMS_ENDPOINTS = [
+  "https://api.ppv.st/api/streams",
+  "https://api.ppv.rw/api/streams",
+  "https://api.ppv.ms/api/streams",
+  "https://api.ppv.bi/api/streams",
+  "https://api.ppv.ug/api/streams",
+];
 
 const MAJOR_LEAGUES_KEYWORDS = [
   "champions league",
@@ -121,22 +127,8 @@ export function calculateMatchScore(match: SportMatch, nowSec: number = Math.flo
   return score;
 }
 
-export async function fetchSportsData(): Promise<FlattenedSportsData> {
-  const res = await fetch(PPV_STREAMS_URL, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Cineby/1.0",
-    },
-    next: { revalidate: 60 },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch sports streams: ${res.status}`);
-  }
-
-  const data = (await res.json()) as SportsApiResponse;
+export function processStreamsPayload(data: SportsApiResponse): FlattenedSportsData {
   const categoryGroups: SportCategoryGroup[] = Array.isArray(data?.streams) ? data.streams : [];
-
   const nowSec = Math.floor(Date.now() / 1000);
   const allMatches: SportMatch[] = [];
   const categoriesSet = new Set<string>();
@@ -176,6 +168,42 @@ export async function fetchSportsData(): Promise<FlattenedSportsData> {
     upcoming,
     categories: Array.from(categoriesSet),
   };
+}
+
+export async function fetchSportsData(): Promise<FlattenedSportsData> {
+  let lastError: Error | null = null;
+  let data: SportsApiResponse | null = null;
+
+  for (const endpoint of PPV_STREAMS_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        headers: {
+          Accept: "application/json, text/plain, */*",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        },
+      });
+
+      if (!res.ok) {
+        lastError = new Error(`HTTP ${res.status} from ${endpoint}`);
+        continue;
+      }
+
+      const json = (await res.json()) as SportsApiResponse;
+      if (json && Array.isArray(json.streams) && json.streams.length > 0) {
+        data = json;
+        break;
+      }
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
+  }
+
+  if (!data) {
+    throw lastError || new Error("Failed to fetch sports streams from all mirrors");
+  }
+
+  return processStreamsPayload(data);
 }
 
 export function findMatchBySlugOrId(matches: SportMatch[], slugOrId: string): SportMatch | undefined {

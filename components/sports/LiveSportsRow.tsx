@@ -4,6 +4,7 @@ import { ContentRow } from "@/components/content/ContentRow";
 import { SportCard } from "./SportCard";
 import type { SportMatch } from "@/lib/sports/types";
 import { useInView } from "@/hooks/useInView";
+import { fetchSportsClientSide } from "@/hooks/useSportsData";
 
 interface LiveSportsRowProps {
   initialMatches?: SportMatch[];
@@ -26,11 +27,10 @@ export function LiveSportsRow({ initialMatches }: LiveSportsRowProps) {
     let isCurrent = true;
     setIsLoading(true);
 
-    fetch("/api/sports")
-      .then((res) => (res.ok ? res.json() : null))
+    fetchSportsClientSide()
       .then((data) => {
-        if (!isCurrent) return;
-        const liveItems = Array.isArray(data?.liveNow) && data.liveNow.length > 0 ? data.liveNow : data?.all ?? [];
+        if (!isCurrent || !data) return;
+        const liveItems = Array.isArray(data.liveNow) && data.liveNow.length > 0 ? data.liveNow : data.all ?? [];
         setMatches(liveItems.slice(0, 15));
       })
       .catch(() => {})

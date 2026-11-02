@@ -3,6 +3,7 @@ import type { GetServerSideProps } from "next";
 import { PageSeo } from "@/components/seo/PageSeo";
 import { SportCard } from "@/components/sports/SportCard";
 import { fetchSportsData } from "@/lib/sports/sportsService";
+import { useSportsData } from "@/hooks/useSportsData";
 import type { FlattenedSportsData, SportMatch } from "@/lib/sports/types";
 import { TrophyIcon } from "@/components/ui/icons";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
@@ -13,21 +14,22 @@ interface SportsPageProps {
 }
 
 export default function SportsPage({ initialData }: SportsPageProps) {
+  const { data: sportsData, isLoading } = useSportsData(initialData);
   const [activeTab, setActiveTab] = useState<"live" | "upcoming" | "all">("live");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const categories = useMemo(() => {
-    if (!initialData?.categories) return ["All"];
-    return ["All", ...initialData.categories];
-  }, [initialData?.categories]);
+    if (!sportsData?.categories) return ["All"];
+    return ["All", ...sportsData.categories];
+  }, [sportsData?.categories]);
 
   const matchesPool = useMemo(() => {
-    if (!initialData) return [];
-    if (activeTab === "live") return initialData.liveNow;
-    if (activeTab === "upcoming") return initialData.upcoming;
-    return initialData.all;
-  }, [initialData, activeTab]);
+    if (!sportsData) return [];
+    if (activeTab === "live") return sportsData.liveNow;
+    if (activeTab === "upcoming") return sportsData.upcoming;
+    return sportsData.all;
+  }, [sportsData, activeTab]);
 
   const filteredMatches = useMemo(() => {
     let result = matchesPool;
@@ -53,14 +55,14 @@ export default function SportsPage({ initialData }: SportsPageProps) {
 
   // Find top live match or top match for the spotlight hero
   const featuredMatch: SportMatch | null = useMemo(() => {
-    if (initialData?.liveNow && initialData.liveNow.length > 0) {
-      return initialData.liveNow[0];
+    if (sportsData?.liveNow && sportsData.liveNow.length > 0) {
+      return sportsData.liveNow[0];
     }
-    if (initialData?.all && initialData.all.length > 0) {
-      return initialData.all[0];
+    if (sportsData?.all && sportsData.all.length > 0) {
+      return sportsData.all[0];
     }
     return null;
-  }, [initialData]);
+  }, [sportsData]);
 
   const sportsHubJsonLd = useMemo(() => {
     return sanitizeJsonLd([
@@ -236,7 +238,12 @@ export default function SportsPage({ initialData }: SportsPageProps) {
         </div>
 
         {/* Matches Grid */}
-        {filteredMatches.length > 0 ? (
+        {isLoading && filteredMatches.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-white/5 bg-white/[0.02]">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mb-3" />
+            <h3 className="text-base font-semibold text-white/80">Loading live matches...</h3>
+          </div>
+        ) : filteredMatches.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {filteredMatches.slice(0, 8).map((match) => (

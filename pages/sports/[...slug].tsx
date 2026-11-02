@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import type { GetServerSideProps } from "next";
+import { useRouter } from "next/router";
 import Link from "next/link";
 import { PageSeo } from "@/components/seo/PageSeo";
 import { fetchSportsData, findMatchBySlugOrId, isMatchLive } from "@/lib/sports/sportsService";
+import { fetchSportsClientSide } from "@/hooks/useSportsData";
 import { type SportMatch, getSportWatchHref } from "@/lib/sports/types";
 import { LiveSportsRow } from "@/components/sports/LiveSportsRow";
 import { TrophyIcon } from "@/components/ui/icons";
@@ -11,13 +13,51 @@ import { sanitizeJsonLd } from "@/lib/seo/jsonLd";
 import { initAntiRedirectShield, setAntiRedirectShieldActive } from "@/lib/security/antiRedirect";
 
 interface SportWatchPageProps {
-  match: SportMatch;
-  relatedMatches: SportMatch[];
+  initialMatch: SportMatch | null;
+  initialRelatedMatches: SportMatch[];
 }
 
-export default function SportWatchPage({ match, relatedMatches }: SportWatchPageProps) {
-  // Server switching: server 0 = main (HD), server 1..n = substreams (e.g. SD 540p / mirrors)
+export default function SportWatchPage({ initialMatch, initialRelatedMatches }: SportWatchPageProps) {
+  const router = useRouter();
+  const slugParam = router.query.slug;
+  const rawSlug = Array.isArray(slugParam) ? slugParam.join("/") : slugParam || "";
+
+  const [match, setMatch] = useState<SportMatch | null>(initialMatch);
+  const [relatedMatches, setRelatedMatches] = useState<SportMatch[]>(initialRelatedMatches);
   const [activeServerIndex, setActiveServerIndex] = useState(0);
+  const [isClientLoading, setIsClientLoading] = useState(!initialMatch);
+
+  // Client-side fallback if server-side fetch failed
+  useEffect(() => {
+    if (initialMatch) {
+      setMatch(initialMatch);
+      setRelatedMatches(initialRelatedMatches);
+      setIsClientLoading(false);
+      return;
+    }
+
+    if (!rawSlug) return;
+
+    let isCurrent = true;
+    setIsClientLoading(true);
+
+    fetchSportsClientSide()
+      .then((data) => {
+        if (!isCurrent || !data) return;
+        const found = findMatchBySlugOrId(data.all, rawSlug);
+        if (found) {
+          setMatch(found);
+          setRelatedMatches(data.all.filter((m) => m.uri_name !== found.uri_name && m.id !== found.id).slice(0, 15));
+        }
+      })
+      .finally(() => {
+        if (isCurrent) setIsClientLoading(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [initialMatch, initialRelatedMatches, rawSlug]);
 
   // Activate Cineby anti-redirect & anti-popup shield
   useEffect(() => {
@@ -27,6 +67,27 @@ export default function SportWatchPage({ match, relatedMatches }: SportWatchPage
       setAntiRedirectShieldActive(false);
     };
   }, []);
+
+  if (!match) {
+    if (isClientLoading) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center pt-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mb-3" />
+          <h3 className="text-base font-semibold text-white/80">Loading stream...</h3>
+        </div>
+      );
+    }
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center pt-20 text-center px-4">
+        <TrophyIcon size={48} className="text-white/20 mb-4" />
+        <h2 className="text-xl font-bold text-white mb-2">Match Not Found</h2>
+        <p className="text-sm text-white/50 mb-6 max-w-sm">This sports event has ended or is unavailable.</p>
+        <Link href="/sports" className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90">
+          Back to Sports Hub
+        </Link>
+      </div>
+    );
+  }
 
   const servers = [
     {
@@ -222,7 +283,12 @@ export const getServerSideProps: GetServerSideProps<SportWatchPageProps> = async
     const match = findMatchBySlugOrId(data.all, rawSlug);
 
     if (!match) {
-      return { notFound: true };
+      return {
+        props: {
+          initialMatch: null,
+          initialRelatedMatches: [],
+        },
+      };
     }
 
     // Exclude current match from related matches
@@ -232,11 +298,16 @@ export const getServerSideProps: GetServerSideProps<SportWatchPageProps> = async
 
     return {
       props: {
-        match,
-        relatedMatches,
+        initialMatch: match,
+        initialRelatedMatches: relatedMatches,
       },
     };
   } catch {
-    return { notFound: true };
+    return {
+      props: {
+        initialMatch: null,
+        initialRelatedMatches: [],
+      },
+    };
   }
 };

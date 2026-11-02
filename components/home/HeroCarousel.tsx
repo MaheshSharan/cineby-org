@@ -10,6 +10,8 @@ import { HeroSkeleton } from "@/components/skeleton/HeroSkeleton";
 import { PlayButton } from "@/components/ui/PlayButton";
 import { StarIcon, TrophyIcon } from "@/components/ui/icons";
 import { type SportMatch, getSportWatchHref } from "@/lib/sports/types";
+import { isFamousMatch } from "@/lib/sports/sportsService";
+import { fetchSportsClientSide } from "@/hooks/useSportsData";
 
 const HERO_AUTOPLAY_MS = 6500;
 
@@ -37,12 +39,12 @@ export function HeroCarousel({ items, genreNames }: HeroCarouselProps) {
   // Fetch only top famous match (Champions League, Premier League, Real Madrid, NBA, etc.)
   useEffect(() => {
     let isCurrent = true;
-    fetch("/api/sports")
-      .then((res) => (res.ok ? res.json() : null))
+    fetchSportsClientSide()
       .then((data) => {
-        if (!isCurrent) return;
-        if (Array.isArray(data?.famousLive) && data.famousLive.length > 0) {
-          setFamousMatch(data.famousLive[0]);
+        if (!isCurrent || !data) return;
+        const famous = data.liveNow.filter((m) => isFamousMatch(m));
+        if (famous.length > 0) {
+          setFamousMatch(famous[0]);
         }
       })
       .catch(() => {});
