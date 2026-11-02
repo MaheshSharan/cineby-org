@@ -43,15 +43,9 @@ export default function Document() {
             media={getIosSplashMedia(screen)}
           />
         ))}
-        <meta name="google-adsense-account" content="ca-pub-8925754855638542" />
         {getGoogleSiteVerification() && (
           <meta name="google-site-verification" content={getGoogleSiteVerification()} />
         )}
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8925754855638542"
-          crossOrigin="anonymous"
-        />
       </Head>
       <body className="bg-background">
         <script
