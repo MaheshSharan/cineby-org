@@ -666,3 +666,16 @@ export function Share2Icon({ className, size = 18 }: IconProps) {
     </Icon>
   );
 }
+
+export function TrophyIcon({ className, size = 16 }: IconProps) {
+  return (
+    <Icon className={className} size={size} strokeWidth={1.8}>
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.45 1-1 1H7" />
+      <path d="M14 14.66V17c0 .55.45 1 1 1h2" />
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </Icon>
+  );
+}

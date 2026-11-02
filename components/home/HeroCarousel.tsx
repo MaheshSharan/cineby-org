@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 
 import type { MediaSummary } from "@/lib/tmdb";
 import { getBackdropResponsiveUrls, getLogoUrl } from "@/lib/tmdb/image";
@@ -8,7 +8,8 @@ import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
 import { HeroSkeleton } from "@/components/skeleton/HeroSkeleton";
 import { PlayButton } from "@/components/ui/PlayButton";
-import { StarIcon } from "@/components/ui/icons";
+import { StarIcon, TrophyIcon } from "@/components/ui/icons";
+import { type SportMatch, getSportWatchHref } from "@/lib/sports/types";
 
 const HERO_AUTOPLAY_MS = 6500;
 
@@ -17,6 +18,10 @@ interface HeroCarouselProps {
   genreNames: Record<number, string>;
 }
 
+type HeroSlideItem =
+  | { kind: "media"; data: MediaSummary }
+  | { kind: "sport"; data: SportMatch };
+
 function getGenreNames(item: MediaSummary, genreNames: Record<number, string>): string[] {
   return item.genreIds
     .map((id) => genreNames[id])
@@ -24,12 +29,40 @@ function getGenreNames(item: MediaSummary, genreNames: Record<number, string>): 
 }
 
 export function HeroCarousel({ items, genreNames }: HeroCarouselProps) {
-  const length = items.length;
+  const [famousMatch, setFamousMatch] = useState<SportMatch | null>(null);
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Pick a random starting slide on initial mount so a different hero item appears first on each reload/visit
+  // Fetch only top famous match (Champions League, Premier League, Real Madrid, NBA, etc.)
+  useEffect(() => {
+    let isCurrent = true;
+    fetch("/api/sports")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isCurrent) return;
+        if (Array.isArray(data?.famousLive) && data.famousLive.length > 0) {
+          setFamousMatch(data.famousLive[0]);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  // Merge famous match as a full slide alongside movie/tv items
+  const slides: HeroSlideItem[] = useMemo(() => {
+    const list: HeroSlideItem[] = items.map((data) => ({ kind: "media", data }));
+    if (famousMatch) {
+      // Insert famous sports game into top 3 of the hero rotation
+      list.splice(1, 0, { kind: "sport", data: famousMatch });
+    }
+    return list;
+  }, [items, famousMatch]);
+
+  const length = slides.length;
+
   useEffect(() => {
     if (length > 1) {
       setIndex(Math.floor(Math.random() * length));
@@ -64,18 +97,23 @@ export function HeroCarousel({ items, genreNames }: HeroCarouselProps) {
     >
       {/* Slides Container */}
       <div className="relative h-full w-full">
-        {items.map((item, slideIdx) => {
+        {slides.map((slide, slideIdx) => {
           const isActive = slideIdx === index;
+          const key = slide.kind === "media" ? `media-${slide.data.id}` : `sport-${slide.data.id}`;
           return (
             <div
-              key={item.id}
+              key={key}
               aria-hidden={!isActive}
               className={`absolute inset-0 h-full w-full transition-opacity duration-1000 ease-in-out ${
                 isActive ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0"
               }`}
             >
               {isActive || Math.abs(slideIdx - index) <= 1 ? (
-                <HeroSlide item={item} genreNames={genreNames} isActive={isActive} />
+                slide.kind === "media" ? (
+                  <HeroSlide item={slide.data} genreNames={genreNames} isActive={isActive} />
+                ) : (
+                  <SportHeroSlide match={slide.data} isActive={isActive} />
+                )
               ) : null}
             </div>
           );
@@ -88,13 +126,14 @@ export function HeroCarousel({ items, genreNames }: HeroCarouselProps) {
           className="absolute bottom-20 right-6 z-20 hidden items-center gap-2 lg:bottom-24 lg:right-16 lg:flex"
           aria-label="Carousel pagination"
         >
-          {items.map((item, dotIdx) => {
+          {slides.map((slide, dotIdx) => {
             const isCurrent = dotIdx === index;
+            const key = slide.kind === "media" ? `dot-media-${slide.data.id}` : `dot-sport-${slide.data.id}`;
             return (
               <button
-                key={item.id}
+                key={key}
                 type="button"
-                aria-label={`Go to slide ${dotIdx + 1}: ${item.title}`}
+                aria-label={`Go to slide ${dotIdx + 1}`}
                 aria-current={isCurrent ? "true" : "false"}
                 onClick={() => setIndex(dotIdx)}
                 className={`h-2 rounded-full cursor-pointer transition-all duration-300 ${
@@ -145,7 +184,7 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
 
   return (
     <div className="relative h-full w-full">
-      {/* Backdrop Layer with 20vh Extension into Content Row (Cinejoy Style) */}
+      {/* Backdrop Layer */}
       <div
         className="absolute top-0 left-0 right-0 z-0 overflow-hidden pointer-events-none"
         style={{
@@ -154,12 +193,8 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
           WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
         }}
       >
-        {/* Ambient Blur Glow */}
         {desktop || mobile ? (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-          >
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={desktop || mobile || ""}
@@ -169,7 +204,6 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
           </div>
         ) : null}
 
-        {/* Main Sharp Backdrop */}
         {mobile ? (
           <picture className="absolute inset-0 block h-full w-full">
             {desktopSrcSet ? (
@@ -189,13 +223,10 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
           </picture>
         ) : null}
 
-        {/* Top Header Shadow */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-32 bg-gradient-to-b from-[#05070a]/80 via-[#05070a]/35 to-transparent"
         />
-
-        {/* Subtle Vignettes from Bottom and Left */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/40 via-transparent to-transparent"
@@ -210,7 +241,6 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
       <div className="absolute inset-0 z-[3] flex items-end pb-16 md:pb-20 lg:pb-24">
         <div className="layout-container w-full">
           <div className="max-w-2xl translate-y-4">
-            {/* Title / Logo */}
             {item.logoPath && settings.appearance.useImageLogos ? (
               <div className="mb-4 max-w-[280px] sm:max-w-[340px] md:max-w-[420px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -226,7 +256,6 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
               </h2>
             )}
 
-            {/* Meta Tags: Rating, Year, Genres */}
             <div className="mt-[18px] mb-[12px] inline-flex flex-wrap items-center gap-[10px_14px] text-[13px] leading-none text-text-hi md:text-sm">
               {rating ? (
                 <div className="inline-flex items-center gap-1.5 drop-shadow">
@@ -257,15 +286,12 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
               ))}
             </div>
 
-            {/* Overview description */}
             <p className="line-clamp-3 max-w-[560px] text-[14px] leading-[1.6] tracking-[0.01em] text-[rgba(238,241,246,0.85)] drop-shadow md:text-[15px]">
               {item.overview}
             </p>
 
-            {/* Action Buttons: Play + See More */}
             <div className="mt-[22px] flex items-center gap-3">
               <PlayButton href={playHref} size="lg" label="Play" />
-
               <Link
                 href={mediaHref}
                 onClick={handleSeeMoreClick}
@@ -289,6 +315,114 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
                   <path d="M12 8h.01" />
                 </svg>
                 <span>See More</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface SportHeroSlideProps {
+  match: SportMatch;
+  isActive: boolean;
+}
+
+function SportHeroSlide({ match, isActive }: SportHeroSlideProps) {
+  const watchHref = getSportWatchHref(match.uri_name);
+  const viewers = typeof match.viewers === "string" ? Number.parseInt(match.viewers, 10) : Number(match.viewers || 0);
+
+  return (
+    <div className="relative h-full w-full">
+      {/* Backdrop Layer */}
+      <div
+        className="absolute top-0 left-0 right-0 z-0 overflow-hidden pointer-events-none"
+        style={{
+          height: "calc(100% + 20vh)",
+          maskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
+        }}
+      >
+        {match.poster ? (
+          <>
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={match.poster}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover scale-125 blur-[70px] saturate-150 opacity-40 transition-opacity duration-1000"
+              />
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={match.poster}
+              alt={match.name}
+              fetchPriority={isActive ? "high" : "low"}
+              className="absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out"
+            />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0c1017] via-[#05070a] to-black" />
+        )}
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-32 bg-gradient-to-b from-[#05070a]/80 via-[#05070a]/35 to-transparent"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/80 via-black/40 to-transparent"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-r from-black/80 via-black/30 to-transparent"
+        />
+      </div>
+
+      {/* Hero Content Overlay */}
+      <div className="absolute inset-0 z-[3] flex items-end pb-16 md:pb-20 lg:pb-24">
+        <div className="layout-container w-full">
+          <div className="max-w-2xl translate-y-4 space-y-4">
+            {/* Live Indicator Header Tag */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30 backdrop-blur-md">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+              </span>
+              <span>LIVE SPORTS</span>
+              <span className="h-3 w-px bg-white/20" />
+              <span className="text-white/80">{match.tag || match.category_name}</span>
+            </div>
+
+            <h2 className="font-sans text-2xl font-black uppercase leading-[1.0] tracking-[-0.03em] text-text-hi drop-shadow-[0_8px_24px_rgba(0,0,0,0.65)] md:text-4xl xl:text-5xl">
+              {match.name}
+            </h2>
+
+            <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-white/70">
+              <span className="inline-flex items-center gap-1.5 font-semibold text-white">
+                <TrophyIcon size={14} className="text-amber-400" />
+                {match.category_name}
+              </span>
+              {viewers > 0 ? (
+                <>
+                  <span aria-hidden="true" className="inline-block h-1 w-1 rounded-full bg-white/40" />
+                  <span className="text-emerald-400 font-medium">{viewers.toLocaleString()} watching live</span>
+                </>
+              ) : null}
+            </div>
+
+            <p className="line-clamp-2 max-w-[560px] text-[14px] leading-[1.6] tracking-[0.01em] text-white/80 drop-shadow md:text-[15px]">
+              Catch {match.name} streaming live in full HD on Cineby. Multi-server coverage with zero buffering.
+            </p>
+
+            <div className="pt-2 flex items-center gap-3">
+              <PlayButton href={watchHref} size="lg" label="Watch Live" />
+              <Link
+                href="/sports"
+                className="flex h-[52px] items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-6 font-medium tracking-tight text-white backdrop-blur-[16px] transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:shadow-glow active:scale-[0.98]"
+              >
+                <span>All Matches</span>
               </Link>
             </div>
           </div>

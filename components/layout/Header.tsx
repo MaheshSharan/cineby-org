@@ -12,6 +12,7 @@ import {
   ClapperboardIcon,
   HomeIcon,
   SearchIcon,
+  TrophyIcon,
   TvIcon,
   UserRoundIcon,
 } from "@/components/ui/icons";
@@ -21,6 +22,7 @@ interface NavItem {
   href: string;
   isActive: boolean;
   icon: React.ReactNode;
+  badge?: React.ReactNode;
 }
 
 export function Header() {
@@ -44,6 +46,7 @@ export function Header() {
   const isHome = router.pathname === "/";
   const isMovies = currentPath.startsWith("/browse/movie") || router.pathname.startsWith("/movie");
   const isTv = currentPath.startsWith("/browse/tv") || router.pathname.startsWith("/tv");
+  const isSports = currentPath.startsWith("/sports");
 
   const navItems: NavItem[] = [
     {
@@ -63,6 +66,12 @@ export function Header() {
       href: "/browse/tv",
       isActive: isTv,
       icon: <TvIcon size={14} className="flex-shrink-0" />,
+    },
+    {
+      label: "Sports",
+      href: "/sports",
+      isActive: isSports,
+      icon: <TrophyIcon size={14} className="flex-shrink-0" />,
     },
   ];
 
@@ -125,6 +134,7 @@ export function Header() {
                   >
                     {item.isActive ? item.icon : null}
                     <span>{item.label}</span>
+                    {item.badge}
                   </Link>
                 ))}
 

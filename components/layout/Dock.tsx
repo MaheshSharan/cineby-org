@@ -7,6 +7,7 @@ import {
   ClapperboardIcon,
   HomeIcon,
   SearchIcon,
+  TrophyIcon,
   TvIcon,
   UserRoundIcon,
 } from "@/components/ui/icons";
@@ -26,6 +27,7 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
   const isHome = pathname === "/";
   const isMovies = pathname.startsWith("/browse/movie") || pathname.startsWith("/movie");
   const isTv = pathname.startsWith("/browse/tv") || pathname.startsWith("/tv");
+  const isSports = pathname.startsWith("/sports");
   const isAccount =
     isAccountOpen ||
     pathname.startsWith("/profiles") ||
@@ -43,13 +45,13 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
   return (
     <nav
       aria-label="Mobile Navigation Dock"
-      className="md:hidden fixed bottom-3 inset-x-3 mx-auto w-auto max-w-[380px] z-40 rounded-2xl border border-white/[0.12] bg-[#07090e]/85 backdrop-blur-2xl backdrop-saturate-150 p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.12)]"
+      className="md:hidden fixed bottom-3 inset-x-3 mx-auto w-auto max-w-[420px] z-40 rounded-2xl border border-white/[0.12] bg-[#07090e]/85 backdrop-blur-2xl backdrop-saturate-150 p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.12)]"
       style={{
         paddingBottom: "max(0.375rem, env(safe-area-inset-bottom, 0px))",
         WebkitTapHighlightColor: "transparent",
       }}
     >
-      <div className="grid grid-cols-5 items-center gap-1">
+      <div className="grid grid-cols-6 items-center gap-1">
         {/* Home */}
         <Link
           href="/"
@@ -134,6 +136,35 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
             }`}
           >
             TV Series
+          </span>
+        </Link>
+
+        {/* Sports */}
+        <Link
+          href="/sports"
+          className={`${navButtonBase} ${
+            isSports
+              ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+              : "text-white/50 hover:text-white/85 hover:bg-white/[0.04]"
+          }`}
+          aria-label="Sports"
+          aria-current={isSports ? "page" : undefined}
+        >
+          <div className="relative flex items-center justify-center">
+            <TrophyIcon
+              size={20}
+              strokeWidth={isSports ? 2.2 : 1.8}
+              className={`transition-transform duration-200 ${
+                isSports ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] scale-105" : "text-white/50 group-hover:text-white/85"
+              }`}
+            />
+          </div>
+          <span
+            className={`mt-1 text-[10px] tracking-tight leading-none transition-colors duration-200 ${
+              isSports ? "font-semibold text-white" : "font-medium text-white/50"
+            }`}
+          >
+            Sports
           </span>
         </Link>
 

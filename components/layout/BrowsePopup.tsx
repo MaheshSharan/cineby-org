@@ -8,12 +8,14 @@ import {
   Grid2x2Icon,
   HeartIcon,
   PartyPopperIcon,
+  TrophyIcon,
   TvIcon,
 } from "@/components/ui/icons";
 
 const CONTENT_LINKS = [
   { label: "Movies", href: "/browse/movie", Icon: ClapperboardIcon },
   { label: "TV Shows", href: "/browse/tv", Icon: TvIcon },
+  { label: "Live Sports", href: "/sports", Icon: TrophyIcon },
 ];
 
 export function BrowsePopup() {
@@ -77,7 +79,7 @@ export function BrowsePopup() {
                 <h4 className="px-1 mb-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-text-mid">
                   Content
                 </h4>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-3 gap-1.5">
                   {CONTENT_LINKS.map(({ label, href, Icon }) => (
                     <Link
                       key={href}

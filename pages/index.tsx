@@ -17,6 +17,7 @@ import { getUpcomingMedia } from "@/lib/tmdb/server/discover";
 import { getHeroPicksMedia } from "@/lib/tmdb/server/heroPicks";
 
 import { BrowseByProviderRow } from "@/components/home/BrowseByProviderRow";
+import { LiveSportsRow } from "@/components/sports/LiveSportsRow";
 import { ContinueWatchingRow } from "@/components/home/ContinueWatchingRow";
 import { HeroCarousel } from "@/components/home/HeroCarousel";
 import { LazyContentRow } from "@/components/home/LazyContentRow";
@@ -147,6 +148,9 @@ export default function Home({
         />
 
         <BrowseByProviderRow onSelectProvider={(id) => setActiveProviderId(id)} />
+        <LiveSportsRow />
+
+        <NativeBannerAd className="my-2" />
 
         <LazyContentRow
           title="Trending Series"
@@ -154,8 +158,6 @@ export default function Home({
           fetchUrl="/api/tmdb/trending?mediaType=tv&timeWindow=day"
           action={viewAllTvLink}
         />
-
-        <NativeBannerAd className="my-2" />
 
         <TopTenRow items={topTenItems} />
 
