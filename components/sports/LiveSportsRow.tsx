@@ -63,7 +63,7 @@ export function LiveSportsRow({ initialMatches, sourceLocation = "homepage_row" 
   }, [isInView, initialMatches]);
 
   if (isLoading || matches.length === 0) {
-    return null;
+    return <div ref={ref} className="h-0 w-full overflow-hidden pointer-events-none" aria-hidden="true" />;
   }
 
   const headerAction = (
