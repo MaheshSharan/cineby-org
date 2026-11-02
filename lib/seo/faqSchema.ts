@@ -37,7 +37,7 @@ export const HOME_FAQ_ITEMS: FaqItem[] = [
       "Cineby is designed as an ultra-fast Progressive Web App (PWA). You do not need to download shady APK files that compromise your security. Simply visit cineby.group on Chrome or Safari and tap 'Add to Home Screen' or 'Install Cineby' to get a native app experience with zero storage overhead.",
   },
   {
-    question: "How does Cineby compare to other movie streaming sites like Beflix, Cine97, or Cinego?",
+    question: "How Cineby compares to Beflix, Cine97, & Cinego?",
     answer:
       "Cineby is widely recommended on Reddit movie streaming communities as a clean, ad-light alternative to legacy sites like Beflix, Cine97, Cosmos, Cinego, and Dorawatch. Cineby offers faster Cloudflare edge loading, multi-server redundancy, 1080p HD playback, and full cross-device watchlist sync.",
   },

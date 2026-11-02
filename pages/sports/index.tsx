@@ -367,20 +367,12 @@ export default function SportsPage({ initialData }: SportsPageProps) {
 }
 
 export const getServerSideProps: GetServerSideProps<SportsPageProps> = async ({ res }) => {
-  res.setHeader("Cache-Control", "public, s-maxage=120, stale-while-revalidate=300");
+  res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
 
-  try {
-    const data = await fetchSportsData();
-    return {
-      props: {
-        initialData: data,
-      },
-    };
-  } catch {
-    return {
-      props: {
-        initialData: null,
-      },
-    };
-  }
+  // Keep SSR instantaneous with zero upstream blocking; browser hydrates via client-side cache
+  return {
+    props: {
+      initialData: null,
+    },
+  };
 };

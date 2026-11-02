@@ -8,46 +8,7 @@ const PPV_STREAMS_ENDPOINTS = [
   "https://api.ppv.ug/api/streams",
 ];
 
-const PPV_PING_ENDPOINTS = [
-  "https://api.ppv.st/api/ping",
-  "https://api.ppv.rw/api/ping",
-  "https://api.ppv.ms/api/ping",
-];
-
-let discoveredEndpoints: string[] = [...PPV_STREAMS_ENDPOINTS];
-let lastPingTime = 0;
-const PING_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-
-/**
- * Resolves active endpoints, dynamically discovering domains via /api/ping if cached list is stale
- */
-export async function getActiveEndpoints(): Promise<string[]> {
-  const now = Date.now();
-  if (discoveredEndpoints.length > 0 && now - lastPingTime < PING_CACHE_TTL_MS) {
-    return discoveredEndpoints;
-  }
-
-  for (const pingUrl of PPV_PING_ENDPOINTS) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-      const res = await fetch(pingUrl, { signal: controller.signal });
-      clearTimeout(timeoutId);
-      if (res.ok) {
-        const json = (await res.json()) as { success?: boolean; domains?: string[] };
-        if (json?.success && Array.isArray(json.domains) && json.domains.length > 0) {
-          discoveredEndpoints = json.domains.map((d) =>
-            d.startsWith("http") ? `${d}/api/streams` : `https://${d}/api/streams`
-          );
-          lastPingTime = now;
-          return discoveredEndpoints;
-        }
-      }
-    } catch {
-      // Ignore ping failure, try next
-    }
-  }
-
+export function getActiveEndpoints(): string[] {
   return PPV_STREAMS_ENDPOINTS;
 }
 

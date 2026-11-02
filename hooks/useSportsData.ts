@@ -42,26 +42,9 @@ function writeSessionStorageCache(entry: CachedSportsEntry): void {
 }
 
 async function executeFetch(bypassCache = false): Promise<FlattenedSportsData | null> {
-  const url = bypassCache ? "/api/sports?refresh=true" : "/api/sports";
+  const endpoints = getActiveEndpoints();
 
-  // 1. Try internal API endpoint with SWR cache headers (with 4s timeout)
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
-    const localRes = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (localRes.ok) {
-      const localData = await localRes.json();
-      if (Array.isArray(localData?.all) && localData.all.length > 0) {
-        return localData as FlattenedSportsData;
-      }
-    }
-  } catch {
-    // Continue to direct browser fetch
-  }
-
-  // 2. Direct browser fallback to active mirrors (with fast 3.5s abort timeout per mirror)
-  const endpoints = await getActiveEndpoints();
+  // 1. Direct browser fetch to CORS-enabled mirrors (fast 3.5s abort timeout per mirror)
   for (const endpoint of endpoints) {
     try {
       const controller = new AbortController();
@@ -80,6 +63,23 @@ async function executeFetch(bypassCache = false): Promise<FlattenedSportsData | 
     } catch {
       // Continue to next mirror
     }
+  }
+
+  // 2. Fallback to internal API endpoint if direct browser fetch fails
+  const url = bypassCache ? "/api/sports?refresh=true" : "/api/sports";
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const localRes = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (localRes.ok) {
+      const localData = await localRes.json();
+      if (Array.isArray(localData?.all) && localData.all.length > 0) {
+        return localData as FlattenedSportsData;
+      }
+    }
+  } catch {
+    // Both direct browser and API fallback exhausted
   }
 
   return null;

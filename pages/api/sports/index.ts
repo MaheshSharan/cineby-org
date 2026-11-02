@@ -59,6 +59,8 @@ export default withApiContext("api/sports", async (req: NextApiRequest, res: Nex
       return;
     }
 
+    // Do NOT cache 502/errors in browser disk cache
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.status(502).json({
       error: error instanceof Error ? error.message : "Failed to fetch sports data",
     });
