@@ -3,10 +3,12 @@ import { useEffect, useState } from "react";
 import { type SportMatch, getSportWatchHref } from "@/lib/sports/types";
 import { isMatchLive } from "@/lib/sports/sportsService";
 import { PlayButton } from "@/components/ui/PlayButton";
+import { trackEvent } from "@/lib/analytics/gtag";
 
 interface SportCardProps {
   match: SportMatch;
   variant?: "grid" | "row" | "featured";
+  sourceLocation?: "sports_hub" | "homepage_row" | "hero_carousel" | "related_matches";
 }
 
 function formatCountdown(targetEpochSec: number, nowSec: number): string {
@@ -26,7 +28,7 @@ function formatCountdown(targetEpochSec: number, nowSec: number): string {
   return `in ${minutes}m`;
 }
 
-export function SportCard({ match, variant = "grid" }: SportCardProps) {
+export function SportCard({ match, variant = "grid", sourceLocation = "sports_hub" }: SportCardProps) {
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [imgError, setImgError] = useState(false);
 
@@ -36,6 +38,19 @@ export function SportCard({ match, variant = "grid" }: SportCardProps) {
     }, 15000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleMatchClick = () => {
+    trackEvent({
+      action: "sport_click",
+      params: {
+        match_id: String(match.id || match.uri_name),
+        match_name: match.name,
+        sport_category: match.category_name || "Unknown",
+        league_tag: match.tag || undefined,
+        source_location: sourceLocation,
+      },
+    });
+  };
 
   // Filter out cards whose poster is missing, invalid, or failed to load
   if (!match.poster || imgError) {
@@ -109,7 +124,7 @@ export function SportCard({ match, variant = "grid" }: SportCardProps) {
             ) : null}
           </div>
 
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0" onClick={handleMatchClick}>
             <PlayButton href={playHref} size="lg" label={live ? "Watch Live" : "Open Stream"} />
           </div>
         </div>
@@ -122,6 +137,7 @@ export function SportCard({ match, variant = "grid" }: SportCardProps) {
   return (
     <Link
       href={playHref}
+      onClick={handleMatchClick}
       className={`group relative flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] transition-all duration-300 hover:scale-[1.02] hover:border-white/25 hover:bg-white/[0.07] hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.8)] focus:outline-none focus:ring-2 focus:ring-primary ${
         isRow ? "w-[240px] sm:w-[280px] flex-shrink-0" : "w-full"
       }`}

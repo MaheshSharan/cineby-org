@@ -17,10 +17,49 @@ export type GTagEvent =
       action: "media_start";
       params: {
         content_id: string;
-        media_type: "movie" | "tv";
+        media_type: "movie" | "tv" | "sport";
         title: string;
         season?: number;
         episode?: number;
+        category?: string;
+      };
+    }
+  | {
+      action: "sport_watch";
+      params: {
+        match_id: string;
+        match_name: string;
+        sport_category: string;
+        league_tag?: string;
+        server_name?: string;
+        is_live: boolean;
+      };
+    }
+  | {
+      action: "sport_server_switch";
+      params: {
+        match_id: string;
+        match_name: string;
+        sport_category: string;
+        from_server: string;
+        to_server: string;
+      };
+    }
+  | {
+      action: "sport_click";
+      params: {
+        match_id: string;
+        match_name: string;
+        sport_category: string;
+        league_tag?: string;
+        source_location: "sports_hub" | "homepage_row" | "hero_carousel" | "related_matches";
+      };
+    }
+  | {
+      action: "sport_category_filter";
+      params: {
+        category: string;
+        active_tab: "live" | "upcoming" | "all";
       };
     }
   | {

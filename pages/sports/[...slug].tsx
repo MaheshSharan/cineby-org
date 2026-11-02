@@ -11,6 +11,7 @@ import { TrophyIcon } from "@/components/ui/icons";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { sanitizeJsonLd } from "@/lib/seo/jsonLd";
 import { initAntiRedirectShield, setAntiRedirectShieldActive } from "@/lib/security/antiRedirect";
+import { trackEvent } from "@/lib/analytics/gtag";
 
 interface SportWatchPageProps {
   initialMatch: SportMatch | null;
@@ -68,6 +69,63 @@ export default function SportWatchPage({ initialMatch, initialRelatedMatches }: 
     };
   }, []);
 
+  const servers = [
+    {
+      name: "Server 1 (HD)",
+      tag: match?.source_tag || "HD Stream",
+      iframe: match?.iframe,
+    },
+    ...(match?.substreams?.map((s, idx) => ({
+      name: `Server ${idx + 2} (${s.source_tag?.split("|")[0]?.trim() || "SD"})`,
+      tag: s.source_tag || s.tag || "Alternate Mirror",
+      iframe: s.iframe,
+    })) ?? []),
+  ];
+
+  const handleServerSwitch = (idx: number) => {
+    if (idx === activeServerIndex || !match) return;
+    const fromServer = servers[activeServerIndex]?.name || `Server ${activeServerIndex + 1}`;
+    const toServer = servers[idx]?.name || `Server ${idx + 1}`;
+    trackEvent({
+      action: "sport_server_switch",
+      params: {
+        match_id: String(match.id || match.uri_name),
+        match_name: match.name,
+        sport_category: match.category_name || "Unknown",
+        from_server: fromServer,
+        to_server: toServer,
+      },
+    });
+    setActiveServerIndex(idx);
+  };
+
+  // Track sport watch event on mount / match change
+  useEffect(() => {
+    if (!match) return;
+    const isLiveNow = isMatchLive(match);
+    trackEvent({
+      action: "sport_watch",
+      params: {
+        match_id: String(match.id || match.uri_name),
+        match_name: match.name,
+        sport_category: match.category_name || "Unknown",
+        league_tag: match.tag || undefined,
+        server_name: servers[activeServerIndex]?.name || "Server 1",
+        is_live: isLiveNow,
+      },
+    });
+    trackEvent({
+      action: "media_start",
+      params: {
+        content_id: String(match.id || match.uri_name),
+        media_type: "sport",
+        title: match.name,
+        category: match.category_name,
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [match?.id, match?.uri_name]);
+
   if (!match) {
     if (isClientLoading) {
       return (
@@ -88,19 +146,6 @@ export default function SportWatchPage({ initialMatch, initialRelatedMatches }: 
       </div>
     );
   }
-
-  const servers = [
-    {
-      name: "Server 1 (HD)",
-      tag: match.source_tag || "HD Stream",
-      iframe: match.iframe,
-    },
-    ...(match.substreams?.map((s, idx) => ({
-      name: `Server ${idx + 2} (${s.source_tag?.split("|")[0]?.trim() || "SD"})`,
-      tag: s.source_tag || s.tag || "Alternate Mirror",
-      iframe: s.iframe,
-    })) ?? []),
-  ];
 
   const currentIframe = servers[activeServerIndex]?.iframe || match.iframe;
   const isLive = isMatchLive(match);
@@ -174,7 +219,7 @@ export default function SportWatchPage({ initialMatch, initialRelatedMatches }: 
                     <button
                       key={srv.name}
                       type="button"
-                      onClick={() => setActiveServerIndex(idx)}
+                      onClick={() => handleServerSwitch(idx)}
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all duration-200 ${
                         isActive
                           ? "bg-red-600 text-white shadow-md shadow-red-600/30"
@@ -260,7 +305,7 @@ export default function SportWatchPage({ initialMatch, initialRelatedMatches }: 
         {/* Other Live Matches Section */}
         {relatedMatches.length > 0 ? (
           <div className="mt-12">
-            <LiveSportsRow initialMatches={relatedMatches} />
+            <LiveSportsRow initialMatches={relatedMatches} sourceLocation="related_matches" />
           </div>
         ) : null}
       </div>

@@ -8,9 +8,10 @@ import { fetchSportsClientSide } from "@/hooks/useSportsData";
 
 interface LiveSportsRowProps {
   initialMatches?: SportMatch[];
+  sourceLocation?: "homepage_row" | "related_matches";
 }
 
-export function LiveSportsRow({ initialMatches }: LiveSportsRowProps) {
+export function LiveSportsRow({ initialMatches, sourceLocation = "homepage_row" }: LiveSportsRowProps) {
   const { ref, isInView } = useInView();
   const [matches, setMatches] = useState<SportMatch[]>(initialMatches ?? []);
   const [isLoading, setIsLoading] = useState(!initialMatches || initialMatches.length === 0);
@@ -91,7 +92,12 @@ export function LiveSportsRow({ initialMatches }: LiveSportsRowProps) {
               />
             ))
           : matches.map((match) => (
-              <SportCard key={`${match.id}-${match.uri_name}`} match={match} variant="row" />
+              <SportCard
+                key={`${match.id}-${match.uri_name}`}
+                match={match}
+                variant="row"
+                sourceLocation={sourceLocation}
+              />
             ))}
       </ContentRow>
     </div>

@@ -8,6 +8,7 @@ import type { FlattenedSportsData, SportMatch } from "@/lib/sports/types";
 import { TrophyIcon } from "@/components/ui/icons";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { sanitizeJsonLd } from "@/lib/seo/jsonLd";
+import { trackEvent } from "@/lib/analytics/gtag";
 
 interface SportsPageProps {
   initialData: FlattenedSportsData | null;
@@ -18,6 +19,28 @@ export default function SportsPage({ initialData }: SportsPageProps) {
   const [activeTab, setActiveTab] = useState<"live" | "upcoming" | "all">("live");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const handleCategorySelect = (cat: string) => {
+    setSelectedCategory(cat);
+    trackEvent({
+      action: "sport_category_filter",
+      params: {
+        category: cat,
+        active_tab: activeTab,
+      },
+    });
+  };
+
+  const handleTabSelect = (tab: "live" | "upcoming" | "all") => {
+    setActiveTab(tab);
+    trackEvent({
+      action: "sport_category_filter",
+      params: {
+        category: selectedCategory,
+        active_tab: tab,
+      },
+    });
+  };
 
   const categories = useMemo(() => {
     if (!sportsData?.categories) return ["All"];
@@ -145,7 +168,7 @@ export default function SportsPage({ initialData }: SportsPageProps) {
             <div className="flex items-center gap-1 rounded-xl bg-white/[0.05] p-1 border border-white/10 backdrop-blur-md self-start">
               <button
                 type="button"
-                onClick={() => setActiveTab("live")}
+                onClick={() => handleTabSelect("live")}
                 className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all duration-200 ${
                   activeTab === "live"
                     ? "bg-red-600 text-white shadow-lg shadow-red-600/30"
@@ -157,16 +180,16 @@ export default function SportsPage({ initialData }: SportsPageProps) {
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
                 </span>
                 <span>Live Now</span>
-                {initialData?.liveNow?.length ? (
+                {sportsData?.liveNow?.length ? (
                   <span className="ml-1 rounded-full bg-black/30 px-1.5 py-0.2 text-[10px]">
-                    {initialData.liveNow.length}
+                    {sportsData.liveNow.length}
                   </span>
                 ) : null}
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveTab("upcoming")}
+                onClick={() => handleTabSelect("upcoming")}
                 className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all duration-200 ${
                   activeTab === "upcoming"
                     ? "bg-white/20 text-white shadow-md"
@@ -174,16 +197,16 @@ export default function SportsPage({ initialData }: SportsPageProps) {
                 }`}
               >
                 <span>Upcoming</span>
-                {initialData?.upcoming?.length ? (
+                {sportsData?.upcoming?.length ? (
                   <span className="ml-1 rounded-full bg-white/10 px-1.5 py-0.2 text-[10px]">
-                    {initialData.upcoming.length}
+                    {sportsData.upcoming.length}
                   </span>
                 ) : null}
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveTab("all")}
+                onClick={() => handleTabSelect("all")}
                 className={`rounded-lg px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all duration-200 ${
                   activeTab === "all"
                     ? "bg-white/20 text-white shadow-md"
@@ -223,7 +246,7 @@ export default function SportsPage({ initialData }: SportsPageProps) {
                 <button
                   key={cat}
                   type="button"
-                  onClick={() => setSelectedCategory(cat)}
+                  onClick={() => handleCategorySelect(cat)}
                   className={`flex-shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-200 ${
                     isSelected
                       ? "bg-primary text-white shadow-[0_0_12px_rgba(229,9,20,0.4)] border border-primary"

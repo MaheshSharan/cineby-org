@@ -12,6 +12,7 @@ import { StarIcon, TrophyIcon } from "@/components/ui/icons";
 import { type SportMatch, getSportWatchHref } from "@/lib/sports/types";
 import { isFamousMatch } from "@/lib/sports/sportsService";
 import { fetchSportsClientSide } from "@/hooks/useSportsData";
+import { trackEvent } from "@/lib/analytics/gtag";
 
 const HERO_AUTOPLAY_MS = 6500;
 
@@ -335,6 +336,19 @@ function SportHeroSlide({ match, isActive }: SportHeroSlideProps) {
   const watchHref = getSportWatchHref(match.uri_name);
   const viewers = typeof match.viewers === "string" ? Number.parseInt(match.viewers, 10) : Number(match.viewers || 0);
 
+  const handleSportHeroClick = () => {
+    trackEvent({
+      action: "sport_click",
+      params: {
+        match_id: String(match.id || match.uri_name),
+        match_name: match.name,
+        sport_category: match.category_name || "Unknown",
+        league_tag: match.tag || undefined,
+        source_location: "hero_carousel",
+      },
+    });
+  };
+
   return (
     <div className="relative h-full w-full">
       {/* Backdrop Layer */}
@@ -418,7 +432,7 @@ function SportHeroSlide({ match, isActive }: SportHeroSlideProps) {
               Catch {match.name} streaming live in full HD on Cineby. Multi-server coverage with zero buffering.
             </p>
 
-            <div className="pt-2 flex items-center gap-3">
+            <div className="pt-2 flex items-center gap-3" onClick={handleSportHeroClick}>
               <PlayButton href={watchHref} size="lg" label="Watch Live" />
               <Link
                 href="/sports"
