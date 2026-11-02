@@ -73,12 +73,12 @@ export default function Document() {
         />
         <Main />
         <NextScript />
-        {/* Adsterra Social Bar */}
+        {/* Adsterra Popunder (Testing) */}
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script
           async
           data-cfasync="false"
-          src="https://bicea.org/14/6fa9ccc24c9972e71deaa2ad60a46e55"
+          src="https://overestimatecapricornspittle.com/fb/38/40/fb3840091737b03ef8887d50204af917.js"
         />
       </body>
     </Html>
