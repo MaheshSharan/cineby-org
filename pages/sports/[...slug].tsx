@@ -179,40 +179,40 @@ export default function SportWatchPage({ initialMatch, initialRelatedMatches }: 
         jsonLd={sportsEventJsonLd}
       />
 
-      <div className="min-h-screen pb-20 pt-20 md:pt-24 layout-container">
+      <div className="min-h-screen pb-20 pt-20 md:pt-24 layout-container w-full max-w-full overflow-x-hidden">
         {/* Navigation Breadcrumb */}
-        <div className="mb-4 flex items-center gap-2 text-xs sm:text-sm text-white/50">
-          <Link href="/" className="hover:text-white transition-colors">
+        <div className="mb-4 flex items-center gap-2 text-xs sm:text-sm text-white/50 overflow-hidden">
+          <Link href="/" className="hover:text-white transition-colors flex-shrink-0">
             Home
           </Link>
           <span>/</span>
-          <Link href="/sports" className="hover:text-white transition-colors">
+          <Link href="/sports" className="hover:text-white transition-colors flex-shrink-0">
             Sports
           </Link>
           <span>/</span>
-          <span className="text-white/80 truncate max-w-[240px] sm:max-w-md">{match.name}</span>
+          <span className="text-white/80 truncate min-w-0 max-w-[180px] xs:max-w-[240px] sm:max-w-md">{match.name}</span>
         </div>
 
         {/* Player Container */}
-        <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_20px_50px_rgba(0,0,0,0.9)]">
-          <div className="relative aspect-video w-full bg-black">
+        <div className="relative w-full max-w-full overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 bg-black shadow-[0_20px_50px_rgba(0,0,0,0.9)]">
+          <div className="relative aspect-video w-full max-w-full bg-black overflow-hidden">
             <iframe
               key={currentIframe}
               src={currentIframe}
               title={match.name}
-              className="absolute inset-0 h-full w-full border-0"
+              className="absolute inset-0 h-full w-full max-w-full border-0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
               allowFullScreen
             />
           </div>
 
           {/* Player Bottom Control & Server Switcher Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#0a0d14]/90 px-4 py-3 backdrop-blur-xl">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/10 bg-[#0a0d14]/90 px-3 sm:px-4 py-3 backdrop-blur-xl w-full max-w-full overflow-hidden">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full py-0.5">
+              <span className="text-[11px] sm:text-xs font-semibold text-white/60 uppercase tracking-wider flex-shrink-0">
                 Servers:
               </span>
-              <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1.5 flex-nowrap sm:flex-wrap">
                 {servers.map((srv, idx) => {
                   const isActive = idx === activeServerIndex;
                   return (
@@ -220,7 +220,7 @@ export default function SportWatchPage({ initialMatch, initialRelatedMatches }: 
                       key={srv.name}
                       type="button"
                       onClick={() => handleServerSwitch(idx)}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all duration-200 ${
+                      className={`rounded-lg px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
                         isActive
                           ? "bg-red-600 text-white shadow-md shadow-red-600/30"
                           : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/5"
@@ -234,7 +234,7 @@ export default function SportWatchPage({ initialMatch, initialRelatedMatches }: 
             </div>
 
             {/* Live Indicator / Viewers */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-white/5">
               {isLive ? (
                 <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold">
                   <span className="relative flex h-2 w-2">
@@ -321,38 +321,14 @@ export const getServerSideProps: GetServerSideProps<SportWatchPageProps> = async
     return { notFound: true };
   }
 
-  context.res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
+  // Instant response with edge caching, zero upstream network blocking.
+  // The client hydrates instantly via local cache or client-side mirror fetch.
+  context.res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
 
-  try {
-    const data = await fetchSportsData();
-    const match = findMatchBySlugOrId(data.all, rawSlug);
-
-    if (!match) {
-      return {
-        props: {
-          initialMatch: null,
-          initialRelatedMatches: [],
-        },
-      };
-    }
-
-    // Exclude current match from related matches
-    const relatedMatches = data.all
-      .filter((m) => m.uri_name !== match.uri_name && m.id !== match.id)
-      .slice(0, 15);
-
-    return {
-      props: {
-        initialMatch: match,
-        initialRelatedMatches: relatedMatches,
-      },
-    };
-  } catch {
-    return {
-      props: {
-        initialMatch: null,
-        initialRelatedMatches: [],
-      },
-    };
-  }
+  return {
+    props: {
+      initialMatch: null,
+      initialRelatedMatches: [],
+    },
+  };
 };
