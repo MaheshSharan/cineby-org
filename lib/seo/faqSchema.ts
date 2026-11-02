@@ -29,7 +29,17 @@ export const HOME_FAQ_ITEMS: FaqItem[] = [
   {
     question: "Can I watch Cineby on mobile phones and Smart TVs?",
     answer:
-      "Yes. Cineby is fully responsive and optimized as a Progressive Web App (PWA) with installable support for iOS, Android, tablets, and desktop browsers.",
+      "Yes. Cineby is fully responsive and optimized as a Progressive Web App (PWA) with installable support for iOS, Android, tablets, and desktop browsers. You can stream directly on Android TV, Google TV, Samsung Tizen, LG webOS, and Firestick without needing third-party hardware.",
+  },
+  {
+    question: "Is there an official Cineby app download or APK?",
+    answer:
+      "Cineby is designed as an ultra-fast Progressive Web App (PWA). You do not need to download shady APK files that compromise your security. Simply visit cineby.group on Chrome or Safari and tap 'Add to Home Screen' or 'Install Cineby' to get a native app experience with zero storage overhead.",
+  },
+  {
+    question: "How does Cineby compare to other movie streaming sites like Beflix, Cine97, or Cinego?",
+    answer:
+      "Cineby is widely recommended on Reddit movie streaming communities as a clean, ad-light alternative to legacy sites like Beflix, Cine97, Cosmos, Cinego, and Dorawatch. Cineby offers faster Cloudflare edge loading, multi-server redundancy, 1080p HD playback, and full cross-device watchlist sync.",
   },
   {
     question: "What should I do if a stream or video server buffers?",

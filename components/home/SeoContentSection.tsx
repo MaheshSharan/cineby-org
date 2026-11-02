@@ -32,21 +32,38 @@ export function SeoContentSection() {
         {/* Section 2: Device & App Flexibility */}
         <div>
           <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-white mb-4 uppercase">
-            Cineby App, Mobile &amp; Smart TV Compatibility
+            Cineby App, APK Download &amp; Smart TV Setup
           </h2>
           <div className="space-y-4 text-xs sm:text-sm text-white/70 leading-relaxed font-normal">
             <p>
-              Viewers frequently ask how to access the{" "}
-              <strong className="text-white font-semibold">Cineby watch free movies online app</strong>. Cineby is built as an edge-optimized Progressive Web App (PWA), meaning you do not need to download risky APKs or clutter your device with third-party software. Simply open your preferred browser—Chrome, Safari, Firefox, or Edge—and install Cineby directly to your home screen with one tap.
+              Looking for the official{" "}
+              <strong className="text-white font-semibold">Cineby app download</strong> or{" "}
+              <strong className="text-white font-semibold">Cineby app APK</strong>? Cineby operates as an edge-accelerated Progressive Web App (PWA). You do not need to install dubious Android APK packages or risk malware from third-party app stores. Check our dedicated <Link href="/app" className="text-white hover:underline font-medium">Cineby App Guide</Link> to install Cineby in seconds with zero storage footprint.
             </p>
             <p>
-              Enjoying movies on the big screen is effortless with{" "}
-              <strong className="text-white font-semibold">Cineby at TV</strong>. Our responsive layout natively adapts to Apple TV, Android TV, Google TV, Samsung Tizen, LG webOS, and Firestick browsers. With full cast-ready and widescreen viewport support, you can turn your living room into an authentic home theater with zero lag and instant server responsiveness.
+              Streaming on the big screen with{" "}
+              <strong className="text-white font-semibold">Cineby on TV</strong> is simple and fast. Our responsive web application runs seamlessly across Android TV, Google TV, Amazon Firestick, Apple TV, Samsung Tizen, and LG webOS browsers. Launch your TV browser, head to cineby.group, and bookmark or add to home screen for an instant home theater experience.
             </p>
           </div>
         </div>
 
-        {/* Section 3: High Definition, Live Events & Cineby Plus */}
+        {/* Section 3: Sites like Cineby & Reddit Streaming Communities */}
+        <div>
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-white mb-4 uppercase">
+            Best Movie Streaming Sites Reddit Alternatives: Beflix, Cine97 &amp; Cinego
+          </h2>
+          <div className="space-y-4 text-xs sm:text-sm text-white/70 leading-relaxed font-normal">
+            <p>
+              When streaming enthusiasts search for the{" "}
+              <strong className="text-white font-semibold">best free movie streaming sites Reddit</strong> recommends, legacy portals like Beflix, Cine97, Cosmos, Cinego, Dorawatch, Stremio, and Popcornflix frequently come up. However, many of those older sites suffer from broken video links, aggressive pop-up overlays, and slow buffering servers.
+            </p>
+            <p>
+              Cineby (sometimes searched as Coneby or Cineplay) solves these problems with modern Cloudflare edge caching, triple redundant HD video mirrors, real-time TMDB synchronization, and a clean interface built for viewers who just want to watch movies online without hassle.
+            </p>
+          </div>
+        </div>
+
+        {/* Section 4: High Definition, Live Events & Cineby Plus */}
         <div>
           <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-white mb-4 uppercase">
             Cineby HD, Global Events &amp; Cineby Plus Features
