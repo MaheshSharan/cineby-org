@@ -25,6 +25,26 @@ export type GTagEvent =
       };
     }
   | {
+      action: "server_fallback_triggered";
+      params: {
+        content_id: string;
+        media_type: "movie" | "tv" | "sport";
+        from_server: string;
+        to_server: string;
+        reason?: "load_timeout" | "user_switch" | "stream_error";
+      };
+    }
+  | {
+      action: "stream_buffering_stalled";
+      params: {
+        content_id: string;
+        media_type: "movie" | "tv" | "sport";
+        server: string;
+        stall_duration_ms: number;
+        current_time: number;
+      };
+    }
+  | {
       action: "sport_watch";
       params: {
         match_id: string;

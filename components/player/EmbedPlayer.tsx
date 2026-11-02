@@ -137,6 +137,16 @@ export function EmbedPlayer({
         setIsDrawerOpen(false);
         return;
       }
+      trackEvent({
+        action: "server_fallback_triggered",
+        params: {
+          content_id: String(media.mediaId),
+          media_type: media.mediaType,
+          from_server: currentServerId,
+          to_server: serverId,
+          reason: "user_switch",
+        },
+      });
       if (iframeRef.current) {
         try {
           iframeRef.current.src = "about:blank";
@@ -145,7 +155,7 @@ export function EmbedPlayer({
       setIsLoaded(false);
       onSelectServer(serverId);
     },
-    [currentServerId, onSelectServer]
+    [currentServerId, onSelectServer, media.mediaId, media.mediaType]
   );
 
   // Construct iframe URL
@@ -223,8 +233,18 @@ export function EmbedPlayer({
           title: media.title,
         },
       });
+      trackEvent({
+        action: "stream_buffering_stalled",
+        params: {
+          content_id: String(media.mediaId),
+          media_type: media.mediaType,
+          server: currentServerId,
+          stall_duration_ms: loadTimeoutMs || 12000,
+          current_time: 0,
+        },
+      });
     }
-  }, [hasTimedOut, media]);
+  }, [hasTimedOut, media, currentServerId, loadTimeoutMs]);
 
   // Track media_start on first load
   useEffect(() => {
