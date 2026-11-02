@@ -78,9 +78,9 @@ export function PlayerShell({
         return;
       }
 
-      // Polling interval: Save every 30 seconds (or after 10s if a significant 15s+ seek occurred)
+      // Polling interval: Save every 75 seconds (1 min 15s) (or after 10s if a significant 15s+ seek occurred)
       const isSignificantSeek = last ? Math.abs(currentTime - last.seconds) >= 15 : false;
-      const shouldSave = !last || timeSinceLastSave >= 30000 || isSignificantSeek;
+      const shouldSave = !last || timeSinceLastSave >= 75000 || isSignificantSeek;
 
       if (shouldSave) {
         lastSavedRef.current = { time: now, seconds: currentTime };

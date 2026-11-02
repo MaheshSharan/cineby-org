@@ -62,7 +62,7 @@ export function LiveSportsRow({ initialMatches, sourceLocation = "homepage_row" 
     };
   }, [isInView, initialMatches]);
 
-  if (!isLoading && matches.length === 0) {
+  if (isLoading || matches.length === 0) {
     return null;
   }
 
@@ -135,21 +135,14 @@ export function LiveSportsRow({ initialMatches, sourceLocation = "homepage_row" 
   return (
     <div ref={ref} className="relative z-10 group/row">
       <ContentRow title={titleWithLiveBadge} action={headerAction}>
-        {isLoading
-          ? Array.from({ length: 4 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="aspect-video w-[240px] sm:w-[280px] flex-shrink-0 animate-pulse rounded-xl bg-white/5"
-              />
-            ))
-          : matches.map((match) => (
-              <SportCard
-                key={`${match.id}-${match.uri_name}`}
-                match={match}
-                variant="row"
-                sourceLocation={sourceLocation}
-              />
-            ))}
+        {matches.map((match) => (
+          <SportCard
+            key={`${match.id}-${match.uri_name}`}
+            match={match}
+            variant="row"
+            sourceLocation={sourceLocation}
+          />
+        ))}
       </ContentRow>
     </div>
   );

@@ -10,8 +10,9 @@ const CLIENT_PPV_ENDPOINTS = [
   "https://api.ppv.ug/api/streams",
 ];
 
-// 2 minutes client in-memory cache TTL (120,000 ms)
-const CLIENT_CACHE_TTL_MS = 2 * 60 * 1000;
+// 5 minutes client cache TTL (300,000 ms)
+const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
+const SESSION_CACHE_KEY = "cineby_sports_cache";
 
 interface CachedSportsEntry {
   data: FlattenedSportsData;
@@ -21,12 +22,42 @@ interface CachedSportsEntry {
 let inMemoryCache: CachedSportsEntry | null = null;
 let activeFetchPromise: Promise<FlattenedSportsData | null> | null = null;
 
+function readSessionStorageCache(): CachedSportsEntry | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(SESSION_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedSportsEntry;
+    if (parsed && parsed.data && typeof parsed.timestamp === "number") {
+      if (Date.now() - parsed.timestamp < CLIENT_CACHE_TTL_MS) {
+        return parsed;
+      }
+      sessionStorage.removeItem(SESSION_CACHE_KEY);
+    }
+  } catch {
+    // Ignore storage parse errors
+  }
+  return null;
+}
+
+function writeSessionStorageCache(entry: CachedSportsEntry): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify(entry));
+  } catch {
+    // Ignore storage write errors (e.g. quota exceeded)
+  }
+}
+
 async function executeFetch(bypassCache = false): Promise<FlattenedSportsData | null> {
   const url = bypassCache ? "/api/sports?refresh=true" : "/api/sports";
 
-  // 1. Try internal API endpoint with SWR cache headers
+  // 1. Try internal API endpoint with SWR cache headers (with 4s timeout)
   try {
-    const localRes = await fetch(url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const localRes = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
     if (localRes.ok) {
       const localData = await localRes.json();
       if (Array.isArray(localData?.all) && localData.all.length > 0) {
@@ -37,12 +68,16 @@ async function executeFetch(bypassCache = false): Promise<FlattenedSportsData | 
     // Continue to direct browser fetch
   }
 
-  // 2. Direct browser fallback to CORS-enabled mirrors
+  // 2. Direct browser fallback to CORS-enabled mirrors (fast 3.5s abort timeout per mirror)
   for (const endpoint of CLIENT_PPV_ENDPOINTS) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
       const res = await fetch(endpoint, {
         headers: { Accept: "application/json" },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const json = await res.json();
         if (json && Array.isArray(json.streams) && json.streams.length > 0) {
@@ -59,14 +94,21 @@ async function executeFetch(bypassCache = false): Promise<FlattenedSportsData | 
 
 /**
  * Single deduplicated fetch for all consumers (HeroCarousel, LiveSportsRow, SportsHub).
- * Reuses active in-flight request and 2-minute memory cache.
+ * Reuses active in-flight request, in-memory cache, and sessionStorage.
  */
 export async function fetchSportsClientSide(bypassCache = false): Promise<FlattenedSportsData | null> {
   const now = Date.now();
 
   // Return cached result if valid and not bypassing
-  if (!bypassCache && inMemoryCache && now - inMemoryCache.timestamp < CLIENT_CACHE_TTL_MS) {
-    return inMemoryCache.data;
+  if (!bypassCache) {
+    if (inMemoryCache && now - inMemoryCache.timestamp < CLIENT_CACHE_TTL_MS) {
+      return inMemoryCache.data;
+    }
+    const sessionCached = readSessionStorageCache();
+    if (sessionCached) {
+      inMemoryCache = sessionCached;
+      return sessionCached.data;
+    }
   }
 
   // Deduplicate concurrent requests
@@ -74,10 +116,12 @@ export async function fetchSportsClientSide(bypassCache = false): Promise<Flatte
     activeFetchPromise = executeFetch(bypassCache)
       .then((data) => {
         if (data && data.all.length > 0) {
-          inMemoryCache = {
+          const entry: CachedSportsEntry = {
             data,
             timestamp: Date.now(),
           };
+          inMemoryCache = entry;
+          writeSessionStorageCache(entry);
         }
         return data;
       })
@@ -97,7 +141,15 @@ export function useSportsData(initialData: FlattenedSportsData | null) {
       }
       return initialData;
     }
-    return inMemoryCache?.data ?? null;
+    if (inMemoryCache?.data) {
+      return inMemoryCache.data;
+    }
+    const sessionEntry = readSessionStorageCache();
+    if (sessionEntry) {
+      inMemoryCache = sessionEntry;
+      return sessionEntry.data;
+    }
+    return null;
   });
 
   const [isLoading, setIsLoading] = useState(!data || data.all.length === 0);

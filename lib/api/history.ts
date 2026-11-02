@@ -13,8 +13,12 @@ interface HistoryListResponse {
   items: HistoryEntry[];
 }
 
+function isClientLoggedIn(): boolean {
+  return typeof document !== "undefined" && document.cookie.includes("cineby_logged_in=1");
+}
+
 export async function listHistory(isAuthenticated?: boolean): Promise<HistoryEntry[]> {
-  if (isAuthenticated === false) {
+  if (isAuthenticated === false || !isClientLoggedIn()) {
     return getLocalHistory();
   }
 
@@ -40,7 +44,7 @@ export async function saveHistory(
   input: HistoryInput,
   isAuthenticated?: boolean
 ): Promise<void> {
-  if (isAuthenticated === false) {
+  if (isAuthenticated === false || (isAuthenticated === undefined && !isClientLoggedIn())) {
     saveLocalHistory(input);
     return;
   }
@@ -109,7 +113,8 @@ export async function syncGuestHistoryToServer(): Promise<void> {
 
   try {
     let syncedCount = 0;
-    for (const item of localItems) {
+    const itemsToSync = localItems.slice(0, 5);
+    for (const item of itemsToSync) {
       const res = await fetch("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

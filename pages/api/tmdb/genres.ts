@@ -12,6 +12,10 @@ export default withApiContext("api/tmdb/genres", async (req: NextApiRequest, res
 
   const mediaType = parseMediaType(req.query.mediaType);
   const result = await getGenres(mediaType);
+  res.setHeader(
+    "Cache-Control",
+    "public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800"
+  );
   res.status(200).json(result);
 });
 

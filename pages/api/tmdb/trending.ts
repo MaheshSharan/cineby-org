@@ -21,6 +21,10 @@ export default withApiContext("api/tmdb/trending", async (req: NextApiRequest, r
   const page = parsePage(req.query.page);
 
   const result = await getTrending(mediaType, timeWindow, page);
+  res.setHeader(
+    "Cache-Control",
+    "public, max-age=300, s-maxage=1800, stale-while-revalidate=86400"
+  );
   res.status(200).json(result);
 });
 
