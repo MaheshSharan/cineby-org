@@ -69,18 +69,59 @@ export default function SportWatchPage({ initialMatch, initialRelatedMatches }: 
     };
   }, []);
 
-  const servers = [
-    {
-      name: "Server 1 (HD)",
-      tag: match?.source_tag || "HD Stream",
-      iframe: match?.iframe,
-    },
-    ...(match?.substreams?.map((s, idx) => ({
-      name: `Server ${idx + 2} (${s.source_tag?.split("|")[0]?.trim() || "SD"})`,
-      tag: s.source_tag || s.tag || "Alternate Mirror",
-      iframe: s.iframe,
-    })) ?? []),
-  ];
+  // Smart Server Prioritization: Default to SD for ultra-fast initial bufferless playback; HD as toggle
+  const servers = (() => {
+    const list: Array<{ name: string; tag: string; iframe?: string }> = [];
+
+    // Check if substreams have an explicit SD feed
+    const sdSubstream = match?.substreams?.find((s) => s.source_tag?.toLowerCase().startsWith("sd"));
+    const otherSubstreams = match?.substreams?.filter((s) => s !== sdSubstream) ?? [];
+
+    if (sdSubstream?.iframe) {
+      // 1. Put SD first for instant loading
+      list.push({
+        name: "Server 1 (Fast / SD)",
+        tag: sdSubstream.source_tag || "SD Fast Stream",
+        iframe: sdSubstream.iframe,
+      });
+
+      // 2. Put HD second
+      if (match?.iframe) {
+        list.push({
+          name: "Server 2 (Full HD)",
+          tag: match.source_tag || "HD High Quality",
+          iframe: match.iframe,
+        });
+      }
+
+      // 3. Any additional mirrors
+      otherSubstreams.forEach((s, idx) => {
+        list.push({
+          name: `Server ${list.length + 1} (${s.source_tag?.split("|")[0]?.trim() || "Alt"})`,
+          tag: s.source_tag || s.tag || "Alternate Mirror",
+          iframe: s.iframe,
+        });
+      });
+    } else {
+      // Default fallback if no explicit SD substream is declared
+      if (match?.iframe) {
+        list.push({
+          name: "Server 1",
+          tag: match.source_tag || "Default Stream",
+          iframe: match.iframe,
+        });
+      }
+      match?.substreams?.forEach((s, idx) => {
+        list.push({
+          name: `Server ${idx + 2} (${s.source_tag?.split("|")[0]?.trim() || "Alt"})`,
+          tag: s.source_tag || s.tag || "Alternate Mirror",
+          iframe: s.iframe,
+        });
+      });
+    }
+
+    return list;
+  })();
 
   const handleServerSwitch = (idx: number) => {
     if (idx === activeServerIndex || !match) return;

@@ -46,6 +46,7 @@ export default function Document() {
         {getGoogleSiteVerification() && (
           <meta name="google-site-verification" content={getGoogleSiteVerification()} />
         )}
+        <meta name="yandex-verification" content="fccb92f9db4468c5" />
       </Head>
       <body className="bg-background">
         <script
