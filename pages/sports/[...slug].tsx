@@ -9,7 +9,7 @@ import { type SportMatch, getSportWatchHref } from "@/lib/sports/types";
 import { LiveSportsRow } from "@/components/sports/LiveSportsRow";
 import { TrophyIcon } from "@/components/ui/icons";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
-import { sanitizeJsonLd } from "@/lib/seo/jsonLd";
+import { buildSportsEventJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 import { initAntiRedirectShield, setAntiRedirectShieldActive } from "@/lib/security/antiRedirect";
 import { trackEvent } from "@/lib/analytics/gtag";
 
@@ -192,24 +192,7 @@ export default function SportWatchPage({ initialMatch, initialRelatedMatches }: 
   const isLive = isMatchLive(match);
   const viewersCount = typeof match.viewers === "string" ? Number.parseInt(match.viewers, 10) : Number(match.viewers || 0);
 
-  const sportsEventJsonLd = sanitizeJsonLd({
-    "@context": "https://schema.org",
-    "@type": "SportsEvent",
-    name: match.name,
-    description: `Watch ${match.name} live stream free online in HD on Cineby. High quality streams for ${match.category_name} - ${match.tag}.`,
-    startDate: match.starts_at ? new Date(match.starts_at * 1000).toISOString() : undefined,
-    endDate: match.ends_at ? new Date(match.ends_at * 1000).toISOString() : undefined,
-    sport: match.category_name,
-    location: {
-      "@type": "Place",
-      name: "Online Streaming Broadcast",
-    },
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-    },
-  });
+  const sportsEventJsonLd = sanitizeJsonLd(buildSportsEventJsonLd(match));
 
   return (
     <>

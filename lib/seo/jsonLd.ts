@@ -3,6 +3,7 @@ import { buildAbsoluteUrl, SITE_NAME } from "@/lib/seo/site";
 import { getSiteUrl } from "@/lib/env/public";
 import { getMediaHref } from "@/lib/utils/media";
 import { getMediaOpenGraphImageUrl } from "@/lib/seo/media";
+import { getSportWatchHref } from "@/lib/sports/types";
 
 export type JsonLdData = Record<string, unknown>;
 
@@ -316,3 +317,106 @@ export function buildTvSeriesJsonLd(tv: TvDetails): JsonLdData {
 
   return jsonLd;
 }
+
+export interface SportsEventInput {
+  name: string;
+  category_name?: string;
+  tag?: string;
+  uri_name: string;
+  starts_at?: number;
+  ends_at?: number;
+  poster?: string;
+}
+
+/**
+ * Generates Schema.org SportsEvent structured data compliant with Google Search Console rich result guidelines.
+ * Solves missing startDate, endDate, location (VirtualLocation), offers, organizer, and performer warnings.
+ */
+export function buildSportsEventJsonLd(
+  match: SportsEventInput,
+  options?: { nowMs?: number }
+): JsonLdData {
+  const pagePath = getSportWatchHref(match.uri_name || "");
+  const pageUrl = buildAbsoluteUrl(pagePath);
+  const now = options?.nowMs !== undefined ? new Date(options.nowMs) : new Date();
+
+  // Deterministic rolling broadcast window start if starts_at is absent or 0 (common for 24/7 channels)
+  let startIso: string;
+  let endIso: string;
+
+  if (match.starts_at && match.starts_at > 0) {
+    const startDate = new Date(match.starts_at * 1000);
+    startIso = startDate.toISOString();
+    if (match.ends_at && match.ends_at > 0) {
+      endIso = new Date(match.ends_at * 1000).toISOString();
+    } else {
+      // Fallback: 3 hours after start
+      endIso = new Date(startDate.getTime() + 3 * 60 * 60 * 1000).toISOString();
+    }
+  } else {
+    // Continuous 24/7 channel: UTC day start to UTC day end
+    const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+    const endOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+    startIso = startOfDay.toISOString();
+    endIso = endOfDay.toISOString();
+  }
+
+  const imageUrl = match.poster && match.poster.trim()
+    ? (match.poster.startsWith("http://") || match.poster.startsWith("https://")
+        ? match.poster
+        : buildAbsoluteUrl(match.poster))
+    : buildAbsoluteUrl("/screenshots/home-wide.png");
+
+  // Extract performers if match name represents a matchup (e.g. "Arsenal vs Chelsea" or "Lecce - Empoli")
+  const performers: Array<{ "@type": "SportsTeam"; name: string }> = [];
+  const vsMatch = match.name.match(/^(.+?)\s+(?:vs\.?|v|-)\s+(.+?)$/i);
+  if (vsMatch && vsMatch[1] && vsMatch[2]) {
+    performers.push(
+      { "@type": "SportsTeam", name: vsMatch[1].trim() },
+      { "@type": "SportsTeam", name: vsMatch[2].trim() }
+    );
+  }
+
+  const category = match.category_name || "Sports";
+  const tagDesc = match.tag ? ` - ${match.tag}` : "";
+
+  const jsonLd: JsonLdData = {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    name: match.name,
+    description: `Watch ${match.name} live stream free online in HD on ${SITE_NAME}. High quality streams for ${category}${tagDesc}.`,
+    startDate: startIso,
+    endDate: endIso,
+    eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
+    eventStatus: "https://schema.org/EventScheduled",
+    image: imageUrl,
+    location: {
+      "@type": "VirtualLocation",
+      url: pageUrl,
+    },
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+      validFrom: startIso,
+      url: pageUrl,
+    },
+    organizer: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: getSiteUrl(),
+    },
+  };
+
+  if (match.category_name) {
+    jsonLd.sport = match.category_name;
+  }
+
+  if (performers.length > 0) {
+    jsonLd.performer = performers;
+  }
+
+  return jsonLd;
+}
+

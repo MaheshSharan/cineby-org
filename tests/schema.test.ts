@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildBreadcrumbJsonLd,
   buildMovieJsonLd,
+  buildSportsEventJsonLd,
   buildTvSeriesJsonLd,
   buildWebSiteJsonLd,
   sanitizeJsonLd,
@@ -149,5 +150,95 @@ describe("Schema.org JSON-LD structured data generators", () => {
 
     expect(sanitized).not.toContain("</script>");
     expect(sanitized).toContain("\\u003c/script>");
+  });
+
+  it("generates SportsEvent schema with full Google Search Console compliant properties for scheduled matches", () => {
+    const schema = buildSportsEventJsonLd({
+      name: "Arsenal vs Chelsea",
+      category_name: "Football",
+      tag: "Premier League",
+      uri_name: "football/premier-league/ars-che",
+      starts_at: 1772500000,
+      ends_at: 1772507200,
+      poster: "https://example.com/poster.jpg",
+    });
+
+    expect(schema["@context"]).toBe("https://schema.org");
+    expect(schema["@type"]).toBe("SportsEvent");
+    expect(schema.name).toBe("Arsenal vs Chelsea");
+    expect(schema.startDate).toBe(new Date(1772500000 * 1000).toISOString());
+    expect(schema.endDate).toBe(new Date(1772507200 * 1000).toISOString());
+    expect(schema.eventAttendanceMode).toBe("https://schema.org/OnlineEventAttendanceMode");
+    expect(schema.eventStatus).toBe("https://schema.org/EventScheduled");
+    expect(schema.image).toBe("https://example.com/poster.jpg");
+    expect(schema.sport).toBe("Football");
+
+    // Location
+    expect(schema.location).toEqual({
+      "@type": "VirtualLocation",
+      url: `${getSiteUrl()}/sports/football/premier-league/ars-che`,
+    });
+
+    // Offers
+    expect(schema.offers).toEqual({
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+      validFrom: new Date(1772500000 * 1000).toISOString(),
+      url: `${getSiteUrl()}/sports/football/premier-league/ars-che`,
+    });
+
+    // Organizer
+    expect(schema.organizer).toEqual({
+      "@type": "Organization",
+      name: "Cineby",
+      url: getSiteUrl(),
+    });
+
+    // Performers extracted from "Arsenal vs Chelsea"
+    expect(schema.performer).toEqual([
+      { "@type": "SportsTeam", name: "Arsenal" },
+      { "@type": "SportsTeam", name: "Chelsea" },
+    ]);
+  });
+
+  it("generates fallback ISO start/end dates and default image for 24/7 channels without explicit starts_at", () => {
+    const fixedNowMs = Date.UTC(2026, 2, 15, 14, 30, 0); // 2026-03-15T14:30:00Z
+    const schema = buildSportsEventJsonLd(
+      {
+        name: "NFL Network 24/7",
+        category_name: "American Football",
+        tag: "NFL",
+        uri_name: "nfl-network",
+      },
+      { nowMs: fixedNowMs }
+    );
+
+    expect(schema["@type"]).toBe("SportsEvent");
+    expect(schema.startDate).toBe("2026-03-15T00:00:00.000Z");
+    expect(schema.endDate).toBe("2026-03-15T23:59:59.999Z");
+    expect(schema.image).toBe(`${getSiteUrl()}/screenshots/home-wide.png`);
+
+    const offers = schema.offers as Record<string, unknown>;
+    expect(offers.validFrom).toBe("2026-03-15T00:00:00.000Z");
+    expect(offers.availability).toBe("https://schema.org/InStock");
+    expect(offers.url).toBe(`${getSiteUrl()}/sports/nfl-network`);
+  });
+
+  it("calculates fallback endDate (startDate + 3 hours) when starts_at is provided without ends_at", () => {
+    const startsAtSec = 1772500000;
+    const schema = buildSportsEventJsonLd({
+      name: "Formula 1 Grand Prix",
+      category_name: "Motorsport",
+      uri_name: "f1-live",
+      starts_at: startsAtSec,
+    });
+
+    const expectedStart = new Date(startsAtSec * 1000).toISOString();
+    const expectedEnd = new Date((startsAtSec + 3 * 3600) * 1000).toISOString();
+
+    expect(schema.startDate).toBe(expectedStart);
+    expect(schema.endDate).toBe(expectedEnd);
   });
 });
