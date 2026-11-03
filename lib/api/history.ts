@@ -59,6 +59,9 @@ export async function saveHistory(
     });
 
     if (response.status === 401) {
+      if (typeof document !== "undefined") {
+        document.cookie = "cineby_logged_in=; Path=/; Max-Age=0";
+      }
       saveLocalHistory(input);
     }
   } catch {

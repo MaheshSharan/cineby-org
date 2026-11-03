@@ -16,9 +16,16 @@ import { trackEvent } from "@/lib/analytics/gtag";
 interface SportWatchPageProps {
   initialMatch: SportMatch | null;
   initialRelatedMatches: SportMatch[];
+  fallbackTitle: string;
+  pagePath: string;
 }
 
-export default function SportWatchPage({ initialMatch, initialRelatedMatches }: SportWatchPageProps) {
+export default function SportWatchPage({
+  initialMatch,
+  initialRelatedMatches,
+  fallbackTitle,
+  pagePath,
+}: SportWatchPageProps) {
   const router = useRouter();
   const slugParam = router.query.slug;
   const rawSlug = Array.isArray(slugParam) ? slugParam.join("/") : slugParam || "";
@@ -170,21 +177,35 @@ export default function SportWatchPage({ initialMatch, initialRelatedMatches }: 
   if (!match) {
     if (isClientLoading) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center pt-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mb-3" />
-          <h3 className="text-base font-semibold text-white/80">Loading stream...</h3>
-        </div>
+        <>
+          <PageSeo
+            title={`Watch ${fallbackTitle} Live Stream Free | Cineby Sports`}
+            description={`Watch ${fallbackTitle} live stream free online in HD. Follow live coverage, scores, and schedule on Cineby Sports.`}
+            path={pagePath}
+          />
+          <div className="min-h-screen flex flex-col items-center justify-center pt-20">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mb-3" />
+            <h3 className="text-base font-semibold text-white/80">Loading stream...</h3>
+          </div>
+        </>
       );
     }
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center pt-20 text-center px-4">
-        <TrophyIcon size={48} className="text-white/20 mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">Match Not Found</h2>
-        <p className="text-sm text-white/50 mb-6 max-w-sm">This sports event has ended or is unavailable.</p>
-        <Link href="/sports" className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90">
-          Back to Sports Hub
-        </Link>
-      </div>
+      <>
+        <PageSeo
+          title={`${fallbackTitle} | Cineby Sports`}
+          description={`Watch live sports streams free on Cineby. ${fallbackTitle} streaming coverage and schedule.`}
+          path={pagePath}
+        />
+        <div className="min-h-screen flex flex-col items-center justify-center pt-20 text-center px-4">
+          <TrophyIcon size={48} className="text-white/20 mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Match Not Found</h2>
+          <p className="text-sm text-white/50 mb-6 max-w-sm">This sports event has ended or is unavailable.</p>
+          <Link href="/sports" className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90">
+            Back to Sports Hub
+          </Link>
+        </div>
+      </>
     );
   }
 
@@ -349,10 +370,18 @@ export const getServerSideProps: GetServerSideProps<SportWatchPageProps> = async
   // The client hydrates instantly via local cache or client-side mirror fetch.
   context.res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
 
+  const lastSlugPart = Array.isArray(slugParam) ? slugParam[slugParam.length - 1] : rawSlug;
+  const fallbackTitle = lastSlugPart
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+    .trim() || "Live Sports";
+
   return {
     props: {
       initialMatch: null,
       initialRelatedMatches: [],
+      fallbackTitle,
+      pagePath: `/sports/${rawSlug}`,
     },
   };
 };

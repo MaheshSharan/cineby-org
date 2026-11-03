@@ -94,7 +94,7 @@ export default function App({ Component, pageProps }: AppProps) {
         {/* viewport-fit=cover lets the app draw under the notch; layouts pad with env(safe-area-inset-*). */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
       </Head>
 

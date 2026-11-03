@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { GetServerSideProps } from "next";
+import type { GetStaticProps } from "next";
 import Link from "next/link";
 import { PageSeo } from "@/components/seo/PageSeo";
 import { SportCard } from "@/components/sports/SportCard";
@@ -453,12 +453,11 @@ export default function SportsPage({ initialData }: SportsPageProps) {
   );
 }
 
-export const getServerSideProps: GetServerSideProps<SportsPageProps> = async ({ res }) => {
-  res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
-
+export const getStaticProps: GetStaticProps<SportsPageProps> = async () => {
   return {
     props: {
       initialData: null,
     },
+    revalidate: 3600,
   };
 };
