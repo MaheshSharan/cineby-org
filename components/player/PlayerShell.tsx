@@ -131,7 +131,7 @@ export function PlayerShell({
       subtitle={subtitle}
       servers={servers}
       currentServerId={currentServerId}
-      loadTimeoutMs={modeConfig?.loadTimeoutMs ?? 12000}
+      loadTimeoutMs={modeConfig?.loadTimeoutMs ?? 8000}
       initialTime={initialTimeSec}
       onBack={onBack}
       onSelectServer={handleSelectServer}

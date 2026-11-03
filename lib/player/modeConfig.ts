@@ -26,7 +26,7 @@ export function getPlayerModeConfig(): PlayerModeConfig {
   const defaultServer = readServerEnv("EMBED_DEFAULT_SERVER")?.trim() || "vixsrc";
   const loadTimeoutMs = parsePositiveInteger(
     "EMBED_LOAD_TIMEOUT_MS",
-    readServerEnv("EMBED_LOAD_TIMEOUT_MS") || "12000"
+    readServerEnv("EMBED_LOAD_TIMEOUT_MS") || "8000"
   );
 
   const rawPriority = readServerEnv("EMBED_SERVER_PRIORITY") || "";

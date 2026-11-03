@@ -179,7 +179,7 @@ export function MediaPosterCard({
       <Link
         href={href}
         onClick={handleDetailClick}
-        aria-label={title}
+        aria-label={rank ? `Top ${rank}: ${title}` : title}
         className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
       >
         <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-white/5 shadow-xl shadow-black/40 isolate">

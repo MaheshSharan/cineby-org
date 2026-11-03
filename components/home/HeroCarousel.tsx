@@ -126,7 +126,7 @@ export function HeroCarousel({ items, genreNames }: HeroCarouselProps) {
       {/* Carousel Navigation Indicators */}
       {length > 1 ? (
         <div
-          className="absolute bottom-20 right-6 z-20 hidden items-center gap-2 lg:bottom-24 lg:right-16 lg:flex"
+          className="absolute bottom-20 right-6 z-20 hidden items-center gap-1 lg:bottom-24 lg:right-16 lg:flex"
           aria-label="Carousel pagination"
         >
           {slides.map((slide, dotIdx) => {
@@ -139,12 +139,16 @@ export function HeroCarousel({ items, genreNames }: HeroCarouselProps) {
                 aria-label={`Go to slide ${dotIdx + 1}`}
                 aria-current={isCurrent ? "true" : "false"}
                 onClick={() => setIndex(dotIdx)}
-                className={`h-2 rounded-full cursor-pointer transition-all duration-300 ${
-                  isCurrent
-                    ? "w-8 bg-white shadow-[0_0_12px_rgba(255,255,255,0.6)]"
-                    : "w-2 bg-white/35 hover:bg-white/70"
-                }`}
-              />
+                className="min-h-[28px] min-w-[28px] flex items-center justify-center cursor-pointer p-1"
+              >
+                <span
+                  className={`h-2 rounded-full transition-all duration-300 block ${
+                    isCurrent
+                      ? "w-8 bg-white shadow-[0_0_12px_rgba(255,255,255,0.6)]"
+                      : "w-2 bg-white/35 hover:bg-white/70"
+                  }`}
+                />
+              </button>
             );
           })}
         </div>
@@ -294,9 +298,10 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
             </p>
 
             <div className="mt-[22px] flex items-center gap-3">
-              <PlayButton href={playHref} size="lg" label="Play" />
+              <PlayButton href={playHref} size="lg" label="Play" tabIndex={isActive ? 0 : -1} />
               <Link
                 href={mediaHref}
+                tabIndex={isActive ? 0 : -1}
                 onClick={handleSeeMoreClick}
                 className="flex h-[52px] items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-6 font-medium tracking-tight text-white backdrop-blur-[16px] transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:shadow-glow active:scale-[0.98]"
               >
@@ -433,9 +438,10 @@ function SportHeroSlide({ match, isActive }: SportHeroSlideProps) {
             </p>
 
             <div className="pt-2 flex items-center gap-3" onClick={handleSportHeroClick}>
-              <PlayButton href={watchHref} size="lg" label="Watch Live" />
+              <PlayButton href={watchHref} size="lg" label="Watch Live" tabIndex={isActive ? 0 : -1} />
               <Link
                 href="/sports"
+                tabIndex={isActive ? 0 : -1}
                 className="flex h-[52px] items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-6 font-medium tracking-tight text-white backdrop-blur-[16px] transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:shadow-glow active:scale-[0.98]"
               >
                 <span>All Matches</span>

@@ -207,7 +207,7 @@ export function EmbedPlayer({
         }
         return loaded;
       });
-    }, loadTimeoutMs || 12000);
+    }, loadTimeoutMs || 8000);
 
     return () => clearTimeout(timer);
   }, [embedUrl, loadTimeoutMs]);
@@ -239,7 +239,7 @@ export function EmbedPlayer({
           content_id: String(media.mediaId),
           media_type: media.mediaType,
           server: currentServerId,
-          stall_duration_ms: loadTimeoutMs || 12000,
+          stall_duration_ms: loadTimeoutMs || 8000,
           current_time: 0,
         },
       });

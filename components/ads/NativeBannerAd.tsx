@@ -47,6 +47,14 @@ export function NativeBannerAd({ className = "", id = "container-7f39a089ecb822e
     let mutationObserver: MutationObserver | null = null;
     if (typeof MutationObserver !== "undefined") {
       mutationObserver = new MutationObserver(() => {
+        // Enforce rel="nofollow noopener noreferrer" on injected ad anchors for SEO/Lighthouse integrity
+        const anchors = container.querySelectorAll("a");
+        for (const a of anchors) {
+          if (!a.getAttribute("rel")) {
+            a.setAttribute("rel", "nofollow noopener noreferrer");
+          }
+        }
+
         const hasContent = Boolean(
           container.querySelector("iframe") ||
           container.querySelector('div[class*="__stand"]') ||

@@ -65,7 +65,7 @@ export function Footer() {
           </nav>
 
           {/* Single-line concise copyright and disclaimer */}
-          <div className="text-white/40 text-center sm:text-right whitespace-nowrap text-[11px] sm:text-xs">
+          <div className="text-white/60 text-center sm:text-right whitespace-nowrap text-[11px] sm:text-xs">
             <span>© {currentYear} Cineby. Non-hosting provider index. All metadata via TMDB.</span>
           </div>
         </div>
