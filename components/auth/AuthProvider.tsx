@@ -65,6 +65,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         setUser(null);
+        if (response.status === 401 && typeof document !== "undefined") {
+          document.cookie = "cineby_logged_in=; Path=/; Max-Age=0";
+        }
       }
     } catch {
       setUser(null);

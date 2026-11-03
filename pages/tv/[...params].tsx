@@ -79,6 +79,13 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
   }
 
   try {
+    if (!isPlaying) {
+      context.res.setHeader(
+        "Cache-Control",
+        "public, s-maxage=3600, stale-while-revalidate=86400"
+      );
+    }
+
     const details = await getTvDetails(id);
 
     const seasonNumber = typeof parsedSeason === "number" && Number.isInteger(parsedSeason) && parsedSeason > 0 ? parsedSeason : null;

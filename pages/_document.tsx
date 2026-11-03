@@ -51,7 +51,7 @@ export default function Document() {
           type="speculationrules"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
-              prerender: [
+              prefetch: [
                 {
                   where: {
                     and: [
@@ -59,7 +59,7 @@ export default function Document() {
                       { not: { href_matches: ["/watch*", "/api*", "/admin*"] } }
                     ]
                   },
-                  eagerness: "moderate"
+                  eagerness: "conservative"
                 }
               ]
             })

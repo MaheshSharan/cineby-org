@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { clearAuthCookies } from "@/lib/auth/session";
 import { withApiContext } from "@/lib/validation";
 
 export default withApiContext("api/auth/me", async (req: NextApiRequest, res: NextApiResponse) => {
@@ -13,6 +14,7 @@ export default withApiContext("api/auth/me", async (req: NextApiRequest, res: Ne
   const user = await getCurrentUser(req);
 
   if (!user) {
+    res.setHeader("Set-Cookie", clearAuthCookies());
     res.status(401).json({ user: null });
     return;
   }

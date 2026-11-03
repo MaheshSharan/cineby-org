@@ -60,6 +60,13 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (con
   }
 
   try {
+    if (context.query.play !== "true") {
+      context.res.setHeader(
+        "Cache-Control",
+        "public, s-maxage=3600, stale-while-revalidate=86400"
+      );
+    }
+
     const details = await getMovieDetails(id);
     const initialTrailerUrl = details.imdbId
       ? await fetchTrailerUrlServer(details.imdbId).catch(() => null)
