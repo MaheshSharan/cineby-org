@@ -53,6 +53,11 @@ export const getServerSideProps: GetServerSideProps<BrowsePageProps> = async (co
   const mediaType: MediaType = category;
 
   try {
+    context.res.setHeader(
+      "Cache-Control",
+      "public, s-maxage=3600, stale-while-revalidate=86400"
+    );
+
     const [genreList, initial] = await Promise.all([
       getGenres(mediaType),
       mediaType === "tv"
