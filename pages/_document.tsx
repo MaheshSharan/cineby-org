@@ -47,6 +47,24 @@ export default function Document() {
           <meta name="google-site-verification" content={getGoogleSiteVerification()} />
         )}
         <meta name="yandex-verification" content="fccb92f9db4468c5" />
+        <script
+          type="speculationrules"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              prerender: [
+                {
+                  where: {
+                    and: [
+                      { href_matches: "/*" },
+                      { not: { href_matches: ["/watch*", "/api*", "/admin*"] } }
+                    ]
+                  },
+                  eagerness: "moderate"
+                }
+              ]
+            })
+          }}
+        />
       </Head>
       <body className="bg-background">
         <script
