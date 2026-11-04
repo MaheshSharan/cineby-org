@@ -191,7 +191,7 @@ export default function Home({
 }
 
 export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ res }) => {
-  res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+  res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400");
 
   const emptyPaginated = { results: [], page: 1, totalPages: 1, totalResults: 0 };
   const safePaginated = <T extends { results: MediaSummary[] }>(p: Promise<T>): Promise<T> =>
