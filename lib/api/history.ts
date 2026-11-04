@@ -3,7 +3,6 @@ import {
   clearLocalHistory,
   getLocalHistory,
   removeLocalHistory,
-  saveLocalHistory,
   type HistoryInput,
 } from "@/lib/history/local";
 
@@ -40,32 +39,32 @@ export async function listHistory(isAuthenticated?: boolean): Promise<HistoryEnt
   }
 }
 
-export async function saveHistory(
-  input: HistoryInput,
-  isAuthenticated?: boolean
-): Promise<void> {
-  if (isAuthenticated === false || (isAuthenticated === undefined && !isClientLoggedIn())) {
-    saveLocalHistory(input);
-    return;
-  }
+export type HistorySendResult = "saved" | "unauthorized" | "failed";
 
+/**
+ * Sends one progress entry to the server. Never throws: the write queue decides what to do with
+ * each outcome, so network errors are reported as "failed" instead of being swallowed here.
+ */
+export async function postHistoryEntry(input: HistoryInput, keepalive: boolean): Promise<HistorySendResult> {
   try {
     const response = await fetch("/api/history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
       // Lets the save finish when it is triggered by closing the tab.
-      keepalive: true,
+      keepalive,
     });
 
     if (response.status === 401) {
       if (typeof document !== "undefined") {
         document.cookie = "cineby_logged_in=; Path=/; Max-Age=0";
       }
-      saveLocalHistory(input);
+      return "unauthorized";
     }
+
+    return response.ok ? "saved" : "failed";
   } catch {
-    saveLocalHistory(input);
+    return "failed";
   }
 }
 

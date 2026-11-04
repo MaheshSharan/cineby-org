@@ -7,6 +7,7 @@ import { AuthTransitionOverlay } from "@/components/auth/AuthTransitionOverlay";
 import { Toast } from "@/components/ui/Toast";
 
 import { syncGuestHistoryToServer } from "@/lib/api/history";
+import { resetHistoryQueue } from "@/lib/history/writeQueue";
 import { GoogleOneTap } from "@/components/auth/GoogleOneTap";
 
 interface AuthContextValue {
@@ -81,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetch("/api/auth/logout", { method: "POST" });
       showToast("Logged out successfully");
     } finally {
+      resetHistoryQueue();
       setUser(null);
     }
   }, [showToast]);

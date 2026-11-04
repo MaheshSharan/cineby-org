@@ -3,9 +3,15 @@ import { useRouter } from "next/router";
 
 import type { PlayerMedia } from "./types";
 import { EmbedPlayer } from "./EmbedPlayer";
-import { saveHistory } from "@/lib/api/history";
+import { useHistoryFlush } from "./hooks/useHistoryFlush";
+import { queueHistorySave } from "@/lib/history/writeQueue";
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { PlayerModeConfig } from "@/lib/player/modeConfig";
+
+const MIN_PLAYBACK_SECONDS = 3;
+const MIN_CAPTURE_GAP_MS = 10_000;
+const CAPTURE_INTERVAL_MS = 30_000;
+const SIGNIFICANT_SEEK_SECONDS = 15;
 
 interface PlayerShellProps {
   title: string;
@@ -31,6 +37,8 @@ export function PlayerShell({
   const router = useRouter();
   const { user } = useAuth();
   const lastSavedRef = useRef<{ time: number; seconds: number } | null>(null);
+
+  useHistoryFlush();
 
   // Read initial server from query (?server=...) or modeConfig default
   const queryServer = typeof router.query.server === "string" ? router.query.server.trim() : null;
@@ -62,8 +70,8 @@ export function PlayerShell({
     (currentTime: number, duration: number, playback?: { seasonNumber?: number; episodeNumber?: number }) => {
       if (!media) return;
 
-      // Playback Gating: Only record progress after at least 3 seconds of actual playback
-      if (currentTime < 3) {
+      // Playback Gating: Only record progress after a few seconds of actual playback
+      if (currentTime < MIN_PLAYBACK_SECONDS) {
         onTimeUpdate?.(currentTime, duration);
         return;
       }
@@ -71,16 +79,16 @@ export function PlayerShell({
       const now = Date.now();
       const last = lastSavedRef.current;
 
-      // Hard minimum throttle: never hit the API more often than once every 10 seconds, even on seeks
+      // Hard minimum throttle between captures, even on seeks
       const timeSinceLastSave = last ? now - last.time : Infinity;
-      if (timeSinceLastSave < 10000) {
+      if (timeSinceLastSave < MIN_CAPTURE_GAP_MS) {
         onTimeUpdate?.(currentTime, duration);
         return;
       }
 
-      // Polling interval: Save every 75 seconds (1 min 15s) (or after 10s if a significant 15s+ seek occurred)
-      const isSignificantSeek = last ? Math.abs(currentTime - last.seconds) >= 15 : false;
-      const shouldSave = !last || timeSinceLastSave >= 75000 || isSignificantSeek;
+      // Capture progress into the history queue; the queue decides when it actually reaches the server
+      const isSignificantSeek = last ? Math.abs(currentTime - last.seconds) >= SIGNIFICANT_SEEK_SECONDS : false;
+      const shouldSave = !last || timeSinceLastSave >= CAPTURE_INTERVAL_MS || isSignificantSeek;
 
       if (shouldSave) {
         lastSavedRef.current = { time: now, seconds: currentTime };
@@ -88,7 +96,7 @@ export function PlayerShell({
         const calculatedPercent = Math.round((currentTime / Math.max(1, duration)) * 100);
         const effectiveProgress = currentTime > 5 && calculatedPercent === 0 ? 1 : calculatedPercent;
 
-        saveHistory(
+        void queueHistorySave(
           {
             mediaType: media.mediaType,
             mediaId: media.mediaId,
@@ -102,7 +110,7 @@ export function PlayerShell({
             progressSeconds: Math.floor(currentTime),
           },
           Boolean(user)
-        ).catch(() => {});
+        );
       }
 
       onTimeUpdate?.(currentTime, duration);

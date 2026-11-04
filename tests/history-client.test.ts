@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { listHistory, saveHistory, syncGuestHistoryToServer } from "@/lib/api/history";
+import { listHistory, syncGuestHistoryToServer } from "@/lib/api/history";
+import { saveLocalHistory } from "@/lib/history/local";
+import { queueHistorySave, resetHistoryQueue } from "@/lib/history/writeQueue";
 
 describe("lib/api/history client guard", () => {
   let store: Record<string, string> = {};
@@ -9,6 +11,7 @@ describe("lib/api/history client guard", () => {
     store = {};
     cookieVal = "";
     vi.restoreAllMocks();
+    resetHistoryQueue();
 
     const mockLocalStorage = {
       getItem: vi.fn((key: string) => store[key] ?? null),
@@ -47,7 +50,7 @@ describe("lib/api/history client guard", () => {
   it("does not fetch /api/history when user is guest (isAuthenticated=false)", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
-    await saveHistory(
+    await queueHistorySave(
       {
         mediaType: "movie",
         mediaId: 101,
@@ -69,22 +72,19 @@ describe("lib/api/history client guard", () => {
     expect(items[0].mediaId).toBe(101);
   });
 
-  it("does not fetch /api/history when isAuthenticated is undefined and cineby_logged_in cookie is missing", async () => {
+  it("does not fetch /api/history when listing with no auth hint and cineby_logged_in cookie is missing", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
-    await saveHistory(
-      {
-        mediaType: "movie",
-        mediaId: 202,
-        title: "Guest Inferred",
-        posterPath: null,
-        backdropPath: null,
-        duration: "120",
-        progress: 25,
-        progressSeconds: 300,
-      },
-      undefined
-    );
+    saveLocalHistory({
+      mediaType: "movie",
+      mediaId: 202,
+      title: "Guest Inferred",
+      posterPath: null,
+      backdropPath: null,
+      duration: "120",
+      progress: 25,
+      progressSeconds: 300,
+    });
 
     expect(fetchSpy).not.toHaveBeenCalled();
 
@@ -99,7 +99,7 @@ describe("lib/api/history client guard", () => {
       new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 })
     );
 
-    await saveHistory(
+    await queueHistorySave(
       {
         mediaType: "movie",
         mediaId: 303,
@@ -121,19 +121,16 @@ describe("lib/api/history client guard", () => {
   it("syncGuestHistoryToServer limits migration to top 5 items", async () => {
     // Populate 7 local items
     for (let i = 1; i <= 7; i++) {
-      await saveHistory(
-        {
-          mediaType: "movie",
-          mediaId: i,
-          title: `Movie ${i}`,
-          posterPath: null,
-          backdropPath: null,
-          duration: "100",
-          progress: i * 10,
-          progressSeconds: i * 100,
-        },
-        false
-      );
+      saveLocalHistory({
+        mediaType: "movie",
+        mediaId: i,
+        title: `Movie ${i}`,
+        posterPath: null,
+        backdropPath: null,
+        duration: "100",
+        progress: i * 10,
+        progressSeconds: i * 100,
+      });
     }
 
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
