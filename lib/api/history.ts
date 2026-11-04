@@ -109,40 +109,74 @@ export async function clearAllHistory(isAuthenticated?: boolean): Promise<boolea
   }
 }
 
-export async function syncGuestHistoryToServer(): Promise<void> {
-  const localItems = getLocalHistory();
-  if (localItems.length === 0) return;
+const GUEST_SYNC_ATTEMPTED_KEY = "cineby_history_sync_attempted";
+const GUEST_SYNC_MAX_ITEMS = 10;
+
+function wasGuestSyncAttempted(): boolean {
+  if (typeof sessionStorage === "undefined") return false;
 
   try {
-    let syncedCount = 0;
-    const itemsToSync = localItems.slice(0, 5);
-    for (const item of itemsToSync) {
-      const res = await fetch("/api/history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mediaType: item.mediaType,
-          mediaId: item.mediaId,
-          title: item.title,
-          posterPath: item.posterPath,
-          backdropPath: item.backdropPath,
-          seasonNumber: item.seasonNumber,
-          episodeNumber: item.episodeNumber,
-          duration: item.duration,
-          progress: item.progress,
-          progressSeconds: item.progressSeconds,
-        }),
-      });
-      if (res.ok) {
-        syncedCount++;
+    return sessionStorage.getItem(GUEST_SYNC_ATTEMPTED_KEY) === "1";
+  } catch {
+    // Storage blocked (private mode): treat as not attempted so the merge still runs.
+    return false;
+  }
+}
+
+function markGuestSyncAttempted(): void {
+  if (typeof sessionStorage === "undefined") return;
+
+  try {
+    sessionStorage.setItem(GUEST_SYNC_ATTEMPTED_KEY, "1");
+  } catch {
+    // Storage blocked (private mode): the merge may repeat on the next page load, which is harmless.
+  }
+}
+
+/**
+ * Merges the guest's local history into the signed-in account with a single request.
+ * Runs at most once per browser session unless forced (a newly selected or created profile),
+ * and leaves local history untouched when the server does not accept it.
+ */
+export async function syncGuestHistoryToServer(options: { force?: boolean } = {}): Promise<void> {
+  const localItems = getLocalHistory();
+  if (localItems.length === 0) return;
+  if (!options.force && wasGuestSyncAttempted()) return;
+
+  markGuestSyncAttempted();
+
+  // Local history is stored newest first, which the server relies on when a title appears twice.
+  const items = localItems.slice(0, GUEST_SYNC_MAX_ITEMS).map((item) => ({
+    mediaType: item.mediaType,
+    mediaId: item.mediaId,
+    title: item.title,
+    posterPath: item.posterPath,
+    backdropPath: item.backdropPath,
+    seasonNumber: item.seasonNumber,
+    episodeNumber: item.episodeNumber,
+    duration: item.duration,
+    progress: item.progress,
+    progressSeconds: item.progressSeconds,
+  }));
+
+  try {
+    const response = await fetch("/api/history/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+
+    if (response.status === 401) {
+      if (typeof document !== "undefined") {
+        document.cookie = "cineby_logged_in=; Path=/; Max-Age=0";
       }
+      return;
     }
 
-    if (syncedCount > 0) {
+    if (response.ok) {
       clearLocalHistory();
-      window.dispatchEvent(new CustomEvent("cineby:history-change", { detail: [] }));
     }
   } catch {
-    // Best effort migration
+    // Best effort merge: local history stays untouched and is retried in the next session.
   }
 }

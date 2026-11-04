@@ -60,9 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = (await response.json()) as { user: User | null };
         setUser(data.user);
-        if (data.user) {
+        // Accounts without a profile have nowhere to store history yet; profiles.tsx merges it on creation
+        if (data.user && data.user.hasProfiles !== false) {
           // Merge any offline/guest watch progress into the active profile
-          syncGuestHistoryToServer().catch(() => {});
+          void syncGuestHistoryToServer();
         }
       } else {
         setUser(null);

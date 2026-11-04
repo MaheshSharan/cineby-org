@@ -138,7 +138,7 @@ export default function ProfilesPage() {
       window.dispatchEvent(new CustomEvent("cineby:profile-change", { detail: { profileId: profile.id } }));
 
       // Merge any offline guest history into the selected profile
-      syncGuestHistoryToServer().catch(() => {});
+      void syncGuestHistoryToServer({ force: true });
 
       setPinPromptProfile(null);
       showToast(`Switched to ${profile.name}`);
@@ -293,7 +293,7 @@ export default function ProfilesPage() {
       window.dispatchEvent(new CustomEvent("cineby:profile-change", { detail: { profileId: newProfile.id } }));
 
       // Merge any offline guest history into the newly created profile
-      syncGuestHistoryToServer().catch(() => {});
+      void syncGuestHistoryToServer({ force: true });
 
       // Refresh auth state so user.hasProfiles becomes true immediately
       await refresh();
