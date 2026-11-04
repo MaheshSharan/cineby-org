@@ -1,3 +1,4 @@
+import type { DbStatement } from "./adapter";
 import { getDb } from "./connection";
 import { findDefaultProfileId } from "./profiles";
 import type { HistoryEntry } from "./types";
@@ -31,16 +32,9 @@ interface HistoryRow {
   watched_at: string;
 }
 
-export async function addHistoryEntry(userId: number, profileId: number | undefined, input: HistoryInput): Promise<void> {
-  const effectiveProfileId = profileId ?? (await findDefaultProfileId(userId));
-  // No profile yet (user is still onboarding): nothing to scope the entry to.
-  if (effectiveProfileId === null) return;
-
-  const db = getDb();
-
-  // Atomic UPSERT: Single O(1) operation preventing race conditions during rapid playback pings
-  await db.run(
-    `INSERT INTO watch_history (
+// D1 bills every row and index entry it writes. The WHERE clause turns an upsert that would
+// change nothing meaningful (same playback position, same episode) into a no-op with zero writes.
+const UPSERT_HISTORY_SQL = `INSERT INTO watch_history (
       user_id, profile_id, media_type, media_id, title,
       poster_path, backdrop_path, season_number, episode_number,
       duration, progress, progress_seconds, watched_at
@@ -54,10 +48,17 @@ export async function addHistoryEntry(userId: number, profileId: number | undefi
       duration = excluded.duration,
       progress = excluded.progress,
       progress_seconds = excluded.progress_seconds,
-      watched_at = excluded.watched_at`,
-    [
+      watched_at = excluded.watched_at
+    WHERE watch_history.progress_seconds IS NOT excluded.progress_seconds
+      OR watch_history.season_number IS NOT excluded.season_number
+      OR watch_history.episode_number IS NOT excluded.episode_number`;
+
+function buildUpsertStatement(userId: number, profileId: number, input: HistoryInput): DbStatement {
+  return {
+    sql: UPSERT_HISTORY_SQL,
+    params: [
       userId,
-      effectiveProfileId,
+      profileId,
       input.mediaType,
       input.mediaId,
       input.title,
@@ -69,8 +70,33 @@ export async function addHistoryEntry(userId: number, profileId: number | undefi
       input.progress ?? null,
       input.progressSeconds ?? null,
       new Date().toISOString(),
-    ]
-  );
+    ],
+  };
+}
+
+export async function addHistoryEntry(userId: number, profileId: number | undefined, input: HistoryInput): Promise<void> {
+  const effectiveProfileId = profileId ?? (await findDefaultProfileId(userId));
+  // No profile yet (user is still onboarding): nothing to scope the entry to.
+  if (effectiveProfileId === null) return;
+
+  const { sql, params } = buildUpsertStatement(userId, effectiveProfileId, input);
+  await getDb().run(sql, params);
+}
+
+/**
+ * Saves several entries in one round trip. Used when merging a guest's local history into an account.
+ */
+export async function addHistoryEntries(
+  userId: number,
+  profileId: number | undefined,
+  inputs: HistoryInput[]
+): Promise<void> {
+  if (inputs.length === 0) return;
+
+  const effectiveProfileId = profileId ?? (await findDefaultProfileId(userId));
+  if (effectiveProfileId === null) return;
+
+  await getDb().batch(inputs.map((input) => buildUpsertStatement(userId, effectiveProfileId, input)));
 }
 
 export async function removeFromHistory(userId: number, profileId: number | undefined, historyId: number): Promise<void> {
