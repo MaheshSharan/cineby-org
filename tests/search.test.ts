@@ -127,7 +127,7 @@ describe("GET /api/tmdb/search", () => {
 describe("page cache control", () => {
   it("lets browsers reuse public pages and keeps user-specific pages out of shared caches", () => {
     expect(PUBLIC_PAGE_CACHE_CONTROL).toContain("max-age=10800");
-    expect(PUBLIC_PAGE_CACHE_CONTROL).toContain("s-maxage=3600");
+    expect(PUBLIC_PAGE_CACHE_CONTROL).toContain("s-maxage=10800");
     expect(PUBLIC_PAGE_CACHE_CONTROL).not.toContain("private");
     expect(PRIVATE_PAGE_CACHE_CONTROL).toContain("private");
     expect(PRIVATE_PAGE_CACHE_CONTROL).not.toContain("public");
