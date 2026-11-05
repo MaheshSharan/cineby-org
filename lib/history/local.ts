@@ -16,6 +16,21 @@ export interface HistoryInput {
   progressSeconds: number;
 }
 
+interface HistoryKeyFields {
+  mediaType: "movie" | "tv";
+  mediaId: number;
+  seasonNumber?: number | null;
+  episodeNumber?: number | null;
+}
+
+/**
+ * Identity of a history entry: a movie is one entry, a TV show has one entry per episode.
+ */
+function getHistoryKey(item: HistoryKeyFields): string {
+  if (item.mediaType !== "tv") return `movie:${item.mediaId}`;
+  return `tv:${item.mediaId}:${item.seasonNumber ?? 0}:${item.episodeNumber ?? 0}`;
+}
+
 export function getLocalHistory(): HistoryEntry[] {
   if (typeof window === "undefined") {
     return [];
@@ -51,19 +66,11 @@ export function saveLocalHistory(input: HistoryInput): HistoryEntry {
   }
 
   const existing = getLocalHistory();
-
-  // Find if media already exists (match mediaType, mediaId, and for TV also season & episode)
-  const existingIndex = existing.findIndex(
-    (item) =>
-      item.mediaType === input.mediaType &&
-      item.mediaId === input.mediaId &&
-      (input.mediaType !== "tv" ||
-        (item.seasonNumber === (input.seasonNumber ?? null) &&
-          item.episodeNumber === (input.episodeNumber ?? null)))
-  );
+  const entryKey = getHistoryKey(input);
+  const previous = existing.find((item) => getHistoryKey(item) === entryKey);
 
   const entry: HistoryEntry = {
-    id: existingIndex >= 0 ? existing[existingIndex].id : Date.now(),
+    id: previous?.id ?? Date.now(),
     mediaType: input.mediaType,
     mediaId: input.mediaId,
     title: input.title,
@@ -77,16 +84,9 @@ export function saveLocalHistory(input: HistoryInput): HistoryEntry {
     watchedAt: now,
   };
 
-  let updatedList: HistoryEntry[];
-  if (existingIndex >= 0) {
-    updatedList = [
-      entry,
-      ...existing.slice(0, existingIndex),
-      ...existing.slice(existingIndex + 1),
-    ];
-  } else {
-    updatedList = [entry, ...existing].slice(0, MAX_GUEST_ENTRIES);
-  }
+  // Most recent first: the entry moves to the top, and the oldest ones fall off the end.
+  const others = existing.filter((item) => getHistoryKey(item) !== entryKey);
+  const updatedList = [entry, ...others].slice(0, MAX_GUEST_ENTRIES);
 
   try {
     localStorage.setItem(GUEST_HISTORY_STORAGE_KEY, JSON.stringify(updatedList));
