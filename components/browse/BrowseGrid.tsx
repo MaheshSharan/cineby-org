@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { Genre, MediaSummary, Paginated } from "@/lib/tmdb";
+import type { Genre, MediaSummary } from "@/lib/tmdb";
 
 import { MovieCard } from "@/components/movie/MovieCard";
 import { SkeletonCardGrid } from "@/components/skeleton/SkeletonCard";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
+import { browseMedia } from "@/lib/api/tmdb";
 
 type MediaType = "movie" | "tv";
 type SortKey = "popular" | "rating" | "recent";
@@ -75,13 +76,7 @@ export function BrowseGrid({ mediaType, genres, initialItems }: BrowseGridProps)
       }
 
       try {
-        const response = await fetch(`/api/tmdb/browse?${params.toString()}`);
-
-        if (!response.ok) {
-          throw new Error(`Browse request failed: ${response.status}`);
-        }
-
-        const data = (await response.json()) as Paginated<MediaSummary>;
+        const data = await browseMedia(params);
 
         setItems((current) => (append ? [...current, ...data.results] : data.results));
         setTotalPages(data.totalPages);

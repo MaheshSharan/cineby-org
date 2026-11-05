@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/router";
 import type { MovieDetails, TvDetails } from "@/lib/tmdb";
+import { isAbortError } from "@/lib/api/client";
+import { getMediaDetails } from "@/lib/api/tmdb";
 
 type MediaType = "movie" | "tv";
 type DetailData = MovieDetails | TvDetails;
@@ -55,19 +57,13 @@ export function DetailModalProvider({ children }: { children: ReactNode }) {
     setError(null);
     setIsLoading(true);
 
-    fetch(`/api/tmdb/${type}/${id}`, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`Failed to load: ${res.status}`);
-        }
-        return res.json() as Promise<DetailData>;
-      })
+    getMediaDetails<DetailData>(type, id, controller.signal)
       .then((data) => {
         setDetails(data);
         setIsLoading(false);
       })
       .catch((err: unknown) => {
-        if (err instanceof Error && err.name === "AbortError") {
+        if (isAbortError(err)) {
           return;
         }
         setError(err instanceof Error ? err.message : "Failed to load details");

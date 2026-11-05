@@ -3,6 +3,8 @@
  * Can be globally or individually toggled via TRAILER_CONFIG.
  */
 
+import { getJson } from "@/lib/api/client";
+
 export interface TrailerStream {
   quality: string;
   url: string;
@@ -38,12 +40,7 @@ export async function getTrailerUrl(imdbId?: string | null): Promise<string | nu
   }
 
   try {
-    const res = await fetch(`/api/trailer/${encodeURIComponent(imdbId.trim())}`);
-    if (!res.ok) {
-      return null;
-    }
-
-    const data = (await res.json()) as { url?: string | null };
+    const data = await getJson<{ url?: string | null }>(`/api/trailer/${encodeURIComponent(imdbId.trim())}`);
     return data?.url ?? null;
   } catch {
     return null;

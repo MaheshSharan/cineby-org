@@ -6,6 +6,7 @@ import { ContentRow } from "@/components/content/ContentRow";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { useInView } from "@/hooks/useInView";
 import { STREAMING_PROVIDERS, type StreamingProvider } from "@/lib/constants/providers";
+import { getProviderTitles } from "@/lib/api/tmdb";
 
 interface OnlyOnRowProps {
   initialItems?: MediaSummary[];
@@ -41,11 +42,10 @@ export function OnlyOnRow({
       setIsLoading(true);
 
       try {
-        const res = await fetch(`/api/discover/provider?providerId=${providerId}`);
-        if (res.ok) {
-          const data = (await res.json()) as { results: MediaSummary[] };
+        const results = await getProviderTitles(providerId);
+        if (results.length > 0) {
           const seen = new Set<string>(excludeMediaKeys);
-          const uniqueItems = deduplicateMediaPool(data.results || [], seen, 20);
+          const uniqueItems = deduplicateMediaPool(results, seen, 20);
           setItems(uniqueItems);
         }
       } catch {

@@ -1,4 +1,6 @@
 import type { HistoryEntry } from "@/lib/db/types";
+import { apiFetch, sendJson } from "@/lib/api/client";
+import { isLoggedInFlagSet } from "@/lib/auth/loggedInFlag";
 import {
   clearLocalHistory,
   getLocalHistory,
@@ -12,9 +14,7 @@ interface HistoryListResponse {
   items: HistoryEntry[];
 }
 
-function isClientLoggedIn(): boolean {
-  return typeof document !== "undefined" && document.cookie.includes("cineby_logged_in=1");
-}
+const isClientLoggedIn = isLoggedInFlagSet;
 
 export async function listHistory(isAuthenticated?: boolean): Promise<HistoryEntry[]> {
   if (isAuthenticated === false || !isClientLoggedIn()) {
@@ -22,7 +22,7 @@ export async function listHistory(isAuthenticated?: boolean): Promise<HistoryEnt
   }
 
   try {
-    const response = await fetch("/api/history");
+    const response = await apiFetch("/api/history");
 
     if (response.status === 401) {
       return getLocalHistory();
@@ -47,18 +47,10 @@ export type HistorySendResult = "saved" | "unauthorized" | "failed";
  */
 export async function postHistoryEntry(input: HistoryInput, keepalive: boolean): Promise<HistorySendResult> {
   try {
-    const response = await fetch("/api/history", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-      // Lets the save finish when it is triggered by closing the tab.
-      keepalive,
-    });
+    // keepalive lets the save finish when it is triggered by closing the tab.
+    const response = await sendJson("/api/history", "POST", input, { keepalive });
 
     if (response.status === 401) {
-      if (typeof document !== "undefined") {
-        document.cookie = "cineby_logged_in=; Path=/; Max-Age=0";
-      }
       return "unauthorized";
     }
 
@@ -77,9 +69,7 @@ export async function removeFromHistory(
   }
 
   try {
-    const response = await fetch(`/api/history?id=${id}`, {
-      method: "DELETE",
-    });
+    const response = await apiFetch(`/api/history?id=${id}`, { method: "DELETE" });
 
     if (response.status === 401) {
       return removeLocalHistory(id);
@@ -98,9 +88,7 @@ export async function clearAllHistory(isAuthenticated?: boolean): Promise<boolea
   }
 
   try {
-    const response = await fetch("/api/history", {
-      method: "DELETE",
-    });
+    const response = await apiFetch("/api/history", { method: "DELETE" });
 
     clearLocalHistory();
     return response.ok || response.status === 401;
@@ -160,16 +148,9 @@ export async function syncGuestHistoryToServer(options: { force?: boolean } = {}
   }));
 
   try {
-    const response = await fetch("/api/history/batch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
-    });
+    const response = await sendJson("/api/history/batch", "POST", { items });
 
     if (response.status === 401) {
-      if (typeof document !== "undefined") {
-        document.cookie = "cineby_logged_in=; Path=/; Max-Age=0";
-      }
       return;
     }
 

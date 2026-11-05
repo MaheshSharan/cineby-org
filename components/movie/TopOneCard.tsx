@@ -6,6 +6,7 @@ import { getBackdropResponsiveUrls, getLogoUrl } from "@/lib/tmdb/image";
 import { getMediaHref, getMediaTypeLabel, getYear } from "@/lib/utils/media";
 import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
+import { getMediaLogoPath } from "@/lib/api/tmdb";
 
 interface TopOneCardProps {
   media: MediaSummary;
@@ -40,11 +41,10 @@ export function TopOneCard({ media, className = "" }: TopOneCardProps) {
     if (media.logoPath) return;
 
     let isCurrent = true;
-    fetch(`/api/tmdb/logo?mediaType=${media.mediaType}&id=${media.id}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (isCurrent && data?.logoPath) {
-          setFetchedLogo(data.logoPath);
+    getMediaLogoPath(media.mediaType, media.id)
+      .then((logoPath) => {
+        if (isCurrent && logoPath) {
+          setFetchedLogo(logoPath);
         }
       })
       .catch(() => {

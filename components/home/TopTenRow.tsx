@@ -4,6 +4,7 @@ import { ContentRow } from "@/components/content/ContentRow";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { TopOneCard } from "@/components/movie/TopOneCard";
 import { useInView } from "@/hooks/useInView";
+import { getWeeklyTrending } from "@/lib/api/tmdb";
 
 interface TopTenRowProps {
   items?: MediaSummary[];
@@ -26,12 +27,10 @@ export function TopTenRow({ items: initialItems }: TopTenRowProps) {
     let isCurrent = true;
     setIsLoading(true);
 
-    fetch("/api/tmdb/trending?mediaType=all&timeWindow=week")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
+    getWeeklyTrending()
+      .then((results) => {
         if (!isCurrent) return;
-        const results = Array.isArray(data?.results) ? data.results.slice(0, 10) : [];
-        setItems(results);
+        setItems(results.slice(0, 10));
       })
       .catch(() => {})
       .finally(() => {

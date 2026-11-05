@@ -1,4 +1,5 @@
 import type { MediaSummary } from "@/lib/tmdb";
+import { getJson } from "@/lib/api/client";
 import { isSearchableQuery, normalizeSearchQuery } from "@/lib/search/query";
 
 const SEARCH_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -55,12 +56,7 @@ export async function searchMedia(rawQuery: string, signal?: AbortSignal): Promi
   const cached = readCachedSearch(query);
   if (cached) return cached;
 
-  const response = await fetch(`/api/tmdb/search?q=${encodeURIComponent(query)}`, { signal });
-  if (!response.ok) {
-    throw new Error(`Search request failed: ${response.status}`);
-  }
-
-  const data = (await response.json()) as SearchResponse;
+  const data = await getJson<SearchResponse>(`/api/tmdb/search?q=${encodeURIComponent(query)}`, { signal });
   const results = Array.isArray(data.results) ? data.results : [];
   writeCachedSearch(query, results);
   return results;

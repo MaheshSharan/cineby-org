@@ -3,6 +3,7 @@ import type { MediaSummary } from "@/lib/tmdb";
 import { ContentRow } from "@/components/content/ContentRow";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { useInView } from "@/hooks/useInView";
+import { getRowItems } from "@/lib/api/tmdb";
 
 interface LazyContentRowProps {
   title: ReactNode;
@@ -35,11 +36,9 @@ export function LazyContentRow({
     let isCurrent = true;
     setIsLoading(true);
 
-    fetch(fetchUrl)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
+    getRowItems(fetchUrl)
+      .then((results) => {
         if (!isCurrent) return;
-        const results = Array.isArray(data?.results) ? data.results : [];
         setItems(results);
       })
       .catch(() => {})

@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
+import { LOGGED_IN_COOKIE_NAME } from "./loggedInFlag";
 
 export const SESSION_COOKIE = "cineby_session";
-export const LOGGED_IN_COOKIE = "cineby_logged_in";
+export const LOGGED_IN_COOKIE = LOGGED_IN_COOKIE_NAME;
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function createSessionToken(): string {
