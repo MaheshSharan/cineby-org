@@ -22,6 +22,8 @@ import {
 } from "@/lib/settings/types";
 
 const SETTINGS_STORAGE_KEY = "cineby_settings";
+// Settings are edited in bursts (sliders, color pickers), so wait for the user to settle.
+const SETTINGS_SYNC_DEBOUNCE_MS = 3000;
 
 function readSettingsFromStorage(): CinebySettings {
   if (typeof window === "undefined") {
@@ -93,6 +95,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const settingsRef = useRef<CinebySettings>(DEFAULT_SETTINGS);
+  // Serialized settings the server is known to have, so identical saves are never sent.
+  const lastSyncedRef = useRef<string | null>(null);
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -103,38 +107,66 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     userRef.current = user;
   }, [user]);
 
-  // Background debounce sync to DB if user is logged in
-  const syncToServer = useCallback(
-    (nextSettings: CinebySettings) => {
-      if (!userRef.current) return;
+  const sendSettingsToServer = useCallback(async (keepalive: boolean) => {
+    const serialized = JSON.stringify(settingsRef.current);
+    if (!userRef.current || serialized === lastSyncedRef.current) return;
 
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
+    try {
+      const response = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: serialized,
+        keepalive,
+      });
+      if (response.ok) {
+        lastSyncedRef.current = serialized;
       }
-
-      syncTimeoutRef.current = setTimeout(async () => {
-        try {
-          await fetch("/api/settings", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(nextSettings),
-          });
-        } catch {
-          // Best effort sync; local storage remains responsive
-        }
-      }, 400);
-    },
-    []
-  );
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
-    };
+    } catch {
+      // Best effort sync; local storage remains responsive and the next change retries.
+    }
   }, []);
+
+  // Background debounce sync to DB if user is logged in
+  const syncToServer = useCallback(() => {
+    if (!userRef.current) return;
+
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    syncTimeoutRef.current = setTimeout(() => {
+      syncTimeoutRef.current = null;
+      void sendSettingsToServer(false);
+    }, SETTINGS_SYNC_DEBOUNCE_MS);
+  }, [sendSettingsToServer]);
+
+  // Send a pending change right away when the page is hidden or the provider unmounts,
+  // so the longer debounce never drops an edit.
+  useEffect(() => {
+    function flushPendingSync(keepalive: boolean) {
+      if (!syncTimeoutRef.current) return;
+      clearTimeout(syncTimeoutRef.current);
+      syncTimeoutRef.current = null;
+      void sendSettingsToServer(keepalive);
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "hidden") flushPendingSync(true);
+    }
+
+    function handlePageHide() {
+      flushPendingSync(true);
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
+      flushPendingSync(false);
+    };
+  }, [sendSettingsToServer]);
 
   // Initial load from localStorage
   useEffect(() => {
@@ -161,6 +193,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
         if (!isCancelled) {
           settingsRef.current = normalized;
+          lastSyncedRef.current = JSON.stringify(normalized);
           setSettings(normalized);
           writeSettingsToStorage(normalized);
         }
@@ -223,7 +256,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       settingsRef.current = next;
       setSettings(next);
       writeSettingsToStorage(next);
-      syncToServer(next);
+      syncToServer();
     },
     [syncToServer]
   );
@@ -241,7 +274,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       settingsRef.current = next;
       setSettings(next);
       writeSettingsToStorage(next);
-      syncToServer(next);
+      syncToServer();
     },
     [syncToServer]
   );
@@ -259,7 +292,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       settingsRef.current = next;
       setSettings(next);
       writeSettingsToStorage(next);
-      syncToServer(next);
+      syncToServer();
     },
     [syncToServer]
   );
@@ -268,7 +301,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     settingsRef.current = DEFAULT_SETTINGS;
     setSettings(DEFAULT_SETTINGS);
     writeSettingsToStorage(DEFAULT_SETTINGS);
-    syncToServer(DEFAULT_SETTINGS);
+    syncToServer();
   }, [syncToServer]);
 
   const contextValue = useMemo<SettingsContextType>(

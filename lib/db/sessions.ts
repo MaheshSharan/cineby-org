@@ -36,8 +36,9 @@ interface SessionRow {
   expires_at: string;
 }
 
-// Throttle activity writes: only update last_active_at if at least 5 minutes elapsed
-const ACTIVITY_UPDATE_THRESHOLD_MS = 5 * 60 * 1000;
+// Throttle activity writes: each one costs a D1 row written, and the timestamp only feeds the
+// "last active" label in the sessions list, so hourly precision is enough.
+export const ACTIVITY_UPDATE_THRESHOLD_MS = 60 * 60 * 1000;
 
 export async function createSession(
   userId: number,
