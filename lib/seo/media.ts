@@ -27,20 +27,20 @@ export function buildMediaTitle(media: Pick<SeoMedia, "title" | "releaseDate">):
   const year = getYear(media.releaseDate);
   const yearSuffix = year ? ` (${year})` : "";
 
-  return `Watch ${media.title}${yearSuffix} Online Free | ${SITE_NAME}`;
+  return `Watch ${media.title}${yearSuffix} Online Free HD | ${SITE_NAME}`;
 }
 
 export function buildMediaDescription(media: SeoMedia): string {
   const overview = truncateDescription(media.overview);
 
   if (overview) {
-    return overview;
+    return `Stream ${media.title} full movie in HD with English audio and subtitles. ${overview}`;
   }
 
   // TMDB has no overview for some titles; an empty description would leave search engines to guess one.
   const year = getYear(media.releaseDate);
 
-  return `Watch ${media.title}${year ? ` (${year})` : ""} online on ${SITE_NAME}.`;
+  return `Watch ${media.title}${year ? ` (${year})` : ""} full movie online in HD with English subtitles free on ${SITE_NAME}.`;
 }
 
 export function getMediaOpenGraphImageUrl(

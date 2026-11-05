@@ -417,6 +417,18 @@ export function buildSportsEventJsonLd(
     jsonLd.performer = performers;
   }
 
+  // Publication / BroadcastEvent Schema for Google Sports & Video crawlers
+  jsonLd.publication = {
+    "@type": "BroadcastEvent",
+    name: `${match.name} Live Stream`,
+    isLiveBroadcast: true,
+    startDate: startIso,
+    endDate: endIso,
+    broadcastDisplayName: SITE_NAME,
+    url: pageUrl,
+    videoFormat: "HD",
+  };
+
   return jsonLd;
 }
 

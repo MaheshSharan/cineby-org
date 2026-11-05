@@ -13,6 +13,8 @@ import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { UpdateToast } from "@/components/pwa/UpdateToast";
 import { ScrollEdgeButton } from "@/components/ui/ScrollEdgeButton";
 import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
+import { SocialBarAd } from "@/components/ads/SocialBarAd";
+import { PopunderAd } from "@/components/ads/PopunderAd";
 import { getActiveGaMeasurementId, pageView, trackEvent, setUserProperties } from "@/lib/analytics/gtag";
 import { isDevtoolsGuardEnabled } from "@/lib/env/public";
 import { initDevtoolsGuard } from "@/lib/security/devtoolsGuard";
@@ -152,6 +154,8 @@ export default function App({ Component, pageProps }: AppProps) {
           <ScrollEdgeButton />
           <InstallBanner />
           <UpdateToast />
+          <SocialBarAd />
+          <PopunderAd />
         </DetailModalProvider>
       </SettingsProvider>
     </AuthProvider>

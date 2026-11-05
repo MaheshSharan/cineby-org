@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 import { useRouter } from "next/router";
+import { isTier1Country } from "@/lib/geo";
 
 const SOCIAL_BAR_SRC = "https://bicea.org/14/6fa9ccc24c9972e71deaa2ad60a46e55";
 const LOAD_DELAY_MS = 2500; // 2.5s delay for smooth initial paint and higher perceived value
@@ -40,7 +41,7 @@ export function SocialBarAd() {
     router.asPath.includes("play=true");
 
   useEffect(() => {
-    if (isWatchingVideo) {
+    if (isWatchingVideo || !isTier1Country()) {
       setShouldLoad(false);
       purgeActiveSocialBarWidgets();
       return;

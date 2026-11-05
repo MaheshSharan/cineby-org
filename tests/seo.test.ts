@@ -133,18 +133,18 @@ describe("media SEO metadata", () => {
   it("falls back to a generated description when TMDB has no overview", () => {
     expect(
       buildMediaDescription({ title: "Quiet Film", overview: "", releaseDate: "2021-05-04" })
-    ).toBe("Watch Quiet Film (2021) online on Cineby.");
+    ).toBe("Watch Quiet Film (2021) full movie online in HD with English subtitles free on Cineby.");
     expect(
       buildMediaDescription({ title: "Quiet Film", overview: "   ", releaseDate: null })
-    ).toBe("Watch Quiet Film online on Cineby.");
+    ).toBe("Watch Quiet Film full movie online in HD with English subtitles free on Cineby.");
   });
 
   it("puts the release year in the title when known", () => {
     expect(buildMediaTitle({ title: "Iron Man", releaseDate: "2008-04-30" })).toBe(
-      "Watch Iron Man (2008) Online Free | Cineby"
+      "Watch Iron Man (2008) Online Free HD | Cineby"
     );
     expect(buildMediaTitle({ title: "Iron Man", releaseDate: null })).toBe(
-      "Watch Iron Man Online Free | Cineby"
+      "Watch Iron Man Online Free HD | Cineby"
     );
   });
 });
