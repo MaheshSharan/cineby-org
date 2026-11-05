@@ -10,10 +10,19 @@ export interface ActiveProfile {
 
 interface ProfilesResponse { profiles: Array<ActiveProfile & { hasPin?: boolean }>; activeProfileId?: number; }
 
+// Header, Dock and the profile menu all mount this hook, and each full page load would otherwise
+// request the same list again. Explicit changes (switching or editing a profile) always bypass it.
+const PROFILES_CACHE_TTL_MS = 5 * 60 * 1000;
+
 let inFlightProfilesPromise: Promise<ProfilesResponse | null> | null = null;
 let inFlightUserId: number | null = null;
+let cachedProfiles: { userId: number; data: ProfilesResponse; fetchedAt: number } | null = null;
 
-function fetchProfilesDeduplicated(userId: number): Promise<ProfilesResponse | null> {
+function fetchProfilesDeduplicated(userId: number, forceRefresh: boolean): Promise<ProfilesResponse | null> {
+  if (!forceRefresh && cachedProfiles?.userId === userId && Date.now() - cachedProfiles.fetchedAt < PROFILES_CACHE_TTL_MS) {
+    return Promise.resolve(cachedProfiles.data);
+  }
+
   if (inFlightProfilesPromise && inFlightUserId === userId) {
     return inFlightProfilesPromise;
   }
@@ -21,6 +30,10 @@ function fetchProfilesDeduplicated(userId: number): Promise<ProfilesResponse | n
   inFlightUserId = userId;
   inFlightProfilesPromise = fetch("/api/profiles")
     .then((response) => (response.ok ? (response.json() as Promise<ProfilesResponse>) : null))
+    .then((data) => {
+      cachedProfiles = data ? { userId, data, fetchedAt: Date.now() } : null;
+      return data;
+    })
     .catch(() => null)
     .finally(() => {
       inFlightProfilesPromise = null;
@@ -51,7 +64,7 @@ export function useActiveProfile() {
   });
   const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
 
-  const refreshProfile = useCallback(() => {
+  const refreshProfile = useCallback((forceRefresh = true) => {
     if (userId === null) {
       setActiveProfile(null);
       setIsLoadingProfile(false);
@@ -69,7 +82,7 @@ export function useActiveProfile() {
       // Ignore localStorage parse error
     }
 
-    void fetchProfilesDeduplicated(userId)
+    void fetchProfilesDeduplicated(userId, forceRefresh)
       .then((data) => {
         const active =
           data?.profiles.find((profile) => profile.id === data.activeProfileId) ??
@@ -92,7 +105,7 @@ export function useActiveProfile() {
 
   // Re-read when user changes (login/logout/switch account)
   useEffect(() => {
-    refreshProfile();
+    refreshProfile(false);
   }, [refreshProfile]);
 
   useEffect(() => {

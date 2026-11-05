@@ -4,27 +4,66 @@
 
 export const TMDB_CACHE_VERSION = "v3";
 
+const HOUR_SECONDS = 60 * 60;
+const DAY_SECONDS = 24 * HOUR_SECONDS;
+
+/**
+ * How long each kind of TMDB data may be reused.
+ * - browser: how long a browser keeps the response without contacting the Worker (max-age)
+ * - edge: how long shared caches and the Worker's own cache keep it (s-maxage and cache TTL)
+ * - revalidate: how long a shared cache may serve it stale while refreshing (stale-while-revalidate)
+ *
+ * The Cache-Control headers and the internal cache TTLs are both derived from this table,
+ * so a route can never promise a different lifetime than the cache actually keeps.
+ */
+export const TMDB_CACHE_PROFILES = {
+  trending: { browser: HOUR_SECONDS, edge: DAY_SECONDS, revalidate: DAY_SECONDS },
+  discover: { browser: HOUR_SECONDS, edge: DAY_SECONDS, revalidate: DAY_SECONDS },
+  search: { browser: 10 * 60, edge: HOUR_SECONDS, revalidate: DAY_SECONDS },
+  genres: { browser: DAY_SECONDS, edge: 7 * DAY_SECONDS, revalidate: 7 * DAY_SECONDS },
+  movieDetails: { browser: 10 * 60, edge: DAY_SECONDS, revalidate: 12 * HOUR_SECONDS },
+  tvDetails: { browser: 10 * 60, edge: DAY_SECONDS, revalidate: 12 * HOUR_SECONDS },
+  seasonEpisodes: { browser: 10 * 60, edge: HOUR_SECONDS, revalidate: DAY_SECONDS },
+  logo: { browser: HOUR_SECONDS, edge: DAY_SECONDS, revalidate: 12 * HOUR_SECONDS },
+} as const;
+
+export type TmdbCacheKind = keyof typeof TMDB_CACHE_PROFILES;
+
+export function buildTmdbCacheControl(kind: TmdbCacheKind): string {
+  const { browser, edge, revalidate } = TMDB_CACHE_PROFILES[kind];
+  return `public, max-age=${browser}, s-maxage=${edge}, stale-while-revalidate=${revalidate}`;
+}
+
 export const TMDB_TTL_SECONDS = {
-  trending: 15 * 60, // 15 minutes
-  discover: 15 * 60, // 15 minutes
-  search: 5 * 60, // 5 minutes
-  genres: 24 * 60 * 60, // 24 hours
-  movieDetails: 6 * 60 * 60, // 6 hours
-  tvDetails: 6 * 60 * 60, // 6 hours
-  seasonEpisodes: 6 * 60 * 60, // 6 hours
-  credits: 24 * 60 * 60, // 24 hours
-  recommendations: 24 * 60 * 60, // 24 hours
+  trending: TMDB_CACHE_PROFILES.trending.edge,
+  discover: TMDB_CACHE_PROFILES.discover.edge,
+  search: TMDB_CACHE_PROFILES.search.edge,
+  genres: TMDB_CACHE_PROFILES.genres.edge,
+  movieDetails: TMDB_CACHE_PROFILES.movieDetails.edge,
+  tvDetails: TMDB_CACHE_PROFILES.tvDetails.edge,
+  seasonEpisodes: TMDB_CACHE_PROFILES.seasonEpisodes.edge,
+  credits: DAY_SECONDS,
+  recommendations: DAY_SECONDS,
   negative: 60, // 1 minute negative caching for 404s
 } as const;
 
+// After this long a cached value is still served, but refreshed in the background.
 export const TMDB_STALE_SECONDS = {
-  trending: 5 * 60, // Stale after 5 min
-  discover: 5 * 60, // Stale after 5 min
-  search: 2 * 60, // Stale after 2 min
-  movieDetails: 3 * 60 * 60, // Stale after 3 hours
-  tvDetails: 3 * 60 * 60, // Stale after 3 hours
-  seasonEpisodes: 3 * 60 * 60, // Stale after 3 hours
+  trending: HOUR_SECONDS,
+  discover: HOUR_SECONDS,
+  search: 10 * 60,
+  movieDetails: 3 * HOUR_SECONDS,
+  tvDetails: 3 * HOUR_SECONDS,
+  seasonEpisodes: 30 * 60,
 } as const;
+
+// Shared KV storage has a small daily write allowance. Only the few, widely reused lists are stored
+// there; per-title details, seasons and searches stay in each isolate's memory.
+const KV_PERSISTED_KEY_PATTERN = /^tmdb:[^:]+:(?:genres|trending|discover):|^tmdb:[^:]+:(?:movie|tv):(?:popular|top_rated):/;
+
+export function isKvPersistedKey(key: string): boolean {
+  return KV_PERSISTED_KEY_PATTERN.test(key);
+}
 
 function clean(part: string | number | undefined): string {
   return String(part ?? "")

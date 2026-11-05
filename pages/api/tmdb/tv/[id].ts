@@ -1,10 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { buildTmdbCacheControl } from "@/lib/cache/policy";
 import { getTvDetails } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 
-const ONE_DAY_SECONDS = 86400;
-const TEN_MINUTES_SECONDS = 10 * 60;
-const TWELVE_HOURS_SECONDS = 43200;
 
 export default withApiContext("api/tmdb/tv/[id]", async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "GET") {
@@ -21,9 +19,6 @@ export default withApiContext("api/tmdb/tv/[id]", async (req: NextApiRequest, re
   }
 
   const result = await getTvDetails(id);
-  res.setHeader(
-    "Cache-Control",
-    `public, max-age=${TEN_MINUTES_SECONDS}, s-maxage=${ONE_DAY_SECONDS}, stale-while-revalidate=${TWELVE_HOURS_SECONDS}`
-  );
+  res.setHeader("Cache-Control", buildTmdbCacheControl("tvDetails"));
   res.status(200).json(result);
 });

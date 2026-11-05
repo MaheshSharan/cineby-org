@@ -1,5 +1,6 @@
 import type { CacheStore, CacheStats } from "./types";
 import { MemoryCacheStore } from "./memory";
+import { isKvPersistedKey } from "./policy";
 import { logger } from "@/lib/logger";
 
 export interface KVNamespaceBinding {
@@ -8,22 +9,41 @@ export interface KVNamespaceBinding {
   delete(key: string): Promise<void>;
 }
 
+// A value read from KV is kept in memory briefly so repeat reads in this isolate cost no KV read.
+const KV_HIT_MEMORY_TTL_SECONDS = 5 * 60;
+// KV rejects expiration TTLs below 60 seconds.
+const KV_MIN_TTL_SECONDS = 60;
+
+function getUtcDay(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Two-level cache: isolate memory first, shared KV second.
+ *
+ * KV free-tier read and write allowances reset at 00:00 UTC. After a limit error this store stays in
+ * memory-only mode until the UTC day changes, then tries KV again.
+ */
 export class KVCacheStore implements CacheStore {
   readonly name = "kv";
   private hits = 0;
   private misses = 0;
-  private isKvExhausted = false;
+  private kvExhaustedOnDay: string | null = null;
   private memoryFallback: MemoryCacheStore;
 
   constructor(private kv: KVNamespaceBinding) {
     this.memoryFallback = new MemoryCacheStore(5000);
   }
 
+  private isKvExhausted(): boolean {
+    return this.kvExhaustedOnDay === getUtcDay();
+  }
+
   private checkLimitError(err: unknown): boolean {
     if (err instanceof Error && err.message.toLowerCase().includes("limit exceeded")) {
-      if (!this.isKvExhausted) {
-        this.isKvExhausted = true;
-        logger.warn("[KVCacheStore] KV quota exceeded for the day. Seamlessly switching to in-memory cache store.");
+      if (!this.isKvExhausted()) {
+        this.kvExhaustedOnDay = getUtcDay();
+        logger.warn("[KVCacheStore] KV quota exceeded for the day. Switching to in-memory cache until 00:00 UTC.");
       }
       return true;
     }
@@ -31,46 +51,49 @@ export class KVCacheStore implements CacheStore {
   }
 
   async get<T>(key: string): Promise<T | null> {
-    if (this.isKvExhausted) {
-      return this.memoryFallback.get<T>(key);
+    const { value } = await this.getStale<T>(key);
+    return value;
+  }
+
+  async getStale<T>(key: string): Promise<{ value: T | null; isStale: boolean }> {
+    const local = await this.memoryFallback.getStale<T>(key);
+    if (local.value !== null) {
+      this.hits++;
+      return local;
+    }
+
+    if (this.isKvExhausted() || !isKvPersistedKey(key)) {
+      this.misses++;
+      return local;
     }
 
     try {
       const data = await this.kv.get(key, "json");
       if (data !== null && data !== undefined) {
         this.hits++;
-        // Keep in memory fallback as well
-        void this.memoryFallback.set(key, data as T, 3600);
-        return data as T;
+        await this.memoryFallback.set(key, data as T, KV_HIT_MEMORY_TTL_SECONDS);
+        return { value: data as T, isStale: false };
       }
-      this.misses++;
-      return this.memoryFallback.get<T>(key);
     } catch (err) {
-      this.misses++;
       this.checkLimitError(err);
       logger.warn(`[KVCacheStore] Read failure for key: ${key}`, undefined, err);
-      return this.memoryFallback.get<T>(key);
     }
+
+    this.misses++;
+    return { value: null, isStale: false };
   }
 
-  async getStale<T>(key: string): Promise<{ value: T | null; isStale: boolean }> {
-    const val = await this.get<T>(key);
-    return { value: val, isStale: false };
-  }
+  async set<T>(key: string, value: T, ttlSeconds: number, staleSeconds?: number): Promise<void> {
+    await this.memoryFallback.set(key, value, ttlSeconds, staleSeconds);
 
-  async set<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
-    // Always store in memory fallback
-    await this.memoryFallback.set(key, value, ttlSeconds);
-
-    if (this.isKvExhausted) {
+    if (this.isKvExhausted() || !isKvPersistedKey(key)) {
       return;
     }
 
     try {
-      const json = JSON.stringify(value);
-      // KV min expirationTtl is 60s
-      const effectiveTtl = Math.max(60, ttlSeconds);
-      await this.kv.put(key, json, { expirationTtl: effectiveTtl });
+      await this.kv.put(key, JSON.stringify(value), {
+        expirationTtl: Math.max(KV_MIN_TTL_SECONDS, ttlSeconds),
+      });
     } catch (err) {
       this.checkLimitError(err);
       logger.warn(`[KVCacheStore] Write failure for key: ${key}`, undefined, err);
@@ -79,7 +102,7 @@ export class KVCacheStore implements CacheStore {
 
   async delete(key: string): Promise<boolean> {
     await this.memoryFallback.delete(key);
-    if (this.isKvExhausted) {
+    if (this.isKvExhausted() || !isKvPersistedKey(key)) {
       return true;
     }
 
@@ -98,14 +121,11 @@ export class KVCacheStore implements CacheStore {
   }
 
   getStats(): CacheStats {
-    if (this.isKvExhausted) {
-      return this.memoryFallback.getStats();
-    }
     return {
       hits: this.hits,
       misses: this.misses,
-      size: 0,
-      evictions: 0,
+      size: this.memoryFallback.getStats().size,
+      evictions: this.memoryFallback.getStats().evictions,
     };
   }
 }

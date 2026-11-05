@@ -13,6 +13,8 @@ export interface SessionWithUser {
   user_created_at: string;
   created_at: string;
   expires_at: string;
+  /** 1 when the user owns at least one profile, otherwise 0. */
+  has_profiles: number;
 }
 
 export interface UserSessionRecord {
@@ -56,7 +58,8 @@ export async function createSession(
 export async function findValidSessionByToken(token: string): Promise<SessionWithUser | null> {
   return getDb().get<SessionWithUser>(
     `SELECT s.id, s.token, s.user_id, s.active_profile_id, s.user_agent, s.last_active_at, s.created_at, s.expires_at,
-            u.email, u.display_name, u.avatar_url, u.created_at AS user_created_at
+            u.email, u.display_name, u.avatar_url, u.created_at AS user_created_at,
+            EXISTS(SELECT 1 FROM profiles p WHERE p.user_id = s.user_id) AS has_profiles
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token = ? AND s.expires_at > ?`,

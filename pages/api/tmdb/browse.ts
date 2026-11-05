@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { buildTmdbCacheControl } from "@/lib/cache/policy";
 import { discoverMovies, discoverTv, getTopRatedMovies, getTopRatedTv } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
@@ -30,10 +31,7 @@ export default withApiContext("api/tmdb/browse", async (req: NextApiRequest, res
     ? await discoverTv({ genreId, sortBy, page })
     : await discoverMovies({ genreId, sortBy, page });
 
-  res.setHeader(
-    "Cache-Control",
-    "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400"
-  );
+  res.setHeader("Cache-Control", buildTmdbCacheControl("discover"));
   res.status(200).json(result);
 });
 

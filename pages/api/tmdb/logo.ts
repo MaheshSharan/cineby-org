@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { buildTmdbCacheControl } from "@/lib/cache/policy";
 import { getMediaLogo } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 import type { MediaType } from "@/lib/tmdb/types";
@@ -23,6 +24,6 @@ export default withApiContext("api/tmdb/logo", async (req: NextApiRequest, res: 
   }
 
   const logoPath = await getMediaLogo(mediaType as MediaType, id);
-  res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=43200");
+  res.setHeader("Cache-Control", buildTmdbCacheControl("logo"));
   res.status(200).json({ logoPath });
 });
