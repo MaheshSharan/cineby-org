@@ -5,7 +5,7 @@ Cineby · Product Requirements & Architecture · Workers_Dev Branch · Owner: Ma
 ## 1. Summary
 
 The `Workers_Dev` branch has pivoted Cineby to be **100% Cloudflare Workers native and strictly embed-only**:
-1. **Embed Player Exclusively**: All legacy native playback complexity (HLS/DASH streaming, video proxies, m3u8 playlist parsers, chunk rewriters, IMA player ads, segment skip databases, and scraping providers) has been eliminated. The player page loads prebuilt third-party embed players (vixsrc, vidy) in an accessible iframe with responsive server switching and cross-origin postMessage progress telemetry.
+1. **Embed Player Exclusively**: All legacy native playback complexity (HLS/DASH streaming, video proxies, m3u8 playlist parsers, chunk rewriters, IMA player ads, segment skip databases, and scraping providers) has been eliminated. The player page loads prebuilt third-party embed players (vidy, vidnest, vixsrc) in an accessible iframe with responsive server switching and cross-origin postMessage progress telemetry.
 2. **Pure Cloudflare Edge Runtime**: Cineby runs on Cloudflare Workers via OpenNext (`nodejs_compat`), utilizing Cloudflare D1 as the primary database storage engine, Cloudflare KV for edge caching, and GitHub Actions with Wrangler for automated edge deployments.
 3. **Zero Dead Code**: Removed unneeded native player packages (`hls.js`, `@alugha/ima`, `ioredis`), dead API endpoints (`/api/stream/*`, `/api/ads/*`, `/api/segments`), and provider scrapers (`lib/providers/*`).
 
@@ -16,7 +16,7 @@ The `Workers_Dev` branch has pivoted Cineby to be **100% Cloudflare Workers nati
 | Layer | Implementation | Notes |
 | --- | --- | --- |
 | **Compute / Edge Runtime** | Cloudflare Workers (`cineby-web`) | OpenNext Next.js Pages Router wrapper with `nodejs_compat` |
-| **Database** | Cloudflare D1 (`cineby-prod`) | Native Cloudflare SQL binding (`DB`), schema in `migrations/` |
+| **Database** | Cloudflare D1 (`cineby-db`) | Native Cloudflare SQL binding (`DB`), schema in `migrations/` |
 | **Cache Store** | Cloudflare KV (`CACHE_KV`) / Memory | KV cache store with memory fallback for development |
 | **Player Architecture** | `EmbedPlayer` & `ServerDrawer` | Responsive iframe player, postMessage event bridge, server switcher |
 | **Telemetry & Telemetry Bridge** | `useEmbedBridge` | Ingests playback progress from iframe origins to sync Continue Watching |
@@ -29,6 +29,7 @@ The `Workers_Dev` branch has pivoted Cineby to be **100% Cloudflare Workers nati
 ### 3.1 Embed Provider Contract
 All streaming sources implement the clean `EmbedProvider` interface in `lib/embeds/types.ts`:
 - **vixsrc**: Supports movies (`/movie/{id}`), TV series (`/tv/{id}/{s}/{e}`), resume timestamp (`startAt`), autoplay, language, theme coloring, and two-way progress telemetry via `window.postMessage` (`PLAYER_EVENT`).
+- **vidnest**: Embed server with movie, TV and anime URLs, resume timestamp and progress events.
 - **vidy**: Supports movies (`/embed/movie/{id}`) and TV (`/embed/tv/{id}/{s}/{e}`) with timestamp resume (`t=<seconds>`).
 
 ### 3.2 Continue Watching Seam
@@ -45,8 +46,8 @@ Variables are validated against `lib/env/manifest.ts` during build and start-up:
 | --- | --- | --- |
 | `PLAYER_MODE` | `embed` | Enforces pure embed player mode |
 | `ENABLE_EMBED_PLAYERS` | `true` | Embed feature master switch |
-| `EMBED_SERVER_PRIORITY` | `vixsrc,vidy` | Server drawer priority order |
-| `EMBED_DEFAULT_SERVER` | `vixsrc` | Default preselected embed server |
+| `EMBED_SERVER_PRIORITY` | `vidy,vidnest,vixsrc` | Server drawer priority order |
+| `EMBED_DEFAULT_SERVER` | `vidy` | Default preselected embed server |
 | `EMBED_LOAD_TIMEOUT_MS` | `12000` | Timeout threshold before showing server switch fallback |
 | `CACHE_BACKEND` | `kv` (prod) / `memory` (dev) | Edge cache store backend |
 | `DATABASE_PATH` | `data/cineby.db` | Local fallback path when running outside Cloudflare D1 context |

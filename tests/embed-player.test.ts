@@ -392,11 +392,9 @@ describe("Vidy Embed Provider", () => {
 });
 
 describe("Player Mode Config", () => {
-  it("resolves player mode config as embed-only with all available servers", () => {
+  it("resolves player mode config with only embed servers", () => {
     const config = getPlayerModeConfig();
-    expect(config.mode).toBe("embed");
-    expect(config.nativeEnabled).toBe(false);
-    expect(config.embedEnabled).toBe(true);
+    expect(config.servers.every((s) => s.type === "embed")).toBe(true);
     expect(config.servers.length).toBeGreaterThanOrEqual(2);
     expect(config.servers.some((s) => s.id === "vixsrc")).toBe(true);
     expect(config.servers.some((s) => s.id === "vidy")).toBe(true);

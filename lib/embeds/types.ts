@@ -1,5 +1,3 @@
-export type PlayerMode = "native" | "hybrid" | "embed";
-
 export interface EmbedCapabilities {
   startAt: boolean;
   events: boolean; // postMessage progress events
