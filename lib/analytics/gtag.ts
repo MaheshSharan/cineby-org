@@ -209,6 +209,7 @@ export type GTagEvent =
         ad_unit: string;
         ad_id?: string;
         format?: string;
+        country?: string;
       };
     }
   | {
@@ -217,6 +218,7 @@ export type GTagEvent =
         ad_unit: string;
         ad_id?: string;
         format?: string;
+        country?: string;
       };
     }
   | {
@@ -232,6 +234,7 @@ export interface UserProperties {
   auth_status?: "authenticated" | "guest";
   theme_mode?: "light" | "dark";
   network_type?: string;
+  traffic_tier?: "tier_1" | "tier_other";
 }
 
 declare global {

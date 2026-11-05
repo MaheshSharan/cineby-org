@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 import { useRouter } from "next/router";
-import { isTier1Country } from "@/lib/geo";
+import { isTier1Country, getClientCountry } from "@/lib/geo";
+import { trackEvent } from "@/lib/analytics/gtag";
 
 const POPUNDER_SRC = "https://overestimatecapricornspittle.com/fb/38/40/fb3840091737b03ef8887d50204af917.js";
 const POPUNDER_STORAGE_KEY = "cineby_last_popunder";
@@ -43,6 +44,14 @@ export function PopunderAd() {
       const timer = setTimeout(() => {
         try {
           localStorage.setItem(POPUNDER_STORAGE_KEY, String(Date.now()));
+          trackEvent({
+            action: "ad_impression",
+            params: {
+              ad_unit: "popunder",
+              format: "popunder_12h",
+              country: getClientCountry() ?? "unknown",
+            },
+          });
         } catch {
           // Ignore storage errors
         }
