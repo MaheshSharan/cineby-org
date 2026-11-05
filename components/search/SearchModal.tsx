@@ -21,7 +21,7 @@ const FILTER_OPTIONS: { key: SearchFilter; label: string }[] = [
 ];
 
 // Long enough that typing a whole title costs one request instead of one per few letters.
-const DEBOUNCE_MS = 500;
+const DEBOUNCE_MS = 800;
 
 interface SearchModalProps {
   open: boolean;
