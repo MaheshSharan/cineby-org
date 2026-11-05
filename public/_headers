@@ -1,0 +1,4 @@
+# Static asset headers (served by Cloudflare without invoking the Worker).
+# The service worker precaches this page on install, so browsers can reuse it for a day.
+/offline.html
+  Cache-Control: public, max-age=86400

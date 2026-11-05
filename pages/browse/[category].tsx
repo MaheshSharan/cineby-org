@@ -1,5 +1,6 @@
 import type { GetServerSideProps } from "next";
 
+import { PUBLIC_PAGE_CACHE_CONTROL } from "@/lib/http/cacheControl";
 import { logger } from "@/lib/logger";
 import type { Genre, MediaSummary, MediaType } from "@/lib/tmdb";
 import { discoverMovies, discoverTv, getGenres } from "@/lib/tmdb/server";
@@ -53,10 +54,7 @@ export const getServerSideProps: GetServerSideProps<BrowsePageProps> = async (co
   const mediaType: MediaType = category;
 
   try {
-    context.res.setHeader(
-      "Cache-Control",
-      "public, s-maxage=3600, stale-while-revalidate=86400"
-    );
+    context.res.setHeader("Cache-Control", PUBLIC_PAGE_CACHE_CONTROL);
 
     const [genreList, initial] = await Promise.all([
       getGenres(mediaType),

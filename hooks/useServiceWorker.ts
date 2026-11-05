@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 
 const SERVICE_WORKER_URL = "/sw.js";
+// Browsers already re-check the worker on every page load; resuming an installed app only needs a check now and then.
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 interface UseServiceWorkerResult {
   /** A newer version of the app took control while this page was still running the old code. */
@@ -19,6 +21,7 @@ export function useServiceWorker(): UseServiceWorkerResult {
     // On a first visit the worker also takes control, which is not an update.
     const hadController = navigator.serviceWorker.controller !== null;
     let registration: ServiceWorkerRegistration | undefined;
+    let lastUpdateCheck = Date.now();
 
     function handleControllerChange() {
       if (hadController) setIsUpdateReady(true);
@@ -26,11 +29,13 @@ export function useServiceWorker(): UseServiceWorkerResult {
 
     // Installed apps are resumed rather than reloaded, so the browser would not look for a new worker.
     function handleVisibilityChange() {
-      if (document.visibilityState === "visible") {
-        registration?.update().catch(() => {
-          // Offline checks are expected to fail; the next resume tries again.
-        });
-      }
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastUpdateCheck < UPDATE_CHECK_INTERVAL_MS) return;
+
+      lastUpdateCheck = Date.now();
+      registration?.update().catch(() => {
+        // Offline checks are expected to fail; the next resume tries again.
+      });
     }
 
     navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);

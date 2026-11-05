@@ -7,6 +7,8 @@ import { getEpisodeHref, getMediaHref, getPlayHref, getYear } from "@/lib/utils/
 import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
 import { trackEvent } from "@/lib/analytics/gtag";
+import { searchMedia } from "@/lib/api/search";
+import { isSearchableQuery, normalizeSearchQuery } from "@/lib/search/query";
 
 import { ChevronDownIcon, SearchIcon, StarIcon, XIcon } from "@/components/ui/icons";
 
@@ -18,7 +20,8 @@ const FILTER_OPTIONS: { key: SearchFilter; label: string }[] = [
   { key: "tv", label: "TV Shows" },
 ];
 
-const DEBOUNCE_MS = 350;
+// Long enough that typing a whole title costs one request instead of one per few letters.
+const DEBOUNCE_MS = 500;
 
 interface SearchModalProps {
   open: boolean;
@@ -84,9 +87,9 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
   }, [open, onClose, isFilterDropdownOpen]);
 
   useEffect(() => {
-    const trimmedQuery = query.trim();
+    const normalizedQuery = normalizeSearchQuery(query);
 
-    if (!open || !trimmedQuery) {
+    if (!open || !isSearchableQuery(normalizedQuery)) {
       setResults([]);
       setHasSearched(false);
       setIsLoading(false);
@@ -97,24 +100,15 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      fetch(`/api/tmdb/search?q=${encodeURIComponent(trimmedQuery)}`, {
-        signal: controller.signal,
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`Search request failed: ${response.status}`);
-          }
-
-          return response.json() as Promise<{ results: MediaSummary[] }>;
-        })
-        .then((data) => {
-          setResults(data.results);
+      searchMedia(normalizedQuery, controller.signal)
+        .then((items) => {
+          setResults(items);
           setHasSearched(true);
           trackEvent({
             action: "search_query",
             params: {
-              query: trimmedQuery,
-              result_count: data.results?.length ?? 0,
+              query: normalizedQuery,
+              result_count: items.length,
             },
           });
         })

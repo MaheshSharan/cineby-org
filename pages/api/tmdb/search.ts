@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { isSearchableQuery, normalizeSearchQuery } from "@/lib/search/query";
 import { searchMulti } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 
@@ -9,11 +10,11 @@ export default withApiContext("api/tmdb/search", async (req: NextApiRequest, res
     return;
   }
 
-  const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const query = typeof req.query.q === "string" ? normalizeSearchQuery(req.query.q) : "";
   const page = parsePage(req.query.page);
 
-  if (!query) {
-    res.status(400).json({ error: "Query parameter 'q' is required" });
+  if (!isSearchableQuery(query)) {
+    res.status(400).json({ error: "Query parameter 'q' must contain at least 2 characters" });
     return;
   }
 
