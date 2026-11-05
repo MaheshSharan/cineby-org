@@ -11,7 +11,9 @@ import {
 } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getJson, sendJson } from "@/lib/api/client";
 import type { User } from "@/lib/db/types";
+import { readSessionSnapshot, updateSessionSettings } from "@/lib/session/sessionStore";
 import {
   type CinebySettings,
   type AppearanceSettings,
@@ -61,6 +63,9 @@ function applyTheme(theme: string): void {
 
 function writeSettingsToStorage(settings: CinebySettings): void {
   if (typeof window === "undefined") return;
+
+  // Keep the session snapshot in step, or the next page load would restore the previous settings.
+  updateSessionSettings(settings);
 
   try {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
@@ -112,12 +117,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (!userRef.current || serialized === lastSyncedRef.current) return;
 
     try {
-      const response = await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: serialized,
-        keepalive,
-      });
+      const response = await sendJson("/api/settings", "POST", settingsRef.current, { keepalive });
       if (response.ok) {
         lastSyncedRef.current = serialized;
       }
@@ -185,11 +185,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
     async function fetchServerSettings() {
       try {
-        const response = await fetch("/api/settings");
-        if (!response.ok || isCancelled) return;
-
-        const data = (await response.json()) as unknown;
-        const normalized = normalizeApiSettings(data);
+        // The session snapshot already carries this user's settings, so a page load needs no request.
+        const snapshot = readSessionSnapshot();
+        const normalized =
+          snapshot && snapshot.user.id === userRef.current?.id
+            ? snapshot.settings
+            : normalizeApiSettings(await getJson<unknown>("/api/settings"));
+        if (isCancelled) return;
 
         if (!isCancelled) {
           settingsRef.current = normalized;

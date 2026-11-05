@@ -2,7 +2,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { getSessionToken } from "@/lib/auth/session";
-import { createProfile, listProfiles, parseProfileGenres, type ProfileRow } from "@/lib/db/profiles";
+import { createProfile, listProfiles } from "@/lib/db/profiles";
+import { toPublicProfile } from "@/lib/profile/publicProfile";
 
 import { withApiContext, validate, sendValidationError } from "@/lib/validation";
 import { createProfileSchema } from "@/lib/validation/profiles";
@@ -72,14 +73,3 @@ export default withApiContext("api/profiles", async (req: NextApiRequest, res: N
   res.setHeader("Allow", "GET, POST");
   res.status(405).json({ error: "Method not allowed" });
 });
-
-function toPublicProfile(profile: ProfileRow) {
-  return {
-    id: profile.id,
-    name: profile.name,
-    avatarUrl: profile.avatar_url,
-    hasPin: Boolean(profile.pin_hash),
-    movieGenres: parseProfileGenres(profile.movie_genres),
-    tvGenres: parseProfileGenres(profile.tv_genres),
-  };
-}

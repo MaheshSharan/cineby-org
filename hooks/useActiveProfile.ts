@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getJson } from "@/lib/api/client";
+import type { PublicProfile } from "@/lib/profile/publicProfile";
+import { loadSession, readSessionSnapshot, updateSessionProfiles } from "@/lib/session/sessionStore";
 
 export interface ActiveProfile {
   id: number;
@@ -8,39 +11,29 @@ export interface ActiveProfile {
   avatarUrl: string;
 }
 
-interface ProfilesResponse { profiles: Array<ActiveProfile & { hasPin?: boolean }>; activeProfileId?: number; }
+interface ProfilesResponse {
+  profiles: PublicProfile[];
+  activeProfileId?: number;
+}
 
-// Header, Dock and the profile menu all mount this hook, and each full page load would otherwise
-// request the same list again. Explicit changes (switching or editing a profile) always bypass it.
-const PROFILES_CACHE_TTL_MS = 5 * 60 * 1000;
-
-let inFlightProfilesPromise: Promise<ProfilesResponse | null> | null = null;
-let inFlightUserId: number | null = null;
-let cachedProfiles: { userId: number; data: ProfilesResponse; fetchedAt: number } | null = null;
-
-function fetchProfilesDeduplicated(userId: number, forceRefresh: boolean): Promise<ProfilesResponse | null> {
-  if (!forceRefresh && cachedProfiles?.userId === userId && Date.now() - cachedProfiles.fetchedAt < PROFILES_CACHE_TTL_MS) {
-    return Promise.resolve(cachedProfiles.data);
+async function fetchProfiles(userId: number, forceRefresh: boolean): Promise<ProfilesResponse | null> {
+  if (!forceRefresh) {
+    // Header, Dock and the profile menu all mount this hook: they share the session snapshot
+    // instead of each asking the server.
+    const session = readSessionSnapshot() ?? (await loadSession({ force: false }));
+    return session?.user.id === userId
+      ? { profiles: session.profiles, activeProfileId: session.activeProfileId ?? undefined }
+      : null;
   }
 
-  if (inFlightProfilesPromise && inFlightUserId === userId) {
-    return inFlightProfilesPromise;
+  // Explicit changes (switching or editing a profile) always ask the server. Overlapping calls share one request.
+  try {
+    const data = await getJson<ProfilesResponse>("/api/profiles");
+    updateSessionProfiles(data.profiles, data.activeProfileId ?? null);
+    return data;
+  } catch {
+    return null;
   }
-
-  inFlightUserId = userId;
-  inFlightProfilesPromise = fetch("/api/profiles")
-    .then((response) => (response.ok ? (response.json() as Promise<ProfilesResponse>) : null))
-    .then((data) => {
-      cachedProfiles = data ? { userId, data, fetchedAt: Date.now() } : null;
-      return data;
-    })
-    .catch(() => null)
-    .finally(() => {
-      inFlightProfilesPromise = null;
-      inFlightUserId = null;
-    });
-
-  return inFlightProfilesPromise;
 }
 
 /**
@@ -82,7 +75,7 @@ export function useActiveProfile() {
       // Ignore localStorage parse error
     }
 
-    void fetchProfilesDeduplicated(userId, forceRefresh)
+    void fetchProfiles(userId, forceRefresh)
       .then((data) => {
         const active =
           data?.profiles.find((profile) => profile.id === data.activeProfileId) ??

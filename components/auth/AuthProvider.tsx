@@ -7,7 +7,9 @@ import { AuthTransitionOverlay } from "@/components/auth/AuthTransitionOverlay";
 import { Toast } from "@/components/ui/Toast";
 
 import { syncGuestHistoryToServer } from "@/lib/api/history";
+import { apiFetch } from "@/lib/api/client";
 import { resetHistoryQueue } from "@/lib/history/writeQueue";
+import { clearSessionSnapshot, loadSession } from "@/lib/session/sessionStore";
 import { GoogleOneTap } from "@/components/auth/GoogleOneTap";
 
 interface AuthContextValue {
@@ -45,31 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToastMessage(null);
   }, []);
 
-  const refresh = useCallback(async () => {
-    // Fast Client-Side Check: If visitor has no logged-in flag cookie, they are guest.
-    // Skips firing an unnecessary /api/auth/me edge Worker invocation on every page load.
-    if (typeof document !== "undefined" && !document.cookie.includes("cineby_logged_in=1")) {
-      setUser(null);
-      setIsLoading(false);
-      return;
-    }
-
+  // Visitors without the signed-in hint resolve to null without any request. A fresh snapshot from
+  // an earlier page load also needs none; sign-in and profile changes pass force to bypass it.
+  const loadUser = useCallback(async (force: boolean) => {
     try {
-      const response = await fetch("/api/auth/me");
+      const session = await loadSession({ force });
+      setUser(session?.user ?? null);
 
-      if (response.ok) {
-        const data = (await response.json()) as { user: User | null };
-        setUser(data.user);
-        // Accounts without a profile have nowhere to store history yet; profiles.tsx merges it on creation
-        if (data.user && data.user.hasProfiles !== false) {
-          // Merge any offline/guest watch progress into the active profile
-          void syncGuestHistoryToServer();
-        }
-      } else {
-        setUser(null);
-        if (response.status === 401 && typeof document !== "undefined") {
-          document.cookie = "cineby_logged_in=; Path=/; Max-Age=0";
-        }
+      // Accounts without a profile have nowhere to store history yet; profiles.tsx merges it on creation
+      if (session && session.user.hasProfiles !== false) {
+        // Merge any offline/guest watch progress into the active profile
+        void syncGuestHistoryToServer();
       }
     } catch {
       setUser(null);
@@ -78,12 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const refresh = useCallback(() => loadUser(true), [loadUser]);
+
   const logout = useCallback(async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
       showToast("Logged out successfully");
     } finally {
       resetHistoryQueue();
+      clearSessionSnapshot();
       setUser(null);
     }
   }, [showToast]);
@@ -124,8 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [openAuthModal]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    void loadUser(false);
+  }, [loadUser]);
 
   useEffect(() => {
     if (isLoading) {
