@@ -6,7 +6,7 @@ import { trackEvent } from "@/lib/analytics/gtag";
 
 const POPUNDER_SRC = "https://overestimatecapricornspittle.com/fb/38/40/fb3840091737b03ef8887d50204af917.js";
 const POPUNDER_STORAGE_KEY = "cineby_last_popunder";
-const COOLDOWN_MS = 12 * 60 * 60 * 1000; // 12 hours (max 2 times per day)
+const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes cooldown (player-gated)
 
 export function PopunderAd() {
   const router = useRouter();
@@ -31,7 +31,7 @@ export function PopunderAd() {
       return;
     }
 
-    // 12-hour frequency check
+    // 30-minute frequency check
     try {
       const lastPopunder = localStorage.getItem(POPUNDER_STORAGE_KEY);
       const now = Date.now();
@@ -48,7 +48,7 @@ export function PopunderAd() {
             action: "ad_impression",
             params: {
               ad_unit: "popunder",
-              format: "popunder_12h",
+              format: "popunder_30m",
               country: getClientCountry() ?? "unknown",
             },
           });
