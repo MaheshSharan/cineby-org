@@ -31,7 +31,7 @@ export function Footer() {
         {/* Bottom bar with Links and concise copyright & disclaimer on a single clean line */}
         <div className="mt-14 pt-8 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           {/* Navigation Links */}
-          <nav className="flex items-center gap-6 font-semibold uppercase tracking-wider text-white/60">
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-center font-semibold uppercase tracking-wider text-white/60 sm:justify-start sm:gap-x-6 [&>*]:whitespace-nowrap">
             <Link
               href="/app"
               className="transition-colors hover:text-white"
@@ -65,7 +65,7 @@ export function Footer() {
           </nav>
 
           {/* Single-line concise copyright and disclaimer */}
-          <div className="text-white/60 text-center sm:text-right whitespace-nowrap text-[11px] sm:text-xs">
+          <div className="text-white/60 text-center sm:text-right text-[11px] sm:text-xs">
             <span>© {currentYear} Cineby. Non-hosting provider index. All metadata via TMDB.</span>
           </div>
         </div>

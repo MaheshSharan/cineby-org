@@ -98,7 +98,7 @@ export function NativeBannerAd({ className = "", id = "container-7f39a089ecb822e
 
   return (
     <div
-      className={`native-ad-wrapper mx-auto w-full max-w-[1360px] overflow-x-auto rounded-2xl border border-white/5 bg-white/[0.015] p-2 sm:p-3 text-center no-scrollbar ${className} ${
+      className={`native-ad-wrapper mx-auto w-full min-w-0 max-w-full overflow-x-auto rounded-2xl border border-white/5 bg-white/[0.015] p-2 sm:p-3 text-center no-scrollbar ${className} ${
         hasAdLoaded ? "block" : "hidden"
       }`}
       onClick={handleClick}

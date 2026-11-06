@@ -61,7 +61,7 @@ export default function BlogIndexPage({ posts, tags }: BlogIndexProps) {
         jsonLd={jsonLd}
       />
 
-      <div className="min-h-screen px-4 pt-24 pb-20 sm:px-6 sm:pt-28 md:px-8 lg:px-12 max-w-7xl mx-auto">
+      <div className="min-h-screen px-4 pt-24 pb-20 sm:px-6 sm:pt-28 md:px-8 lg:px-12 max-w-7xl page-shell">
         {/* Header Hero */}
         <div className="max-w-3xl mb-12">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.06] border border-white/10 text-xs text-white/80 font-medium mb-4 backdrop-blur-md">
@@ -76,11 +76,11 @@ export default function BlogIndexPage({ posts, tags }: BlogIndexProps) {
           </p>
 
           {/* Tags Filter */}
-          <div className="mt-8 flex flex-wrap items-center gap-2">
+          <div className="mt-8 -mx-4 flex flex-nowrap items-center gap-2 overflow-x-auto px-4 pb-1 no-scrollbar sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
             <button
               type="button"
               onClick={() => setSelectedTag(null)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 selectedTag === null
                   ? "bg-white text-black shadow-lg shadow-white/10"
                   : "bg-white/[0.05] text-white/60 hover:text-white border border-white/10"
@@ -93,7 +93,7 @@ export default function BlogIndexPage({ posts, tags }: BlogIndexProps) {
                 key={tag}
                 type="button"
                 onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   selectedTag === tag
                     ? "bg-white text-black shadow-lg shadow-white/10"
                     : "bg-white/[0.05] text-white/60 hover:text-white border border-white/10"

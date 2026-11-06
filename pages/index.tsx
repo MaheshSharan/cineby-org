@@ -138,7 +138,7 @@ export default function Home({
 
       <HeroCarousel items={heroItems} genreNames={genreNames} />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[1360px] flex-col gap-10 px-4 mt-1 sm:mt-2 md:mt-3 md:gap-14 pb-16">
+      <div className="page-shell relative z-10 flex max-w-[1360px] flex-col gap-10 px-4 mt-1 sm:mt-2 md:mt-3 md:gap-14 pb-16">
         <ContinueWatchingRow />
 
         <BrowseByProviderRow onSelectProvider={(id) => setActiveProviderId(id)} />

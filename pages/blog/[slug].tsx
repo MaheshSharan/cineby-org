@@ -61,7 +61,7 @@ export default function BlogPostPage({ post, relatedPosts }: BlogPostPageProps) 
         jsonLd={jsonLd}
       />
 
-      <article className="min-h-screen px-4 pt-24 pb-20 sm:px-6 sm:pt-28 md:px-8 max-w-4xl mx-auto">
+      <article className="min-h-screen px-4 pt-24 pb-20 sm:px-6 sm:pt-28 md:px-8 max-w-4xl page-shell">
         {/* Back Link */}
         <Link
           href="/blog"

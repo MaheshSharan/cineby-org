@@ -69,7 +69,7 @@ export default function WatchlistPage() {
     <>
       <PageSeo title="Watchlist - Cineby" noindex />
 
-      <main className="mx-auto max-w-[1360px] min-h-[calc(100vh-88px)] md:min-h-[calc(100vh-90px)] px-4 pb-16 pt-28 md:px-8 md:pt-36">
+      <main className="page-shell max-w-[1360px] min-h-[calc(100vh-88px)] md:min-h-[calc(100vh-90px)] px-4 pb-16 pt-28 md:px-8 md:pt-36">
         {isLoading || (user && isWatchlistLoading) ? (
           <div className="py-4">
             <SkeletonCardGrid />

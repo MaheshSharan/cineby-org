@@ -11,7 +11,7 @@ export function BlogCard({ post, featured = false }: BlogCardProps) {
   if (featured) {
     return (
       <article className="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-1 transition-all duration-300 hover:border-white/20 hover:shadow-2xl hover:shadow-black/70">
-        <div className="flex flex-col md:flex-row gap-6 lg:gap-8 rounded-[22px] bg-[#0d0e12]/90 p-5 sm:p-7 backdrop-blur-md">
+        <div className="flex flex-col md:flex-row gap-5 lg:gap-8 rounded-[22px] bg-[#0d0e12]/90 p-4 sm:p-7 backdrop-blur-md">
           {/* Featured Image */}
           <Link
             href={`/blog/${post.slug}`}
