@@ -8,6 +8,7 @@ import {
   discoverMovies,
   discoverTv,
   getGenres,
+  getMediaImages,
   getMediaLogo,
   getTopRatedMovies,
   getTopRatedTv,
@@ -291,10 +292,10 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
   return {
     props: {
       heroItems: await Promise.all(
-        heroItems.map(async (item) => ({
-          ...item,
-          logoPath: await getMediaLogo(item.mediaType, item.id),
-        }))
+        heroItems.map(async (item) => {
+          const images = await getMediaImages(item.mediaType, item.id);
+          return { ...item, logoPath: images.logoPath, heroPosterPath: images.textlessPosterPath };
+        })
       ),
       trendingMovies,
       trendingSeries,

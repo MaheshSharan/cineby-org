@@ -1,6 +1,6 @@
 import type { MediaSummary } from "@/lib/tmdb/types";
 import { HERO_SPOTLIGHT_PICKS, type HeroPickItem } from "@/lib/constants/heroPicks";
-import { getMediaLogo, getMovieDetails } from "@/lib/tmdb/server/movies";
+import { getMediaImages, getMovieDetails } from "@/lib/tmdb/server/movies";
 import { getTvDetails } from "@/lib/tmdb/server/tv";
 import { logger } from "@/lib/logger";
 
@@ -11,7 +11,7 @@ async function resolvePickToMediaSummary(pick: HeroPickItem): Promise<MediaSumma
   try {
     if (pick.mediaType === "movie") {
       const details = await getMovieDetails(pick.id);
-      const logoPath = await getMediaLogo("movie", pick.id);
+      const images = await getMediaImages("movie", pick.id);
       return {
         id: details.id,
         mediaType: "movie",
@@ -25,12 +25,13 @@ async function resolvePickToMediaSummary(pick: HeroPickItem): Promise<MediaSumma
         popularity: details.popularity,
         originalLanguage: details.originalLanguage,
         genreIds: details.genres.map((g) => g.id),
-        logoPath,
+        logoPath: images.logoPath,
+        heroPosterPath: images.textlessPosterPath,
       };
     }
 
     const details = await getTvDetails(pick.id);
-    const logoPath = await getMediaLogo("tv", pick.id);
+    const images = await getMediaImages("tv", pick.id);
     return {
       id: details.id,
       mediaType: "tv",
@@ -44,7 +45,8 @@ async function resolvePickToMediaSummary(pick: HeroPickItem): Promise<MediaSumma
       popularity: details.popularity,
       originalLanguage: details.originalLanguage,
       genreIds: details.genres.map((g) => g.id),
-      logoPath,
+      logoPath: images.logoPath,
+      heroPosterPath: images.textlessPosterPath,
     };
   } catch (error) {
     logger.warn(`[HeroPicks] Failed to resolve pick ${pick.mediaType}:${pick.id}`, undefined, error);

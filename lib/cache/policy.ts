@@ -88,6 +88,8 @@ export const tmdbCacheKeys = {
   topRatedMovies: (page: number) => `tmdb:${TMDB_CACHE_VERSION}:movie:top_rated:p${page}`,
   popularTv: (page: number) => `tmdb:${TMDB_CACHE_VERSION}:tv:popular:p${page}`,
   topRatedTv: (page: number) => `tmdb:${TMDB_CACHE_VERSION}:tv:top_rated:p${page}`,
+  mediaImages: (mediaType: string, id: string | number) =>
+    `tmdb:${TMDB_CACHE_VERSION}:images:${clean(mediaType)}:${clean(id)}`,
   mediaLogo: (mediaType: string, id: string | number) =>
     `tmdb:${TMDB_CACHE_VERSION}:logo:${clean(mediaType)}:${clean(id)}`,
 };

@@ -169,8 +169,9 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
 
   const isModalDetail = settings.appearance.detailViewType === "modal";
   const { mobile, tablet, desktop, desktopSrcSet } = getBackdropResponsiveUrls(item.backdropPath);
-  // Phones are portrait: a poster fits them without heavy cropping or upscaling, unlike a wide backdrop.
-  const phonePoster = buildImageUrl(item.posterPath, "w780");
+  // Phones are portrait: a textless poster fits them without heavy cropping or upscaling. Without one,
+  // the backdrop is used, because a regular poster would show its title text under our logo.
+  const phonePoster = buildImageUrl(item.heroPosterPath, "w780");
   const year = getYear(item.releaseDate);
   const genres = getGenreNames(item, genreNames);
   const rating = item.voteAverage ? item.voteAverage.toFixed(1) : null;

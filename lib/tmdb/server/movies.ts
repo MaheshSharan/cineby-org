@@ -1,16 +1,26 @@
 import type { MediaSummary, MovieDetails, MediaType, Paginated } from "../types";
 import { tmdbGet } from "./client";
 import { getTmdbConfig } from "./config";
-import { toLogoPath, toMediaSummary, toMovieDetails, toPaginated } from "./transform";
+import { toLogoPath, toTextlessPosterPath, toMediaSummary, toMovieDetails, toPaginated } from "./transform";
 import {
   validateMovieDetails,
   validatePaginatedResponse,
 } from "./validate";
 import { cachedFetch, TMDB_TTL_SECONDS, TMDB_STALE_SECONDS, tmdbCacheKeys } from "@/lib/cache";
 
+export interface MediaImages {
+  logoPath: string | null;
+  textlessPosterPath: string | null;
+}
+
 export async function getMediaLogo(mediaType: MediaType, id: string | number): Promise<string | null> {
+  return (await getMediaImages(mediaType, id)).logoPath;
+}
+
+/** Title logo and textless poster, from a single cached TMDB images call. */
+export async function getMediaImages(mediaType: MediaType, id: string | number): Promise<MediaImages> {
   return cachedFetch({
-    key: tmdbCacheKeys.mediaLogo(mediaType, id),
+    key: tmdbCacheKeys.mediaImages(mediaType, id),
     ttlSeconds: TMDB_TTL_SECONDS.movieDetails,
     staleSeconds: TMDB_STALE_SECONDS.movieDetails,
     fetcher: async () => {
@@ -18,7 +28,7 @@ export async function getMediaLogo(mediaType: MediaType, id: string | number): P
         path: `/${mediaType}/${id}/images`,
         params: { include_image_language: "en,null" },
       });
-      return toLogoPath(raw);
+      return { logoPath: toLogoPath(raw), textlessPosterPath: toTextlessPosterPath(raw) };
     },
   });
 }

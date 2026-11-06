@@ -26,6 +26,8 @@ export interface MediaSummary {
   originalLanguage: string;
   popularity: number;
   logoPath?: string | null;
+  /** Poster with no text on it, used where the title logo is drawn over the image. */
+  heroPosterPath?: string | null;
 }
 
 export interface Paginated<T> {

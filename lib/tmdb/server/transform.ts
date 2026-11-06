@@ -159,6 +159,18 @@ export function toLogoPath(images: unknown): string | null {
   return filePaths.find((filePath) => !filePath.toLowerCase().endsWith(".svg")) ?? filePaths[0] ?? null;
 }
 
+const MIN_TEXTLESS_POSTER_WIDTH = 780;
+
+/** Best-rated poster that carries no language (and therefore no text). */
+export function toTextlessPosterPath(images: unknown): string | null {
+  const posters = recordArray(asRecord(images)?.posters)
+    .filter((poster) => nullableString(poster.iso_639_1) === null)
+    .filter((poster) => Number(poster.width) >= MIN_TEXTLESS_POSTER_WIDTH)
+    .sort((a, b) => Number(b.vote_average ?? 0) - Number(a.vote_average ?? 0));
+
+  return nullableString(posters[0]?.file_path);
+}
+
 export function toLogoBackdropPath(images: unknown, fallbackBackdropPath?: string | null): string | null {
   const backdrops = recordArray(asRecord(images)?.backdrops);
   const englishBackdrop = backdrops.find((b) => nullableString(b.iso_639_1) === "en");
