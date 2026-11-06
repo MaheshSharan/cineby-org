@@ -408,9 +408,9 @@ function SportHeroSlide({ match, isActive }: SportHeroSlideProps) {
       {/* Hero Content Overlay */}
       <div className="absolute inset-0 z-[3] flex items-end pb-16 md:pb-20 lg:pb-24">
         <div className="layout-container w-full">
-          <div className="max-w-2xl translate-y-4 space-y-4">
+          <div className="max-w-2xl translate-y-4 space-y-4 max-md:mx-auto max-md:text-center">
             {/* Live Indicator Header Tag */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30 backdrop-blur-md">
+            <div className="inline-flex max-w-full items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30 backdrop-blur-md">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
@@ -424,7 +424,7 @@ function SportHeroSlide({ match, isActive }: SportHeroSlideProps) {
               {match.name}
             </h2>
 
-            <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-white/70">
+            <div className="flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm text-white/70 md:justify-start">
               <span className="inline-flex items-center gap-1.5 font-semibold text-white">
                 <TrophyIcon size={14} className="text-amber-400" />
                 {match.category_name}
@@ -437,11 +437,11 @@ function SportHeroSlide({ match, isActive }: SportHeroSlideProps) {
               ) : null}
             </div>
 
-            <p className="line-clamp-2 max-w-[560px] text-[14px] leading-[1.6] tracking-[0.01em] text-white/80 drop-shadow md:text-[15px]">
+            <p className="line-clamp-2 max-w-[560px] max-md:mx-auto text-[14px] leading-[1.6] tracking-[0.01em] text-white/80 drop-shadow md:text-[15px]">
               Catch {match.name} streaming live in full HD on Cineby. Multi-server coverage with zero buffering.
             </p>
 
-            <div className="pt-2 flex items-center gap-3" onClick={handleSportHeroClick}>
+            <div className="pt-2 flex items-center gap-3 max-md:justify-center" onClick={handleSportHeroClick}>
               <PlayButton href={watchHref} size="lg" label="Watch Live" tabIndex={isActive ? 0 : -1} />
               <Link
                 href="/sports"
