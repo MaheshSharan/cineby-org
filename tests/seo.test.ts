@@ -180,3 +180,18 @@ describe("category breadcrumb and relaunch content", () => {
     expect(getPostBySlug("cineby-is-back-2026-official-streaming-relaunch")).not.toBeNull();
   });
 });
+
+describe("Clarity page rules", () => {
+  it("records everywhere except player, login and register pages", async () => {
+    const { isClarityAllowedPath } = await import("@/lib/analytics/clarity");
+
+    expect(isClarityAllowedPath("/")).toBe(true);
+    expect(isClarityAllowedPath("/sports")).toBe(true);
+    expect(isClarityAllowedPath("/movie/1?x=y")).toBe(true);
+    expect(isClarityAllowedPath("/watch/movie/1")).toBe(false);
+    expect(isClarityAllowedPath("/sports/football/match")).toBe(false);
+    expect(isClarityAllowedPath("/movie/1?play=true")).toBe(false);
+    expect(isClarityAllowedPath("/login")).toBe(false);
+    expect(isClarityAllowedPath("/register?next=/")).toBe(false);
+  });
+});

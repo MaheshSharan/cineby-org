@@ -130,6 +130,14 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
     kind: "string",
     requiredWhen: (env) => env.NEXT_PUBLIC_ENABLE_ANALYTICS === "true",
   },
+  { name: "NEXT_PUBLIC_ENABLE_CLARITY", category: "integrations", scope: "public", kind: "flag" },
+  {
+    name: "NEXT_PUBLIC_CLARITY_PROJECT_ID",
+    category: "integrations",
+    scope: "public",
+    kind: "string",
+    requiredWhen: (env) => env.NEXT_PUBLIC_ENABLE_CLARITY === "true",
+  },
   {
     name: "NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION",
     category: "integrations",

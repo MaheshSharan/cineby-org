@@ -14,6 +14,8 @@ import { UpdateToast } from "@/components/pwa/UpdateToast";
 import { ScrollEdgeButton } from "@/components/ui/ScrollEdgeButton";
 import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
 import { SocialBarAd } from "@/components/ads/SocialBarAd";
+import { ConsentManager } from "@/components/consent/ConsentManager";
+import { CONSENT_STORAGE_KEY } from "@/lib/consent/analyticsConsent";
 import { getActiveGaMeasurementId, pageView, trackEvent, setUserProperties } from "@/lib/analytics/gtag";
 import { isDevtoolsGuardEnabled } from "@/lib/env/public";
 import { initDevtoolsGuard } from "@/lib/security/devtoolsGuard";
@@ -101,7 +103,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
       {gaMeasurementId && (
         <>
-          {/* Google Consent Mode v2 setup (defaulting to privacy-safe measurement) */}
+          {/* Google Consent Mode v2: analytics cookies stay off until the visitor accepts in the consent banner */}
           <Script
             id="google-consent-mode"
             strategy="afterInteractive"
@@ -109,8 +111,10 @@ export default function App({ Component, pageProps }: AppProps) {
               __html: `
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
+                var savedConsent = null;
+                try { savedConsent = localStorage.getItem(${JSON.stringify(CONSENT_STORAGE_KEY)}); } catch (e) {}
                 gtag('consent', 'default', {
-                  'analytics_storage': 'granted',
+                  'analytics_storage': savedConsent === 'granted' ? 'granted' : 'denied',
                   'ad_storage': 'denied',
                   'ad_user_data': 'denied',
                   'ad_personalization': 'denied',
@@ -154,6 +158,7 @@ export default function App({ Component, pageProps }: AppProps) {
           <InstallBanner />
           <UpdateToast />
           <SocialBarAd />
+          <ConsentManager />
           {/* Popunder is disabled; mount <PopunderAd /> here to re-enable */}
         </DetailModalProvider>
       </SettingsProvider>

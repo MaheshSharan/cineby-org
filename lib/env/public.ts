@@ -73,6 +73,15 @@ export function getGaMeasurementId(): string {
   );
 }
 
+export function isClarityEnabled(): boolean {
+  return parseFlag("NEXT_PUBLIC_ENABLE_CLARITY", process.env.NEXT_PUBLIC_ENABLE_CLARITY);
+}
+
+/** Microsoft Clarity project ID. Only required, and only read, while Clarity is enabled. */
+export function getClarityProjectId(): string {
+  return requireValue("NEXT_PUBLIC_CLARITY_PROJECT_ID", process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID);
+}
+
 export function getTrailerApiUrl(): string {
   return parseUrl("NEXT_PUBLIC_TRAILER_API_URL", process.env.NEXT_PUBLIC_TRAILER_API_URL);
 }

@@ -88,6 +88,7 @@ describe("environment configuration is unified", () => {
       ENABLE_EMBED_PLAYERS: "true",
       CACHE_BACKEND: "memory",
       NEXT_PUBLIC_ENABLE_ANALYTICS: "false",
+      NEXT_PUBLIC_ENABLE_CLARITY: "false",
     };
     const analytics = { ...base, NEXT_PUBLIC_ENABLE_ANALYTICS: "true", NEXT_PUBLIC_GA_MEASUREMENT_ID: "" };
 

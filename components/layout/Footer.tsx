@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getContactEmail } from "@/lib/env/public";
 import { SineRibbonsText } from "@/components/ui/SineRibbons";
+import { CookieSettingsButton } from "@/components/consent/ConsentManager";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -62,6 +63,7 @@ export function Footer() {
             >
               Contact
             </a>
+            <CookieSettingsButton className="font-semibold uppercase tracking-wider transition-colors hover:text-white" />
           </nav>
 
           {/* Single-line concise copyright and disclaimer */}
