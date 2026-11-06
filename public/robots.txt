@@ -21,6 +21,7 @@ Disallow: /api/settings
 User-agent: OAI-SearchBot
 User-agent: Claude-SearchBot
 User-agent: PerplexityBot
+User-agent: ChatGPT-User
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 Disallow: /watch/
@@ -40,7 +41,7 @@ User-agent: Applebot-Extended
 User-agent: CCBot
 User-agent: Bytespider
 User-agent: Amazonbot
-Content-Signal: search=no, ai-input=no, ai-train=no
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 Disallow: /
 
 Sitemap: https://cineby.group/sitemap.xml
