@@ -128,13 +128,13 @@ export default function Home({
   return (
     <>
       <PageSeo
-        title="Cineby: Watch Free Movies & TV Shows Online"
-        description="Watch free movies and TV shows online. Stream trending movies, top-rated TV series, and track your watchlist on Cineby."
+        title="Cineby - Watch Free Movies Online | Free Streaming No Sign Up"
+        description="Stream movies and TV shows online free in HD on Cineby. Enjoy fast, buffer-free online streaming with no sign up, no registration, and multi-device support."
         path="/"
         jsonLd={sanitizeJsonLd([buildWebSiteJsonLd(), buildSiteNavigationJsonLd(), buildFaqJsonLd()])}
       />
 
-      <h1 className="sr-only">Cineby: Watch Free Movies & TV Shows Online</h1>
+      <h1 className="sr-only">Cineby - Watch Free Movies & TV Shows Online with No Sign Up</h1>
 
       <HeroCarousel items={heroItems} genreNames={genreNames} />
 

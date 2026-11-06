@@ -17,9 +17,14 @@ export const HOME_FAQ_ITEMS: FaqItem[] = [
       "Yes, Cineby is 100% free to browse and stream. You can watch movies and TV shows online in full HD without paying any monthly subscription or hidden fees.",
   },
   {
+    question: "Is Cineby a good alternative to PStream, BFlix, or Hurawatch?",
+    answer:
+      "Yes. Cineby is widely regarded as a top PStream alternative, BFlix alternative, and Hurawatch alternative. It offers high-speed Cloudflare edge playback, adaptive 1080p stream mirrors, and zero registration requirements so you can stream without downtime or interruptions.",
+  },
+  {
     question: "Do I need to create an account to stream on Cineby?",
     answer:
-      "No account is required to stream. You can start watching instantly as a guest. Creating a free account lets you sync your custom watchlist and save playback history across all your devices.",
+      "No account or sign up is required to stream. Cineby offers free movie streaming with no sign up or credit card. You can start watching instantly as a guest, or optionally create a free account to sync custom watchlists and resume progress across devices.",
   },
   {
     question: "How frequently is content updated on Cineby?",
