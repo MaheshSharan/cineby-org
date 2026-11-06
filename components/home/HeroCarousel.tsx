@@ -251,14 +251,14 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
       {/* Hero Content Overlay */}
       <div className="absolute inset-0 z-[3] flex items-end pb-16 md:pb-20 lg:pb-24">
         <div className="layout-container w-full">
-          <div className="max-w-2xl translate-y-4">
+          <div className="max-w-2xl translate-y-4 max-md:mx-auto max-md:text-center">
             {item.logoPath && settings.appearance.useImageLogos ? (
-              <div className="mb-4 max-w-[280px] sm:max-w-[340px] md:max-w-[420px]">
+              <div className="mb-4 max-w-[320px] max-md:mx-auto sm:max-w-[340px] md:max-w-[420px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getLogoUrl(item.logoPath) ?? undefined}
                   alt={item.title}
-                  className="max-h-24 w-auto object-contain object-left drop-shadow-2xl md:max-h-32"
+                  className="max-h-28 w-auto object-contain object-center drop-shadow-2xl max-md:mx-auto md:max-h-32 md:object-left"
                 />
               </div>
             ) : (
@@ -267,7 +267,7 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
               </h2>
             )}
 
-            <div className="mt-[18px] mb-[12px] inline-flex flex-wrap items-center gap-[10px_14px] text-[13px] leading-none text-text-hi md:text-sm">
+            <div className="mt-[18px] mb-[12px] flex flex-wrap items-center justify-center gap-[10px_14px] md:inline-flex md:justify-start text-[13px] leading-none text-text-hi md:text-sm">
               {rating ? (
                 <div className="inline-flex items-center gap-1.5 drop-shadow">
                   <StarIcon size={16} className="fill-white text-white shrink-0" />
@@ -297,11 +297,11 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
               ))}
             </div>
 
-            <p className="line-clamp-3 max-w-[560px] text-[14px] leading-[1.6] tracking-[0.01em] text-[rgba(238,241,246,0.85)] drop-shadow md:text-[15px]">
+            <p className="line-clamp-3 max-w-[560px] max-md:mx-auto text-[14px] leading-[1.6] tracking-[0.01em] text-[rgba(238,241,246,0.85)] drop-shadow md:text-[15px]">
               {item.overview}
             </p>
 
-            <div className="mt-[22px] flex items-center gap-3">
+            <div className="mt-[22px] flex items-center gap-3 max-md:justify-center">
               <PlayButton href={playHref} size="lg" label="Play" tabIndex={isActive ? 0 : -1} />
               <Link
                 href={mediaHref}
