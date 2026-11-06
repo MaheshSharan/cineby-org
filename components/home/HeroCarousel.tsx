@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useMemo } from "react";
 
 import type { MediaSummary } from "@/lib/tmdb";
-import { getBackdropResponsiveUrls, getLogoUrl } from "@/lib/tmdb/image";
+import { buildImageUrl, getBackdropResponsiveUrls, getLogoUrl } from "@/lib/tmdb/image";
 import { getEpisodeHref, getMediaHref, getPlayHref, getYear } from "@/lib/utils/media";
 import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
@@ -169,6 +169,8 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
 
   const isModalDetail = settings.appearance.detailViewType === "modal";
   const { mobile, tablet, desktop, desktopSrcSet } = getBackdropResponsiveUrls(item.backdropPath);
+  // Phones are portrait: a poster fits them without heavy cropping or upscaling, unlike a wide backdrop.
+  const phonePoster = buildImageUrl(item.posterPath, "w780");
   const year = getYear(item.releaseDate);
   const genres = getGenreNames(item, genreNames);
   const rating = item.voteAverage ? item.voteAverage.toFixed(1) : null;
@@ -213,6 +215,7 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
 
         {mobile ? (
           <picture className="absolute inset-0 block h-full w-full">
+            {phonePoster ? <source media="(max-width: 599px)" srcSet={phonePoster} /> : null}
             {desktopSrcSet ? (
               <source media="(min-width: 960px)" srcSet={desktopSrcSet} sizes="100vw" />
             ) : desktop ? (
