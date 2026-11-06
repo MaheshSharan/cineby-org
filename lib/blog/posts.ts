@@ -18,7 +18,7 @@ export const BLOG_POSTS: BlogPost[] = [
       avatar: "/avatar/classic-1.png",
     },
     tags: ["Announcement", "Cineby News"],
-    coverImage: "https://outgoing-oyster-428.convex.cloud/api/storage/169e1ba5-d693-46bf-a2ee-3c80b5953d68",
+    coverImage: "/blog/cineby-relaunch-2026.webp",
     readTimeMinutes: 3,
     content: `
 **Cineby is back online.** The original Cineby sites and related mirrors shut down in August 2026. Cineby relaunched in November 2026, and its official home is **cineby.group**.
