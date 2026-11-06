@@ -17,7 +17,7 @@ const DAY_SECONDS = 24 * HOUR_SECONDS;
  * so a route can never promise a different lifetime than the cache actually keeps.
  */
 export const TMDB_CACHE_PROFILES = {
-  trending: { browser: HOUR_SECONDS, edge: DAY_SECONDS, revalidate: DAY_SECONDS },
+  trending: { browser: HOUR_SECONDS, edge: 2 * DAY_SECONDS, revalidate: 2 * DAY_SECONDS },
   discover: { browser: HOUR_SECONDS, edge: DAY_SECONDS, revalidate: DAY_SECONDS },
   search: { browser: 10 * 60, edge: HOUR_SECONDS, revalidate: DAY_SECONDS },
   genres: { browser: DAY_SECONDS, edge: 7 * DAY_SECONDS, revalidate: 7 * DAY_SECONDS },
@@ -49,7 +49,7 @@ export const TMDB_TTL_SECONDS = {
 
 // After this long a cached value is still served, but refreshed in the background.
 export const TMDB_STALE_SECONDS = {
-  trending: HOUR_SECONDS,
+  trending: DAY_SECONDS, // Lock hero & trending lists to full 24 hours before background refresh
   discover: HOUR_SECONDS,
   search: 10 * 60,
   movieDetails: 3 * HOUR_SECONDS,

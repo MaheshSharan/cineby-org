@@ -39,7 +39,7 @@ describe("TMDB cache policy", () => {
 
   it("builds Cache-Control headers from the same table the internal TTLs come from", () => {
     expect(buildTmdbCacheControl("trending")).toBe(
-      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400"
+      "public, max-age=3600, s-maxage=172800, stale-while-revalidate=172800"
     );
     expect(TMDB_TTL_SECONDS.trending).toBe(TMDB_CACHE_PROFILES.trending.edge);
     expect(TMDB_TTL_SECONDS.search).toBe(TMDB_CACHE_PROFILES.search.edge);

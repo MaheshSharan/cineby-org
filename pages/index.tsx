@@ -31,7 +31,7 @@ import { PageSeo } from "@/components/seo/PageSeo";
 import { buildSiteNavigationJsonLd, buildWebSiteJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 import { buildFaqJsonLd } from "@/lib/seo/faqSchema";
 
-const HERO_ITEMS = 12;
+const HERO_ITEMS = 7;
 const ROW_ITEMS = 20;
 const ANIMATION_GENRE_ID = 16;
 
@@ -141,16 +141,16 @@ export default function Home({
       <div className="relative z-10 mx-auto flex max-w-[1360px] flex-col gap-10 px-4 mt-1 sm:mt-2 md:mt-3 md:gap-14 pb-16">
         <ContinueWatchingRow />
 
+        <BrowseByProviderRow onSelectProvider={(id) => setActiveProviderId(id)} />
+        <LiveSportsRow />
+
+        <NativeBannerAd className="my-2" />
+
         <LazyContentRow
           title="Trending Movies"
           initialItems={trendingMovies}
           action={viewAllMovieLink}
         />
-
-        <BrowseByProviderRow onSelectProvider={(id) => setActiveProviderId(id)} />
-        <LiveSportsRow />
-
-        <NativeBannerAd className="my-2" />
 
         <LazyContentRow
           title="Trending Series"
@@ -237,11 +237,16 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
 
   const seenKeys = new Set<string>();
 
-  // Filter out any Animation titles (TMDB genre ID 16) from the hero carousel pool
-  const nonAnimatedHeroPool = [...heroPicks, ...heroP1.results, ...heroP2.results].filter(
-    (item) => !item.genreIds || !item.genreIds.includes(ANIMATION_GENRE_ID)
-  );
-  const heroItems = deduplicateMediaPool(nonAnimatedHeroPool, seenKeys, HERO_ITEMS);
+  // Filter out any Animation titles (TMDB genre ID 16) and unreleased titles from the hero carousel pool
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const eligibleHeroPool = [...heroP1.results, ...heroP2.results].filter((item) => {
+    // 1. Exclude animation
+    if (item.genreIds && item.genreIds.includes(ANIMATION_GENRE_ID)) return false;
+    // 2. Exclude unreleased titles (must have a valid release date <= today)
+    if (!item.releaseDate || item.releaseDate > todayIso) return false;
+    return true;
+  });
+  const heroItems = deduplicateMediaPool(eligibleHeroPool, seenKeys, HERO_ITEMS);
 
   const trendingMoviesPool = [...trendingMoviesP1.results, ...trendingMoviesP2.results];
   const trendingMovies = deduplicateMediaPool(trendingMoviesPool, seenKeys, ROW_ITEMS);
