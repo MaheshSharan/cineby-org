@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 import { useRouter } from "next/router";
-import { isTier1Country } from "@/lib/geo";
+
+import { trackEvent } from "@/lib/analytics/gtag";
+import { isPlayerPath } from "@/lib/ads/placement";
 
 const SOCIAL_BAR_SRC = "https://bicea.org/14/6fa9ccc24c9972e71deaa2ad60a46e55";
-const LOAD_DELAY_MS = 2500; // 2.5s delay for smooth initial paint and higher perceived value
+const SCRIPT_ID = "social-bar-ad";
+const LOAD_DELAY_MS = 2500;
+
+let scriptLoaded = false;
 
 function purgeActiveSocialBarWidgets() {
   if (typeof document === "undefined") return;
 
-  // Clean any floating notifications, message boxes, or chat heads created by the Adsterra script
   const selectors = [
     'div[class*="sb_"]',
     'div[id*="sb_"]',
@@ -17,54 +21,63 @@ function purgeActiveSocialBarWidgets() {
     'div[id*="bicea"]',
     'iframe[src*="bicea"]',
     'div[class*="container-"][style*="fixed"]',
-    'div[class*="container-"][style*="absolute"]'
+    'div[class*="container-"][style*="absolute"]',
   ];
 
-  selectors.forEach((sel) => {
+  for (const sel of selectors) {
     try {
-      const elements = document.querySelectorAll(sel);
-      elements.forEach((el) => el.remove());
+      document.querySelectorAll(sel).forEach((el) => el.remove());
     } catch {
-      // Ignore query errors
+      // Ignore selector errors
     }
-  });
+  }
 }
 
 export function SocialBarAd() {
   const router = useRouter();
   const [shouldLoad, setShouldLoad] = useState(false);
-
-  // Precision Check: Only treat as player when actively watching playback (?play=true or /watch/...)
-  const isWatchingVideo =
-    router.pathname.startsWith("/watch") ||
-    router.query.play === "true" ||
-    router.asPath.includes("play=true");
+  const onPlayer = isPlayerPath(router.asPath);
 
   useEffect(() => {
-    if (isWatchingVideo || !isTier1Country()) {
+    if (onPlayer) {
       setShouldLoad(false);
       purgeActiveSocialBarWidgets();
       return;
     }
 
-    // Delay loading Social Bar so visitors experience clean initial paint first
-    const timer = setTimeout(() => {
-      setShouldLoad(true);
-    }, LOAD_DELAY_MS);
-
+    const timer = setTimeout(() => setShouldLoad(true), LOAD_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [isWatchingVideo, router.asPath]);
+  }, [onPlayer]);
 
-  if (isWatchingVideo || !shouldLoad) {
-    return null;
-  }
+  // Once loaded, the script keeps running for the whole session and cannot be unloaded. A full page
+  // load is the only reliable way to guarantee no ad code runs on a player page.
+  useEffect(() => {
+    const handleRouteStart = (url: string) => {
+      if (!scriptLoaded || !isPlayerPath(url)) return;
+      window.location.assign(url);
+      router.events.emit("routeChangeError");
+      throw new Error("Route change aborted: reloading without ads");
+    };
+
+    router.events.on("routeChangeStart", handleRouteStart);
+    return () => router.events.off("routeChangeStart", handleRouteStart);
+  }, [router.events]);
+
+  if (onPlayer || !shouldLoad) return null;
 
   return (
     <Script
-      id="social-bar-ad"
+      id={SCRIPT_ID}
       strategy="lazyOnload"
       src={SOCIAL_BAR_SRC}
       data-cfasync="false"
+      onLoad={() => {
+        scriptLoaded = true;
+        trackEvent({
+          action: "ad_impression",
+          params: { ad_unit: "social_bar", format: "social_bar" },
+        });
+      }}
     />
   );
 }

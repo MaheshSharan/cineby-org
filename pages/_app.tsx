@@ -14,9 +14,7 @@ import { UpdateToast } from "@/components/pwa/UpdateToast";
 import { ScrollEdgeButton } from "@/components/ui/ScrollEdgeButton";
 import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
 import { SocialBarAd } from "@/components/ads/SocialBarAd";
-import { PopunderAd } from "@/components/ads/PopunderAd";
 import { getActiveGaMeasurementId, pageView, trackEvent, setUserProperties } from "@/lib/analytics/gtag";
-import { isTier1Country } from "@/lib/geo";
 import { isDevtoolsGuardEnabled } from "@/lib/env/public";
 import { initDevtoolsGuard } from "@/lib/security/devtoolsGuard";
 
@@ -73,11 +71,7 @@ export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (!gaMeasurementId) return;
 
-    // Report traffic tier and network connection context to GA4
-    setUserProperties({
-      traffic_tier: isTier1Country() ? "tier_1" : "tier_other",
-    });
-
+    // Report network connection context to GA4
     if (typeof navigator !== "undefined" && "connection" in navigator) {
       const conn = (navigator as unknown as { connection?: { effectiveType?: string } }).connection;
       if (conn?.effectiveType) {
@@ -160,7 +154,7 @@ export default function App({ Component, pageProps }: AppProps) {
           <InstallBanner />
           <UpdateToast />
           <SocialBarAd />
-          <PopunderAd />
+          {/* Popunder is disabled; mount <PopunderAd /> here to re-enable */}
         </DetailModalProvider>
       </SettingsProvider>
     </AuthProvider>

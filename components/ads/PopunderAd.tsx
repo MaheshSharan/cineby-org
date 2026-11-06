@@ -1,32 +1,23 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 import { useRouter } from "next/router";
-import { isTier1Country, getClientCountry } from "@/lib/geo";
+import { isPlayerPath } from "@/lib/ads/placement";
 import { trackEvent } from "@/lib/analytics/gtag";
 
 const POPUNDER_SRC = "https://overestimatecapricornspittle.com/fb/38/40/fb3840091737b03ef8887d50204af917.js";
 const POPUNDER_STORAGE_KEY = "cineby_last_popunder";
 const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes cooldown (player-gated)
 
+// Currently disabled: not mounted in pages/_app.tsx. Re-enable by mounting <PopunderAd />.
 export function PopunderAd() {
   const router = useRouter();
   const [shouldLoad, setShouldLoad] = useState(false);
 
   // Strict Player Gating: NEVER load on any watch page or active video playback
-  const isWatchingVideo =
-    router.pathname.startsWith("/watch") ||
-    router.pathname.startsWith("/sports/") ||
-    router.query.play === "true" ||
-    router.asPath.includes("play=true");
+  const isWatchingVideo = isPlayerPath(router.asPath);
 
   useEffect(() => {
     if (isWatchingVideo) {
-      setShouldLoad(false);
-      return;
-    }
-
-    // Only allow for Tier 1 users
-    if (!isTier1Country()) {
       setShouldLoad(false);
       return;
     }
@@ -44,14 +35,6 @@ export function PopunderAd() {
       const timer = setTimeout(() => {
         try {
           localStorage.setItem(POPUNDER_STORAGE_KEY, String(Date.now()));
-          trackEvent({
-            action: "ad_impression",
-            params: {
-              ad_unit: "popunder",
-              format: "popunder_30m",
-              country: getClientCountry() ?? "unknown",
-            },
-          });
         } catch {
           // Ignore storage errors
         }
@@ -74,6 +57,9 @@ export function PopunderAd() {
       src={POPUNDER_SRC}
       strategy="lazyOnload"
       data-cfasync="false"
+      onLoad={() =>
+        trackEvent({ action: "ad_impression", params: { ad_unit: "popunder", format: "popunder_30m" } })
+      }
     />
   );
 }
