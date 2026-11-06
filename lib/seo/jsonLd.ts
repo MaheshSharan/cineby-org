@@ -55,6 +55,27 @@ export function buildBreadcrumbJsonLd(
 }
 
 /**
+ * Home (/) > Category (/browse/{type}) for the browse listing pages.
+ */
+export function buildCategoryBreadcrumbJsonLd(mediaType: "movie" | "tv"): JsonLdData {
+  const categoryLabel = mediaType === "movie" ? "Movies" : "TV Shows";
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: getSiteUrl() },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: categoryLabel,
+        item: buildAbsoluteUrl(`/browse/${mediaType}`),
+      },
+    ],
+  };
+}
+
+/**
  * Generates WebSite Schema with SearchAction for Sitelinks Searchbox in Google SERPs.
  */
 export function buildWebSiteJsonLd(): JsonLdData {

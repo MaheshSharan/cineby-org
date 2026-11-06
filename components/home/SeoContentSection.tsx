@@ -89,6 +89,19 @@ export function SeoContentSection() {
             </p>
           </div>
         </div>
+
+        {/* Section 5: Relaunch notice */}
+        <div className="w-full max-w-full overflow-hidden">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-white mb-4 uppercase break-words [word-break:break-word]">
+            Cineby Is Back: Relaunched in November 2026
+          </h2>
+          <div className="space-y-4 text-xs sm:text-sm text-white/70 leading-relaxed font-normal break-words [word-break:break-word]">
+            <p className="break-words [word-break:break-word]">
+              The original Cineby sites shut down in August 2026. Cineby relaunched in November 2026 and is online again at <Link href="/" className="text-white hover:underline font-medium break-all">cineby.group</Link>, its official home. Read the full story in{" "}
+              <Link href="/blog/cineby-is-back-2026-official-streaming-relaunch" className="text-white hover:underline font-medium">Cineby Is Back: The 2026 Relaunch</Link>.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

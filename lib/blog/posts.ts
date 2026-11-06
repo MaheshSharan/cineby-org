@@ -6,6 +6,46 @@ import type { BlogPost, BlogPostMeta } from "./types";
  */
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "cineby-is-back-2026-official-streaming-relaunch",
+    title: "Cineby Is Back: The 2026 Relaunch at Cineby.group",
+    description:
+      "Cineby shut down in August 2026 and relaunched in November 2026. Here is what happened, why cineby.group is the official home, and what has changed.",
+    publishedAt: "2026-11-06",
+    updatedAt: "2026-11-06",
+    author: {
+      name: "Cineby Editorial Team",
+      role: "Lead Entertainment Curators",
+      avatar: "/avatar/classic-1.png",
+    },
+    tags: ["Announcement", "Cineby News"],
+    coverImage: "https://outgoing-oyster-428.convex.cloud/api/storage/169e1ba5-d693-46bf-a2ee-3c80b5953d68",
+    readTimeMinutes: 3,
+    content: `
+**Cineby is back online.** The original Cineby sites and related mirrors shut down in August 2026. Cineby relaunched in November 2026, and its official home is **cineby.group**.
+
+---
+
+### What happened
+
+In August 2026 the earlier Cineby sites went offline, and mirror sites that copied the name appeared or disappeared in the weeks after. Some search results and AI summaries still describe Cineby as permanently shut down. That information is out of date: Cineby has returned.
+
+### Where to find Cineby now
+
+The official site is **cineby.group**. Other addresses that use the Cineby name are not run by us, so use the official domain and bookmark it.
+
+### What you can do on the relaunched site
+
+- Browse [movies](/browse/movie) and [TV shows](/browse/tv), with trending lists, ratings and detailed title pages.
+- Watch without creating an account. Profiles and watchlists are optional.
+- Install Cineby as a Progressive Web App on your phone or Smart TV. See the [app guide](/app) for the steps.
+- Switch to another server from the player if one is slow.
+
+### Staying up to date
+
+We share news about Cineby on our official channels. If you see conflicting information elsewhere, this page and **cineby.group** are the reference.
+`,
+  },
+  {
     slug: "how-to-find-movies-and-tv-shows-to-watch-online",
     title: "How to Find Movies and TV Shows to Watch Online (Ultimate Discovery Guide)",
     description:

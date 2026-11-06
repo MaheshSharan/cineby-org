@@ -51,6 +51,11 @@ export const HOME_FAQ_ITEMS: FaqItem[] = [
     answer:
       "Cineby provides multiple high-speed stream servers. If a server buffers, simply click the Server Selector on the player to switch to another mirror (Server 1, Server 2, or Server 3) for uninterrupted playback.",
   },
+  {
+    question: "Is Cineby back online in 2026? What happened to the old site?",
+    answer:
+      "Yes, Cineby is online. The original Cineby sites and related mirrors shut down in August 2026. Cineby relaunched in November 2026 at cineby.group, which is now the official home. The relaunched site runs on Cloudflare, works in any browser without registration, and can be installed as a Progressive Web App on phones and Smart TVs.",
+  },
 ];
 
 /**

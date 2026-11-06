@@ -158,3 +158,25 @@ describe("IndexNow protocol verification", () => {
   });
 });
 
+
+describe("category breadcrumb and relaunch content", () => {
+  it("builds a two-level breadcrumb for browse pages", async () => {
+    const { buildCategoryBreadcrumbJsonLd } = await import("@/lib/seo/jsonLd");
+    const data = buildCategoryBreadcrumbJsonLd("movie") as unknown as {
+      itemListElement: Array<{ position: number; name: string; item: string }>;
+    };
+
+    expect(data.itemListElement).toHaveLength(2);
+    expect(data.itemListElement[0]).toMatchObject({ position: 1, name: "Home" });
+    expect(data.itemListElement[1]).toMatchObject({ position: 2, name: "Movies" });
+    expect(data.itemListElement[1].item).toMatch(/\/browse\/movie$/);
+  });
+
+  it("keeps the home FAQ at 10 items and publishes the relaunch post", async () => {
+    const { HOME_FAQ_ITEMS } = await import("@/lib/seo/faqSchema");
+    const { getPostBySlug } = await import("@/lib/blog/posts");
+
+    expect(HOME_FAQ_ITEMS).toHaveLength(10);
+    expect(getPostBySlug("cineby-is-back-2026-official-streaming-relaunch")).not.toBeNull();
+  });
+});

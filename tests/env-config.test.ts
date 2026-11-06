@@ -108,9 +108,10 @@ describe("no hardcoded deployment values in application code", () => {
         continue;
       }
 
-      // Branded SEO content, PWA and FAQ schema legitimately mention the canonical brand domain.
+      // Branded SEO content, blog posts, PWA and FAQ schema legitimately mention the canonical brand domain.
       if (
         file === path.join("lib", "seo", "faqSchema.ts") ||
+        file === path.join("lib", "blog", "posts.ts") ||
         file === path.join("components", "home", "SeoContentSection.tsx") ||
         file === path.join("pages", "app.tsx") ||
         file === path.join("pages", "sports", "index.tsx")

@@ -7,6 +7,7 @@ import { discoverMovies, discoverTv, getGenres } from "@/lib/tmdb/server";
 
 import { BrowseGrid } from "@/components/browse/BrowseGrid";
 import { PageSeo } from "@/components/seo/PageSeo";
+import { buildCategoryBreadcrumbJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 
 interface BrowsePageProps {
   mediaType: MediaType;
@@ -36,6 +37,7 @@ export default function BrowsePage({ mediaType, genres, initialItems }: BrowsePa
         title={title}
         description={description}
         path={`/browse/${mediaType}`}
+        jsonLd={sanitizeJsonLd(buildCategoryBreadcrumbJsonLd(mediaType))}
       />
       <h1 className="sr-only">{heading}</h1>
 
