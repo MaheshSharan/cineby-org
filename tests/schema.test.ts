@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildBreadcrumbJsonLd,
   buildMovieJsonLd,
+  buildAboutPageJsonLd,
   buildOrganizationJsonLd,
   buildSportsEventJsonLd,
   buildTvSeriesJsonLd,
@@ -30,13 +31,24 @@ describe("Schema.org JSON-LD structured data generators", () => {
     expect(schema.sameAs).toEqual(["https://x.com/Cineby_groups"]);
   });
 
+  it("generates AboutPage schema linked to the Organization and WebSite entities", () => {
+    const schema = buildAboutPageJsonLd();
+
+    expect(schema["@type"]).toBe("AboutPage");
+    expect(schema.url).toBe(`${getSiteUrl()}/about`);
+    expect(schema.about).toEqual({ "@id": `${getSiteUrl()}/#organization` });
+    expect(schema.isPartOf).toEqual({ "@id": `${getSiteUrl()}/#website` });
+  });
+
   it("generates WebSite schema with SearchAction and references Organization publisher @id", () => {
     const schema = buildWebSiteJsonLd();
 
     expect(schema["@context"]).toBe("https://schema.org");
     expect(schema["@type"]).toBe("WebSite");
     expect(schema["@id"]).toBe(`${getSiteUrl()}/#website`);
-    expect(schema.url).toBe(getSiteUrl());
+    expect(schema.url).toBe(`${getSiteUrl()}/`);
+    expect(schema.alternateName).toBe(new URL(getSiteUrl()).hostname);
+    expect(schema.alternateName).not.toBe(schema.name);
     expect(schema.publisher).toEqual({
       "@id": `${getSiteUrl()}/#organization`,
     });

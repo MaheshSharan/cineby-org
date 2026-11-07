@@ -4,12 +4,16 @@
 # from them, and blocking them would stop Googlebot from rendering that content.
 # Account pages (/history, /watchlist, /profiles, /settings) are not listed here because they
 # carry a noindex tag, and crawlers must be able to fetch a page to see it.
+#
+# Page data embeds raw TMDB poster paths such as "/abc123.jpg". Googlebot-Image resolves them against
+# this host and gets 404s (11,851 in 3.5 days, 2026-11). The site serves no .jpg files, so they are blocked.
 
 User-agent: *
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 Disallow: /watch/
 Disallow: /*?play=
+Disallow: /*.jpg$
 Disallow: /api/auth/
 Disallow: /api/stream/
 Disallow: /api/history

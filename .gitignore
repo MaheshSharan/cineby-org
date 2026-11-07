@@ -47,3 +47,7 @@ docs/
 
 # Worker local secrets
 .dev.vars
+
+# local SEO audit output and the unused disavow list
+/cineby.group-audit/
+/disavow.txt

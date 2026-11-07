@@ -12,7 +12,7 @@ import {
   getMediaOpenGraphImage,
 } from "@/lib/seo/media";
 import { getMediaHref } from "@/lib/utils/media";
-import { extractIdFromSlug } from "@/lib/utils/slug";
+import { extractIdFromSlug, getCanonicalSlugRedirect } from "@/lib/utils/slug";
 import { fetchTrailerUrlServer } from "@/lib/services/trailer.server";
 
 import { DetailPage } from "@/components/detail/DetailPage";
@@ -85,6 +85,16 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
     }
 
     const details = await getTvDetails(id);
+
+    const segments = Array.isArray(params) ? params : [];
+    const redirect = getCanonicalSlugRedirect(
+      `/tv/${segments.join("/")}`,
+      `${getMediaHref("tv", details.id, details.title)}${segments.slice(1).map((segment) => `/${segment}`).join("")}`,
+      context.resolvedUrl
+    );
+    if (redirect) {
+      return { redirect };
+    }
 
     const seasonNumber = typeof parsedSeason === "number" && Number.isInteger(parsedSeason) && parsedSeason > 0 ? parsedSeason : null;
     const episodeNumber = typeof parsedEpisode === "number" && Number.isInteger(parsedEpisode) && parsedEpisode > 0 ? parsedEpisode : null;

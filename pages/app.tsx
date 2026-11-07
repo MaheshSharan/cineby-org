@@ -20,11 +20,6 @@ export default function AppPage() {
       price: "0",
       priceCurrency: "USD",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      ratingCount: "14850",
-    },
     description:
       "Install the official Cineby App (PWA) to watch free movies and TV shows online in HD. Safe alternative to shady APK downloads with zero storage footprint, instant playback, and Smart TV support.",
   };

@@ -9,17 +9,22 @@ export const HOME_FAQ_ITEMS: FaqItem[] = [
   {
     question: "What is Cineby?",
     answer:
-      "Cineby is a modern streaming catalog and discovery platform that lets you explore trending movies, top-rated TV series, cast profiles, and official trailers with zero subscription fees.",
+      "Cineby is a free movie and TV streaming site at cineby.group. You can browse trending, top-rated and upcoming titles, read details, cast and trailers, and start watching without a subscription.",
+  },
+  {
+    question: "What is the official Cineby website?",
+    answer:
+      "The official Cineby website is cineby.group. The earlier Cineby sites shut down in August 2026, and Cineby relaunched in November 2026 at cineby.group.",
+  },
+  {
+    question: "Are cineby.gd, cineby.ws and cineby.rocks the same as Cineby?",
+    answer:
+      "No. Cineby does not operate cineby.gd, cineby.ws, cineby.rocks or other addresses and apps that copy the name. Use cineby.group and bookmark it.",
   },
   {
     question: "Is Cineby free to watch movies and TV shows?",
     answer:
-      "Yes, Cineby is 100% free to browse and stream. You can watch movies and TV shows online in full HD without paying any monthly subscription or hidden fees.",
-  },
-  {
-    question: "Is Cineby a good alternative to PStream, BFlix, or Hurawatch?",
-    answer:
-      "Yes. Cineby is widely regarded as a top PStream alternative, BFlix alternative, and Hurawatch alternative. It offers high-speed Cloudflare edge playback, adaptive 1080p stream mirrors, and zero registration requirements so you can stream without downtime or interruptions.",
+      "Yes. Cineby is free to browse and watch, with no monthly subscription or credit card.",
   },
   {
     question: "Do I need to create an account to stream on Cineby?",
@@ -40,11 +45,6 @@ export const HOME_FAQ_ITEMS: FaqItem[] = [
     question: "Is there an official Cineby app download or APK?",
     answer:
       "Cineby is designed as an ultra-fast Progressive Web App (PWA). You do not need to download shady APK files that compromise your security. Simply visit cineby.group on Chrome or Safari and tap 'Add to Home Screen' or 'Install Cineby' to get a native app experience with zero storage overhead.",
-  },
-  {
-    question: "How Cineby compares to Beflix, Cine97, & Cinego?",
-    answer:
-      "Cineby is widely recommended on Reddit movie streaming communities as a clean, ad-light alternative to legacy sites like Beflix, Cine97, Cosmos, Cinego, and Dorawatch. Cineby offers faster Cloudflare edge loading, multi-server redundancy, 1080p HD playback, and full cross-device watchlist sync.",
   },
   {
     question: "What should I do if a stream or video server buffers?",

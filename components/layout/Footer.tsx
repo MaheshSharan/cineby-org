@@ -40,6 +40,12 @@ export function Footer() {
               App / APK
             </Link>
             <Link
+              href="/about"
+              className="transition-colors hover:text-white"
+            >
+              About
+            </Link>
+            <Link
               href="/blog"
               className="transition-colors hover:text-white"
             >

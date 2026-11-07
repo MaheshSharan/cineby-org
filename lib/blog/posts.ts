@@ -58,7 +58,7 @@ We share news about Cineby on our official channels. If you see conflicting info
       avatar: "/avatar/classic-1.png",
     },
     tags: ["Movie Discovery", "Streaming Guide", "How-To"],
-    coverImage: "https://outgoing-oyster-428.convex.cloud/api/storage/169e1ba5-d693-46bf-a2ee-3c80b5953d68",
+    coverImage: "/blog/how-to-find-movies-and-tv-shows-to-watch-online.webp",
     readTimeMinutes: 7,
     content: `
 Find your next movie night pick or new series without starting from a blank search. Cineby gives you a free-to-browse catalog with dedicated [Movie Browse](/browse/movie) and [TV Series](/browse/tv) catalogs, trending collections, title details, and related recommendations—so you can explore options and make a better-informed shortlist.
@@ -125,7 +125,7 @@ Yes—an authorized trailer is a helpful way to assess a title’s style and int
       avatar: "/avatar/classic-7.png",
     },
     tags: ["Harry Potter", "Franchise Order", "Movie Marathon"],
-    coverImage: "https://outgoing-oyster-428.convex.cloud/api/storage/84567372-b4be-430f-9e01-6b8e5fe217ba",
+    coverImage: "/blog/harry-potter-movies-in-order-viewing-guide.webp",
     readTimeMinutes: 8,
     content: `
 Watching the Harry Potter saga begins with the original eight-film series in release order, from Harry’s first arrival at Hogwarts to the monumental two-part battle finale. The *Fantastic Beasts* prequel films belong to the wider Wizarding World, but they are completely optional for following Harry’s personal story arc.

@@ -10,7 +10,7 @@ import {
 import type { MovieDetails } from "@/lib/tmdb";
 import { getMovieDetails, isTmdbNotFoundError } from "@/lib/tmdb/server";
 import { getMediaHref } from "@/lib/utils/media";
-import { extractIdFromSlug } from "@/lib/utils/slug";
+import { extractIdFromSlug, getCanonicalSlugRedirect } from "@/lib/utils/slug";
 import { fetchTrailerUrlServer } from "@/lib/services/trailer.server";
 
 import { DetailPage } from "@/components/detail/DetailPage";
@@ -66,6 +66,16 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (con
     }
 
     const details = await getMovieDetails(id);
+
+    const redirect = getCanonicalSlugRedirect(
+      `/movie/${param}`,
+      getMediaHref("movie", details.id, details.title),
+      context.resolvedUrl
+    );
+    if (redirect) {
+      return { redirect };
+    }
+
     const initialTrailerUrl = details.imdbId
       ? await fetchTrailerUrlServer(details.imdbId).catch(() => null)
       : null;

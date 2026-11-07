@@ -7,7 +7,8 @@ import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { getAllPosts, getAllTags } from "@/lib/blog/posts";
 import type { BlogPostMeta } from "@/lib/blog/types";
 import { sanitizeJsonLd } from "@/lib/seo/jsonLd";
-import { buildAbsoluteUrl, SITE_NAME } from "@/lib/seo/site";
+import { getSiteUrl } from "@/lib/env/public";
+import { buildAbsoluteUrl } from "@/lib/seo/site";
 
 interface BlogIndexProps {
   posts: BlogPostMeta[];
@@ -42,14 +43,7 @@ export default function BlogIndexPage({ posts, tags }: BlogIndexProps) {
     name: "Cineby Editorial & Streaming Guides",
     description: "Curated movie recommendations, buffering troubleshooting, and streaming culture from Cineby.",
     url: buildAbsoluteUrl("/blog"),
-    publisher: {
-      "@type": "Organization",
-      name: SITE_NAME,
-      logo: {
-        "@type": "ImageObject",
-        url: buildAbsoluteUrl("/logo.png"),
-      },
-    },
+    publisher: { "@id": `${getSiteUrl()}/#organization` },
   });
 
   return (

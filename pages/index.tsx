@@ -36,6 +36,7 @@ import {
   sanitizeJsonLd,
 } from "@/lib/seo/jsonLd";
 import { buildFaqJsonLd } from "@/lib/seo/faqSchema";
+import { getSiteHost } from "@/lib/seo/site";
 
 const HERO_ITEMS = 7;
 const ROW_ITEMS = 20;
@@ -134,8 +135,8 @@ export default function Home({
   return (
     <>
       <PageSeo
-        title="Cineby - Watch Free Movies Online | Free Streaming No Sign Up"
-        description="Stream movies and TV shows online free in HD on Cineby. Enjoy fast, buffer-free online streaming with no sign up, no registration, and multi-device support."
+        title="Cineby - Official Site | Watch Free Movies & TV Shows Online"
+        description={`Cineby is back at ${getSiteHost()}, its official home. Stream movies and TV shows online free with no sign up, on phones, tablets, TVs and computers.`}
         path="/"
         jsonLd={sanitizeJsonLd([
           buildOrganizationJsonLd(),

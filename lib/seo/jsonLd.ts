@@ -1,5 +1,5 @@
 import type { MovieDetails, TvDetails } from "@/lib/tmdb";
-import { buildAbsoluteUrl, SITE_NAME, SOCIAL_PROFILE_URLS } from "@/lib/seo/site";
+import { buildAbsoluteUrl, getSiteHost, SITE_NAME, SOCIAL_PROFILE_URLS } from "@/lib/seo/site";
 import { getSiteUrl } from "@/lib/env/public";
 import { getMediaHref } from "@/lib/utils/media";
 import { getMediaOpenGraphImageUrl } from "@/lib/seo/media";
@@ -96,6 +96,20 @@ export function buildOrganizationJsonLd(): JsonLdData {
 }
 
 /**
+ * Generates AboutPage Schema that ties the About page to the shared Organization and WebSite entities.
+ */
+export function buildAboutPageJsonLd(): JsonLdData {
+  return {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: `About ${SITE_NAME}`,
+    url: buildAbsoluteUrl("/about"),
+    about: { "@id": `${getSiteUrl()}/#organization` },
+    isPartOf: { "@id": `${getSiteUrl()}/#website` },
+  };
+}
+
+/**
  * Generates WebSite Schema with SearchAction for Sitelinks Searchbox in Google SERPs.
  */
 export function buildWebSiteJsonLd(): JsonLdData {
@@ -104,7 +118,8 @@ export function buildWebSiteJsonLd(): JsonLdData {
     "@type": "WebSite",
     "@id": `${getSiteUrl()}/#website`,
     name: SITE_NAME,
-    url: getSiteUrl(),
+    alternateName: getSiteHost(),
+    url: `${getSiteUrl()}/`,
     publisher: {
       "@id": `${getSiteUrl()}/#organization`,
     },
