@@ -48,7 +48,6 @@ Disallow: /api/settings
 # AI training crawlers: blocked. This does not affect appearing in AI search results.
 User-agent: GPTBot
 User-agent: ClaudeBot
-User-agent: Google-Extended
 User-agent: Applebot-Extended
 User-agent: CCBot
 User-agent: Bytespider

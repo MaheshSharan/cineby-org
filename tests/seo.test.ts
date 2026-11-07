@@ -79,10 +79,15 @@ describe("robots.txt", () => {
   });
 
   it("blocks AI training crawlers entirely", () => {
-    for (const agent of ["GPTBot", "ClaudeBot", "Google-Extended", "CCBot"]) {
+    for (const agent of ["GPTBot", "ClaudeBot", "CCBot"]) {
       const groupRules = findGroup(groups, agent)?.rules;
       expect(groupRules).toContain("Disallow: /");
     }
+  });
+
+  it("lets Google-Extended through so Gemini can use the content", () => {
+    // No dedicated group, so Google-Extended follows the "*" group, which allows "/".
+    expect(findGroup(groups, "Google-Extended")).toBeUndefined();
   });
 
   it("declares content signals that allow search and refuse training", () => {
