@@ -87,6 +87,7 @@ export function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardPr
 }
 
 function PortraitCard(view: CardViewProps) {
+  const [isRemoving, setIsRemoving] = useState(false);
   const art = view.posterPath ? getPosterResponsiveUrls(view.posterPath) : getBackdropResponsiveUrls(view.backdropPath);
 
   return (
@@ -128,11 +129,38 @@ function PortraitCard(view: CardViewProps) {
         <p className="mt-0.5 text-xs text-white/50">{view.timeLeft}</p>
       </div>
 
+      {/* Removing swaps the footer in place: a popup would be wider than the card and run off small screens. */}
       <div className="flex items-center justify-between px-1.5 pb-1.5 pt-0.5">
-        <Link href={view.infoHref} onClick={view.onInfoClick} aria-label={`More info for ${view.title}`} className={ROUND_BUTTON_CLASS}>
-          <InfoIcon size={24} />
-        </Link>
-        <RemoveMenu title={view.title} onRemove={view.onRemove} />
+        {isRemoving ? (
+          <>
+            <button
+              type="button"
+              onClick={view.onRemove}
+              aria-label={`Remove ${view.title} from history`}
+              className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full px-3 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            >
+              <TrashIcon size={18} />
+              Remove
+            </button>
+            <button type="button" onClick={() => setIsRemoving(false)} aria-label="Cancel" className={ROUND_BUTTON_CLASS}>
+              <XIcon size={20} />
+            </button>
+          </>
+        ) : (
+          <>
+            <Link href={view.infoHref} onClick={view.onInfoClick} aria-label={`More info for ${view.title}`} className={ROUND_BUTTON_CLASS}>
+              <InfoIcon size={24} />
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsRemoving(true)}
+              aria-label={`More options for ${view.title}`}
+              className={ROUND_BUTTON_CLASS}
+            >
+              <MoreVerticalIcon size={24} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -322,61 +350,6 @@ function ProgressBar({ value, className = "" }: { value: number; className?: str
       className={`h-1 overflow-hidden bg-white/25 ${className}`}
     >
       <div className="h-full bg-primary" style={{ width: `${value}%` }} />
-    </div>
-  );
-}
-
-function RemoveMenu({ title, onRemove }: { title: string; onRemove: () => void }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (event.target instanceof Node && !menuRef.current?.contains(event.target)) setIsOpen(false);
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsOpen(false);
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
-
-  return (
-    <div ref={menuRef} className="relative">
-      <button
-        type="button"
-        aria-label={`More options for ${title}`}
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((open) => !open)}
-        className={ROUND_BUTTON_CLASS}
-      >
-        <MoreVerticalIcon size={24} />
-      </button>
-
-      {isOpen ? (
-        <div role="menu" className="absolute bottom-full right-0 z-40 mb-1 min-w-48 rounded-xl border border-white/10 bg-[#05070a]/95 p-1 shadow-2xl backdrop-blur-xl">
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setIsOpen(false);
-              onRemove();
-            }}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-white transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-          >
-            <TrashIcon size={16} />
-            Remove from history
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }
