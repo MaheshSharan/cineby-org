@@ -158,6 +158,8 @@ export default function Home({
 
         <NativeBannerAd className="my-2" />
 
+        <TopTenRow items={topTenItems} />
+
         <LazyContentRow
           title="Trending Movies"
           initialItems={trendingMovies}
@@ -170,8 +172,6 @@ export default function Home({
           fetchUrl="/api/tmdb/trending?mediaType=tv&timeWindow=day"
           action={viewAllTvLink}
         />
-
-        <TopTenRow items={topTenItems} />
 
         <OnlyOnRow
           initialItems={onlyOnNetflix}
