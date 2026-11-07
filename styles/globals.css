@@ -473,3 +473,19 @@
   -webkit-box-orient: vertical !important;
   color: rgba(255, 255, 255, 0.85) !important;
 }
+
+/* Reserves the Continue watching row's space before history loads, so the page below does not jump. */
+.continue-slot {
+  display: none;
+}
+
+html[data-has-continue] .continue-slot {
+  display: block;
+  min-height: 24rem;
+}
+
+@media (min-width: 1024px) {
+  html[data-has-continue] .continue-slot {
+    min-height: 13rem;
+  }
+}

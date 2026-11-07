@@ -188,7 +188,6 @@ interface WatchlistCardProps {
 
 function WatchlistCard({ item, onRemove }: WatchlistCardProps) {
   const href = getMediaHref(item.mediaType, item.mediaId, item.title);
-  const typeLabel = item.mediaType === "tv" ? "TV Show" : "Movie";
 
   return (
     <MediaPosterCard
@@ -197,7 +196,6 @@ function WatchlistCard({ item, onRemove }: WatchlistCardProps) {
       href={href}
       mediaType={item.mediaType}
       mediaId={item.mediaId}
-      subtitle={typeLabel}
       actions={
         <button
           type="button"

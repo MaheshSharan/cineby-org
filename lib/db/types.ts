@@ -25,6 +25,7 @@ export interface HistoryEntry {
   title: string;
   posterPath: string | null;
   backdropPath: string | null;
+  titleBackdropPath?: string | null;
   seasonNumber: number | null;
   episodeNumber: number | null;
   duration: string | null;

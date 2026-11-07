@@ -242,19 +242,12 @@ function HistoryCard({ entry, onRemove, onAddToWatchlist }: HistoryCardProps) {
       ? getEpisodeHref(entry.mediaId, entry.seasonNumber, entry.episodeNumber, null, entry.title)
       : getPlayHref(entry.mediaType, entry.mediaId, null, entry.title);
 
-  const subtitle =
-    entry.mediaType === "tv"
-      ? `S:${entry.seasonNumber ?? 1} E:${entry.episodeNumber ?? 1}`
-      : "Movie";
-
   return (
     <MediaPosterCard
       title={entry.title}
       posterPath={entry.posterPath}
       href={playHref}
-      subtitle={subtitle}
       progress={entry.progress}
-      duration={entry.duration}
       actions={
         <div className="flex items-center gap-1">
           <button

@@ -103,6 +103,7 @@ export function PlayerShell({
             title,
             posterPath: media.posterPath ?? null,
             backdropPath: media.backdropPath ?? null,
+            titleBackdropPath: media.titleBackdropPath ?? null,
             seasonNumber: playback?.seasonNumber ?? media.seasonNumber ?? null,
             episodeNumber: playback?.episodeNumber ?? media.episodeNumber ?? null,
             duration: media.duration ?? null,

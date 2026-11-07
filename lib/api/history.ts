@@ -1,6 +1,7 @@
 import type { HistoryEntry } from "@/lib/db/types";
 import { apiFetch, sendJson } from "@/lib/api/client";
 import { isLoggedInFlagSet } from "@/lib/auth/loggedInFlag";
+import { invalidateContinueState } from "@/lib/history/continueState";
 import {
   clearLocalHistory,
   getLocalHistory,
@@ -53,6 +54,8 @@ export async function postHistoryEntry(input: HistoryInput, keepalive: boolean):
     if (response.status === 401) {
       return "unauthorized";
     }
+
+    if (response.ok) invalidateContinueState();
 
     return response.ok ? "saved" : "failed";
   } catch {
@@ -140,6 +143,7 @@ export async function syncGuestHistoryToServer(options: { force?: boolean } = {}
     title: item.title,
     posterPath: item.posterPath,
     backdropPath: item.backdropPath,
+    titleBackdropPath: item.titleBackdropPath,
     seasonNumber: item.seasonNumber,
     episodeNumber: item.episodeNumber,
     duration: item.duration,

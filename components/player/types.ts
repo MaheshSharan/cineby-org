@@ -19,6 +19,7 @@ export interface PlayerMedia {
   title: string;
   posterPath?: string | null;
   backdropPath?: string | null;
+  titleBackdropPath?: string | null;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
   episodeName?: string | null;

@@ -489,6 +489,26 @@ export function PencilIcon({ className, size = 16 }: IconProps) {
   );
 }
 
+export function InfoIcon({ className, size = 20 }: IconProps) {
+  return (
+    <Icon className={className} size={size} strokeWidth={2}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
+    </Icon>
+  );
+}
+
+export function MoreVerticalIcon({ className, size = 20 }: IconProps) {
+  return (
+    <Icon className={className} size={size} strokeWidth={2}>
+      <circle cx="12" cy="5" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="19" r="1" />
+    </Icon>
+  );
+}
+
 export function ClockIcon({ className, size = 16 }: IconProps) {
   return (
     <Icon className={className} size={size} strokeWidth={2}>

@@ -80,6 +80,12 @@ export default function Document() {
                     }
                   }
                 } catch(e) {}
+                try {
+                  var cw = JSON.parse(localStorage.getItem('cineby_continue_state') || 'null');
+                  if (cw && cw.hasItems === true) {
+                    document.documentElement.setAttribute('data-has-continue', '');
+                  }
+                } catch(e) {}
               })();
             `,
           }}

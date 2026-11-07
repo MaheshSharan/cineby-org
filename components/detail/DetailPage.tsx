@@ -284,6 +284,7 @@ export function DetailPage({
           title: details.title,
           posterPath: details.posterPath,
           backdropPath: details.backdropPath,
+          titleBackdropPath: details.titleBackdropPath ?? null,
           seasonNumber: effectiveSeason,
           episodeNumber: effectiveEpisode,
           duration,

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import type { MediaSummary } from "@/lib/tmdb";
 import { getBackdropResponsiveUrls } from "@/lib/tmdb/image";
-import { getMediaHref, getMediaTypeLabel, getYear } from "@/lib/utils/media";
+import { getMediaHref, getYear } from "@/lib/utils/media";
 import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
 
@@ -33,7 +33,6 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
   const backdrop = getBackdropResponsiveUrls(media.backdropPath || media.posterPath);
   const href = getMediaHref(media.mediaType, media.id, media.title);
   const year = getYear(media.releaseDate);
-  const typeLabel = getMediaTypeLabel(media.mediaType);
   const widthClass = VARIANT_WIDTH[variant];
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -51,14 +50,12 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
       <MediaPosterCard
         title={media.title}
         posterPath={media.posterPath}
-        backdropPath={media.backdropPath}
         href={href}
         mediaType={media.mediaType}
         mediaId={media.id}
         onClick={handleCardClick}
         rating={media.voteAverage}
         year={year}
-        typeLabel={typeLabel}
         rank={rank}
         className={`${widthClass} snap-start ${className}`}
       />

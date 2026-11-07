@@ -180,10 +180,16 @@ export function toTextlessPosterPath(images: unknown): string | null {
   return nullableString(posters[0]?.file_path);
 }
 
-export function toLogoBackdropPath(images: unknown, fallbackBackdropPath?: string | null): string | null {
-  const backdrops = recordArray(asRecord(images)?.backdrops);
-  const englishBackdrop = backdrops.find((b) => nullableString(b.iso_639_1) === "en");
-  return nullableString(englishBackdrop?.file_path) || fallbackBackdropPath || null;
+/**
+ * Best-rated English backdrop. TMDB tags backdrops that carry the title text with a language, while the
+ * default backdrop has none, so this is the image to show where the title should be readable.
+ */
+export function toTitleBackdropPath(images: unknown): string | null {
+  const englishBackdrops = recordArray(asRecord(images)?.backdrops)
+    .filter((backdrop) => nullableString(backdrop.iso_639_1) === "en")
+    .sort((a, b) => Number(b.vote_average ?? 0) - Number(a.vote_average ?? 0));
+
+  return nullableString(englishBackdrops[0]?.file_path);
 }
 
 export function toMovieDetails(raw: Record<string, unknown>): MovieDetails {
@@ -199,6 +205,7 @@ export function toMovieDetails(raw: Record<string, unknown>): MovieDetails {
     budget: finiteNumber(raw.budget),
     revenue: finiteNumber(raw.revenue),
     logoPath: toLogoPath(raw.images),
+    titleBackdropPath: toTitleBackdropPath(raw.images),
     genres: toGenreListValue(raw.genres),
     productionCompanies: toCompanies(raw.production_companies),
     cast: toCast(raw.credits),
@@ -236,6 +243,7 @@ export function toTvDetails(raw: Record<string, unknown>): TvDetails {
     numberOfEpisodes: asNumber(raw.number_of_episodes),
     episodeRunTime: asNumberArray(raw.episode_run_time),
     logoPath: toLogoPath(raw.images),
+    titleBackdropPath: toTitleBackdropPath(raw.images),
     genres: toGenreListValue(raw.genres),
     networks: toCompanies(raw.networks),
     seasons: toSeasons(raw.seasons),

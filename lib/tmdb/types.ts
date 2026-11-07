@@ -79,6 +79,8 @@ export interface MovieDetails extends MediaSummary {
   originalTitle: string;
   tagline: string | null;
   logoPath: string | null;
+  /** English backdrop that carries the title text; null when TMDB has none. */
+  titleBackdropPath: string | null;
   status: string | null;
   runtime: number | null;
   budget: number | null;
@@ -114,6 +116,7 @@ export interface TvDetails extends MediaSummary {
   originalName: string;
   tagline: string | null;
   logoPath: string | null;
+  titleBackdropPath: string | null;
   status: string | null;
   numberOfSeasons: number;
   numberOfEpisodes: number;

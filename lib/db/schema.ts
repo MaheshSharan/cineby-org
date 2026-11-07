@@ -64,6 +64,7 @@ export function initializeSchema(database: DatabaseSync): void {
       episode_number INTEGER,
       poster_path TEXT,
       backdrop_path TEXT,
+      title_backdrop_path TEXT,
       duration TEXT,
       progress INTEGER,
       progress_seconds INTEGER,
@@ -105,6 +106,9 @@ export function initializeSchema(database: DatabaseSync): void {
     }
     if (!historyColumns.some((col) => col.name === "backdrop_path")) {
       database.exec("ALTER TABLE watch_history ADD COLUMN backdrop_path TEXT;");
+    }
+    if (!historyColumns.some((col) => col.name === "title_backdrop_path")) {
+      database.exec("ALTER TABLE watch_history ADD COLUMN title_backdrop_path TEXT;");
     }
     if (!historyColumns.some((col) => col.name === "duration")) {
       database.exec("ALTER TABLE watch_history ADD COLUMN duration TEXT;");

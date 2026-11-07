@@ -9,6 +9,7 @@ export interface HistoryInput {
   title: string;
   posterPath?: string | null;
   backdropPath?: string | null;
+  titleBackdropPath?: string | null;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
   duration?: string | null;
@@ -56,6 +57,7 @@ export function saveLocalHistory(input: HistoryInput): HistoryEntry {
       title: input.title,
       posterPath: input.posterPath ?? null,
       backdropPath: input.backdropPath ?? null,
+      titleBackdropPath: input.titleBackdropPath ?? null,
       seasonNumber: input.seasonNumber ?? null,
       episodeNumber: input.episodeNumber ?? null,
       duration: input.duration ?? null,
@@ -76,6 +78,7 @@ export function saveLocalHistory(input: HistoryInput): HistoryEntry {
     title: input.title,
     posterPath: input.posterPath ?? null,
     backdropPath: input.backdropPath ?? null,
+    titleBackdropPath: input.titleBackdropPath ?? null,
     seasonNumber: input.seasonNumber ?? null,
     episodeNumber: input.episodeNumber ?? null,
     duration: input.duration ?? null,

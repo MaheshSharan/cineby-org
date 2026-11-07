@@ -1,5 +1,5 @@
 import type { MediaSummary } from "@/lib/tmdb";
-import { getMediaHref, getMediaTypeLabel, getYear } from "@/lib/utils/media";
+import { getMediaHref, getYear } from "@/lib/utils/media";
 
 import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
 
@@ -29,7 +29,6 @@ export function RecommendationsRow({ title, items }: RecommendationsRowProps) {
             mediaId={item.id}
             rating={item.voteAverage}
             year={getYear(item.releaseDate)}
-            typeLabel={getMediaTypeLabel(item.mediaType)}
           />
         ))}
       </div>

@@ -9,6 +9,7 @@ export interface HistoryInput {
   title: string;
   posterPath?: string | null;
   backdropPath?: string | null;
+  titleBackdropPath?: string | null;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
   duration?: string | null;
@@ -24,6 +25,7 @@ interface HistoryRow {
   title: string;
   poster_path: string | null;
   backdrop_path: string | null;
+  title_backdrop_path: string | null;
   season_number: number | null;
   episode_number: number | null;
   duration: string | null;
@@ -36,13 +38,14 @@ interface HistoryRow {
 // change nothing meaningful (same playback position, same episode) into a no-op with zero writes.
 const UPSERT_HISTORY_SQL = `INSERT INTO watch_history (
       user_id, profile_id, media_type, media_id, title,
-      poster_path, backdrop_path, season_number, episode_number,
+      poster_path, backdrop_path, title_backdrop_path, season_number, episode_number,
       duration, progress, progress_seconds, watched_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(profile_id, media_type, media_id) DO UPDATE SET
       title = excluded.title,
       poster_path = excluded.poster_path,
       backdrop_path = excluded.backdrop_path,
+      title_backdrop_path = excluded.title_backdrop_path,
       season_number = excluded.season_number,
       episode_number = excluded.episode_number,
       duration = excluded.duration,
@@ -64,6 +67,7 @@ function buildUpsertStatement(userId: number, profileId: number, input: HistoryI
       input.title,
       input.posterPath ?? null,
       input.backdropPath ?? null,
+      input.titleBackdropPath ?? null,
       input.seasonNumber ?? null,
       input.episodeNumber ?? null,
       input.duration ?? null,
@@ -136,6 +140,7 @@ export async function listHistory(userId: number, profileId?: number, limit = 50
     title: row.title,
     posterPath: row.poster_path,
     backdropPath: row.backdrop_path,
+    titleBackdropPath: row.title_backdrop_path,
     seasonNumber: row.season_number,
     episodeNumber: row.episode_number,
     duration: row.duration,
