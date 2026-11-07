@@ -12,7 +12,7 @@ import { Layout } from "@/components/layout/Layout";
 import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { UpdateToast } from "@/components/pwa/UpdateToast";
 import { ScrollEdgeButton } from "@/components/ui/ScrollEdgeButton";
-import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
+import { PageLoadBar } from "@/components/ui/PageLoadBar";
 import { SocialBarAd } from "@/components/ads/SocialBarAd";
 import { ConsentManager } from "@/components/consent/ConsentManager";
 import { CONSENT_STORAGE_KEY } from "@/lib/consent/analyticsConsent";
@@ -149,7 +149,7 @@ export default function App({ Component, pageProps }: AppProps) {
       {/* Non-intrusive In-Page Push banner suppression placeholder */}
       <SettingsProvider>
         <DetailModalProvider>
-          <RouteProgressBar />
+          <PageLoadBar />
           <Layout>
             <Component {...pageProps} />
           </Layout>
