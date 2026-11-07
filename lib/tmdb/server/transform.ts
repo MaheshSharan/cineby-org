@@ -100,23 +100,32 @@ function toCast(credits: unknown): CastMember[] {
   }));
 }
 
+// Only directors are used (JSON-LD). TMDB lists 200+ crew members, which bloated the page data and render CPU.
 function toCrew(credits: unknown): CrewMember[] {
-  return recordArray(asRecord(credits)?.crew).map((member): CrewMember => ({
-    id: asNumber(member.id),
-    name: nullableString(member.name) ?? "",
-    job: nullableString(member.job) ?? "",
-    profilePath: nullableString(member.profile_path),
-  }));
+  return recordArray(asRecord(credits)?.crew)
+    .filter((member) => member.job === "Director")
+    .map((member): CrewMember => ({
+      id: asNumber(member.id),
+      name: nullableString(member.name) ?? "",
+      job: nullableString(member.job) ?? "",
+      profilePath: nullableString(member.profile_path),
+    }));
 }
 
+const MAX_VIDEOS = 3;
+
+// No component reads videos (trailers come from a separate service), so keep only a few trailers.
 function toVideos(value: unknown): MediaVideo[] {
-  return recordArray(asRecord(value)?.results).map((video): MediaVideo => ({
-    id: nullableString(video.id) ?? "",
-    key: nullableString(video.key) ?? "",
-    name: nullableString(video.name) ?? "",
-    site: nullableString(video.site) ?? "",
-    type: nullableString(video.type) ?? "",
-  }));
+  return recordArray(asRecord(value)?.results)
+    .filter((video) => video.type === "Trailer")
+    .slice(0, MAX_VIDEOS)
+    .map((video): MediaVideo => ({
+      id: nullableString(video.id) ?? "",
+      key: nullableString(video.key) ?? "",
+      name: nullableString(video.name) ?? "",
+      site: nullableString(video.site) ?? "",
+      type: nullableString(video.type) ?? "",
+    }));
 }
 
 function toCompanies(value: unknown): Company[] {

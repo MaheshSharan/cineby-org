@@ -219,7 +219,7 @@ export default function SportWatchPage({
     <>
       <PageSeo
         title={`Watch ${match.name} Live Stream Free | Cineby Sports`}
-        description={`Watch ${match.name} live stream online in HD. High quality streaming links for ${match.category_name} - ${match.tag}. Free alternative to CBS Sports and Epic Sports.`}
+        description={`Watch ${match.name} live stream online. Streaming links for ${match.category_name} - ${match.tag}.`}
         path={getSportWatchHref(match.uri_name)}
         jsonLd={sportsEventJsonLd}
       />

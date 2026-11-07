@@ -128,10 +128,10 @@ export default function SportsPage({ initialData }: SportsPageProps) {
           },
           {
             "@type": "Question",
-            name: "What alternatives does Cineby offer compared to CBS Sports or Epic Sports?",
+            name: "What if a sports stream server buffers or lags?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "Cineby offers an ad-light, multi-server alternative to CBS Sports, Epic Sports (epicsports com), and Stream PK with instant 1080p and 540p mirror feeds across all global leagues.",
+              text: "Every match page has a server selector. If a stream buffers or lags, switch to another server.",
             },
           },
         ],
@@ -425,10 +425,10 @@ export default function SportsPage({ initialData }: SportsPageProps) {
             </h2>
             <div className="space-y-2 text-xs sm:text-sm text-white/60 leading-relaxed font-normal">
               <p>
-                Looking for reliable <strong className="text-white font-medium">streamed football</strong>, <strong className="text-white font-medium">F1 live streams</strong>, or <strong className="text-white font-medium">free PPV fight events</strong>? Cineby Sports provides edge-accelerated, buffer-free live sports coverage across all major leagues worldwide. Stream live football, Formula 1 Grand Prix, UEFA Champions League, Premier League, NBA basketball, NFL football, and combat sports completely free with zero subscription requirements.
+                Cineby Sports lists live and upcoming matches across football, Formula 1, the Champions League, the Premier League, NBA, NFL and combat sports. Open a match to watch it free, with no subscription.
               </p>
               <p>
-                As top alternatives to legacy portals like <strong className="text-white font-medium">CBS Sports</strong>, <strong className="text-white font-medium">Epic Sports (epicsports com)</strong>, and <strong className="text-white font-medium">Stream PK</strong>, Cineby delivers high-bitrate multi-server feeds with instant kickoff countdowns, real-time viewer tracking, and adaptive player mirrors that keep you connected without aggressive popup interruptions.
+                Each match page has a server selector, so you can switch servers if a stream is slow.
               </p>
             </div>
           </div>
@@ -443,7 +443,7 @@ export default function SportsPage({ initialData }: SportsPageProps) {
             <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-2">
               <h3 className="text-sm font-semibold text-white">What if a sports stream server buffers or lags?</h3>
               <p className="text-xs text-white/60 leading-relaxed">
-                Every match page includes a redundant multi-server selector (Server 1 HD, Server 2 SD/540p). If your network experiences throttling, switch servers with one click for uninterrupted streaming.
+                Every match page has a server selector. If a stream buffers or lags, switch to another server.
               </p>
             </div>
           </div>

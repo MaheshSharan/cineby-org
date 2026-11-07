@@ -20,7 +20,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const urls: SitemapUrlEntry[] = tvSeries.map((series) => ({
       loc: buildMediaCanonicalUrl("tv", series.id, series.title),
-      lastmod: series.releaseDate || undefined,
       changefreq: "weekly",
       priority: 0.8,
     }));
