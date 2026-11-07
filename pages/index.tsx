@@ -29,7 +29,12 @@ import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { FaqSection } from "@/components/home/FaqSection";
 import { SeoContentSection } from "@/components/home/SeoContentSection";
 import { PageSeo } from "@/components/seo/PageSeo";
-import { buildSiteNavigationJsonLd, buildWebSiteJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
+import {
+  buildOrganizationJsonLd,
+  buildSiteNavigationJsonLd,
+  buildWebSiteJsonLd,
+  sanitizeJsonLd,
+} from "@/lib/seo/jsonLd";
 import { buildFaqJsonLd } from "@/lib/seo/faqSchema";
 
 const HERO_ITEMS = 7;
@@ -132,7 +137,12 @@ export default function Home({
         title="Cineby - Watch Free Movies Online | Free Streaming No Sign Up"
         description="Stream movies and TV shows online free in HD on Cineby. Enjoy fast, buffer-free online streaming with no sign up, no registration, and multi-device support."
         path="/"
-        jsonLd={sanitizeJsonLd([buildWebSiteJsonLd(), buildSiteNavigationJsonLd(), buildFaqJsonLd()])}
+        jsonLd={sanitizeJsonLd([
+          buildOrganizationJsonLd(),
+          buildWebSiteJsonLd(),
+          buildSiteNavigationJsonLd(),
+          buildFaqJsonLd(),
+        ])}
       />
 
       <h1 className="sr-only">Cineby - Watch Free Movies & TV Shows Online with No Sign Up</h1>

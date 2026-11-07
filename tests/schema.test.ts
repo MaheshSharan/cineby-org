@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildBreadcrumbJsonLd,
   buildMovieJsonLd,
+  buildOrganizationJsonLd,
   buildSportsEventJsonLd,
   buildTvSeriesJsonLd,
   buildWebSiteJsonLd,
@@ -11,12 +12,34 @@ import type { MovieDetails, TvDetails } from "@/lib/tmdb";
 import { getSiteUrl } from "@/lib/env/public";
 
 describe("Schema.org JSON-LD structured data generators", () => {
-  it("generates WebSite schema with SearchAction for Sitelinks Searchbox", () => {
+  it("generates Organization schema with stable @id and absolute 512px logo", () => {
+    const schema = buildOrganizationJsonLd();
+
+    expect(schema["@context"]).toBe("https://schema.org");
+    expect(schema["@type"]).toBe("Organization");
+    expect(schema["@id"]).toBe(`${getSiteUrl()}/#organization`);
+    expect(schema.name).toBe("Cineby");
+    expect(schema.url).toBe(getSiteUrl());
+
+    const logo = schema.logo as Record<string, unknown>;
+    expect(logo["@type"]).toBe("ImageObject");
+    expect(logo.url).toBe(`${getSiteUrl()}/icons/icon-512.png`);
+    expect(logo.width).toBe(512);
+    expect(logo.height).toBe(512);
+
+    expect(schema.sameAs).toEqual(["https://x.com/Cineby_groups"]);
+  });
+
+  it("generates WebSite schema with SearchAction and references Organization publisher @id", () => {
     const schema = buildWebSiteJsonLd();
 
     expect(schema["@context"]).toBe("https://schema.org");
     expect(schema["@type"]).toBe("WebSite");
+    expect(schema["@id"]).toBe(`${getSiteUrl()}/#website`);
     expect(schema.url).toBe(getSiteUrl());
+    expect(schema.publisher).toEqual({
+      "@id": `${getSiteUrl()}/#organization`,
+    });
     expect(schema.potentialAction).toBeDefined();
 
     const action = schema.potentialAction as Record<string, unknown>;
@@ -192,6 +215,7 @@ describe("Schema.org JSON-LD structured data generators", () => {
     // Organizer
     expect(schema.organizer).toEqual({
       "@type": "Organization",
+      "@id": `${getSiteUrl()}/#organization`,
       name: "Cineby",
       url: getSiteUrl(),
     });

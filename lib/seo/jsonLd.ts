@@ -1,5 +1,5 @@
 import type { MovieDetails, TvDetails } from "@/lib/tmdb";
-import { buildAbsoluteUrl, SITE_NAME } from "@/lib/seo/site";
+import { buildAbsoluteUrl, SITE_NAME, SOCIAL_PROFILE_URLS } from "@/lib/seo/site";
 import { getSiteUrl } from "@/lib/env/public";
 import { getMediaHref } from "@/lib/utils/media";
 import { getMediaOpenGraphImageUrl } from "@/lib/seo/media";
@@ -76,14 +76,38 @@ export function buildCategoryBreadcrumbJsonLd(mediaType: "movie" | "tv"): JsonLd
 }
 
 /**
+ * Generates root Organization Schema for Google Knowledge Graph and brand entity hygiene.
+ */
+export function buildOrganizationJsonLd(): JsonLdData {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${getSiteUrl()}/#organization`,
+    name: SITE_NAME,
+    url: getSiteUrl(),
+    logo: {
+      "@type": "ImageObject",
+      url: buildAbsoluteUrl("/icons/icon-512.png"),
+      width: 512,
+      height: 512,
+    },
+    sameAs: [...SOCIAL_PROFILE_URLS],
+  };
+}
+
+/**
  * Generates WebSite Schema with SearchAction for Sitelinks Searchbox in Google SERPs.
  */
 export function buildWebSiteJsonLd(): JsonLdData {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": `${getSiteUrl()}/#website`,
     name: SITE_NAME,
     url: getSiteUrl(),
+    publisher: {
+      "@id": `${getSiteUrl()}/#organization`,
+    },
     potentialAction: {
       "@type": "SearchAction",
       target: {
@@ -171,10 +195,11 @@ export function buildBlogPostJsonLd(post: {
     },
     publisher: {
       "@type": "Organization",
+      "@id": `${getSiteUrl()}/#organization`,
       name: SITE_NAME,
       logo: {
         "@type": "ImageObject",
-        url: buildAbsoluteUrl("/logo.png"),
+        url: buildAbsoluteUrl("/icons/icon-512.png"),
       },
     },
   };
@@ -425,6 +450,7 @@ export function buildSportsEventJsonLd(
     },
     organizer: {
       "@type": "Organization",
+      "@id": `${getSiteUrl()}/#organization`,
       name: SITE_NAME,
       url: getSiteUrl(),
     },
