@@ -46,6 +46,24 @@ export function isOriginAllowed(origin: string, allowedOrigins: string[]): boole
   }
 }
 
+/** Parses a JSON string or accepts an object; anything that is not a plain object yields null. */
+export function toRecord(data: unknown): Record<string, unknown> | null {
+  if (typeof data === "string") {
+    try {
+      return toRecord(JSON.parse(data));
+    } catch {
+      return null;
+    }
+  }
+  return data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>) : null;
+}
+
+/** A finite, non-negative number from a number or numeric string, otherwise undefined. */
+export function toNonNegativeNumber(value: unknown): number | undefined {
+  const parsed = typeof value === "string" && value.trim() !== "" ? Number(value) : value;
+  return typeof parsed === "number" && Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
 const VALID_EVENT_TYPES = new Set<EmbedEventType>([
   "play",
   "pause",

@@ -7,6 +7,8 @@ export interface EmbedCapabilities {
   idType: "tmdb" | "imdb" | "both";
   anime?: boolean;
   tvControls?: boolean;
+  /** The embedded player runs its own Up Next / auto-advance, so the site must not navigate on "ended". */
+  handlesNextEpisode?: boolean;
 }
 
 export interface EmbedThemeConfig {
@@ -19,6 +21,9 @@ export interface EmbedBuildUrlOptions {
   imdbId?: string;
   anilistId?: number | string;
   type: "movie" | "tv" | "anime";
+  title?: string;
+  /** Absolute image URL shown while the player loads. */
+  posterUrl?: string;
   season?: number;
   episode?: number;
   startAtSec?: number;
@@ -38,6 +43,7 @@ export type EmbedEventType =
   | "timeupdate"
   | "ended"
   | "next"
+  | "episode"
   | "media_data";
 
 export const DEFAULT_EMBED_SANDBOX =
@@ -48,6 +54,9 @@ export interface EmbedNormalizedEvent {
   currentTime?: number;
   duration?: number;
   videoId?: string;
+  /** Set on "episode" events: the episode the viewer moved to inside the embedded player. */
+  season?: number;
+  episode?: number;
   rawData?: unknown;
 }
 
@@ -65,4 +74,6 @@ export interface EmbedProvider {
   buildUrl(options: EmbedBuildUrlOptions): string;
   parseEvent(origin: string, data: unknown): EmbedNormalizedEvent | null;
   iframe: EmbedIframeOptions;
+  /** For embeds with no start-time URL parameter: the message that seeks to the resume position. */
+  resume?: { targetOrigin: string; buildMessage(startAtSec: number): unknown };
 }

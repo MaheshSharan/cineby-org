@@ -11,7 +11,13 @@ import { useIsFullscreen } from "./hooks/useIsFullscreen";
 import { useIsTouchDevice } from "./hooks/useIsTouchDevice";
 import { initAntiRedirectShield, setAntiRedirectShieldActive } from "@/lib/security/antiRedirect";
 import { getEmbedProvider } from "@/lib/embeds/registry";
+import { getEmbedTheme } from "@/lib/embeds/theme";
+import { buildSourceImageUrl } from "@/lib/tmdb/image";
+import { useSettings } from "@/hooks/useSettings";
 import type { PlayerServerOption } from "@/lib/player/modeConfig";
+
+// Short enough to feel instant, long enough to hide the embed's first blank frame.
+const IFRAME_REVEAL_DELAY_MS = 150;
 
 export { ONBOARD_ADS_PLAYER_INFO_KEY };
 
@@ -46,7 +52,12 @@ export function EmbedPlayer({
   const [hasTimedOut, setHasTimedOut] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const startedRef = useRef(false);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const reachedMilestonesRef = useRef<Set<number>>(new Set());
+  // Episode the viewer moved to inside the embedded player, so history is saved against it.
+  const playingEpisodeRef = useRef<{ seasonNumber: number; episodeNumber: number } | null>(null);
+  const { settings } = useSettings();
+  const embedTheme = getEmbedTheme(settings.appearance.theme);
 
   const isTouchDevice = useIsTouchDevice();
   const isLandscape = useIsLandscape();
@@ -108,6 +119,7 @@ export function EmbedPlayer({
   useEffect(() => {
     startedRef.current = false;
     reachedMilestonesRef.current.clear();
+    playingEpisodeRef.current = null;
   }, [media.mediaId, media.seasonNumber, media.episodeNumber, currentServerId]);
 
   // Immediately terminate previous server stream on server change, media change, or unmount
@@ -158,21 +170,25 @@ export function EmbedPlayer({
     [currentServerId, onSelectServer, media.mediaId, media.mediaType]
   );
 
+  const resumeSec =
+    initialTime > 0
+      ? initialTime
+      : media.progressSeconds && media.progressSeconds > 0
+      ? media.progressSeconds
+      : undefined;
+
   // Construct iframe URL
   const embedUrl = useMemo(() => {
     if (!provider) return "";
     try {
       const isAnime = Boolean(media.anilistId);
       const effectiveType = isAnime ? "anime" : media.mediaType;
-      const resumeSec =
-        initialTime > 0
-          ? initialTime
-          : media.progressSeconds && media.progressSeconds > 0
-          ? media.progressSeconds
-          : undefined;
 
       return provider.buildUrl({
         type: effectiveType,
+        title: media.title,
+        // Third-party players fetch this themselves, so it must be the direct TMDB URL.
+        posterUrl: buildSourceImageUrl(media.backdropPath, "w1280") ?? undefined,
         tmdbId: media.mediaId,
         imdbId: media.imdbId ?? undefined,
         anilistId: media.anilistId ?? undefined,
@@ -181,10 +197,7 @@ export function EmbedPlayer({
         startAtSec: resumeSec,
         progress: resumeSec,
         autoplay: true,
-        theme: {
-          primary: "DC2626",
-          secondary: "170000",
-        },
+        theme: embedTheme,
         lang: "en",
         nextEpisode: true,
         episodeSelector: true,
@@ -193,7 +206,7 @@ export function EmbedPlayer({
     } catch {
       return "";
     }
-  }, [provider, media, initialTime]);
+  }, [provider, media, resumeSec, embedTheme]);
 
   // Handle load timeout
   useEffect(() => {
@@ -214,13 +227,22 @@ export function EmbedPlayer({
 
   // Smooth dismiss handler when iframe HTML loads
   const handleIframeLoad = useCallback(() => {
-    // Dismiss the heavy spinner overlay after a graceful 600ms transition
-    // so the provider's internal UI takes over without visual stall
-    const dismissTimer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 600);
-    return () => clearTimeout(dismissTimer);
-  }, []);
+    // Embeds without a start-time URL parameter are told the resume position by message.
+    if (provider?.resume && resumeSec) {
+      iframeRef.current?.contentWindow?.postMessage(
+        provider.resume.buildMessage(resumeSec),
+        provider.resume.targetOrigin
+      );
+    }
+
+    clearTimeout(revealTimerRef.current);
+    revealTimerRef.current = setTimeout(() => setIsLoaded(true), IFRAME_REVEAL_DELAY_MS);
+  }, [provider, resumeSec]);
+
+  // A pending reveal must not mark the next server (or an unmounted player) as loaded.
+  useEffect(() => {
+    return () => clearTimeout(revealTimerRef.current);
+  }, [currentServerId, media.mediaId, media.seasonNumber, media.episodeNumber]);
 
   // Track embed_not_available if timeout occurs
   useEffect(() => {
@@ -282,6 +304,10 @@ export function EmbedPlayer({
     serverId: currentServerId,
     iframeRef,
     onEvent: (event) => {
+      if (event.season && event.episode) {
+        playingEpisodeRef.current = { seasonNumber: event.season, episodeNumber: event.episode };
+      }
+
       if (event.event === "play") {
         trackEvent({
           action: "media_play",
@@ -305,9 +331,10 @@ export function EmbedPlayer({
     onTimeUpdate: (current, duration) => {
       setIsLoaded(true);
       setHasTimedOut(false);
+      const playing = playingEpisodeRef.current;
       onTimeUpdate?.(current, duration, {
-        seasonNumber: media.seasonNumber ?? undefined,
-        episodeNumber: media.episodeNumber ?? undefined,
+        seasonNumber: playing?.seasonNumber ?? media.seasonNumber ?? undefined,
+        episodeNumber: playing?.episodeNumber ?? media.episodeNumber ?? undefined,
       });
 
       if (duration > 0) {
@@ -332,6 +359,9 @@ export function EmbedPlayer({
     },
     onEnded: () => {
       onEnded?.();
+      // These embeds run their own Up Next, so navigating here would reload the player mid-countdown.
+      if (provider?.capabilities.handlesNextEpisode) return;
+
       // Auto navigate to next episode if available
       if (media.mediaType === "tv" && media.seasonNumber && media.episodeNumber && onNavigateEpisode) {
         const currentSeason = media.seasons?.find((s) => s.seasonNumber === media.seasonNumber);

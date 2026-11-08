@@ -46,8 +46,8 @@ Variables are validated against `lib/env/manifest.ts` during build and start-up:
 | --- | --- | --- |
 | `PLAYER_MODE` | `embed` | Enforces pure embed player mode |
 | `ENABLE_EMBED_PLAYERS` | `true` | Embed feature master switch |
-| `EMBED_SERVER_PRIORITY` | `vidy,vidnest,vixsrc` | Server drawer priority order |
-| `EMBED_DEFAULT_SERVER` | `vidy` | Default preselected embed server |
+| `EMBED_SERVER_PRIORITY` | `vidrift,framextv,vidy,vidnest,vixsrc` | Server drawer priority order |
+| `EMBED_DEFAULT_SERVER` | `vidrift` | Default preselected embed server |
 | `EMBED_LOAD_TIMEOUT_MS` | `12000` | Timeout threshold before showing server switch fallback |
 | `CACHE_BACKEND` | `kv` (prod) / `memory` (dev) | Edge cache store backend |
 | `DATABASE_PATH` | `data/cineby.db` | Local fallback path when running outside Cloudflare D1 context |

@@ -2,8 +2,12 @@ import type { EmbedProvider } from "./types";
 import { vixsrcEmbed } from "./sites/vixsrc";
 import { vidyEmbed } from "./sites/vidy";
 import { vidnestEmbed } from "./sites/vidnest";
+import { vidriftEmbed } from "./sites/vidrift";
+import { framextvEmbed } from "./sites/framextv";
 
 export const ALL_EMBED_PROVIDERS: Record<string, EmbedProvider> = {
+  vidrift: vidriftEmbed,
+  framextv: framextvEmbed,
   vixsrc: vixsrcEmbed,
   vidy: vidyEmbed,
   vidnest: vidnestEmbed,

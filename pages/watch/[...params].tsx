@@ -1,4 +1,5 @@
 import type { GetServerSideProps } from "next";
+import Head from "next/head";
 import { useRouter } from "next/router";
 
 import { PRIVATE_PAGE_CACHE_CONTROL, PUBLIC_PAGE_CACHE_CONTROL } from "@/lib/http/cacheControl";
@@ -10,6 +11,8 @@ import { formatRuntime, getEpisodeHref, getYear, toPlayerSeasons } from "@/lib/u
 
 import { PlayerShell } from "@/components/player/PlayerShell";
 import type { PlayerMedia } from "@/components/player/types";
+import { FRAMEXTV_ORIGIN } from "@/lib/embeds/sites/framextv";
+import { VIDRIFT_ORIGIN } from "@/lib/embeds/sites/vidrift";
 import { PageSeo } from "@/components/seo/PageSeo";
 import { getPlayerModeConfig, type PlayerModeConfig } from "@/lib/player/modeConfig";
 
@@ -26,6 +29,11 @@ export default function WatchPage({ title, subtitle, media, modeConfig }: WatchP
   return (
     <>
       <PageSeo title={`Watch ${title} | Cineby`} noindex />
+      <Head>
+        {/* Open the connections to the first two servers while the page hydrates. */}
+        <link rel="preconnect" href={VIDRIFT_ORIGIN} crossOrigin="anonymous" />
+        <link rel="preconnect" href={FRAMEXTV_ORIGIN} crossOrigin="anonymous" />
+      </Head>
       <PlayerShell
         title={title}
         subtitle={subtitle}
@@ -94,7 +102,7 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
             backdropPath: details.backdropPath,
             seasonNumber: season,
             episodeNumber: episode,
-            duration,
+            duration: duration ?? null,
             runtime: details.episodeRunTime?.[0] ?? null,
             releaseYear: getYear(details.releaseDate),
             seasons: toPlayerSeasons(details.seasons),
