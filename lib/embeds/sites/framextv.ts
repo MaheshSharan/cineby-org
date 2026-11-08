@@ -1,3 +1,4 @@
+import { POPUP_BLOCKING_SANDBOX } from "../sandboxPolicy";
 import type { EmbedBuildUrlOptions, EmbedNormalizedEvent, EmbedProvider } from "../types";
 import { parseEmbedMessage, toRecord } from "../common";
 
@@ -55,6 +56,7 @@ export const framextvEmbed: EmbedProvider = {
   iframe: {
     allow: "encrypted-media; autoplay *; fullscreen *",
     referrerPolicy: "origin",
-    sandbox: undefined,
+    // Plays sandboxed, but its "Please Disable Sandbox" check is intermittent; EmbedPlayer falls back if it trips.
+    sandbox: POPUP_BLOCKING_SANDBOX,
   },
 };

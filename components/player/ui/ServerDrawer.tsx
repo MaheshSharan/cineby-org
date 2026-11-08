@@ -57,9 +57,9 @@ export function ServerDrawer({
         aria-label="Server Selection"
         className="relative z-10 w-full max-w-[420px] h-full bg-gradient-to-b from-[#141416] via-[#0d0d0f] to-[#08080a] border-l border-white/10 p-6 flex flex-col justify-between shadow-2xl shadow-black/90 animate-in slide-in-from-right duration-250 select-none"
       >
-        <div className="flex-1 overflow-y-auto pr-1">
-          {/* Header */}
-          <div className="flex items-center justify-between pb-5 border-b border-white/[0.08]">
+        <div className="flex min-h-0 flex-1 flex-col">
+          {/* Header stays put; only the list below scrolls */}
+          <div className="flex shrink-0 items-center justify-between pb-5 border-b border-white/[0.08]">
             <div>
               <h2 className="text-xl font-bold text-white tracking-tight">Select Server</h2>
               <p className="text-xs text-white/50 mt-1">Switch stream or embed provider</p>
@@ -78,7 +78,7 @@ export function ServerDrawer({
           </div>
 
           {/* Server Options List */}
-          <div className="mt-5 space-y-3">
+          <div className="mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
             {servers.map((server) => {
               const isSelected = server.id === currentServerId;
               const isVidy = server.id === "vidy";
@@ -156,7 +156,7 @@ export function ServerDrawer({
         </div>
 
         {/* Bottom Section - AdBlock Guide & Disclaimer */}
-        <div className="pt-5 border-t border-white/[0.08] space-y-3.5">
+        <div className="shrink-0 pt-5 border-t border-white/[0.08] space-y-3.5">
           {onOpenAdBlockGuide && (
             <button
               type="button"

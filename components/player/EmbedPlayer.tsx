@@ -11,6 +11,7 @@ import { useIsFullscreen } from "./hooks/useIsFullscreen";
 import { useIsTouchDevice } from "./hooks/useIsTouchDevice";
 import { initAntiRedirectShield, setAntiRedirectShieldActive } from "@/lib/security/antiRedirect";
 import { getEmbedProvider } from "@/lib/embeds/registry";
+import { canUseSandbox, rememberSandboxRefusal, SANDBOX_CHECK_MS } from "@/lib/embeds/sandboxPolicy";
 import { getEmbedTheme } from "@/lib/embeds/theme";
 import { buildSourceImageUrl } from "@/lib/tmdb/image";
 import { useSettings } from "@/hooks/useSettings";
@@ -29,7 +30,8 @@ interface EmbedPlayerProps {
   loadTimeoutMs: number;
   initialTime?: number;
   onBack?: () => void;
-  onSelectServer: (serverId: string) => void;
+  /** `liveSeconds` is how far the viewer had played in this player when they switched. */
+  onSelectServer: (serverId: string, liveSeconds: number) => void;
   onTimeUpdate?: (currentTime: number, duration: number, playback?: { seasonNumber?: number; episodeNumber?: number }) => void;
   onEnded?: () => void;
   onNavigateEpisode?: (seasonNumber: number, episodeNumber: number) => void;
@@ -52,6 +54,11 @@ export function EmbedPlayer({
   const [hasTimedOut, setHasTimedOut] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const startedRef = useRef(false);
+  const liveSecondsRef = useRef(0);
+  const hasPlaybackRef = useRef(false);
+  const firstTimeRef = useRef<number | null>(null);
+  // Iframe whose sandboxed load reported no playback, so it was reloaded without the sandbox.
+  const [unsandboxedKey, setUnsandboxedKey] = useState<string | null>(null);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const reachedMilestonesRef = useRef<Set<number>>(new Set());
   // Episode the viewer moved to inside the embedded player, so history is saved against it.
@@ -120,6 +127,9 @@ export function EmbedPlayer({
     startedRef.current = false;
     reachedMilestonesRef.current.clear();
     playingEpisodeRef.current = null;
+    liveSecondsRef.current = 0;
+    hasPlaybackRef.current = false;
+    firstTimeRef.current = null;
   }, [media.mediaId, media.seasonNumber, media.episodeNumber, currentServerId]);
 
   // Immediately terminate previous server stream on server change, media change, or unmount
@@ -165,9 +175,13 @@ export function EmbedPlayer({
         } catch {}
       }
       setIsLoaded(false);
-      onSelectServer(serverId);
+      // Time reached in a different episode (picked inside the embed) says nothing about the one being reloaded.
+      const playing = playingEpisodeRef.current;
+      const isSameEpisode =
+        !playing || (playing.seasonNumber === media.seasonNumber && playing.episodeNumber === media.episodeNumber);
+      onSelectServer(serverId, isSameEpisode ? liveSecondsRef.current : 0);
     },
-    [currentServerId, onSelectServer, media.mediaId, media.mediaType]
+    [currentServerId, onSelectServer, media.mediaId, media.mediaType, media.seasonNumber, media.episodeNumber]
   );
 
   const resumeSec =
@@ -176,6 +190,23 @@ export function EmbedPlayer({
       : media.progressSeconds && media.progressSeconds > 0
       ? media.progressSeconds
       : undefined;
+
+  const iframeKey = `${currentServerId}-${media.mediaId}-${media.seasonNumber ?? 0}-${media.episodeNumber ?? 0}`;
+
+  const isSandboxed = Boolean(
+    provider?.iframe.sandbox && unsandboxedKey !== iframeKey && canUseSandbox(currentServerId)
+  );
+
+  // A server that refuses the sandbox never plays inside it: give it one unsandboxed try.
+  useEffect(() => {
+    if (!isSandboxed) return;
+
+    const timer = setTimeout(() => {
+      if (!hasPlaybackRef.current) setUnsandboxedKey(iframeKey);
+    }, SANDBOX_CHECK_MS);
+
+    return () => clearTimeout(timer);
+  }, [isSandboxed, iframeKey]);
 
   // Construct iframe URL
   const embedUrl = useMemo(() => {
@@ -304,6 +335,18 @@ export function EmbedPlayer({
     serverId: currentServerId,
     iframeRef,
     onEvent: (event) => {
+      // A blocked player can still send time updates stuck at one value, so only advancing time proves playback.
+      if (event.event === "timeupdate" && event.currentTime !== undefined) {
+        firstTimeRef.current ??= event.currentTime;
+        if (event.currentTime - firstTimeRef.current >= 1) hasPlaybackRef.current = true;
+      }
+      if (event.event === "play") hasPlaybackRef.current = true;
+
+      if (hasPlaybackRef.current) {
+        // Playing only once the sandbox was dropped means this server refuses it.
+        if (unsandboxedKey === iframeKey) rememberSandboxRefusal(currentServerId);
+      }
+
       if (event.season && event.episode) {
         playingEpisodeRef.current = { seasonNumber: event.season, episodeNumber: event.episode };
       }
@@ -329,6 +372,7 @@ export function EmbedPlayer({
       }
     },
     onTimeUpdate: (current, duration) => {
+      liveSecondsRef.current = current;
       setIsLoaded(true);
       setHasTimedOut(false);
       const playing = playingEpisodeRef.current;
@@ -425,14 +469,14 @@ export function EmbedPlayer({
       {/* Embedded Player Iframe */}
       {embedUrl ? (
         <iframe
-          key={`${currentServerId}-${media.mediaId}-${media.seasonNumber ?? 0}-${media.episodeNumber ?? 0}`}
+          key={`${iframeKey}-${isSandboxed ? "sandboxed" : "open"}`}
           ref={iframeRef}
           src={embedUrl}
           title={media.title}
           allow={provider?.iframe.allow ?? "encrypted-media; autoplay *; fullscreen *"}
           allowFullScreen
           referrerPolicy={provider?.iframe.referrerPolicy ?? "origin"}
-          sandbox={provider?.iframe.sandbox}
+          sandbox={isSandboxed ? provider?.iframe.sandbox : undefined}
           className="w-full h-full border-0"
           onLoad={handleIframeLoad}
         />

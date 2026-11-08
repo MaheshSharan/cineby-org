@@ -6,6 +6,7 @@ import { EmbedPlayer } from "./EmbedPlayer";
 import { useHistoryFlush } from "./hooks/useHistoryFlush";
 import { queueHistorySave } from "@/lib/history/writeQueue";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { resolveResumeSeconds } from "@/lib/history/resumePosition";
 import type { PlayerModeConfig } from "@/lib/player/modeConfig";
 
 const MIN_PLAYBACK_SECONDS = 3;
@@ -56,14 +57,27 @@ export function PlayerShell({
     }
   }, [queryServer, currentServerId]);
 
+  // Where the reloaded player continues after a server switch; undefined until the viewer switches.
+  const [switchResumeSeconds, setSwitchResumeSeconds] = useState<number | undefined>(undefined);
+
+  // A resume position belongs to one title; another episode or movie starts from its own saved position.
+  useEffect(() => {
+    setSwitchResumeSeconds(undefined);
+  }, [media?.mediaId, media?.seasonNumber, media?.episodeNumber]);
+
   const handleSelectServer = useCallback(
-    (newServerId: string) => {
+    async (newServerId: string, liveSeconds: number) => {
+      if (media) {
+        const resumeSeconds = await resolveResumeSeconds(media, liveSeconds, Boolean(user));
+        setSwitchResumeSeconds(resumeSeconds);
+      }
+
       setCurrentServerId(newServerId);
       const url = new URL(window.location.href);
       url.searchParams.set("server", newServerId);
       router.replace(url.pathname + url.search, undefined, { shallow: true });
     },
-    [router]
+    [router, media, user]
   );
 
   const handleTimeUpdate = useCallback(
@@ -143,7 +157,7 @@ export function PlayerShell({
       servers={servers}
       currentServerId={currentServerId}
       loadTimeoutMs={modeConfig?.loadTimeoutMs ?? 8000}
-      initialTime={initialTimeSec}
+      initialTime={switchResumeSeconds ?? initialTimeSec}
       onBack={onBack}
       onSelectServer={handleSelectServer}
       onTimeUpdate={handleTimeUpdate}

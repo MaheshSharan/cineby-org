@@ -1,4 +1,5 @@
 import type { EmbedBuildUrlOptions, EmbedEventType, EmbedNormalizedEvent, EmbedProvider } from "../types";
+import { POPUP_BLOCKING_SANDBOX } from "../sandboxPolicy";
 import { cleanHexColor, isOriginAllowed, toNonNegativeNumber, toRecord } from "../common";
 
 export const VIDRIFT_ORIGIN = "https://embed.vidrift.net";
@@ -88,8 +89,7 @@ export const vidriftEmbed: EmbedProvider = {
   iframe: {
     allow: "encrypted-media; autoplay *; fullscreen *",
     referrerPolicy: "origin",
-    // VidRift refuses to play inside a sandboxed iframe.
-    sandbox: undefined,
+    sandbox: POPUP_BLOCKING_SANDBOX,
   },
   resume: {
     targetOrigin: VIDRIFT_ORIGIN,
