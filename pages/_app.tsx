@@ -13,7 +13,7 @@ import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { UpdateToast } from "@/components/pwa/UpdateToast";
 import { ScrollEdgeButton } from "@/components/ui/ScrollEdgeButton";
 import { PageLoadBar } from "@/components/ui/PageLoadBar";
-import { SocialBarAd } from "@/components/ads/SocialBarAd";
+import { PopunderAd } from "@/components/ads/PopunderAd";
 import { ConsentManager } from "@/components/consent/ConsentManager";
 import { CONSENT_STORAGE_KEY } from "@/lib/consent/analyticsConsent";
 import { getActiveGaMeasurementId, pageView, trackEvent, setUserProperties } from "@/lib/analytics/gtag";
@@ -157,9 +157,8 @@ export default function App({ Component, pageProps }: AppProps) {
           <ScrollEdgeButton />
           <InstallBanner />
           <UpdateToast />
-          <SocialBarAd />
+          <PopunderAd />
           <ConsentManager />
-          {/* Popunder is disabled; mount <PopunderAd /> here to re-enable */}
         </DetailModalProvider>
       </SettingsProvider>
     </AuthProvider>

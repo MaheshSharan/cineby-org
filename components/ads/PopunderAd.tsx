@@ -6,9 +6,8 @@ import { trackEvent } from "@/lib/analytics/gtag";
 
 const POPUNDER_SRC = "https://overestimatecapricornspittle.com/fb/38/40/fb3840091737b03ef8887d50204af917.js";
 const POPUNDER_STORAGE_KEY = "cineby_last_popunder";
-const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes cooldown (player-gated)
+const COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes cooldown per user (player-gated)
 
-// Currently disabled: not mounted in pages/_app.tsx. Re-enable by mounting <PopunderAd />.
 export function PopunderAd() {
   const router = useRouter();
   const [shouldLoad, setShouldLoad] = useState(false);
@@ -58,7 +57,7 @@ export function PopunderAd() {
       strategy="lazyOnload"
       data-cfasync="false"
       onLoad={() =>
-        trackEvent({ action: "ad_impression", params: { ad_unit: "popunder", format: "popunder_30m" } })
+        trackEvent({ action: "ad_impression", params: { ad_unit: "popunder", format: "popunder_10m" } })
       }
     />
   );
