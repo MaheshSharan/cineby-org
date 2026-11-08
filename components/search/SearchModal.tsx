@@ -315,8 +315,8 @@ function SearchResultItem({ item, isExpanded, onToggle, onSelect }: SearchResult
   const typeLabel = item.mediaType === "tv" ? "TV Show" : "Movie";
   const playHref =
     item.mediaType === "tv"
-      ? getEpisodeHref(item.id, 1, 1)
-      : getPlayHref(item.mediaType, item.id);
+      ? getEpisodeHref(item.id, 1, 1, null, item.title)
+      : getPlayHref(item.mediaType, item.id, null, item.title);
   const mediaHref = getMediaHref(item.mediaType, item.id, item.title);
 
   const handleDetailClick = (e: React.MouseEvent) => {

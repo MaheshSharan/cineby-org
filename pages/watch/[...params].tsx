@@ -40,7 +40,7 @@ export default function WatchPage({ title, subtitle, media, modeConfig }: WatchP
         media={media}
         modeConfig={modeConfig}
         onNavigateEpisode={(season, episode) =>
-          router.push(getEpisodeHref(media.mediaId, season, episode))
+          router.push(getEpisodeHref(media.mediaId, season, episode, null, title))
         }
       />
     </>

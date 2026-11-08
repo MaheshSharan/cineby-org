@@ -13,6 +13,7 @@ import { DownloadIcon, PlayIcon } from "@/components/ui/icons";
 
 interface EpisodesSectionProps {
   tvId: number;
+  tvTitle: string;
   seasons: Season[];
   initialEpisodes?: SeasonEpisodes | null;
   onReady?: () => void;
@@ -25,7 +26,7 @@ const CONTROL_SURFACE_STYLE = {
     "rgba(255, 255, 255, 0.05) 0px 1px 0px inset, rgba(0, 0, 0, 0.55) 0px 6px 14px -6px",
 } as const;
 
-export function EpisodesSection({ tvId, seasons, initialEpisodes, onReady }: EpisodesSectionProps) {
+export function EpisodesSection({ tvId, tvTitle, seasons, initialEpisodes, onReady }: EpisodesSectionProps) {
   const { settings } = useSettings();
   const episodeViewStyle = settings.appearance.episodeViewStyle;
 
@@ -298,6 +299,7 @@ export function EpisodesSection({ tvId, seasons, initialEpisodes, onReady }: Epi
             <EpisodeCarouselCard
               key={episode.id}
               tvId={tvId}
+              tvTitle={tvTitle}
               episode={episode}
             />
           ))}
@@ -308,6 +310,7 @@ export function EpisodesSection({ tvId, seasons, initialEpisodes, onReady }: Epi
             <EpisodeCard
               key={episode.id}
               tvId={tvId}
+              tvTitle={tvTitle}
               episode={episode}
               isExpanded={expandedEpisodeId === episode.id}
               onToggleExpand={() =>
@@ -325,6 +328,7 @@ export function EpisodesSection({ tvId, seasons, initialEpisodes, onReady }: Epi
 
 interface EpisodeCardProps {
   tvId: number;
+  tvTitle: string;
   episode: Episode;
   isExpanded: boolean;
   onToggleExpand: () => void;
@@ -332,6 +336,7 @@ interface EpisodeCardProps {
 
 function EpisodeCard({
   tvId,
+  tvTitle,
   episode,
   isExpanded,
   onToggleExpand,
@@ -340,7 +345,9 @@ function EpisodeCard({
   const playHref = getEpisodeHref(
     tvId,
     episode.seasonNumber,
-    episode.episodeNumber
+    episode.episodeNumber,
+    null,
+    tvTitle
   );
 
   return (
@@ -493,15 +500,18 @@ function EpisodeCard({
 
 interface EpisodeCarouselCardProps {
   tvId: number;
+  tvTitle: string;
   episode: Episode;
 }
 
-function EpisodeCarouselCard({ tvId, episode }: EpisodeCarouselCardProps) {
+function EpisodeCarouselCard({ tvId, tvTitle, episode }: EpisodeCarouselCardProps) {
   const still = getStillThumbUrl(episode.stillPath);
   const playHref = getEpisodeHref(
     tvId,
     episode.seasonNumber,
-    episode.episodeNumber
+    episode.episodeNumber,
+    null,
+    tvTitle
   );
 
   return (

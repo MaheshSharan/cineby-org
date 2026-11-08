@@ -59,7 +59,11 @@ describe("edge response cache eligibility", () => {
     expect(isCacheableRequest(withOtherCookie)).toBe(true);
   });
 
-  it("stores only public 200 responses with an s-maxage and no cookie", () => {
+  it("stores static pages, which send an s-maxage without `public`", () => {
+    expect(isCacheableResponse(htmlResponse("s-maxage=86400, stale-while-revalidate=31449600"))).toBe(true);
+  });
+
+  it("stores only 200 responses with an s-maxage, no cookie and no private or no-store directive", () => {
     expect(isCacheableResponse(htmlResponse())).toBe(true);
     expect(isCacheableResponse(htmlResponse(PUBLIC_CACHE_CONTROL, { status: 404 }))).toBe(false);
     expect(isCacheableResponse(htmlResponse("private, max-age=0, must-revalidate"))).toBe(false);

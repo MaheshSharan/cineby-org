@@ -6,8 +6,9 @@ import { LOGGED_IN_COOKIE_NAME } from "../auth/loggedInFlag";
  *
  * The Worker is the origin on a Workers Custom Domain, so Cache-Control and Cache Rules never stop a
  * request from reaching it. Without this layer every page view is rendered again, which is where most
- * of the CPU time goes. The Cache API stores whatever the app already marked `public` with an `s-maxage`,
- * so routes that opt out (`private`, `no-store`, Set-Cookie) are never stored.
+ * of the CPU time goes. The Cache API stores whatever the app already gave an `s-maxage`, which includes statically generated
+ * pages (they send `s-maxage` without `public`), so routes that opt out (`private`, `no-store`, Set-Cookie)
+ * are never stored.
  */
 
 const EDGE_CACHE_HEADER = "x-edge-cache";
@@ -36,7 +37,6 @@ export function isCacheableResponse(response: Response): boolean {
   if (response.status !== 200 || response.headers.has("set-cookie")) return false;
 
   const cacheControl = response.headers.get("cache-control") ?? "";
-  if (!/\bpublic\b/i.test(cacheControl)) return false;
   if (/\b(private|no-store|no-cache)\b/i.test(cacheControl)) return false;
 
   return Number(S_MAXAGE_PATTERN.exec(cacheControl)?.[1] ?? 0) > 0;

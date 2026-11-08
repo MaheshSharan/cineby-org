@@ -295,9 +295,9 @@ export function DetailPage({
           seasons: isTv && "seasons" in details ? toPlayerSeasons(details.seasons) : undefined,
           initialEpisodes,
         }}
-        onBack={() => router.push(getMediaHref(details.mediaType, details.id))}
+        onBack={() => router.push(getMediaHref(details.mediaType, details.id, details.title))}
         onNavigateEpisode={(season: number, episode: number) =>
-          router.push(getEpisodeHref(details.id, season, episode))
+          router.push(getEpisodeHref(details.id, season, episode, null, details.title))
         }
       />
     );
@@ -566,12 +566,14 @@ export function DetailPage({
                       details.id,
                       historyEntry.seasonNumber ?? historyEpisode?.season ?? 1,
                       historyEntry.episodeNumber ?? historyEpisode?.episode ?? 1,
-                      resumeSeconds
+                      resumeSeconds,
+                      details.title
                     )
                   : getPlayHref(
                       details.mediaType,
                       details.id,
-                      resumeSeconds
+                      resumeSeconds,
+                      details.title
                     );
 
                 return (
@@ -591,9 +593,11 @@ export function DetailPage({
                       ? getEpisodeHref(
                           details.id,
                           seasonNumber ?? historyEpisode?.season ?? 1,
-                          episodeNumber ?? historyEpisode?.episode ?? 1
+                          episodeNumber ?? historyEpisode?.episode ?? 1,
+                          null,
+                          details.title
                         )
-                      : getPlayHref(details.mediaType, details.id)
+                      : getPlayHref(details.mediaType, details.id, null, details.title)
                   }
                   onClick={onClose}
                   className="flex h-[44px] items-center justify-center gap-2 rounded-full border border-white/10 bg-white/10 px-5 text-sm font-semibold tracking-wide text-white backdrop-blur-[20px] shadow-lg shadow-black/5 transition-all duration-200 hover:scale-105 hover:border-white/20 active:scale-95"
@@ -608,9 +612,11 @@ export function DetailPage({
                       ? getEpisodeHref(
                           details.id,
                           seasonNumber ?? historyEpisode?.season ?? 1,
-                          episodeNumber ?? historyEpisode?.episode ?? 1
+                          episodeNumber ?? historyEpisode?.episode ?? 1,
+                          null,
+                          details.title
                         )
-                      : getPlayHref(details.mediaType, details.id)
+                      : getPlayHref(details.mediaType, details.id, null, details.title)
                   }
                   onClick={onClose}
                   size="md"
@@ -750,6 +756,7 @@ export function DetailPage({
         {isTv && "seasons" in details ? (
           <EpisodesSection
             tvId={details.id}
+            tvTitle={details.title}
             seasons={details.seasons}
             initialEpisodes={initialEpisodes}
             onReady={handleEpisodeReady}
