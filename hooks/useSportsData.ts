@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { FlattenedSportsData } from "@/lib/sports/types";
 import { processStreamsPayload, getActiveEndpoints } from "@/lib/sports/sportsService";
+import { browserTtlMs } from "@/lib/cache/profiles";
 
-// 5 minutes client cache TTL (300,000 ms)
-const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
+const CLIENT_CACHE_TTL_MS = browserTtlMs("sportsData");
 const SESSION_CACHE_KEY = "cineby_sports_cache";
 
 interface CachedSportsEntry {

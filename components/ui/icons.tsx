@@ -220,24 +220,46 @@ export function LogOutIcon({ className, size = 18 }: IconProps) {
   );
 }
 
-export function StarIcon({ className, size = 10 }: IconProps) {
+const STAR_SYMBOL_ID = "icon-star";
+const PLAY_SYMBOL_ID = "icon-play";
+
+/**
+ * The star and play icons appear on every poster card (about 100 on the home page), so their shapes are
+ * defined once here and each card only references them. Render this once per page, in `_document`.
+ */
+export function IconSprite() {
+  return (
+    <svg width="0" height="0" aria-hidden="true" className="absolute">
+      <symbol id={STAR_SYMBOL_ID} viewBox="0 0 24 24">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      </symbol>
+      <symbol id={PLAY_SYMBOL_ID} viewBox="0 0 24 24">
+        <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
+      </symbol>
+    </svg>
+  );
+}
+
+function SpriteIcon({ symbolId, className, size }: IconProps & { symbolId: string; size: number }) {
   return (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
-      viewBox="0 0 24 24"
       fill="currentColor"
       stroke="currentColor"
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`lucide lucide-star ${className ?? ""}`}
+      className={className}
       aria-hidden="true"
     >
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      <use href={`#${symbolId}`} />
     </svg>
   );
+}
+
+export function StarIcon({ className, size = 10 }: IconProps) {
+  return <SpriteIcon symbolId={STAR_SYMBOL_ID} className={className} size={size} />;
 }
 
 export function XIcon({ className, size = 20 }: IconProps) {
@@ -549,23 +571,7 @@ export function CaptionsIcon({ className, size = 16 }: IconProps) {
 }
 
 export function PlayIcon({ className, size = 20 }: IconProps) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
-    </svg>
-  );
+  return <SpriteIcon symbolId={PLAY_SYMBOL_ID} className={className} size={size} />;
 }
 
 export function PlayerQualityIcon({ className }: { className?: string }) {

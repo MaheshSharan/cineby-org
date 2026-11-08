@@ -1,10 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { fetchTrailerUrlServer } from "@/lib/services/trailer.server";
 import { withApiContext } from "@/lib/validation";
+import { cacheControl } from "@/lib/cache/profiles";
 
-const ONE_DAY_SECONDS = 86400;
-const SEVEN_DAYS_SECONDS = 604800;
-const ONE_MINUTE_SECONDS = 60;
 const IMDB_ID_REGEX = /^tt\d+$/i;
 
 export default withApiContext("api/trailer/[id]", async (req: NextApiRequest, res: NextApiResponse) => {
@@ -22,14 +20,7 @@ export default withApiContext("api/trailer/[id]", async (req: NextApiRequest, re
 
   const url = await fetchTrailerUrlServer(rawId.trim());
 
-  if (url) {
-    res.setHeader(
-      "Cache-Control",
-      `public, max-age=${ONE_DAY_SECONDS}, s-maxage=${ONE_DAY_SECONDS}, stale-while-revalidate=${SEVEN_DAYS_SECONDS}`
-    );
-  } else {
-    res.setHeader("Cache-Control", `public, max-age=${ONE_MINUTE_SECONDS}, s-maxage=${ONE_MINUTE_SECONDS}`);
-  }
+  res.setHeader("Cache-Control", cacheControl(url ? "trailer" : "trailerMiss"));
 
   res.status(200).json({ url });
 });

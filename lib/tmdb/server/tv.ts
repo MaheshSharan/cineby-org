@@ -17,16 +17,15 @@ import {
   validateSeasonEpisodes,
   validateTvDetails,
 } from "./validate";
-import { cachedFetch, TMDB_TTL_SECONDS, TMDB_STALE_SECONDS, tmdbCacheKeys } from "@/lib/cache";
+import { cachedFetch, tmdbCacheKeys } from "@/lib/cache";
 
 const TV_DETAILS_APPEND =
-  "credits,external_ids,videos,recommendations,translations,similar,content_ratings,images";
+  "credits,external_ids,videos,recommendations,similar,content_ratings,images";
 
 export async function getTvDetails(id: string | number): Promise<TvDetails> {
   return cachedFetch({
     key: tmdbCacheKeys.tvDetails(id),
-    ttlSeconds: TMDB_TTL_SECONDS.tvDetails,
-    staleSeconds: TMDB_STALE_SECONDS.tvDetails,
+    profile: "tvDetails",
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
 
@@ -51,8 +50,7 @@ export async function getSeasonEpisodes(
 ): Promise<SeasonEpisodes> {
   return cachedFetch({
     key: tmdbCacheKeys.seasonEpisodes(id, seasonNumber),
-    ttlSeconds: TMDB_TTL_SECONDS.seasonEpisodes,
-    staleSeconds: TMDB_STALE_SECONDS.seasonEpisodes,
+    profile: "seasonEpisodes",
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
 
@@ -69,8 +67,7 @@ export async function getSeasonEpisodes(
 export async function getPopularTv(page = 1): Promise<Paginated<MediaSummary>> {
   return cachedFetch({
     key: tmdbCacheKeys.popularTv(page),
-    ttlSeconds: TMDB_TTL_SECONDS.discover,
-    staleSeconds: TMDB_STALE_SECONDS.discover,
+    profile: "discover",
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
 
@@ -89,8 +86,7 @@ export async function getPopularTv(page = 1): Promise<Paginated<MediaSummary>> {
 export async function getTopRatedTv(page = 1): Promise<Paginated<MediaSummary>> {
   return cachedFetch({
     key: tmdbCacheKeys.topRatedTv(page),
-    ttlSeconds: TMDB_TTL_SECONDS.discover,
-    staleSeconds: TMDB_STALE_SECONDS.discover,
+    profile: "discover",
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
 

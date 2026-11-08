@@ -10,6 +10,7 @@ import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { sanitizeJsonLd } from "@/lib/seo/jsonLd";
 import { trackEvent } from "@/lib/analytics/gtag";
 import { getSportWatchHref } from "@/lib/sports/types";
+import { edgeTtl } from "@/lib/cache/profiles";
 
 interface SportsPageProps {
   initialData: FlattenedSportsData | null;
@@ -458,6 +459,6 @@ export const getStaticProps: GetStaticProps<SportsPageProps> = async () => {
     props: {
       initialData: null,
     },
-    revalidate: 3600,
+    revalidate: edgeTtl("page"),
   };
 };

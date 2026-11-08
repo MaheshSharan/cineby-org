@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getSiteUrl } from "@/lib/env/public";
 import { generateUrlsetXml, type SitemapUrlEntry } from "@/lib/seo/sitemap";
 import { getAllPosts } from "@/lib/blog/posts";
+import { cacheControl } from "@/lib/cache/profiles";
 
 // Pages whose content only changes when the file is edited. Update the date with the edit.
 // Home, browse, sports and blog lists refresh daily, so they use today's date.
@@ -19,10 +20,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
-  res.setHeader(
-    "Cache-Control",
-    "public, max-age=3600, s-maxage=86400, stale-while-revalidate=43200"
-  );
+  res.setHeader("Cache-Control", cacheControl("sitemap"));
 
   const now = new Date().toISOString().split("T")[0];
   const baseUrl = getSiteUrl();

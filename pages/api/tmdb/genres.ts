@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { buildTmdbCacheControl } from "@/lib/cache/policy";
+import { cacheControl } from "@/lib/cache/profiles";
 import { getGenres } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 import type { MediaType } from "@/lib/tmdb";
@@ -13,7 +13,7 @@ export default withApiContext("api/tmdb/genres", async (req: NextApiRequest, res
 
   const mediaType = parseMediaType(req.query.mediaType);
   const result = await getGenres(mediaType);
-  res.setHeader("Cache-Control", buildTmdbCacheControl("genres"));
+  res.setHeader("Cache-Control", cacheControl("genres"));
   res.status(200).json(result);
 });
 

@@ -3,7 +3,7 @@ import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { PageSeo } from "@/components/seo/PageSeo";
-import { fetchSportsData, findMatchBySlugOrId, isMatchLive } from "@/lib/sports/sportsService";
+import { findMatchBySlugOrId, isMatchLive } from "@/lib/sports/sportsService";
 import { fetchSportsClientSide } from "@/hooks/useSportsData";
 import { type SportMatch, getSportWatchHref } from "@/lib/sports/types";
 import { LiveSportsRow } from "@/components/sports/LiveSportsRow";
@@ -12,6 +12,7 @@ import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { buildSportsEventJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 import { initAntiRedirectShield, setAntiRedirectShieldActive } from "@/lib/security/antiRedirect";
 import { trackEvent } from "@/lib/analytics/gtag";
+import { cacheControl } from "@/lib/cache/profiles";
 
 interface SportWatchPageProps {
   initialMatch: SportMatch | null;
@@ -102,7 +103,7 @@ export default function SportWatchPage({
       }
 
       // 3. Any additional mirrors
-      otherSubstreams.forEach((s, idx) => {
+      otherSubstreams.forEach((s) => {
         list.push({
           name: `Server ${list.length + 1} (${s.source_tag?.split("|")[0]?.trim() || "Alt"})`,
           tag: s.source_tag || s.tag || "Alternate Mirror",
@@ -366,9 +367,9 @@ export const getServerSideProps: GetServerSideProps<SportWatchPageProps> = async
     return { notFound: true };
   }
 
-  // Instant response with edge caching, zero upstream network blocking.
-  // The client hydrates instantly via local cache or client-side mirror fetch.
-  context.res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+  // The HTML holds no match data (only a title taken from the URL), so it is cached like any other page.
+  // The client loads the match list itself, through the sports data cache.
+  context.res.setHeader("Cache-Control", cacheControl("page"));
 
   const lastSlugPart = Array.isArray(slugParam) ? slugParam[slugParam.length - 1] : rawSlug;
   const fallbackTitle = lastSlugPart

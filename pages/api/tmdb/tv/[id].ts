@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { buildTmdbCacheControl } from "@/lib/cache/policy";
+import { cacheControl } from "@/lib/cache/profiles";
 import { getTvDetails } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 
@@ -19,6 +19,6 @@ export default withApiContext("api/tmdb/tv/[id]", async (req: NextApiRequest, re
   }
 
   const result = await getTvDetails(id);
-  res.setHeader("Cache-Control", buildTmdbCacheControl("tvDetails"));
+  res.setHeader("Cache-Control", cacheControl("tvDetails"));
   res.status(200).json(result);
 });

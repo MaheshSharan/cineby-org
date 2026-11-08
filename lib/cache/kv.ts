@@ -1,6 +1,6 @@
 import type { CacheStore, CacheStats } from "./types";
 import { MemoryCacheStore } from "./memory";
-import { isKvPersistedKey } from "./policy";
+import { isKvPersistedKey } from "./keys";
 import { logger } from "@/lib/logger";
 
 export interface KVNamespaceBinding {

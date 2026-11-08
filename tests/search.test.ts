@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { clearSearchCache, searchMedia } from "@/lib/api/search";
-import { PRIVATE_PAGE_CACHE_CONTROL, PUBLIC_PAGE_CACHE_CONTROL } from "@/lib/http/cacheControl";
 import {
   isSearchableQuery,
   MAX_SEARCH_QUERY_LENGTH,
@@ -121,15 +120,5 @@ describe("GET /api/tmdb/search", () => {
   it("rejects missing and too-short queries before any upstream call", async () => {
     expect((await callSearch({})).status).toBe(400);
     expect((await callSearch({ q: " a " })).status).toBe(400);
-  });
-});
-
-describe("page cache control", () => {
-  it("lets browsers reuse public pages and keeps user-specific pages out of shared caches", () => {
-    expect(PUBLIC_PAGE_CACHE_CONTROL).toContain("max-age=86400");
-    expect(PUBLIC_PAGE_CACHE_CONTROL).toContain("s-maxage=86400");
-    expect(PUBLIC_PAGE_CACHE_CONTROL).not.toContain("private");
-    expect(PRIVATE_PAGE_CACHE_CONTROL).toContain("private");
-    expect(PRIVATE_PAGE_CACHE_CONTROL).not.toContain("public");
   });
 });

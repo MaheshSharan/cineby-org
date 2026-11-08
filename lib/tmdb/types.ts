@@ -90,8 +90,8 @@ export interface MovieDetails extends MediaSummary {
   cast: CastMember[];
   crew: CrewMember[];
   videos: MediaVideo[];
-  recommendations: MediaSummary[];
-  similar: MediaSummary[];
+  /** The one list of other titles the page shows. */
+  related: MediaSummary[];
   certification: string | null;
   imdbId: string | null;
 }
@@ -128,8 +128,8 @@ export interface TvDetails extends MediaSummary {
   cast: CastMember[];
   crew: CrewMember[];
   videos: MediaVideo[];
-  recommendations: MediaSummary[];
-  similar: MediaSummary[];
+  /** The one list of other titles the page shows. */
+  related: MediaSummary[];
   certification: string | null;
   imdbId: string | null;
 }

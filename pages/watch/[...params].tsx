@@ -2,7 +2,7 @@ import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 
-import { PRIVATE_PAGE_CACHE_CONTROL, PUBLIC_PAGE_CACHE_CONTROL } from "@/lib/http/cacheControl";
+import { cacheControl, PRIVATE_CACHE_CONTROL } from "@/lib/cache/profiles";
 import { getMovieDetails, getTvDetails, isTmdbNotFoundError } from "@/lib/tmdb/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { listHistory } from "@/lib/db/history";
@@ -58,7 +58,7 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
   }
 
   // Everything the page renders comes from TMDB and server config; the exception is overridden below.
-  context.res.setHeader("Cache-Control", PUBLIC_PAGE_CACHE_CONTROL);
+  context.res.setHeader("Cache-Control", cacheControl("page"));
 
   try {
     if (mediaType === "tv") {
@@ -68,7 +68,7 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
 
       if (!season || !episode) {
         // The resume position below depends on the signed-in user, so a shared cache must not keep this page.
-        context.res.setHeader("Cache-Control", PRIVATE_PAGE_CACHE_CONTROL);
+        context.res.setHeader("Cache-Control", PRIVATE_CACHE_CONTROL);
         const user = await getCurrentUser(context.req);
         if (user) {
           const historyList = await listHistory(user.id, user.activeProfileId ?? undefined);

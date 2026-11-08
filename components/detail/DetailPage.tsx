@@ -762,12 +762,7 @@ export function DetailPage({
           <NativeBannerAd id={isModal ? "container-7f39a089ecb822ed1c9d27240135d8fd-modal" : "container-7f39a089ecb822ed1c9d27240135d8fd"} />
         </div>
         <div id="recommendations-section" className="scroll-mt-24">
-          <RecommendationsRow
-            title="You may like"
-            items={
-              details.similar.length > 0 ? details.similar : details.recommendations
-            }
-          />
+          <RecommendationsRow title="You may like" items={details.related} />
         </div>
       </div>
     </div>

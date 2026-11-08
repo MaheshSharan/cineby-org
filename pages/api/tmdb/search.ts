@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { buildTmdbCacheControl } from "@/lib/cache/policy";
+import { cacheControl } from "@/lib/cache/profiles";
 import { isSearchableQuery, normalizeSearchQuery } from "@/lib/search/query";
 import { searchMulti } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
@@ -21,7 +21,7 @@ export default withApiContext("api/tmdb/search", async (req: NextApiRequest, res
 
   const result = await searchMulti(query, page);
   // Cache popular search results at the Cloudflare edge: 1 hour edge cache, 10 min browser
-  res.setHeader("Cache-Control", buildTmdbCacheControl("search"));
+  res.setHeader("Cache-Control", cacheControl("search"));
   res.status(200).json(result);
 });
 

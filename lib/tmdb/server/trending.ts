@@ -3,7 +3,7 @@ import { tmdbGet } from "./client";
 import { getTmdbConfig } from "./config";
 import { toMediaSummary, toPaginated } from "./transform";
 import { validatePaginatedResponse } from "./validate";
-import { cachedFetch, TMDB_TTL_SECONDS, TMDB_STALE_SECONDS, tmdbCacheKeys } from "@/lib/cache";
+import { cachedFetch, tmdbCacheKeys } from "@/lib/cache";
 
 export type TrendingMediaType = MediaType | "all";
 
@@ -14,8 +14,7 @@ export async function getTrending(
 ): Promise<Paginated<MediaSummary>> {
   return cachedFetch({
     key: tmdbCacheKeys.trending(mediaType, timeWindow, page),
-    ttlSeconds: TMDB_TTL_SECONDS.trending,
-    staleSeconds: TMDB_STALE_SECONDS.trending,
+    profile: "trending",
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
 

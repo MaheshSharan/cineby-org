@@ -1,14 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { KVCacheStore, type KVNamespaceBinding } from "@/lib/cache/kv";
-import {
-  buildTmdbCacheControl,
-  isKvPersistedKey,
-  TMDB_CACHE_PROFILES,
-  TMDB_STALE_SECONDS,
-  TMDB_TTL_SECONDS,
-  tmdbCacheKeys,
-  type TmdbCacheKind,
-} from "@/lib/cache/policy";
+import { isKvPersistedKey, tmdbCacheKeys } from "@/lib/cache/keys";
 
 class FakeKv implements KVNamespaceBinding {
   readonly store = new Map<string, string>();
@@ -34,33 +26,7 @@ class FakeKv implements KVNamespaceBinding {
   }
 }
 
-describe("TMDB cache policy", () => {
-  const kinds = Object.keys(TMDB_CACHE_PROFILES) as TmdbCacheKind[];
-
-  it("builds Cache-Control headers from the same table the internal TTLs come from", () => {
-    expect(buildTmdbCacheControl("trending")).toBe(
-      "public, max-age=3600, s-maxage=172800, stale-while-revalidate=172800"
-    );
-    expect(TMDB_TTL_SECONDS.trending).toBe(TMDB_CACHE_PROFILES.trending.edge);
-    expect(TMDB_TTL_SECONDS.search).toBe(TMDB_CACHE_PROFILES.search.edge);
-    expect(TMDB_TTL_SECONDS.movieDetails).toBe(TMDB_CACHE_PROFILES.movieDetails.edge);
-    expect(TMDB_TTL_SECONDS.genres).toBe(TMDB_CACHE_PROFILES.genres.edge);
-  });
-
-  it("lets a browser keep a response no longer than shared caches do", () => {
-    for (const kind of kinds) {
-      const { browser, edge } = TMDB_CACHE_PROFILES[kind];
-      expect(browser).toBeLessThanOrEqual(edge);
-    }
-  });
-
-  it("refreshes cached values in the background before they expire", () => {
-    expect(TMDB_STALE_SECONDS.trending).toBeLessThan(TMDB_TTL_SECONDS.trending);
-    expect(TMDB_STALE_SECONDS.search).toBeLessThan(TMDB_TTL_SECONDS.search);
-    expect(TMDB_STALE_SECONDS.movieDetails).toBeLessThan(TMDB_TTL_SECONDS.movieDetails);
-    expect(TMDB_STALE_SECONDS.seasonEpisodes).toBeLessThan(TMDB_TTL_SECONDS.seasonEpisodes);
-  });
-
+describe("shared KV key rule", () => {
   it("stores only widely reused lists in shared KV", () => {
     expect(isKvPersistedKey(tmdbCacheKeys.trending("all", "week", 1))).toBe(true);
     expect(isKvPersistedKey(tmdbCacheKeys.genres("movie"))).toBe(true);

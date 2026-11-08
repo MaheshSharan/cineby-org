@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { buildMediaCanonicalUrl, generateUrlsetXml, type SitemapUrlEntry } from "@/lib/seo/sitemap";
 import { getSitemapMediaCatalog } from "@/lib/seo/sitemapCatalog";
 import { logger } from "@/lib/logger";
+import { cacheControl } from "@/lib/cache/profiles";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET" && req.method !== "HEAD") {
@@ -10,10 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
-  res.setHeader(
-    "Cache-Control",
-    "public, max-age=3600, s-maxage=86400, stale-while-revalidate=43200"
-  );
+  res.setHeader("Cache-Control", cacheControl("sitemap"));
 
   try {
     const tvSeries = await getSitemapMediaCatalog("tv");

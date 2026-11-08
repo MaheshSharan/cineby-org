@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getPlayerModeConfig, type PlayerModeConfig } from "@/lib/player/modeConfig";
+import { cacheControl } from "@/lib/cache/profiles";
 
 export default function handler(
   req: NextApiRequest,
@@ -10,8 +11,7 @@ export default function handler(
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  // Cache config briefly in browser / edge (e.g. 60 seconds)
-  res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
+  res.setHeader("Cache-Control", cacheControl("playerConfig"));
 
   const config = getPlayerModeConfig();
   return res.status(200).json(config);

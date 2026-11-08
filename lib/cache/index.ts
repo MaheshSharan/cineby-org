@@ -2,11 +2,13 @@ import { getCacheBackend, getCacheMaxEntries } from "@/lib/env/server";
 import { logger } from "@/lib/logger";
 import { MemoryCacheStore } from "./memory";
 import { KVCacheStore, type KVNamespaceBinding } from "./kv";
+import { refreshAfter, storeTtl, type CacheProfileName } from "./profiles";
 import { SingleFlight } from "./singleFlight";
 import type { CacheStore } from "./types";
 
 export * from "./types";
-export * from "./policy";
+export * from "./keys";
+export * from "./profiles";
 export * from "./singleFlight";
 export * from "./kv";
 
@@ -45,8 +47,8 @@ export function getCacheStore(): CacheStore {
 
 export interface CachedFetchOptions<T> {
   key: string;
-  ttlSeconds: number;
-  staleSeconds?: number;
+  /** How long the value is kept, and when it is refreshed in the background, comes from this profile. */
+  profile: CacheProfileName;
   fetcher: () => Promise<T>;
 }
 
@@ -57,13 +59,10 @@ export interface CachedFetchOptions<T> {
  * Guaranteed fallback: If cache fails or throws, fetcher is invoked directly.
  * Cache is an optimization, not a point of failure.
  */
-export async function cachedFetch<T>({
-  key,
-  ttlSeconds,
-  staleSeconds,
-  fetcher,
-}: CachedFetchOptions<T>): Promise<T> {
+export async function cachedFetch<T>({ key, profile, fetcher }: CachedFetchOptions<T>): Promise<T> {
   const store = getCacheStore();
+  const ttlSeconds = storeTtl(profile);
+  const staleSeconds = refreshAfter(profile);
 
   // 1. Try reading from cache
   try {

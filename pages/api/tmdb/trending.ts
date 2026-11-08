@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { buildTmdbCacheControl } from "@/lib/cache/policy";
+import { cacheControl } from "@/lib/cache/profiles";
 import { getTrending } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
@@ -22,7 +22,7 @@ export default withApiContext("api/tmdb/trending", async (req: NextApiRequest, r
   const page = parsePage(req.query.page);
 
   const result = await getTrending(mediaType, timeWindow, page);
-  res.setHeader("Cache-Control", buildTmdbCacheControl("trending"));
+  res.setHeader("Cache-Control", cacheControl("trending"));
   res.status(200).json(result);
 });
 

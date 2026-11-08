@@ -136,8 +136,15 @@ function toCompanies(value: unknown): Company[] {
   }));
 }
 
-function toRecommendations(value: unknown, mediaType: MediaType): MediaSummary[] {
+function toMediaList(value: unknown, mediaType: MediaType): MediaSummary[] {
   return recordArray(asRecord(value)?.results).map((item) => toMediaSummary(item, mediaType));
+}
+
+// The page shows one list of other titles: the similar ones, or TMDB's recommendations when there are none.
+// Sending both doubled that part of the page data.
+function toRelated(raw: Record<string, unknown>, mediaType: MediaType): MediaSummary[] {
+  const similar = toMediaList(raw.similar, mediaType);
+  return similar.length > 0 ? similar : toMediaList(raw.recommendations, mediaType);
 }
 
 function toCertification(value: unknown): string | null {
@@ -211,8 +218,7 @@ export function toMovieDetails(raw: Record<string, unknown>): MovieDetails {
     cast: toCast(raw.credits),
     crew: toCrew(raw.credits),
     videos: toVideos(raw.videos),
-    recommendations: toRecommendations(raw.recommendations, mediaType),
-    similar: toRecommendations(raw.similar, mediaType),
+    related: toRelated(raw, mediaType),
     certification: toCertification(raw.release_dates),
     imdbId: nullableString(asRecord(raw.external_ids)?.imdb_id),
   };
@@ -255,8 +261,7 @@ export function toTvDetails(raw: Record<string, unknown>): TvDetails {
     cast: toCast(raw.credits),
     crew: toCrew(raw.credits),
     videos: toVideos(raw.videos),
-    recommendations: toRecommendations(raw.recommendations, mediaType),
-    similar: toRecommendations(raw.similar, mediaType),
+    related: toRelated(raw, mediaType),
     certification: toTvCertification(raw.content_ratings),
     imdbId: nullableString(asRecord(raw.external_ids)?.imdb_id),
   };

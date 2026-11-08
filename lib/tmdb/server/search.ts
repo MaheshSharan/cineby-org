@@ -3,13 +3,12 @@ import { tmdbGet } from "./client";
 import { getTmdbConfig } from "./config";
 import { toMediaSummary } from "./transform";
 import { validateSearchMulti } from "./validate";
-import { cachedFetch, TMDB_TTL_SECONDS, TMDB_STALE_SECONDS, tmdbCacheKeys } from "@/lib/cache";
+import { cachedFetch, tmdbCacheKeys } from "@/lib/cache";
 
 export async function searchMulti(query: string, page = 1): Promise<Paginated<MediaSummary>> {
   return cachedFetch({
     key: tmdbCacheKeys.search(query, page),
-    ttlSeconds: TMDB_TTL_SECONDS.search,
-    staleSeconds: TMDB_STALE_SECONDS.search,
+    profile: "search",
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
 

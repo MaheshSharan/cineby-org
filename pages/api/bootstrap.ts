@@ -7,6 +7,7 @@ import { getUserSettingsFromDb } from "@/lib/db/settings";
 import { toPublicProfile } from "@/lib/profile/publicProfile";
 import { DEFAULT_SETTINGS, toApiSettingsResponse } from "@/lib/settings/types";
 import { withApiContext } from "@/lib/validation";
+import { NO_STORE_CACHE_CONTROL } from "@/lib/cache/profiles";
 
 /**
  * Everything the app needs to render a signed-in page, in one request: the user, their profiles
@@ -20,7 +21,7 @@ export default withApiContext("api/bootstrap", async (req: NextApiRequest, res: 
   }
 
   // Personal data: no cache, including the browser's, may keep a copy.
-  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Cache-Control", NO_STORE_CACHE_CONTROL);
 
   const user = await getCurrentUser(req);
 

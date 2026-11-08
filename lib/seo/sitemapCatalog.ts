@@ -3,10 +3,9 @@ import { getTrending } from "@/lib/tmdb/server/trending";
 import { discoverMovies, discoverTv, getUpcomingMedia } from "@/lib/tmdb/server/discover";
 import { getPopularMovies } from "@/lib/tmdb/server/movies";
 import { getPopularTv } from "@/lib/tmdb/server/tv";
-import { cachedFetch } from "@/lib/cache";
+import { appCacheKeys, cachedFetch } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 
-const SITEMAP_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours in Redis
 const MAX_PAGES = 10; // 10 pages * 20 items = 200 items per feed
 
 /**
@@ -23,11 +22,11 @@ export async function getSitemapMediaCatalog(
   mediaType: MediaType,
   maxPages = MAX_PAGES
 ): Promise<MediaSummary[]> {
-  const cacheKey = `sitemap:catalog:${mediaType}:v1`;
+  const cacheKey = appCacheKeys.sitemapCatalog(mediaType);
 
   return cachedFetch({
     key: cacheKey,
-    ttlSeconds: SITEMAP_CACHE_TTL_SECONDS,
+    profile: "sitemap",
     fetcher: async () => {
       const uniqueIds = new Set<number>();
       const collected: MediaSummary[] = [];

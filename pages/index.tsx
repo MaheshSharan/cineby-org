@@ -37,6 +37,7 @@ import {
 } from "@/lib/seo/jsonLd";
 import { buildFaqJsonLd } from "@/lib/seo/faqSchema";
 import { getSiteHost } from "@/lib/seo/site";
+import { cacheControl } from "@/lib/cache/profiles";
 
 const HERO_ITEMS = 7;
 const ROW_ITEMS = 20;
@@ -203,7 +204,7 @@ export default function Home({
 }
 
 export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ res }) => {
-  res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400");
+  res.setHeader("Cache-Control", cacheControl("home"));
 
   const emptyPaginated = { results: [], page: 1, totalPages: 1, totalResults: 0 };
   const safePaginated = <T extends { results: MediaSummary[] }>(p: Promise<T>): Promise<T> =>

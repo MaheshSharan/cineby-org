@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { buildTmdbCacheControl } from "@/lib/cache/policy";
+import { cacheControl } from "@/lib/cache/profiles";
 import { getSeasonEpisodes } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 
@@ -20,7 +20,7 @@ export default withApiContext("api/tmdb/tv/[id]/season/[season]", async (req: Ne
   }
 
   const result = await getSeasonEpisodes(id, seasonNumber);
-  res.setHeader("Cache-Control", buildTmdbCacheControl("seasonEpisodes"));
+  res.setHeader("Cache-Control", cacheControl("seasonEpisodes"));
   res.status(200).json(result);
 });
 

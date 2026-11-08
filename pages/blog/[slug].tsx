@@ -8,6 +8,7 @@ import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { getAllPosts, getPostBySlug } from "@/lib/blog/posts";
 import type { BlogPost } from "@/lib/blog/types";
 import { buildBlogPostJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
+import { edgeTtl } from "@/lib/cache/profiles";
 
 interface BlogPostPageProps {
   post: BlogPost;
@@ -41,7 +42,7 @@ export const getStaticProps: GetStaticProps<BlogPostPageProps, { slug: string }>
       post,
       relatedPosts,
     },
-    revalidate: 86400,
+    revalidate: edgeTtl("page"),
   };
 };
 

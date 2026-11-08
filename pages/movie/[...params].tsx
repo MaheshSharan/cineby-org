@@ -1,6 +1,6 @@
 import type { GetServerSideProps } from "next";
 
-import { PUBLIC_PAGE_CACHE_CONTROL } from "@/lib/http/cacheControl";
+import { cacheControl } from "@/lib/cache/profiles";
 import { logger } from "@/lib/logger";
 import {
   buildMediaDescription,
@@ -62,7 +62,7 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (con
 
   try {
     if (context.query.play !== "true") {
-      context.res.setHeader("Cache-Control", PUBLIC_PAGE_CACHE_CONTROL);
+      context.res.setHeader("Cache-Control", cacheControl("page"));
     }
 
     const details = await getMovieDetails(id);

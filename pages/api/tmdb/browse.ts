@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { buildTmdbCacheControl } from "@/lib/cache/policy";
+import { cacheControl } from "@/lib/cache/profiles";
 import { getBrowsePage } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
@@ -23,7 +23,7 @@ export default withApiContext("api/tmdb/browse", async (req: NextApiRequest, res
 
   const result = await getBrowsePage({ mediaType, genreId, sortBy, page });
 
-  res.setHeader("Cache-Control", buildTmdbCacheControl("discover"));
+  res.setHeader("Cache-Control", cacheControl("discover"));
   res.status(200).json(result);
 });
 

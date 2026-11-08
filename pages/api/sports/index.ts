@@ -1,12 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { appCacheKeys, cachedFetch, getCacheStore } from "@/lib/cache";
+import { cacheControl, NO_STORE_CACHE_CONTROL } from "@/lib/cache/profiles";
 import { applyCorsHeaders } from "@/lib/cors";
 import { fetchSportsData, isFamousMatch } from "@/lib/sports/sportsService";
 import { withApiContext } from "@/lib/validation";
 
-// Server-side cache rate-limiter: at most 1 hard-refresh accepted globally every 60s
-let lastServerFetchTime = 0;
-let cachedServerData: { data: unknown; timestamp: number } | null = null;
-const SERVER_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+// A hard refresh drops the cached list, so it is limited to one per minute per isolate.
+const REFRESH_COOLDOWN_MS = 60_000;
+let lastRefreshAt = 0;
+
+async function loadSportsPayload() {
+  const data = await fetchSportsData();
+  return { ...data, famousLive: data.liveNow.filter((match) => isFamousMatch(match)) };
+}
 
 export default withApiContext("api/sports", async (req: NextApiRequest, res: NextApiResponse) => {
   if (applyCorsHeaders(req, res)) {
@@ -19,48 +25,26 @@ export default withApiContext("api/sports", async (req: NextApiRequest, res: Nex
     return;
   }
 
-  const isBypassRequested = req.query.refresh === "true";
+  const isRefreshRequested = req.query.refresh === "true";
   const now = Date.now();
 
-  // If hard-refresh requested within 60s cooldown, serve cached data
-  if (isBypassRequested && now - lastServerFetchTime < 60000 && cachedServerData) {
-    res.setHeader("Cache-Control", "public, max-age=30, s-maxage=30, stale-while-revalidate=60");
-    res.status(200).json(cachedServerData.data);
-    return;
-  }
-
-  // If normal request and valid 2m server cache exists, serve it
-  if (!isBypassRequested && cachedServerData && now - cachedServerData.timestamp < SERVER_CACHE_TTL_MS) {
-    res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120, stale-while-revalidate=300");
-    res.status(200).json(cachedServerData.data);
-    return;
+  if (isRefreshRequested && now - lastRefreshAt >= REFRESH_COOLDOWN_MS) {
+    lastRefreshAt = now;
+    await getCacheStore().delete(appCacheKeys.sportsData);
   }
 
   try {
-    // 2 minutes max-age with 5 minutes (300s) stale-while-revalidate
-    res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120, stale-while-revalidate=300");
+    const payload = await cachedFetch({
+      key: appCacheKeys.sportsData,
+      profile: "sportsData",
+      fetcher: loadSportsPayload,
+    });
 
-    const data = await fetchSportsData();
-    const famousLive = data.liveNow.filter((m) => isFamousMatch(m));
-    const payload = { ...data, famousLive };
-
-    cachedServerData = {
-      data: payload,
-      timestamp: now,
-    };
-    lastServerFetchTime = now;
-
+    // A refresh answers one person who asked for fresh data, so no shared cache may keep that response.
+    res.setHeader("Cache-Control", isRefreshRequested ? NO_STORE_CACHE_CONTROL : cacheControl("sportsData"));
     res.status(200).json(payload);
   } catch (error) {
-    // If upstream fails but we have stale cache, return stale cache gracefully
-    if (cachedServerData) {
-      res.setHeader("Cache-Control", "public, max-age=30, s-maxage=30");
-      res.status(200).json(cachedServerData.data);
-      return;
-    }
-
-    // Do NOT cache 502/errors in browser disk cache
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Cache-Control", NO_STORE_CACHE_CONTROL);
     res.status(502).json({
       error: error instanceof Error ? error.message : "Failed to fetch sports data",
     });

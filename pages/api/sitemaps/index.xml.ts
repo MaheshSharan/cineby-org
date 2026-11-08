@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getSiteUrl } from "@/lib/env/public";
 import { generateSitemapIndexXml } from "@/lib/seo/sitemap";
+import { cacheControl } from "@/lib/cache/profiles";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET" && req.method !== "HEAD") {
@@ -8,12 +9,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).end();
   }
 
-  // Edge and browser caching: 24h at edge (s-maxage), 12h stale-while-revalidate
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
-  res.setHeader(
-    "Cache-Control",
-    "public, max-age=3600, s-maxage=86400, stale-while-revalidate=43200"
-  );
+  res.setHeader("Cache-Control", cacheControl("sitemap"));
 
   const now = new Date().toISOString().split("T")[0];
 

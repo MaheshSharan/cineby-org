@@ -1,8 +1,9 @@
 import type { MediaSummary } from "@/lib/tmdb";
 import { getJson } from "@/lib/api/client";
 import { isSearchableQuery, normalizeSearchQuery } from "@/lib/search/query";
+import { browserTtlMs } from "@/lib/cache/profiles";
 
-const SEARCH_CACHE_TTL_MS = 10 * 60 * 1000;
+const SEARCH_CACHE_TTL_MS = browserTtlMs("search");
 const SEARCH_CACHE_MAX_ENTRIES = 50;
 
 interface SearchCacheEntry {

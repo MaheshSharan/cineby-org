@@ -6,6 +6,7 @@ import {
   getGoogleSiteVerification,
   getTmdbImageBaseUrl,
 } from "@/lib/env/public";
+import { IconSprite } from "@/components/ui/icons";
 import { PWA_BACKGROUND_COLOR } from "@/lib/constants/pwa";
 import { getIosSplashImagePath, getIosSplashMedia, IOS_SPLASH_SCREENS } from "@/lib/pwa/iosSplash";
 
@@ -90,6 +91,7 @@ export default function Document() {
             `,
           }}
         />
+        <IconSprite />
         <Main />
         <NextScript />
       </body>

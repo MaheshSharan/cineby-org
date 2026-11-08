@@ -6,7 +6,7 @@ import {
   validateMovieDetails,
   validatePaginatedResponse,
 } from "./validate";
-import { cachedFetch, TMDB_TTL_SECONDS, TMDB_STALE_SECONDS, tmdbCacheKeys } from "@/lib/cache";
+import { cachedFetch, tmdbCacheKeys } from "@/lib/cache";
 
 export interface MediaImages {
   logoPath: string | null;
@@ -21,8 +21,7 @@ export async function getMediaLogo(mediaType: MediaType, id: string | number): P
 export async function getMediaImages(mediaType: MediaType, id: string | number): Promise<MediaImages> {
   return cachedFetch({
     key: tmdbCacheKeys.mediaImages(mediaType, id),
-    ttlSeconds: TMDB_TTL_SECONDS.movieDetails,
-    staleSeconds: TMDB_STALE_SECONDS.movieDetails,
+    profile: "movieDetails",
     fetcher: async () => {
       const raw = await tmdbGet<unknown>({
         path: `/${mediaType}/${id}/images`,
@@ -34,13 +33,12 @@ export async function getMediaImages(mediaType: MediaType, id: string | number):
 }
 
 const MOVIE_DETAILS_APPEND =
-  "credits,external_ids,videos,recommendations,translations,similar,release_dates,images";
+  "credits,external_ids,videos,recommendations,similar,release_dates,images";
 
 export async function getMovieDetails(id: string | number): Promise<MovieDetails> {
   return cachedFetch({
     key: tmdbCacheKeys.movieDetails(id),
-    ttlSeconds: TMDB_TTL_SECONDS.movieDetails,
-    staleSeconds: TMDB_STALE_SECONDS.movieDetails,
+    profile: "movieDetails",
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
 
@@ -62,8 +60,7 @@ export async function getMovieDetails(id: string | number): Promise<MovieDetails
 export async function getPopularMovies(page = 1): Promise<Paginated<MediaSummary>> {
   return cachedFetch({
     key: tmdbCacheKeys.popularMovies(page),
-    ttlSeconds: TMDB_TTL_SECONDS.discover,
-    staleSeconds: TMDB_STALE_SECONDS.discover,
+    profile: "discover",
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
 
@@ -82,8 +79,7 @@ export async function getPopularMovies(page = 1): Promise<Paginated<MediaSummary
 export async function getTopRatedMovies(page = 1): Promise<Paginated<MediaSummary>> {
   return cachedFetch({
     key: tmdbCacheKeys.topRatedMovies(page),
-    ttlSeconds: TMDB_TTL_SECONDS.discover,
-    staleSeconds: TMDB_STALE_SECONDS.discover,
+    profile: "discover",
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
 

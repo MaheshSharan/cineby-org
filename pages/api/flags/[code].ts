@@ -1,13 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import { cachedFetch } from "@/lib/cache";
+import { appCacheKeys, cachedFetch, cacheControl } from "@/lib/cache";
 import { applyCorsHeaders } from "@/lib/cors";
 import { getFlagsApiBaseUrl } from "@/lib/env/public";
 import { logger } from "@/lib/logger";
 import { withApiContext } from "@/lib/validation";
-
-const SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60;
-const ONE_DAY_SECONDS = 24 * 60 * 60;
 
 export default withApiContext(
   "api/flags/[code]",
@@ -32,9 +29,8 @@ export default withApiContext(
 
     try {
       const base64Data = await cachedFetch<string>({
-        key: `flag:${code}`,
-        ttlSeconds: SEVEN_DAYS_SECONDS,
-        staleSeconds: ONE_DAY_SECONDS,
+        key: appCacheKeys.flag(code),
+        profile: "flag",
         fetcher: async () => {
           const upstream = await fetch(`${getFlagsApiBaseUrl()}/${code}/flat/24.png`, { signal: AbortSignal.timeout(5000) });
           if (!upstream.ok) {
@@ -47,11 +43,11 @@ export default withApiContext(
 
       const imgBuffer = Buffer.from(base64Data, "base64");
       res.setHeader("Content-Type", "image/png");
-      res.setHeader("Cache-Control", `public, max-age=${SEVEN_DAYS_SECONDS}, s-maxage=${SEVEN_DAYS_SECONDS}, immutable`);
+      res.setHeader("Cache-Control", cacheControl("flag"));
       res.status(200).send(imgBuffer);
     } catch (error) {
       logger.warn(`[flags] Failed to fetch or cache flag for code ${code}`, { error: String(error) });
-      res.setHeader("Cache-Control", "public, max-age=300");
+      res.setHeader("Cache-Control", cacheControl("flagMiss"));
       res.status(404).json({ error: "Flag not found" });
     }
   }

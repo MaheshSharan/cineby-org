@@ -1,6 +1,6 @@
 import type { GetServerSideProps } from "next";
 
-import { PUBLIC_PAGE_CACHE_CONTROL } from "@/lib/http/cacheControl";
+import { cacheControl } from "@/lib/cache/profiles";
 import type { SeasonEpisodes, TvDetails } from "@/lib/tmdb";
 import { getSeasonEpisodes, getTvDetails, isTmdbNotFoundError } from "@/lib/tmdb/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
@@ -81,7 +81,7 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
 
   try {
     if (!isPlaying) {
-      context.res.setHeader("Cache-Control", PUBLIC_PAGE_CACHE_CONTROL);
+      context.res.setHeader("Cache-Control", cacheControl("page"));
     }
 
     const details = await getTvDetails(id);

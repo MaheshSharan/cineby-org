@@ -1,16 +1,13 @@
-import { getCacheStore } from "@/lib/cache";
+import { appCacheKeys, getCacheStore, refreshAfter, storeTtl } from "@/lib/cache";
 import { getTrailerApiUrl } from "@/lib/env/public";
 import { logger } from "@/lib/logger";
 import type { TrailerResponse } from "./trailer";
 
-const TRAILER_CACHE_TTL = 7 * 86400; // 7 days for valid streams
-const TRAILER_CACHE_STALE = 3 * 86400; // 3 days stale-while-revalidate
-const TRAILER_NEGATIVE_TTL = 300; // 5 minutes negative caching on upstream errors/rate limits
 const IMDB_ID_REGEX = /^tt\d+$/i;
 
 /**
  * Server-side trailer resolver with Redis/memory caching and fallback protection.
- * Caches positive responses for 7 days and negative responses for 5 minutes.
+ * Cache lifetimes come from the `trailer` and `trailerMiss` profiles.
  */
 export async function fetchTrailerUrlServer(imdbId?: string | null): Promise<string | null> {
   if (!imdbId || !IMDB_ID_REGEX.test(imdbId.trim())) {
@@ -18,7 +15,7 @@ export async function fetchTrailerUrlServer(imdbId?: string | null): Promise<str
   }
 
   const normalizedId = imdbId.trim().toLowerCase();
-  const cacheKey = `trailer:${normalizedId}`;
+  const cacheKey = appCacheKeys.trailer(normalizedId);
   const store = getCacheStore();
 
   try {
@@ -42,14 +39,14 @@ export async function fetchTrailerUrlServer(imdbId?: string | null): Promise<str
     });
 
     if (!res.ok) {
-      await store.set(cacheKey, { url: null }, TRAILER_NEGATIVE_TTL).catch(() => {});
+      await store.set(cacheKey, { url: null }, storeTtl("trailerMiss")).catch(() => {});
       return null;
     }
 
     const data = (await res.json()) as TrailerResponse;
     const streams = data?.trailer?.streams ?? [];
     if (streams.length === 0) {
-      await store.set(cacheKey, { url: null }, TRAILER_NEGATIVE_TTL).catch(() => {});
+      await store.set(cacheKey, { url: null }, storeTtl("trailerMiss")).catch(() => {});
       return null;
     }
 
@@ -76,15 +73,15 @@ export async function fetchTrailerUrlServer(imdbId?: string | null): Promise<str
       .set(
         cacheKey,
         { url: resolvedUrl },
-        resolvedUrl ? TRAILER_CACHE_TTL : TRAILER_NEGATIVE_TTL,
-        TRAILER_CACHE_STALE
+        resolvedUrl ? storeTtl("trailer") : storeTtl("trailerMiss"),
+        resolvedUrl ? refreshAfter("trailer") : undefined
       )
       .catch(() => {});
 
     return resolvedUrl;
   } catch (error) {
     logger.debug("[trailer] Upstream lookup failed", { imdbId: normalizedId, error: String(error) });
-    await store.set(cacheKey, { url: null }, TRAILER_NEGATIVE_TTL).catch(() => {});
+    await store.set(cacheKey, { url: null }, storeTtl("trailerMiss")).catch(() => {});
     return null;
   }
 }

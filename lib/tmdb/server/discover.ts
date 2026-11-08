@@ -3,7 +3,7 @@ import { tmdbGet } from "./client";
 import { getTmdbConfig } from "./config";
 import { toMediaSummary, toPaginated } from "./transform";
 import { validatePaginatedResponse } from "./validate";
-import { cachedFetch, TMDB_TTL_SECONDS, TMDB_STALE_SECONDS, tmdbCacheKeys } from "@/lib/cache";
+import { cachedFetch, tmdbCacheKeys } from "@/lib/cache";
 
 export interface DiscoverOptions {
   genreId?: number;
@@ -71,8 +71,7 @@ async function discover(
 
   return cachedFetch({
     key: tmdbCacheKeys.discover(mediaType, queryStr),
-    ttlSeconds: TMDB_TTL_SECONDS.discover,
-    staleSeconds: TMDB_STALE_SECONDS.discover,
+    profile: "discover",
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
 

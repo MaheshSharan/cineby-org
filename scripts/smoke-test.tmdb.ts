@@ -37,7 +37,7 @@ async function run() {
   check("search/multi", search.results.length > 0, `n=${search.results.length}, first=${search.results[0].title}`);
 
   const movie = await getMovieDetails(MOVIE_ID);
-  check("movie details", movie.id === MOVIE_ID, `title=${movie.title}, cert=${movie.certification}, cast=${movie.cast.length}, videos=${movie.videos.length}, recs=${movie.recommendations.length}, imdb=${movie.imdbId}`);
+  check("movie details", movie.id === MOVIE_ID, `title=${movie.title}, cert=${movie.certification}, cast=${movie.cast.length}, videos=${movie.videos.length}, related=${movie.related.length}, imdb=${movie.imdbId}`);
 
   const tv = await getTvDetails(TV_ID);
   check("tv details", tv.id === TV_ID, `name=${tv.title}, seasons=${tv.numberOfSeasons}, cert=${tv.certification}, cast=${tv.cast.length}, videos=${tv.videos.length}`);

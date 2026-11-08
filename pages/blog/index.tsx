@@ -9,6 +9,7 @@ import type { BlogPostMeta } from "@/lib/blog/types";
 import { sanitizeJsonLd } from "@/lib/seo/jsonLd";
 import { getSiteUrl } from "@/lib/env/public";
 import { buildAbsoluteUrl } from "@/lib/seo/site";
+import { edgeTtl } from "@/lib/cache/profiles";
 
 interface BlogIndexProps {
   posts: BlogPostMeta[];
@@ -23,7 +24,7 @@ export const getStaticProps: GetStaticProps<BlogIndexProps> = async () => {
       posts,
       tags,
     },
-    revalidate: 86400,
+    revalidate: edgeTtl("page"),
   };
 };
 

@@ -3,12 +3,12 @@ import { tmdbGet } from "./client";
 import { getTmdbConfig } from "./config";
 import { toGenreList } from "./transform";
 import { validateGenreList } from "./validate";
-import { cachedFetch, TMDB_TTL_SECONDS, tmdbCacheKeys } from "@/lib/cache";
+import { cachedFetch, tmdbCacheKeys } from "@/lib/cache";
 
 export async function getGenres(mediaType: MediaType): Promise<GenreList> {
   return cachedFetch({
     key: tmdbCacheKeys.genres(mediaType),
-    ttlSeconds: TMDB_TTL_SECONDS.genres,
+    profile: "genres",
     fetcher: async () => {
       const { defaultLanguage } = getTmdbConfig();
 
