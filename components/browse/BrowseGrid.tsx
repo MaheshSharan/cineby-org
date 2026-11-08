@@ -4,11 +4,14 @@ import type { Genre, MediaSummary } from "@/lib/tmdb";
 
 import { MovieCard } from "@/components/movie/MovieCard";
 import { SkeletonCardGrid } from "@/components/skeleton/SkeletonCard";
+import { MediaGrid } from "@/components/ui/MediaGrid";
+import { Pagination } from "@/components/ui/Pagination";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
+import { BrowseFilters, type SortKey } from "@/components/browse/BrowseFilters";
 import { browseMedia } from "@/lib/api/tmdb";
+import { BROWSE_PAGE_SIZE, MAX_BROWSE_PAGES } from "@/lib/browse/constants";
 
 type MediaType = "movie" | "tv";
-type SortKey = "popular" | "rating" | "recent";
 
 interface Filters {
   sortKey: SortKey;
@@ -19,57 +22,43 @@ interface BrowseGridProps {
   mediaType: MediaType;
   genres: Genre[];
   initialItems: MediaSummary[];
+  initialTotalPages: number;
 }
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "popular", label: "Most popular" },
-  { key: "rating", label: "Most rating" },
-  { key: "recent", label: "Most recent" },
-];
-
-export function BrowseGrid({ mediaType, genres, initialItems }: BrowseGridProps) {
+export function BrowseGrid({ mediaType, genres, initialItems, initialTotalPages }: BrowseGridProps) {
   const [filters, setFilters] = useState<Filters>({ sortKey: "popular" });
   const [items, setItems] = useState(initialItems);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(initialTotalPages);
   const [isLoading, setIsLoading] = useState(false);
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const requestInFlightRef = useRef(false);
-  const moreDropdownRef = useRef<HTMLDivElement>(null);
+  const gridTopRef = useRef<HTMLDivElement>(null);
+  // Only the newest request may update the grid, so a slow earlier one can never overwrite it.
+  const latestRequestRef = useRef(0);
 
   useEffect(() => {
+    // Navigating to another category invalidates any request still in flight.
+    latestRequestRef.current += 1;
+    setIsLoading(false);
     setFilters({ sortKey: "popular" });
     setItems(initialItems);
     setPage(1);
-    setTotalPages(1);
-  }, [mediaType, initialItems]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (moreDropdownRef.current && !moreDropdownRef.current.contains(event.target as Node)) {
-        setIsMoreOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    setTotalPages(initialTotalPages);
+  }, [mediaType, initialItems, initialTotalPages]);
 
   const fetchPage = useCallback(
-    async (targetPage: number, nextFilters: Filters, append: boolean) => {
-      if (requestInFlightRef.current) {
-        return;
-      }
-
-      requestInFlightRef.current = true;
+    async (targetPage: number, nextFilters: Filters) => {
+      const requestId = ++latestRequestRef.current;
       setIsLoading(true);
+      setHasError(false);
 
       const params = new URLSearchParams();
       params.set("mediaType", mediaType);
       params.set("sortBy", toSortBy(nextFilters.sortKey, mediaType));
       params.set("page", String(targetPage));
+      // Part of the cache key: responses cached with another page size must never be reused.
+      params.set("size", String(BROWSE_PAGE_SIZE));
 
       if (nextFilters.genreId) {
         params.set("genreId", String(nextFilters.genreId));
@@ -77,164 +66,75 @@ export function BrowseGrid({ mediaType, genres, initialItems }: BrowseGridProps)
 
       try {
         const data = await browseMedia(params);
+        if (requestId !== latestRequestRef.current) return;
 
-        setItems((current) => (append ? [...current, ...data.results] : data.results));
+        setItems(data.results);
         setTotalPages(data.totalPages);
         setPage(targetPage);
       } catch {
-        if (!append) {
-          setItems([]);
-        }
+        if (requestId === latestRequestRef.current) setHasError(true);
       } finally {
-        requestInFlightRef.current = false;
-        setIsLoading(false);
+        if (requestId === latestRequestRef.current) setIsLoading(false);
       }
     },
     [mediaType]
   );
 
+  const scrollToGridTop = useCallback(() => {
+    gridTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
   const applyFilters = useCallback(
     (nextFilters: Filters) => {
       setFilters(nextFilters);
-      setIsMoreOpen(false);
-      fetchPage(1, nextFilters, false);
+      scrollToGridTop();
+      void fetchPage(1, nextFilters);
     },
-    [fetchPage]
+    [fetchPage, scrollToGridTop]
   );
 
-  const loadMore = useCallback(() => {
-    setFilters((currentFilters) => {
-      if (page >= totalPages) {
-        return currentFilters;
-      }
+  const goToPage = useCallback(
+    (targetPage: number) => {
+      scrollToGridTop();
+      void fetchPage(targetPage, filters);
+    },
+    [fetchPage, filters, scrollToGridTop]
+  );
 
-      fetchPage(page + 1, currentFilters, true);
-
-      return currentFilters;
-    });
-  }, [fetchPage, page, totalPages]);
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-
-    if (!sentinel) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      },
-      { rootMargin: "400px" }
-    );
-
-    observer.observe(sentinel);
-
-    return () => observer.disconnect();
-  }, [loadMore]);
-
-  const visibleGenres = genres.slice(0, 12);
-  const overflowGenres = genres.slice(12);
+  const pageCount = Math.min(totalPages, MAX_BROWSE_PAGES);
 
   return (
-    <section className="mx-auto w-full max-w-[1360px] overflow-x-hidden px-3 sm:px-4 pt-24 pb-12 md:pt-28">
-      <div className={`no-scrollbar mb-8 flex w-full max-w-full items-center gap-6 border-b border-white/10 pb-3 ${isMoreOpen ? "overflow-visible" : "overflow-x-auto"}`}>
-        {SORT_OPTIONS.map((option) => (
-          <TabOptionBtn
-            key={option.key}
-            label={option.label}
-            isActive={filters.sortKey === option.key && filters.genreId === undefined}
-            onClick={() => applyFilters({ sortKey: option.key })}
-          />
-        ))}
-
-        {visibleGenres.map((genre) => (
-          <TabOptionBtn
-            key={genre.id}
-            label={genre.name}
-            isActive={filters.genreId === genre.id}
-            onClick={() => applyFilters({ sortKey: "popular", genreId: genre.id })}
-          />
-        ))}
-
-        {overflowGenres.length > 0 ? (
-          <div className="relative shrink-0" ref={moreDropdownRef}>
-            <button
-              type="button"
-              aria-label="More genres"
-              onClick={() => setIsMoreOpen((prev) => !prev)}
-              className="relative pb-1 text-sm font-medium text-gray-400 hover:text-gray-200 transition-colors duration-200"
-            >
-              ···
-            </button>
-
-            {isMoreOpen ? (
-              <div className="absolute right-0 top-full mt-2 z-[9999] min-w-[12rem] rounded-xl shadow-2xl glass-card-dark backdrop-blur-xl border border-white/10 p-1.5 flex flex-col max-h-60 overflow-y-auto no-scrollbar">
-                {overflowGenres.map((genre) => (
-                  <button
-                    key={genre.id}
-                    type="button"
-                    onClick={() => applyFilters({ sortKey: "popular", genreId: genre.id })}
-                    className={`w-full px-3 py-2 text-left text-[13px] rounded-lg transition-colors ${
-                      filters.genreId === genre.id ? "text-primary font-semibold bg-white/[0.04]" : "text-text-hi hover:bg-white/[0.04]"
-                    }`}
-                  >
-                    {genre.name}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+    <section className="mx-auto w-full max-w-[1360px] overflow-x-hidden px-3 sm:px-4 pt-24 pb-28 md:pt-28 md:pb-12">
+      <BrowseFilters
+        genres={genres}
+        sortKey={filters.sortKey}
+        genreId={filters.genreId}
+        onSortChange={(sortKey) => applyFilters({ sortKey })}
+        onGenreChange={(genreId) => applyFilters({ sortKey: "popular", genreId })}
+      />
 
       <div className="w-full max-w-full overflow-hidden my-4">
         <NativeBannerAd />
       </div>
 
       {/* Grid of Movie/TV Cards */}
-      {items.length === 0 && !isLoading ? (
+      <div ref={gridTopRef} className="scroll-mt-24" aria-hidden="true" />
+      {isLoading ? (
+        <SkeletonCardGrid count={BROWSE_PAGE_SIZE} isMediaGrid />
+      ) : hasError ? (
+        <p className="py-12 text-center text-sm text-text-mid">Could not load titles. Pick a page to try again.</p>
+      ) : items.length === 0 ? (
         <p className="py-12 text-center text-sm text-text-mid">No results found.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-x-3 xs:gap-x-4 gap-y-7 sm:gap-x-4 sm:gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 justify-items-center">
+        <MediaGrid>
           {items.map((item) => (
             <MovieCard key={`${item.mediaType}-${item.id}`} media={item} variant="catalog" />
           ))}
-        </div>
+        </MediaGrid>
       )}
 
-      {/* Loading Skeleton */}
-      {isLoading ? <SkeletonCardGrid /> : null}
-
-      <div ref={sentinelRef} aria-hidden="true" className="h-10" />
+      <Pagination page={page} pageCount={pageCount} isDisabled={isLoading} onPageChange={goToPage} />
     </section>
-  );
-}
-
-interface TabOptionBtnProps {
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
-}
-
-function TabOptionBtn({ label, isActive, onClick }: TabOptionBtnProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`relative shrink-0 pb-1 text-sm font-medium transition-colors duration-200 ${
-        isActive ? "text-white" : "text-gray-400 hover:text-gray-200"
-      }`}
-    >
-      {label}
-      <span
-        className={`absolute inset-x-0 -bottom-[13px] h-0.5 rounded-full bg-primary transition-all duration-200 ${
-          isActive ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0"
-        }`}
-      />
-    </button>
   );
 }
 

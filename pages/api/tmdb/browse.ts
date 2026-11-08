@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { buildTmdbCacheControl } from "@/lib/cache/policy";
-import { discoverMovies, discoverTv, getTopRatedMovies, getTopRatedTv } from "@/lib/tmdb/server";
+import { getBrowsePage } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
 import type { MediaType } from "@/lib/tmdb";
@@ -21,15 +21,7 @@ export default withApiContext("api/tmdb/browse", async (req: NextApiRequest, res
   const sortBy = typeof req.query.sortBy === "string" ? req.query.sortBy : undefined;
   const page = parsePage(req.query.page);
 
-  const isTopRated = !genreId && (sortBy === "vote_average.desc" || sortBy === "top_rated");
-
-  const result = isTopRated
-    ? mediaType === "tv"
-      ? await getTopRatedTv(page)
-      : await getTopRatedMovies(page)
-    : mediaType === "tv"
-    ? await discoverTv({ genreId, sortBy, page })
-    : await discoverMovies({ genreId, sortBy, page });
+  const result = await getBrowsePage({ mediaType, genreId, sortBy, page });
 
   res.setHeader("Cache-Control", buildTmdbCacheControl("discover"));
   res.status(200).json(result);

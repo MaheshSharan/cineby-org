@@ -3,7 +3,7 @@ import type { GetServerSideProps } from "next";
 import { PUBLIC_PAGE_CACHE_CONTROL } from "@/lib/http/cacheControl";
 import { logger } from "@/lib/logger";
 import type { Genre, MediaSummary, MediaType } from "@/lib/tmdb";
-import { discoverMovies, discoverTv, getGenres } from "@/lib/tmdb/server";
+import { getBrowsePage, getGenres } from "@/lib/tmdb/server";
 
 import { BrowseGrid } from "@/components/browse/BrowseGrid";
 import { PageSeo } from "@/components/seo/PageSeo";
@@ -13,6 +13,7 @@ interface BrowsePageProps {
   mediaType: MediaType;
   genres: Genre[];
   initialItems: MediaSummary[];
+  initialTotalPages: number;
 }
 
 const CATEGORY_SEO: Record<MediaType, { title: string; heading: string; description: string }> = {
@@ -28,7 +29,7 @@ const CATEGORY_SEO: Record<MediaType, { title: string; heading: string; descript
   },
 };
 
-export default function BrowsePage({ mediaType, genres, initialItems }: BrowsePageProps) {
+export default function BrowsePage({ mediaType, genres, initialItems, initialTotalPages }: BrowsePageProps) {
   const { title, heading, description } = CATEGORY_SEO[mediaType];
 
   return (
@@ -41,7 +42,12 @@ export default function BrowsePage({ mediaType, genres, initialItems }: BrowsePa
       />
       <h1 className="sr-only">{heading}</h1>
 
-      <BrowseGrid mediaType={mediaType} genres={genres} initialItems={initialItems} />
+      <BrowseGrid
+        mediaType={mediaType}
+        genres={genres}
+        initialItems={initialItems}
+        initialTotalPages={initialTotalPages}
+      />
     </>
   );
 }
@@ -60,9 +66,7 @@ export const getServerSideProps: GetServerSideProps<BrowsePageProps> = async (co
 
     const [genreList, initial] = await Promise.all([
       getGenres(mediaType),
-      mediaType === "tv"
-        ? discoverTv({ sortBy: "popularity.desc", page: 1 })
-        : discoverMovies({ sortBy: "popularity.desc", page: 1 }),
+      getBrowsePage({ mediaType, sortBy: "popularity.desc", page: 1 }),
     ]);
 
     return {
@@ -70,6 +74,7 @@ export const getServerSideProps: GetServerSideProps<BrowsePageProps> = async (co
         mediaType,
         genres: genreList.genres,
         initialItems: initial.results,
+        initialTotalPages: initial.totalPages,
       },
     };
   } catch (error) {

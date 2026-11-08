@@ -1,3 +1,5 @@
+import { CATALOG_CARD_WIDTH } from "@/components/movie/cardSizes";
+import { MediaGrid } from "@/components/ui/MediaGrid";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 type SkeletonVariant = "row" | "grid" | "catalog";
@@ -10,7 +12,7 @@ interface SkeletonCardProps {
 const VARIANT_WIDTHS: Record<SkeletonVariant, string> = {
   row: "w-36 sm:w-40",
   grid: "w-40 sm:w-44",
-  catalog: "w-[120px] xs:w-[132px] sm:w-[150px] md:w-[170px] lg:w-[188px]",
+  catalog: CATALOG_CARD_WIDTH,
 };
 
 export function SkeletonCard({ variant = "row", className = "" }: SkeletonCardProps) {
@@ -23,12 +25,20 @@ export function SkeletonCard({ variant = "row", className = "" }: SkeletonCardPr
   );
 }
 
-export function SkeletonCardGrid() {
+interface SkeletonCardGridProps {
+  count?: number;
+  /** Use MediaGrid-shaped skeletons so a loading browse page matches the loaded one. */
+  isMediaGrid?: boolean;
+}
+
+export function SkeletonCardGrid({ count = 12, isMediaGrid = false }: SkeletonCardGridProps) {
+  const cards = Array.from({ length: count }).map((_, index) => <SkeletonCard key={index} variant="catalog" />);
+
+  if (isMediaGrid) return <MediaGrid>{cards}</MediaGrid>;
+
   return (
     <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-      {Array.from({ length: 12 }).map((_, index) => (
-        <SkeletonCard key={index} variant="catalog" />
-      ))}
+      {cards}
     </div>
   );
 }

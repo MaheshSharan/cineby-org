@@ -7,15 +7,16 @@ import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
 
 import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
+import { CATALOG_CARD_WIDTH } from "@/components/movie/cardSizes";
 import { PlayIcon, StarIcon } from "@/components/ui/icons";
 
 type CardVariant = "poster" | "backdrop" | "grid" | "catalog";
 
 const VARIANT_WIDTH: Record<CardVariant, string> = {
-  poster: "w-[140px] xs:w-[150px] md:w-[180px] lg:w-[200px] flex-shrink-0",
+  poster: `${CATALOG_CARD_WIDTH} flex-shrink-0`,
   backdrop: "w-[240px] xs:w-[260px] md:w-[280px] lg:w-[320px] flex-shrink-0",
   grid: "w-full",
-  catalog: "w-[140px] xs:w-[150px] md:w-[180px] lg:w-[200px] flex-shrink-0",
+  catalog: `${CATALOG_CARD_WIDTH} flex-shrink-0`,
 };
 
 interface MovieCardProps {
