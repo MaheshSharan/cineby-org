@@ -5,7 +5,7 @@
  * without contacting the Worker at all. s-maxage and stale-while-revalidate serve shared caches.
  */
 export const PUBLIC_PAGE_CACHE_CONTROL =
-  "public, max-age=10800, s-maxage=10800, stale-while-revalidate=86400";
+  "public, max-age=86400, s-maxage=86400, stale-while-revalidate=86400";
 
 /** For responses that depend on the signed-in user and must never be stored by a shared cache. */
 export const PRIVATE_PAGE_CACHE_CONTROL = "private, max-age=0, must-revalidate";
