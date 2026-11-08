@@ -85,7 +85,8 @@ export const DEFAULT_SETTINGS: CinebySettings = {
     episodeViewStyle: "vertical",
     detailViewType: "page",
     useImageLogos: true,
-    trailers: true,
+    // Off until the user turns it on: trailers cost bandwidth and autoplay on every hover.
+    trailers: false,
   },
   playback: {
     autoplay: true,

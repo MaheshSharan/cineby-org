@@ -6,6 +6,7 @@ import { SettingsIcon } from "@/components/ui/icons";
 import { SettingsTabs, type SettingsTabId } from "@/components/settings/SettingsTabs";
 import { AccountSettings } from "@/components/settings/AccountSettings";
 import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
+import { EmbeddedPlayerLock } from "@/components/settings/EmbeddedPlayerLock";
 import { PlaybackSettings } from "@/components/settings/PlaybackSettings";
 import { SubtitlesSettings } from "@/components/settings/SubtitlesSettings";
 
@@ -56,8 +57,16 @@ export default function SettingsPage() {
         <div className="animate-in fade-in duration-150">
           {activeTab === "account" && <AccountSettings />}
           {activeTab === "appearance" && <AppearanceSettings />}
-          {activeTab === "playback" && <PlaybackSettings />}
-          {activeTab === "subtitles" && <SubtitlesSettings />}
+          {activeTab === "playback" && (
+            <EmbeddedPlayerLock>
+              <PlaybackSettings />
+            </EmbeddedPlayerLock>
+          )}
+          {activeTab === "subtitles" && (
+            <EmbeddedPlayerLock>
+              <SubtitlesSettings />
+            </EmbeddedPlayerLock>
+          )}
         </div>
       </div>
     </>
