@@ -244,15 +244,6 @@ declare global {
   }
 }
 
-/** Tells Google Analytics what the visitor chose in the consent banner (Consent Mode v2). */
-export function updateGoogleConsent(choice: "granted" | "denied"): void {
-  if (!isAnalyticsActive() || typeof window.gtag !== "function") {
-    return;
-  }
-
-  window.gtag("consent", "update", { analytics_storage: choice });
-}
-
 export function isAnalyticsActive(): boolean {
   return typeof window !== "undefined" && isAnalyticsEnabled();
 }

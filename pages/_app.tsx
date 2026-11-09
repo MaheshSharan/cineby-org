@@ -15,7 +15,6 @@ import { ScrollEdgeButton } from "@/components/ui/ScrollEdgeButton";
 import { PageLoadBar } from "@/components/ui/PageLoadBar";
 import { PopunderAd } from "@/components/ads/PopunderAd";
 import { ConsentManager } from "@/components/consent/ConsentManager";
-import { CONSENT_STORAGE_KEY } from "@/lib/consent/analyticsConsent";
 import { getActiveGaMeasurementId, pageView, trackEvent, setUserProperties } from "@/lib/analytics/gtag";
 import { isDevtoolsGuardEnabled } from "@/lib/env/public";
 import { initDevtoolsGuard } from "@/lib/security/devtoolsGuard";
@@ -103,7 +102,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
       {gaMeasurementId && (
         <>
-          {/* Google Consent Mode v2: analytics cookies stay off until the visitor accepts in the consent banner */}
+          {/* Basic visit statistics (pages, plays) are always on; the consent banner only covers session recording. Ad signals stay off. */}
           <Script
             id="google-consent-mode"
             strategy="afterInteractive"
@@ -111,10 +110,8 @@ export default function App({ Component, pageProps }: AppProps) {
               __html: `
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
-                var savedConsent = null;
-                try { savedConsent = localStorage.getItem(${JSON.stringify(CONSENT_STORAGE_KEY)}); } catch (e) {}
                 gtag('consent', 'default', {
-                  'analytics_storage': savedConsent === 'granted' ? 'granted' : 'denied',
+                  'analytics_storage': 'granted',
                   'ad_storage': 'denied',
                   'ad_user_data': 'denied',
                   'ad_personalization': 'denied',

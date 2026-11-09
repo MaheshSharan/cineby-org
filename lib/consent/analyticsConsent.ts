@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 export type ConsentChoice = "granted" | "denied";
 
-export const CONSENT_STORAGE_KEY = "cineby_analytics_consent";
+const CONSENT_STORAGE_KEY = "cineby_analytics_consent";
 const CONSENT_CHANGE_EVENT = "cineby:consent-change";
 
 /** The visitor's saved choice, or null while they have not decided. */

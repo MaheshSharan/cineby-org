@@ -4,35 +4,21 @@ import Script from "next/script";
 import { useRouter } from "next/router";
 
 import { isClarityAllowedPath } from "@/lib/analytics/clarity";
-import { updateGoogleConsent } from "@/lib/analytics/gtag";
 import { saveConsent, useConsent } from "@/lib/consent/analyticsConsent";
-import { getClarityProjectId, isAnalyticsEnabled, isClarityEnabled } from "@/lib/env/public";
-
-/** Names of the enabled tools that need consent, used in the banner and to decide whether to show it at all. */
-function getConsentTools(): string[] {
-  const tools: string[] = [];
-  if (isAnalyticsEnabled()) tools.push("Google Analytics");
-  if (isClarityEnabled()) tools.push("Microsoft Clarity");
-  return tools;
-}
+import { getClarityProjectId, isClarityEnabled } from "@/lib/env/public";
 
 /**
- * Single place for analytics consent. The visitor's choice drives Google Analytics (Consent Mode) and Microsoft
- * Clarity (only loaded after acceptance, and paused on pages where recording is not allowed).
- * Shows the consent banner on allowed pages until the visitor has chosen.
+ * Single place for the cookie choice, which covers session recording only (Microsoft Clarity). Clarity loads
+ * after acceptance and is paused on pages where recording is not allowed. Basic visit statistics (Google
+ * Analytics) do not depend on it. Shows the banner on allowed pages until the visitor has chosen.
  */
 export function ConsentManager() {
   const router = useRouter();
   const consent = useConsent();
   const enabled = isClarityEnabled();
-  const tools = getConsentTools();
   const allowed = isClarityAllowedPath(router.asPath);
   const [hasLoadedOnAllowedPage, setHasLoadedOnAllowedPage] = useState(false);
   const wasAllowed = useRef(true);
-
-  useEffect(() => {
-    if (consent) updateGoogleConsent(consent);
-  }, [consent]);
 
   const shouldLoad = enabled && consent === "granted" && (allowed || hasLoadedOnAllowedPage);
 
@@ -47,7 +33,7 @@ export function ConsentManager() {
     window.clarity?.(allowed ? "start" : "stop");
   }, [allowed, hasLoadedOnAllowedPage]);
 
-  if (tools.length === 0) return null;
+  if (!enabled) return null;
 
   return (
     <>
@@ -78,11 +64,11 @@ export function ConsentManager() {
             </svg>
           </button>
           <h2 id="cookie-consent-title" className="pr-8 text-[15px] font-semibold text-white">
-            This website uses cookies.
+            Help us improve Cineby
           </h2>
           <p className="mt-3 text-[13px] leading-relaxed text-white/80">
-            We use {tools.join(" and ")} to understand how Cineby is used and to improve it. They set cookies and
-            may record clicks and scrolling. Only essential cookies are on by default. See our{" "}
+            Allow cookies so we can see how pages are used, such as where visitors click and scroll. Nothing changes
+            if you decline. See our{" "}
             <Link href="/privacy" className="font-medium text-white underline underline-offset-2">
               Privacy Policy
             </Link>
@@ -94,7 +80,7 @@ export function ConsentManager() {
               onClick={() => saveConsent("granted")}
               className="h-10 rounded-full border border-white/15 bg-white/10 px-5 text-sm font-medium text-white transition-colors hover:bg-white/15"
             >
-              Accept Cookies
+              Allow
             </button>
             <button
               type="button"
@@ -112,7 +98,7 @@ export function ConsentManager() {
 
 /** Lets a visitor change their mind: clears the choice and reloads so recording stops and the banner returns. */
 export function CookieSettingsButton({ className = "" }: { className?: string }) {
-  if (getConsentTools().length === 0) return null;
+  if (!isClarityEnabled()) return null;
 
   return (
     <button
@@ -120,7 +106,6 @@ export function CookieSettingsButton({ className = "" }: { className?: string })
       className={className}
       onClick={() => {
         window.clarity?.("consent", false);
-        updateGoogleConsent("denied");
         saveConsent(null);
         window.location.reload();
       }}
