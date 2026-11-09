@@ -89,7 +89,6 @@ export const vidriftEmbed: EmbedProvider = {
   iframe: {
     allow: "encrypted-media; autoplay *; fullscreen *",
     referrerPolicy: "origin",
-    sandbox: POPUP_BLOCKING_SANDBOX,
   },
   resume: {
     targetOrigin: VIDRIFT_ORIGIN,

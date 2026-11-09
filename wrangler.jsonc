@@ -30,8 +30,8 @@
   "vars": {
     "PLAYER_MODE": "embed",
     "ENABLE_EMBED_PLAYERS": "true",
-    "EMBED_SERVER_PRIORITY": "vidrift,framextv,vidy,vidnest,vixsrc",
-    "EMBED_DEFAULT_SERVER": "vidrift",
+    "EMBED_SERVER_PRIORITY": "vidy,framextv,vidrift,vidnest,vixsrc",
+    "EMBED_DEFAULT_SERVER": "vidy",
     "EMBED_LOAD_TIMEOUT_MS": "12000",
     "VIXSRC_EMBED_HOST": "https://vixsrc.to",
     "VIDY_EMBED_HOST": "https://vidy.st",

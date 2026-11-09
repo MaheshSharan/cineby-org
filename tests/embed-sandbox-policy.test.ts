@@ -24,8 +24,8 @@ describe("popup-blocking sandbox", () => {
     expect(POPUP_BLOCKING_SANDBOX).toContain("allow-same-origin");
   });
 
-  it("is declared by VidRift and FrameXTV", () => {
-    expect(vidriftEmbed.iframe.sandbox).toBe(POPUP_BLOCKING_SANDBOX);
+  it("is declared by FrameXTV, but not by VidRift, which refuses to play sandboxed", () => {
+    expect(vidriftEmbed.iframe.sandbox).toBeUndefined();
     expect(framextvEmbed.iframe.sandbox).toBe(POPUP_BLOCKING_SANDBOX);
   });
 
