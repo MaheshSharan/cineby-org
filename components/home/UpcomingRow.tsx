@@ -3,6 +3,10 @@ import type { MediaSummary } from "@/lib/tmdb";
 import { ContentRow } from "@/components/content/ContentRow";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { Tabs, type TabOption } from "@/components/ui/Tabs";
+import { useDeferredItems } from "@/hooks/useDeferredItems";
+
+// Enough to fill a wide desktop row; the rest of the list appears once the browser is idle.
+const INITIAL_CARD_COUNT = 8;
 
 interface UpcomingRowProps {
   movies: MediaSummary[];
@@ -18,6 +22,7 @@ export function UpcomingRow({ movies, tv }: UpcomingRowProps) {
   ];
 
   const currentItems = activeTab === "movies" ? movies : tv;
+  const visibleItems = useDeferredItems(currentItems, INITIAL_CARD_COUNT);
 
   if (!movies.length && !tv.length) {
     return null;
@@ -46,7 +51,7 @@ export function UpcomingRow({ movies, tv }: UpcomingRowProps) {
         headerSlot={customHeader}
         action={<Tabs options={options} activeKey={activeTab} onChange={setActiveTab} />}
       >
-        {currentItems.map((item) => (
+        {visibleItems.map((item) => (
           <MovieCard
             key={`${item.mediaType || activeTab}-${item.id}`}
             media={{ ...item, mediaType: (item.mediaType || (activeTab === "movies" ? "movie" : "tv")) }}

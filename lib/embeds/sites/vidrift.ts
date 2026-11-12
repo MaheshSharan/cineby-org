@@ -1,5 +1,4 @@
 import type { EmbedBuildUrlOptions, EmbedEventType, EmbedNormalizedEvent, EmbedProvider } from "../types";
-import { POPUP_BLOCKING_SANDBOX } from "../sandboxPolicy";
 import { cleanHexColor, isOriginAllowed, toNonNegativeNumber, toRecord } from "../common";
 
 export const VIDRIFT_ORIGIN = "https://embed.vidrift.net";

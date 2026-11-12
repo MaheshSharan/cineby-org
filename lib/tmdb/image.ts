@@ -130,7 +130,8 @@ export function getPosterResponsiveUrls(
 ): PosterResponsiveUrls {
   return {
     mobile: buildImageUrl(path, "w342"),
-    desktop: buildImageUrl(path, "w780"),
+    // Poster cards are at most 200 px wide, so w500 is sharp on high-density screens; w780 was about twice the bytes.
+    desktop: buildImageUrl(path, "w500"),
   };
 }
 

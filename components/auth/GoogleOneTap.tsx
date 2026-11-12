@@ -2,8 +2,9 @@ import { useEffect, useRef } from "react";
 import Script from "next/script";
 
 import { getGoogleClientId } from "@/lib/env/public";
+import { useFirstInteraction } from "@/hooks/useFirstInteraction";
 
-const GOOGLE_SCRIPT_WAIT_MS = 5000;
+const GOOGLE_SCRIPT_WAIT_MS = 10000;
 
 interface GoogleOneTapProps {
   onSuccess?: (redirectTo?: string) => void;
@@ -66,6 +67,8 @@ export function GoogleOneTap({
   disabled = false,
 }: GoogleOneTapProps) {
   const clientId = getGoogleClientId();
+  // The Google sign-in script and its prompt wait for the visitor, so they stay out of the first paint.
+  const hasInteracted = useFirstInteraction();
   // Callbacks change identity on every parent render; keeping them in a ref stops the prompt from re-initializing.
   const callbacksRef = useRef({ onSuccess, onError });
   useEffect(() => {
@@ -73,7 +76,7 @@ export function GoogleOneTap({
   }, [onSuccess, onError]);
 
   useEffect(() => {
-    if (disabled) {
+    if (disabled || !hasInteracted) {
       return;
     }
 
@@ -116,7 +119,7 @@ export function GoogleOneTap({
       clearTimeout(timeout);
       window.google?.accounts?.id?.cancel();
     };
-  }, [clientId, disabled]);
+  }, [clientId, disabled, hasInteracted]);
 
   if (disabled) {
     return null;
@@ -128,10 +131,7 @@ export function GoogleOneTap({
         id="google-one-tap-anchor"
         className="fixed top-[84px] md:top-[96px] right-4 md:right-8 z-[90] pointer-events-auto"
       />
-      <Script
-        src="https://accounts.google.com/gsi/client"
-        strategy="afterInteractive"
-      />
+      {hasInteracted ? <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" /> : null}
     </>
   );
 }

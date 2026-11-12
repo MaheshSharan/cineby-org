@@ -10,6 +10,16 @@ import { IconSprite } from "@/components/ui/icons";
 import { PWA_BACKGROUND_COLOR } from "@/lib/constants/pwa";
 import { getIosSplashImagePath, getIosSplashMedia, IOS_SPLASH_SCREENS } from "@/lib/pwa/iosSplash";
 
+const GOOGLE_FONTS_URL =
+  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap";
+
+// The stylesheet is attached by script because a <link rel="stylesheet"> in the head blocks the first paint
+// until a third-party server answers. Font files are fetched only for the glyphs the page actually draws.
+// The string is a fixed constant, so nothing user-controlled reaches the inline script.
+const FONT_STYLESHEET_LOADER = `(function(){var l=document.createElement('link');l.rel='stylesheet';l.href=${JSON.stringify(
+  GOOGLE_FONTS_URL
+)};document.head.appendChild(l);})();`;
+
 function getImageOrigin(): string {
   const base = getImageMode() === "tmdb" ? getTmdbImageBaseUrl() : getImageProxyUrl();
   return new URL(base).origin;
@@ -22,11 +32,10 @@ export default function Document() {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href={getImageOrigin()} crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap"
-          rel="stylesheet"
-        />
-        <link href="https://fonts.cdnfonts.com/css/netflix-font" rel="stylesheet" />
+        <script dangerouslySetInnerHTML={{ __html: FONT_STYLESHEET_LOADER }} />
+        <noscript>
+          <link href={GOOGLE_FONTS_URL} rel="stylesheet" />
+        </noscript>
         <link rel="icon" href="/logo.png" type="image/png" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.webmanifest" crossOrigin="use-credentials" />

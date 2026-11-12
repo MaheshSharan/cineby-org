@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import type { MediaSummary } from "@/lib/tmdb";
 import { deduplicateMediaPool, getMediaKey } from "@/lib/tmdb/deduplicate";
+import { toRowSummary } from "@/lib/tmdb/rowSummary";
 import {
   discoverMovies,
   discoverTv,
@@ -15,13 +16,14 @@ import {
   getTrending,
 } from "@/lib/tmdb/server";
 import { getUpcomingMedia } from "@/lib/tmdb/server/discover";
-import { getHeroPicksMedia } from "@/lib/tmdb/server/heroPicks";
 
 import { BrowseByProviderRow } from "@/components/home/BrowseByProviderRow";
 import { LiveSportsRow } from "@/components/sports/LiveSportsRow";
 import { ContinueWatchingRow } from "@/components/home/ContinueWatchingRow";
 import { HeroCarousel } from "@/components/home/HeroCarousel";
+import { HeroPreload } from "@/components/home/HeroPreload";
 import { LazyContentRow } from "@/components/home/LazyContentRow";
+import { RenderWhenVisible } from "@/components/home/RenderWhenVisible";
 import { OnlyOnRow } from "@/components/home/OnlyOnRow";
 import { TopTenRow } from "@/components/home/TopTenRow";
 import { UpcomingRow } from "@/components/home/UpcomingRow";
@@ -42,6 +44,8 @@ import { cacheControl } from "@/lib/cache/profiles";
 const HERO_ITEMS = 7;
 const ROW_ITEMS = 20;
 const ANIMATION_GENRE_ID = 16;
+// About the height of a card row with its heading, used to hold space for rows that mount on scroll.
+const ROW_PLACEHOLDER_HEIGHT = 340;
 
 interface HomePageProps {
   heroItems: MediaSummary[];
@@ -149,6 +153,7 @@ export default function Home({
 
       <h1 className="sr-only">Cineby - Watch Free Movies & TV Shows Online with No Sign Up</h1>
 
+      <HeroPreload item={heroItems[0]} />
       <HeroCarousel items={heroItems} genreNames={genreNames} />
 
       <div className="page-shell relative z-10 flex max-w-[1360px] flex-col gap-10 px-4 mt-1 sm:mt-2 md:mt-3 md:gap-14 pb-16">
@@ -161,43 +166,61 @@ export default function Home({
 
         <TopTenRow items={topTenItems} />
 
-        <LazyContentRow
-          title="Trending Movies"
-          initialItems={trendingMovies}
-          action={viewAllMovieLink}
-        />
+        {/* The first row below the fold stays in the server HTML; the browser skips its paint until it scrolls near. */}
+        <div className="defer-render-row">
+          <LazyContentRow
+            title="Trending Movies"
+            initialItems={trendingMovies}
+            action={viewAllMovieLink}
+          />
+        </div>
 
-        <LazyContentRow
-          title="Trending Series"
-          initialItems={trendingSeries}
-          fetchUrl="/api/tmdb/trending?mediaType=tv&timeWindow=day"
-          action={viewAllTvLink}
-        />
+        {/* The rows after it mount only when they are about to scroll into view, which keeps them out of the first hydration. */}
+        <RenderWhenVisible placeholderHeight={ROW_PLACEHOLDER_HEIGHT}>
+          <LazyContentRow
+            title="Trending Series"
+            initialItems={trendingSeries}
+            fetchUrl="/api/tmdb/trending?mediaType=tv&timeWindow=day"
+            action={viewAllTvLink}
+          />
+        </RenderWhenVisible>
 
-        <OnlyOnRow
-          initialItems={onlyOnNetflix}
-          activeProviderId={activeProviderId}
-          excludeMediaKeys={excludeKeys}
-          onProviderChange={(id) => setActiveProviderId(id)}
-        />
+        <RenderWhenVisible placeholderHeight={ROW_PLACEHOLDER_HEIGHT}>
+          <OnlyOnRow
+            initialItems={onlyOnNetflix}
+            activeProviderId={activeProviderId}
+            excludeMediaKeys={excludeKeys}
+            onProviderChange={(id) => setActiveProviderId(id)}
+          />
+        </RenderWhenVisible>
 
-        <UpcomingRow movies={upcomingMovies} tv={upcomingTv} />
+        <RenderWhenVisible placeholderHeight={ROW_PLACEHOLDER_HEIGHT}>
+          <UpcomingRow movies={upcomingMovies} tv={upcomingTv} />
+        </RenderWhenVisible>
 
-        <LazyContentRow
-          title="Top Rated Movies"
-          initialItems={topRatedMovies}
-          fetchUrl="/api/tmdb/browse?mediaType=movie&sortBy=vote_average.desc"
-        />
+        <RenderWhenVisible placeholderHeight={ROW_PLACEHOLDER_HEIGHT}>
+          <LazyContentRow
+            title="Top Rated Movies"
+            initialItems={topRatedMovies}
+            fetchUrl="/api/tmdb/browse?mediaType=movie&sortBy=vote_average.desc"
+          />
+        </RenderWhenVisible>
 
-        <LazyContentRow
-          title="Top Rated Series"
-          initialItems={topRatedSeries}
-          fetchUrl="/api/tmdb/browse?mediaType=tv&sortBy=vote_average.desc"
-        />
+        <RenderWhenVisible placeholderHeight={ROW_PLACEHOLDER_HEIGHT}>
+          <LazyContentRow
+            title="Top Rated Series"
+            initialItems={topRatedSeries}
+            fetchUrl="/api/tmdb/browse?mediaType=tv&sortBy=vote_average.desc"
+          />
+        </RenderWhenVisible>
 
-        <FaqSection />
+        <div className="defer-render-section">
+          <FaqSection />
+        </div>
 
-        <SeoContentSection />
+        <div className="defer-render-section">
+          <SeoContentSection />
+        </div>
       </div>
     </>
   );
@@ -213,7 +236,6 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
     p.catch(() => ({ genres: [] }));
 
   const [
-    heroPicks,
     heroP1,
     heroP2,
     trendingMoviesP1,
@@ -230,7 +252,6 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
     upcomingMoviesData,
     upcomingTvData,
   ] = await Promise.all([
-    getHeroPicksMedia().catch(() => []),
     safePaginated(getTrending("all", "day", 1)),
     safePaginated(getTrending("all", "day", 2)),
     safePaginated(getTrending("movie", "day", 1)),
@@ -262,7 +283,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
   const heroItems = deduplicateMediaPool(eligibleHeroPool, seenKeys, HERO_ITEMS);
 
   const trendingMoviesPool = [...trendingMoviesP1.results, ...trendingMoviesP2.results];
-  const trendingMovies = deduplicateMediaPool(trendingMoviesPool, seenKeys, ROW_ITEMS);
+  const trendingMovies = deduplicateMediaPool(trendingMoviesPool, seenKeys, ROW_ITEMS).map(toRowSummary);
 
   const genreNames: Record<number, string> = {};
   for (const genre of movieGenres.genres) {
@@ -273,10 +294,11 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
   }
 
   const trendingSeriesPool = [...trendingSeriesP1.results, ...trendingSeriesP2.results];
-  const trendingSeries = deduplicateMediaPool(trendingSeriesPool, seenKeys, ROW_ITEMS);
+  const trendingSeries = deduplicateMediaPool(trendingSeriesPool, seenKeys, ROW_ITEMS).map(toRowSummary);
 
+  // Only the number one card shows an overview and a logo; the other nine are plain poster cards.
   const topTenRaw = topTenWeek.results.slice(0, 10);
-  const topTenItems = await Promise.all(
+  const topTenPromise = Promise.all(
     topTenRaw.map(async (item, idx) => {
       if (idx === 0) {
         return {
@@ -284,7 +306,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
           logoPath: await getMediaLogo(item.mediaType, item.id).catch(() => null),
         };
       }
-      return item;
+      return toRowSummary(item);
     })
   );
 
@@ -294,21 +316,27 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
     if (i < netflixMovies.results.length) netflixPool.push(netflixMovies.results[i]);
     if (i < netflixTv.results.length) netflixPool.push(netflixTv.results[i]);
   }
-  const onlyOnNetflix = deduplicateMediaPool(netflixPool, seenKeys, ROW_ITEMS);
+  const onlyOnNetflix = deduplicateMediaPool(netflixPool, seenKeys, ROW_ITEMS).map(toRowSummary);
 
-  const topRatedMovies = deduplicateMediaPool(topRatedMoviesData.results, seenKeys, ROW_ITEMS);
-  const topRatedSeries = deduplicateMediaPool(topRatedSeriesData.results, seenKeys, ROW_ITEMS);
-  const upcomingMovies = deduplicateMediaPool(upcomingMoviesData.results, seenKeys, ROW_ITEMS);
-  const upcomingTv = deduplicateMediaPool(upcomingTvData.results, seenKeys, ROW_ITEMS);
+  const topRatedMovies = deduplicateMediaPool(topRatedMoviesData.results, seenKeys, ROW_ITEMS).map(toRowSummary);
+  const topRatedSeries = deduplicateMediaPool(topRatedSeriesData.results, seenKeys, ROW_ITEMS).map(toRowSummary);
+  const upcomingMovies = deduplicateMediaPool(upcomingMoviesData.results, seenKeys, ROW_ITEMS).map(toRowSummary);
+  const upcomingTv = deduplicateMediaPool(upcomingTvData.results, seenKeys, ROW_ITEMS).map(toRowSummary);
+
+  // The hero artwork and the top-ten logo are independent, so they are fetched together.
+  const [heroItemsWithImages, topTenItems] = await Promise.all([
+    Promise.all(
+      heroItems.map(async (item) => {
+        const images = await getMediaImages(item.mediaType, item.id);
+        return { ...item, logoPath: images.logoPath, heroPosterPath: images.textlessPosterPath };
+      })
+    ),
+    topTenPromise,
+  ]);
 
   return {
     props: {
-      heroItems: await Promise.all(
-        heroItems.map(async (item) => {
-          const images = await getMediaImages(item.mediaType, item.id);
-          return { ...item, logoPath: images.logoPath, heroPosterPath: images.textlessPosterPath };
-        })
-      ),
+      heroItems: heroItemsWithImages,
       trendingMovies,
       trendingSeries,
       topTenItems,

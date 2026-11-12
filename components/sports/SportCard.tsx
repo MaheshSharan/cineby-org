@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { type SportMatch, getSportWatchHref } from "@/lib/sports/types";
 import { isMatchLive } from "@/lib/sports/sportsService";
+import { getUsablePosterUrl } from "@/lib/sports/poster";
 import { PlayButton } from "@/components/ui/PlayButton";
 import { trackEvent } from "@/lib/analytics/gtag";
 
@@ -52,16 +53,15 @@ export function SportCard({ match, variant = "grid", sourceLocation = "sports_hu
     });
   };
 
-  // Filter out cards whose poster is missing, invalid, or failed to load
-  if (!match.poster || imgError) {
+  // Filter out cards whose poster is missing, invalid, from a host that no longer resolves, or failed to load
+  const posterBg = getUsablePosterUrl(match.poster);
+  if (!posterBg || imgError) {
     return null;
   }
 
   const live = isMatchLive(match, nowSec);
   const playHref = getSportWatchHref(match.uri_name);
   const viewersCount = typeof match.viewers === "string" ? Number.parseInt(match.viewers, 10) : Number(match.viewers || 0);
-
-  const posterBg = match.poster;
 
   if (variant === "featured") {
     return (
@@ -201,10 +201,10 @@ export function SportCard({ match, variant = "grid", sourceLocation = "sports_hu
         </div>
 
         {match.source_tag ? (
-          <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-white/40">
+          <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-white/70">
             <span className="truncate">{match.source_tag}</span>
             {match.substreams && match.substreams.length > 0 ? (
-              <span className="text-[10px] font-semibold text-primary/80">
+              <span className="text-[10px] font-semibold text-accent-hi">
                 +{match.substreams.length} server
               </span>
             ) : null}

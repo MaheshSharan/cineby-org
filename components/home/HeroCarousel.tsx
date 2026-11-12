@@ -11,10 +11,15 @@ import { PlayButton } from "@/components/ui/PlayButton";
 import { StarIcon, TrophyIcon } from "@/components/ui/icons";
 import { type SportMatch, getSportWatchHref } from "@/lib/sports/types";
 import { isFamousMatch } from "@/lib/sports/sportsService";
+import { getUsablePosterUrl } from "@/lib/sports/poster";
 import { fetchSportsClientSide } from "@/hooks/useSportsData";
 import { trackEvent } from "@/lib/analytics/gtag";
+import { runWhenIdle } from "@/lib/utils/idle";
 
 const HERO_AUTOPLAY_MS = 6500;
+// Slides next to the active one only load their images once the first slide has settled,
+// so they never compete with the LCP image for bandwidth.
+const HERO_WARM_NEIGHBOURS_MS = 3000;
 
 interface HeroCarouselProps {
   items: MediaSummary[];
@@ -35,22 +40,31 @@ export function HeroCarousel({ items, genreNames }: HeroCarouselProps) {
   const [famousMatch, setFamousMatch] = useState<SportMatch | null>(null);
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [areNeighboursWarm, setAreNeighboursWarm] = useState(false);
   const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch only top famous match (Champions League, Premier League, Real Madrid, NBA, etc.)
+  useEffect(() => runWhenIdle(() => setAreNeighboursWarm(true), HERO_WARM_NEIGHBOURS_MS), []);
+
+  // Fetch only top famous match (Champions League, Premier League, Real Madrid, NBA, etc.).
+  // Deferred until the browser is idle so the request does not compete with the first paint.
   useEffect(() => {
     let isCurrent = true;
-    fetchSportsClientSide()
-      .then((data) => {
-        if (!isCurrent || !data) return;
-        const famous = data.liveNow.filter((m) => isFamousMatch(m));
-        if (famous.length > 0) {
-          setFamousMatch(famous[0]);
-        }
-      })
-      .catch(() => {});
+    const cancelIdle = runWhenIdle(() => {
+      fetchSportsClientSide()
+        .then((data) => {
+          if (!isCurrent || !data) return;
+          const famous = data.liveNow.filter((m) => isFamousMatch(m));
+          if (famous.length > 0) {
+            setFamousMatch(famous[0]);
+          }
+        })
+        .catch(() => {
+          // Sports data is optional here: without it the carousel shows movies and shows only.
+        });
+    });
     return () => {
       isCurrent = false;
+      cancelIdle();
     };
   }, []);
 
@@ -65,12 +79,6 @@ export function HeroCarousel({ items, genreNames }: HeroCarouselProps) {
   }, [items, famousMatch]);
 
   const length = slides.length;
-
-  useEffect(() => {
-    if (length > 1) {
-      setIndex(Math.floor(Math.random() * length));
-    }
-  }, [length]);
 
   useEffect(() => {
     if (length <= 1 || isPaused) {
@@ -111,7 +119,7 @@ export function HeroCarousel({ items, genreNames }: HeroCarouselProps) {
                 isActive ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0"
               }`}
             >
-              {isActive || Math.abs(slideIdx - index) <= 1 ? (
+              {isActive || (areNeighboursWarm && Math.abs(slideIdx - index) <= 1) ? (
                 slide.kind === "media" ? (
                   <HeroSlide item={slide.data} genreNames={genreNames} isActive={isActive} />
                 ) : (
@@ -203,17 +211,6 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
           WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
         }}
       >
-        {desktop || mobile ? (
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={desktop || mobile || ""}
-              alt={`${item.title} background blur`}
-              className="absolute inset-0 h-full w-full object-cover scale-125 blur-[70px] saturate-150 opacity-40 transition-opacity duration-1000"
-            />
-          </div>
-        ) : null}
-
         {mobile ? (
           <picture className="absolute inset-0 block h-full w-full">
             {phonePoster ? <source media="(max-width: 599px)" srcSet={phonePoster} /> : null}
@@ -253,12 +250,15 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
         <div className="layout-container w-full">
           <div className="max-w-2xl translate-y-4 max-md:mx-auto max-md:text-center">
             {item.logoPath && settings.appearance.useImageLogos ? (
-              <div className="mb-4 max-w-[320px] max-md:mx-auto sm:max-w-[340px] md:max-w-[420px]">
+              // The box has the logo's maximum height from the start, so the text below does not jump when the logo loads.
+              <div className="mb-4 flex h-28 max-w-[320px] items-end max-md:mx-auto max-md:justify-center sm:max-w-[340px] md:h-32 md:max-w-[420px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getLogoUrl(item.logoPath) ?? undefined}
                   alt={item.title}
-                  className="max-h-28 w-auto object-contain object-center drop-shadow-2xl max-md:mx-auto md:max-h-32 md:object-left"
+                  fetchPriority={isActive ? "high" : undefined}
+                  decoding="async"
+                  className="max-h-full w-auto object-contain object-bottom drop-shadow-2xl md:object-left-bottom"
                 />
               </div>
             ) : (
@@ -326,7 +326,9 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
                   <path d="M12 16v-4" />
                   <path d="M12 8h.01" />
                 </svg>
-                <span>See More</span>
+                <span>
+                  See More<span className="sr-only"> about {item.title}</span>
+                </span>
               </Link>
             </div>
           </div>
@@ -343,6 +345,7 @@ interface SportHeroSlideProps {
 
 function SportHeroSlide({ match, isActive }: SportHeroSlideProps) {
   const watchHref = getSportWatchHref(match.uri_name);
+  const poster = getUsablePosterUrl(match.poster);
   const viewers = typeof match.viewers === "string" ? Number.parseInt(match.viewers, 10) : Number(match.viewers || 0);
 
   const handleSportHeroClick = () => {
@@ -369,19 +372,19 @@ function SportHeroSlide({ match, isActive }: SportHeroSlideProps) {
           WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
         }}
       >
-        {match.poster ? (
+        {poster ? (
           <>
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={match.poster}
+                src={poster}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover scale-125 blur-[70px] saturate-150 opacity-40 transition-opacity duration-1000"
               />
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={match.poster}
+              src={poster}
               alt={match.name}
               fetchPriority={isActive ? "high" : "low"}
               className="absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-out"

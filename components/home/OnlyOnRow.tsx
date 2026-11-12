@@ -5,8 +5,12 @@ import { deduplicateMediaPool } from "@/lib/tmdb/deduplicate";
 import { ContentRow } from "@/components/content/ContentRow";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { useInView } from "@/hooks/useInView";
+import { useDeferredItems } from "@/hooks/useDeferredItems";
 import { STREAMING_PROVIDERS, type StreamingProvider } from "@/lib/constants/providers";
 import { getProviderTitles } from "@/lib/api/tmdb";
+
+// Enough to fill a wide desktop row; the rest of the list appears once the browser is idle.
+const INITIAL_CARD_COUNT = 8;
 
 interface OnlyOnRowProps {
   initialItems?: MediaSummary[];
@@ -104,7 +108,7 @@ export function OnlyOnRow({
       <div className="relative inline-block select-none align-baseline">
         <button
           type="button"
-          aria-label="Select streaming provider"
+          aria-label={`${selectedProvider.name}: select streaming provider`}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           onClick={() => setIsOpen((prev) => !prev)}
@@ -114,7 +118,7 @@ export function OnlyOnRow({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={selectedProvider.logo}
-              alt={selectedProvider.name}
+              alt=""
               className="w-full h-full object-cover"
             />
           </span>
@@ -181,6 +185,7 @@ export function OnlyOnRow({
   );
 
   const displayItems = Array.isArray(items) ? items : (Array.isArray(initialItems) ? initialItems : []);
+  const visibleItems = useDeferredItems(displayItems, INITIAL_CARD_COUNT);
 
   return (
     <div id="only-on-section" className="scroll-mt-24" ref={inViewRef}>
@@ -195,7 +200,7 @@ export function OnlyOnRow({
                 className="aspect-[2/3] w-[140px] xs:w-[150px] md:w-[180px] lg:w-[200px] flex-shrink-0 animate-pulse rounded-xl bg-white/5"
               />
             ))
-          : displayItems.map((item) => (
+          : visibleItems.map((item) => (
               <MovieCard key={`${item.mediaType || "movie"}-${item.id}`} media={item} variant="catalog" />
             ))}
       </ContentRow>

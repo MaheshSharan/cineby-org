@@ -3,7 +3,11 @@ import type { MediaSummary } from "@/lib/tmdb";
 import { ContentRow } from "@/components/content/ContentRow";
 import { MovieCard } from "@/components/movie/MovieCard";
 import { useInView } from "@/hooks/useInView";
+import { useDeferredItems } from "@/hooks/useDeferredItems";
 import { getRowItems } from "@/lib/api/tmdb";
+
+// Enough to fill a wide desktop row; the rest of the list appears once the browser is idle.
+const INITIAL_CARD_COUNT = 8;
 
 interface LazyContentRowProps {
   title: ReactNode;
@@ -23,6 +27,7 @@ export function LazyContentRow({
   const { ref, isInView } = useInView();
   const [items, setItems] = useState<MediaSummary[]>(initialItems ?? []);
   const [isLoading, setIsLoading] = useState(!initialItems || initialItems.length === 0);
+  const visibleItems = useDeferredItems(items, INITIAL_CARD_COUNT);
 
   useEffect(() => {
     if (initialItems && initialItems.length > 0) {
@@ -61,7 +66,7 @@ export function LazyContentRow({
                 className="aspect-[2/3] w-[140px] xs:w-[150px] md:w-[180px] lg:w-[200px] flex-shrink-0 animate-pulse rounded-xl bg-white/5"
               />
             ))
-          : items.map((item) => (
+          : visibleItems.map((item) => (
               <MovieCard key={`${item.mediaType || "media"}-${item.id}`} media={item} variant="catalog" />
             ))}
       </ContentRow>

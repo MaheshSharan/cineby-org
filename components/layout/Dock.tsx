@@ -118,7 +118,6 @@ export function Dock({ onOpenSearch, onOpenAccount, isAccountOpen = false }: Doc
               ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
               : "text-white/50 hover:text-white/85 hover:bg-white/[0.04]"
           }`}
-          aria-label="TV Shows"
           aria-current={isTv ? "page" : undefined}
         >
           <div className="relative flex items-center justify-center">

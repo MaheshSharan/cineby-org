@@ -63,10 +63,10 @@ export function TopOneCard({ media, className = "" }: TopOneCardProps) {
           {/* Backdrop Image */}
           {backdrop.mobile ? (
             <picture>
-              {backdrop.desktop ? <source media="(min-width: 768px)" srcSet={backdrop.desktop} /> : null}
+              {backdrop.tablet ? <source media="(min-width: 768px)" srcSet={backdrop.tablet} /> : null}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={backdrop.desktop || backdrop.mobile}
+                src={backdrop.mobile}
                 alt={`${media.title} backdrop`}
                 loading="lazy"
                 decoding="async"

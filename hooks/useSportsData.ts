@@ -41,10 +41,30 @@ function writeSessionStorageCache(entry: CachedSportsEntry): void {
   }
 }
 
-async function executeFetch(bypassCache = false): Promise<FlattenedSportsData | null> {
+async function fetchFromInternalApi(bypassCache: boolean): Promise<FlattenedSportsData | null> {
+  const url = bypassCache ? "/api/sports?refresh=true" : "/api/sports";
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const localRes = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (localRes.ok) {
+      const localData = await localRes.json();
+      if (Array.isArray(localData?.all) && localData.all.length > 0) {
+        return localData as FlattenedSportsData;
+      }
+    }
+  } catch {
+    // Fall through to the direct mirrors.
+  }
+
+  return null;
+}
+
+async function fetchFromMirrors(): Promise<FlattenedSportsData | null> {
   const endpoints = getActiveEndpoints();
 
-  // 1. Direct browser fetch to CORS-enabled mirrors (fast 3.5s abort timeout per mirror)
+  // Direct browser fetch to CORS-enabled mirrors (fast 3.5s abort timeout per mirror)
   for (const endpoint of endpoints) {
     try {
       const controller = new AbortController();
@@ -65,24 +85,15 @@ async function executeFetch(bypassCache = false): Promise<FlattenedSportsData | 
     }
   }
 
-  // 2. Fallback to internal API endpoint if direct browser fetch fails
-  const url = bypassCache ? "/api/sports?refresh=true" : "/api/sports";
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const localRes = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (localRes.ok) {
-      const localData = await localRes.json();
-      if (Array.isArray(localData?.all) && localData.all.length > 0) {
-        return localData as FlattenedSportsData;
-      }
-    }
-  } catch {
-    // Both direct browser and API fallback exhausted
-  }
-
   return null;
+}
+
+/**
+ * Our own cached endpoint goes first: it is same-origin, edge-cached and raises no cross-origin errors.
+ * The third-party mirrors are the fallback for when the Worker is blocked upstream.
+ */
+async function executeFetch(bypassCache = false): Promise<FlattenedSportsData | null> {
+  return (await fetchFromInternalApi(bypassCache)) ?? (await fetchFromMirrors());
 }
 
 /**

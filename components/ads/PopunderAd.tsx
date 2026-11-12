@@ -3,6 +3,7 @@ import Script from "next/script";
 import { useRouter } from "next/router";
 import { isPlayerPath } from "@/lib/ads/placement";
 import { trackEvent } from "@/lib/analytics/gtag";
+import { useFirstInteraction } from "@/hooks/useFirstInteraction";
 
 const POPUNDER_SRC = "https://overestimatecapricornspittle.com/fb/38/40/fb3840091737b03ef8887d50204af917.js";
 const POPUNDER_STORAGE_KEY = "cineby_last_popunder";
@@ -11,12 +12,15 @@ const COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes cooldown per user (player-gate
 export function PopunderAd() {
   const router = useRouter();
   const [shouldLoad, setShouldLoad] = useState(false);
+  // A popunder only fires on a click, so its script waits for the visitor's first interaction
+  // instead of loading, and setting third-party cookies, during the first paint.
+  const hasInteracted = useFirstInteraction();
 
   // Strict Player Gating: NEVER load on any watch page or active video playback
   const isWatchingVideo = isPlayerPath(router.asPath);
 
   useEffect(() => {
-    if (isWatchingVideo) {
+    if (isWatchingVideo || !hasInteracted) {
       setShouldLoad(false);
       return;
     }
@@ -30,21 +34,16 @@ export function PopunderAd() {
         return;
       }
 
-      // Delay popunder injection so initial page paint is completely clean
-      const timer = setTimeout(() => {
-        try {
-          localStorage.setItem(POPUNDER_STORAGE_KEY, String(Date.now()));
-        } catch {
-          // Ignore storage errors
-        }
-        setShouldLoad(true);
-      }, 3000);
-
-      return () => clearTimeout(timer);
+      try {
+        localStorage.setItem(POPUNDER_STORAGE_KEY, String(now));
+      } catch {
+        // Ignore storage errors
+      }
+      setShouldLoad(true);
     } catch {
       setShouldLoad(false);
     }
-  }, [isWatchingVideo, router.asPath]);
+  }, [isWatchingVideo, hasInteracted, router.asPath]);
 
   if (isWatchingVideo || !shouldLoad) {
     return null;

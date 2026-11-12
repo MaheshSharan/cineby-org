@@ -68,13 +68,12 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
       <Link
         href={href}
         onClick={handleCardClick}
-        aria-label={media.title}
         className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
       >
         <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-white/5 shadow-xl shadow-black/40 isolate">
           {backdrop.mobile ? (
             <picture>
-              {backdrop.desktop ? <source media="(min-width: 768px)" srcSet={backdrop.desktop} /> : null}
+              {/* Backdrop cards are small, so the w780 image is sharp enough at every screen size. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={backdrop.mobile}

@@ -34,7 +34,7 @@ describe("TMDB & Asset Proxy Image URL resolution", () => {
 
     const responsivePoster = getPosterResponsiveUrls("abc123xyz.jpg");
     expect(responsivePoster.mobile).toBe("https://assets.cineby.group/p/w342/abc123xyz.jpg");
-    expect(responsivePoster.desktop).toBe("https://assets.cineby.group/p/w780/abc123xyz.jpg");
+    expect(responsivePoster.desktop).toBe("https://assets.cineby.group/p/w500/abc123xyz.jpg");
 
     const responsiveBackdrop = getBackdropResponsiveUrls("abc123xyz.jpg");
     expect(responsiveBackdrop.mobile).toBe("https://assets.cineby.group/p/w780/abc123xyz.jpg");

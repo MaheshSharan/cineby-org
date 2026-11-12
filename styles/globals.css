@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Inter loads after first paint, so text first draws in a local font. This fallback is Arial scaled to
+ * Inter's metrics, which keeps lines the same height and width when Inter swaps in (no layout shift).
+ */
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial");
+  ascent-override: 90.2%;
+  descent-override: 22.48%;
+  line-gap-override: 0%;
+  size-adjust: 107.4%;
+}
+
 @layer base {
   :root {
     --radius: 0.5rem;
@@ -409,6 +422,21 @@
   font-style: normal;
   font-display: swap;
   src: url('https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Bd.woff2') format('woff2');
+}
+
+/*
+ * Below-the-fold homepage blocks. `content-visibility: auto` makes the browser skip layout and paint
+ * for them until they scroll near the viewport, which shortens the first render and speeds up taps.
+ * contain-intrinsic-size is a placeholder height (remembered once rendered) so the scrollbar does not jump.
+ */
+.defer-render-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 340px;
+}
+
+.defer-render-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 640px;
 }
 
 /* Responsive Native Ad Styling: Prevents huge vertical stacking on mobile */

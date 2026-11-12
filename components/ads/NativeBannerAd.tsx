@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "@/lib/analytics/gtag";
+import { useFirstInteraction } from "@/hooks/useFirstInteraction";
 
 interface NativeBannerAdProps {
   className?: string;
@@ -8,15 +9,19 @@ interface NativeBannerAdProps {
 
 const AD_SCRIPT_SRC = "https://pl32119482.profitableratecpmnetwork.com/7f39a089ecb822ed1c9d27240135d8fd/invoke.js";
 const AD_UNIT_NAME = "native_banner";
+// The ad network renders its links without text, which screen readers announce as an unnamed link.
+const AD_LINK_LABEL = "Sponsored link";
 
 export function NativeBannerAd({ className = "", id = "container-7f39a089ecb822ed1c9d27240135d8fd" }: NativeBannerAdProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const impressionTrackedRef = useRef(false);
   const [hasAdLoaded, setHasAdLoaded] = useState(false);
+  // The ad script sets third-party cookies and is not needed for the first paint, so it waits for the visitor.
+  const hasInteracted = useFirstInteraction();
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || !hasInteracted) return;
 
     let observer: IntersectionObserver | null = null;
 
@@ -53,6 +58,9 @@ export function NativeBannerAd({ className = "", id = "container-7f39a089ecb822e
           if (!a.getAttribute("rel")) {
             a.setAttribute("rel", "nofollow noopener noreferrer");
           }
+          if (!a.hasAttribute("aria-label") && !a.textContent?.trim() && !a.querySelector("img[alt]")) {
+            a.setAttribute("aria-label", AD_LINK_LABEL);
+          }
         }
 
         const hasContent = Boolean(
@@ -83,7 +91,7 @@ export function NativeBannerAd({ className = "", id = "container-7f39a089ecb822e
         container.innerHTML = "";
       }
     };
-  }, [id]);
+  }, [id, hasInteracted]);
 
   const handleClick = () => {
     trackEvent({

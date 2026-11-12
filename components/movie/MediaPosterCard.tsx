@@ -64,7 +64,6 @@ export function MediaPosterCard({
       <Link
         href={href}
         onClick={handleDetailClick}
-        aria-label={rank ? `Top ${rank}: ${title}` : title}
         className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
       >
         <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-white/5 shadow-xl shadow-black/40 isolate">
@@ -74,8 +73,7 @@ export function MediaPosterCard({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={poster.mobile}
-                alt={`${title} - Cineby`}
-                title={`${title} on Cineby`}
+                alt={rank ? "" : `${title} - Cineby`}
                 loading="lazy"
                 decoding="async"
                 className="block h-full w-full object-cover transition-all duration-300 lg:group-hover/card:brightness-50"
@@ -88,8 +86,9 @@ export function MediaPosterCard({
           )}
 
           {rank ? (
+            // Not hidden from assistive technology: the link's name starts with this "Top 02" text, so the
+            // spoken name contains the visible label as WCAG 2.5.3 requires.
             <div
-              aria-hidden="true"
               className="absolute left-0 top-0 z-[15] flex flex-col items-center justify-center overflow-hidden bg-primary font-bold text-white shadow-[0_4px_10px_var(--accent-glow)]"
               style={{
                 width: "30px",

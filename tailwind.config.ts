@@ -64,6 +64,7 @@ const config: Config = {
       fontFamily: {
         sans: [
           "Inter",
+          "Inter Fallback",
           "system-ui",
           "-apple-system",
           "Segoe UI",

@@ -4,6 +4,7 @@ import { getSiteUrl } from "@/lib/env/public";
 import { getMediaHref } from "@/lib/utils/media";
 import { getMediaOpenGraphImageUrl } from "@/lib/seo/media";
 import { getSportWatchHref } from "@/lib/sports/types";
+import { getUsablePosterUrl } from "@/lib/sports/poster";
 
 export type JsonLdData = Record<string, unknown>;
 
@@ -422,10 +423,11 @@ export function buildSportsEventJsonLd(
     endIso = endOfDay.toISOString();
   }
 
-  const imageUrl = match.poster && match.poster.trim()
-    ? (match.poster.startsWith("http://") || match.poster.startsWith("https://")
-        ? match.poster
-        : buildAbsoluteUrl(match.poster))
+  const poster = getUsablePosterUrl(match.poster);
+  const imageUrl = poster
+    ? (poster.startsWith("http://") || poster.startsWith("https://")
+        ? poster
+        : buildAbsoluteUrl(poster))
     : buildAbsoluteUrl("/screenshots/home-wide.png");
 
   // Extract performers if match name represents a matchup (e.g. "Arsenal vs Chelsea" or "Lecce - Empoli")
