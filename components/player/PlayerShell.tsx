@@ -47,7 +47,7 @@ export function PlayerShell({
     queryServer ||
     modeConfig?.defaultServer ||
     modeConfig?.servers[0]?.id ||
-    "vidy";
+    "vidrift";
 
   const [currentServerId, setCurrentServerId] = useState<string>(initialServer);
 
