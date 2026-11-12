@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 
 import { trackEvent } from "@/lib/analytics/gtag";
 import { isPlayerPath } from "@/lib/ads/placement";
+import { useFirstInteraction } from "@/hooks/useFirstInteraction";
 
 const SOCIAL_BAR_SRC = "https://bicea.org/14/6fa9ccc24c9972e71deaa2ad60a46e55";
 const SCRIPT_ID = "social-bar-ad";
@@ -36,6 +37,8 @@ function purgeActiveSocialBarWidgets() {
 export function SocialBarAd() {
   const router = useRouter();
   const [shouldLoad, setShouldLoad] = useState(false);
+  // The bar sets third-party cookies and is not needed for the first paint, so it waits for the visitor.
+  const hasInteracted = useFirstInteraction();
   const onPlayer = isPlayerPath(router.asPath);
 
   useEffect(() => {
@@ -45,9 +48,11 @@ export function SocialBarAd() {
       return;
     }
 
+    if (!hasInteracted) return;
+
     const timer = setTimeout(() => setShouldLoad(true), LOAD_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [onPlayer]);
+  }, [onPlayer, hasInteracted]);
 
   // Once loaded, the script keeps running for the whole session and cannot be unloaded. A full page
   // load is the only reliable way to guarantee no ad code runs on a player page.
