@@ -1,7 +1,3 @@
-import type { MediaType } from "@/lib/tmdb";
-import { getMediaHref } from "@/lib/utils/media";
-import { getSiteUrl } from "@/lib/env/public";
-
 export interface SitemapUrlEntry {
   loc: string;
   lastmod?: string;
@@ -63,18 +59,6 @@ export function formatLastmod(dateStr?: string | null): string {
   }
 
   return new Date().toISOString().split("T")[0];
-}
-
-/**
- * Builds a deterministic canonical URL for media matching the canonical tag.
- */
-export function buildMediaCanonicalUrl(
-  mediaType: MediaType,
-  id: number,
-  title?: string | null
-): string {
-  const relativeHref = getMediaHref(mediaType, id, title);
-  return `${getSiteUrl()}${relativeHref}`;
 }
 
 /**

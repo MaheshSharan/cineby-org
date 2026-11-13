@@ -24,7 +24,6 @@ export const appCacheKeys = {
   sportsData: "sports:data:v1",
   trailer: (imdbId: string) => `trailer:${imdbId}`,
   flag: (countryCode: string) => `flag:${countryCode}`,
-  sitemapCatalog: (mediaType: string) => `sitemap:catalog:${mediaType}:v1`,
 };
 
 export const tmdbCacheKeys = {

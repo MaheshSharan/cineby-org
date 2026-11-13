@@ -14,11 +14,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const now = new Date().toISOString().split("T")[0];
 
-  const sitemaps = [
-    { loc: `${getSiteUrl()}/sitemaps/pages.xml`, lastmod: now },
-    { loc: `${getSiteUrl()}/sitemaps/movies.xml`, lastmod: now },
-    { loc: `${getSiteUrl()}/sitemaps/tv.xml`, lastmod: now },
-  ];
+  const sitemaps = [{ loc: `${getSiteUrl()}/sitemaps/pages.xml`, lastmod: now }];
 
   const xml = generateSitemapIndexXml(sitemaps);
   return res.status(200).send(xml);

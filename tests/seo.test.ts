@@ -98,20 +98,12 @@ describe("robots.txt", () => {
 });
 
 describe("sitemap.xml", () => {
-  it("generates a sitemap index pointing to sub-sitemaps on the canonical origin", () => {
-    const sitemaps = [
-      { loc: `${getSiteUrl()}/sitemaps/pages.xml`, lastmod: "2026-10-18" },
-      { loc: `${getSiteUrl()}/sitemaps/movies.xml`, lastmod: "2026-10-18" },
-      { loc: `${getSiteUrl()}/sitemaps/tv.xml`, lastmod: "2026-10-18" },
-    ];
+  it("generates a sitemap index pointing to the pages sitemap on the canonical origin", () => {
+    const sitemaps = [{ loc: `${getSiteUrl()}/sitemaps/pages.xml`, lastmod: "2026-10-18" }];
     const xml = generateSitemapIndexXml(sitemaps);
     const locations = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
 
-    expect(locations).toEqual([
-      `${getSiteUrl()}/sitemaps/pages.xml`,
-      `${getSiteUrl()}/sitemaps/movies.xml`,
-      `${getSiteUrl()}/sitemaps/tv.xml`,
-    ]);
+    expect(locations).toEqual([`${getSiteUrl()}/sitemaps/pages.xml`]);
   });
 });
 

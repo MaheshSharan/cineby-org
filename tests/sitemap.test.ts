@@ -20,17 +20,13 @@ describe("sitemap generator", () => {
   });
 
   it("generates a valid sitemap index XML", () => {
-    const sitemaps = [
-      { loc: `${getSiteUrl()}/sitemaps/pages.xml`, lastmod: "2026-10-18" },
-      { loc: `${getSiteUrl()}/sitemaps/movies.xml`, lastmod: "2026-10-18" },
-      { loc: `${getSiteUrl()}/sitemaps/tv.xml`, lastmod: "2026-10-18" },
-    ];
+    const sitemaps = [{ loc: `${getSiteUrl()}/sitemaps/pages.xml`, lastmod: "2026-10-18" }];
 
     const xml = generateSitemapIndexXml(sitemaps);
 
     expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true);
     expect(xml).toContain('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
-    expect(xml).toContain(`<loc>${getSiteUrl()}/sitemaps/movies.xml</loc>`);
+    expect(xml).toContain(`<loc>${getSiteUrl()}/sitemaps/pages.xml</loc>`);
     expect(xml).toContain("<lastmod>2026-10-18</lastmod>");
   });
 
