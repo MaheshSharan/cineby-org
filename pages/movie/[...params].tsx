@@ -2,6 +2,7 @@ import type { GetServerSideProps } from "next";
 
 import { cacheControl } from "@/lib/cache/profiles";
 import { logger } from "@/lib/logger";
+import { isTakenDown, TAKEDOWN_REDIRECT } from "@/lib/takedowns";
 import {
   buildMediaDescription,
   buildMediaTitle,
@@ -58,6 +59,10 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (con
 
   if (!id) {
     return { notFound: true };
+  }
+
+  if (isTakenDown("movie", id)) {
+    return { redirect: TAKEDOWN_REDIRECT };
   }
 
   try {

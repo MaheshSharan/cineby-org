@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { cacheControl } from "@/lib/cache/profiles";
+import { isTakenDown } from "@/lib/takedowns";
 import { getMovieDetails } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 
@@ -15,6 +16,11 @@ export default withApiContext("api/tmdb/movie/[id]", async (req: NextApiRequest,
 
   if (typeof id !== "string" || !/^\d+$/.test(id)) {
     res.status(400).json({ error: "Invalid movie id" });
+    return;
+  }
+
+  if (isTakenDown("movie", id)) {
+    res.status(410).json({ error: "This title is no longer available" });
     return;
   }
 

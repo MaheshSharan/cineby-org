@@ -3,6 +3,7 @@ import { HERO_SPOTLIGHT_PICKS, type HeroPickItem } from "@/lib/constants/heroPic
 import { getMediaImages, getMovieDetails } from "@/lib/tmdb/server/movies";
 import { getTvDetails } from "@/lib/tmdb/server/tv";
 import { logger } from "@/lib/logger";
+import { isTakenDown } from "@/lib/takedowns";
 
 /**
  * Resolves a single HeroPickItem into a full MediaSummary with logo.
@@ -64,7 +65,8 @@ export async function getHeroPicksMedia(picks: readonly HeroPickItem[] = HERO_SP
   }
 
   try {
-    const results = await Promise.all(picks.map((pick) => resolvePickToMediaSummary(pick)));
+    const allowedPicks = picks.filter((pick) => !isTakenDown(pick.mediaType, pick.id));
+    const results = await Promise.all(allowedPicks.map((pick) => resolvePickToMediaSummary(pick)));
     return results.filter((item): item is MediaSummary => item !== null);
   } catch (error) {
     logger.warn("[HeroPicks] Could not resolve hero picks, falling back to trending", undefined, error);

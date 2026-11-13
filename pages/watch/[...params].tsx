@@ -7,6 +7,7 @@ import { getMovieDetails, getTvDetails, isTmdbNotFoundError } from "@/lib/tmdb/s
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { listHistory } from "@/lib/db/history";
 import { logger } from "@/lib/logger";
+import { isTakenDown, TAKEDOWN_REDIRECT } from "@/lib/takedowns";
 import { formatRuntime, getEpisodeHref, getYear, toPlayerSeasons } from "@/lib/utils/media";
 
 import { PlayerShell } from "@/components/player/PlayerShell";
@@ -55,6 +56,10 @@ export const getServerSideProps: GetServerSideProps<WatchPageProps> = async (con
 
   if (!id || (mediaType !== "movie" && mediaType !== "tv")) {
     return { notFound: true };
+  }
+
+  if (isTakenDown(mediaType, id)) {
+    return { redirect: TAKEDOWN_REDIRECT };
   }
 
   // Everything the page renders comes from TMDB and server config; the exception is overridden below.

@@ -6,6 +6,7 @@ import { getSeasonEpisodes, getTvDetails, isTmdbNotFoundError } from "@/lib/tmdb
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { listHistory } from "@/lib/db/history";
 import { logger } from "@/lib/logger";
+import { isTakenDown, TAKEDOWN_REDIRECT } from "@/lib/takedowns";
 import {
   buildMediaDescription,
   buildMediaTitle,
@@ -77,6 +78,10 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
 
   if (!id) {
     return { notFound: true };
+  }
+
+  if (isTakenDown("tv", id)) {
+    return { redirect: TAKEDOWN_REDIRECT };
   }
 
   try {

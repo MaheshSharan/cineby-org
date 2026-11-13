@@ -1,4 +1,5 @@
 import type { MediaSummary, Paginated } from "../types";
+import { withoutTakenDown } from "@/lib/takedowns";
 import { tmdbGet } from "./client";
 import { getTmdbConfig } from "./config";
 import { toMediaSummary } from "./transform";
@@ -21,7 +22,7 @@ export async function searchMulti(query: string, page = 1): Promise<Paginated<Me
 
       return {
         page: resultPage,
-        results: items.map((item) => toMediaSummary(item.record, item.mediaType)),
+        results: withoutTakenDown(items.map((item) => toMediaSummary(item.record, item.mediaType))),
         totalPages,
         totalResults,
       };

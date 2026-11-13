@@ -15,6 +15,8 @@ import type {
   TvDetails,
 } from "../types";
 
+import { withoutTakenDown } from "@/lib/takedowns";
+
 function nullableString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
@@ -59,16 +61,16 @@ export function toMediaSummary(item: Record<string, unknown>, mediaType: MediaTy
   };
 }
 
-export function toPaginated<T>(
+export function toPaginated(
   results: Record<string, unknown>[],
   page: number,
   totalPages: number,
   totalResults: number,
-  mapItem: (item: Record<string, unknown>) => T
-): Paginated<T> {
+  mapItem: (item: Record<string, unknown>) => MediaSummary
+): Paginated<MediaSummary> {
   return {
     page,
-    results: results.map(mapItem),
+    results: withoutTakenDown(results.map(mapItem)),
     totalPages,
     totalResults,
   };
@@ -137,7 +139,9 @@ function toCompanies(value: unknown): Company[] {
 }
 
 function toMediaList(value: unknown, mediaType: MediaType): MediaSummary[] {
-  return recordArray(asRecord(value)?.results).map((item) => toMediaSummary(item, mediaType));
+  return withoutTakenDown(
+    recordArray(asRecord(value)?.results).map((item) => toMediaSummary(item, mediaType))
+  );
 }
 
 // The page shows one list of other titles: the similar ones, or TMDB's recommendations when there are none.

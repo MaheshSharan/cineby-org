@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/router";
 import type { MovieDetails, TvDetails } from "@/lib/tmdb";
-import { isAbortError } from "@/lib/api/client";
+import { ApiError, isAbortError } from "@/lib/api/client";
 import { getMediaDetails } from "@/lib/api/tmdb";
 
 type MediaType = "movie" | "tv";
@@ -66,10 +66,14 @@ export function DetailModalProvider({ children }: { children: ReactNode }) {
         if (isAbortError(err)) {
           return;
         }
+        if (err instanceof ApiError && err.status === 410) {
+          closeDetailModal();
+          return;
+        }
         setError(err instanceof Error ? err.message : "Failed to load details");
         setIsLoading(false);
       });
-  }, []);
+  }, [closeDetailModal]);
 
   useEffect(() => {
     const handleRouteChange = () => {
