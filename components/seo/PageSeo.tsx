@@ -16,6 +16,8 @@ interface IndexablePageSeoProps {
   openGraphType?: OpenGraphType;
   /** Sanitized JSON-LD payload to embed in <head>. Must be pre-sanitized via sanitizeJsonLd per AGENTS.md §18. */
   jsonLd?: string;
+  /** Keeps the page out of search results while leaving its link preview tags in place. */
+  hideFromSearch?: boolean;
   noindex?: false;
 }
 
@@ -52,6 +54,7 @@ export function PageSeo(props: PageSeoProps) {
     <Head>
       <title>{title}</title>
       <meta key="description" name="description" content={description} />
+      {props.hideFromSearch ? <meta key="robots" name="robots" content="noindex, follow" /> : null}
       <link key="canonical" rel="canonical" href={canonicalUrl} />
       <meta key="og:site_name" property="og:site_name" content={SITE_NAME} />
       <meta key="og:type" property="og:type" content={openGraphType} />

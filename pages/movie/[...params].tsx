@@ -43,6 +43,7 @@ export default function MoviePage({ details, isPlaying, initialTrailerUrl }: Mov
         imageHeight={ogImage?.height}
         openGraphType="video.movie"
         jsonLd={sanitizeJsonLd(schemas)}
+        hideFromSearch
       />
       <DetailPage
         details={details}
