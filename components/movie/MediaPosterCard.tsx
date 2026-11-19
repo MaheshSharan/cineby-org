@@ -2,9 +2,6 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { getPosterResponsiveUrls } from "@/lib/tmdb/image";
-import { useSettings } from "@/hooks/useSettings";
-import { useDetailModal } from "@/components/detail/DetailModalContext";
-
 import { PlayIcon, StarIcon } from "@/components/ui/icons";
 
 interface MediaPosterCardProps {
@@ -28,8 +25,6 @@ export function MediaPosterCard({
   subtitle,
   posterPath,
   href,
-  mediaType,
-  mediaId,
   onClick,
   rating,
   year,
@@ -38,21 +33,9 @@ export function MediaPosterCard({
   rank,
   className = "",
 }: MediaPosterCardProps) {
-  const { settings } = useSettings();
-  const { openDetailModal } = useDetailModal();
-  const isModalDetail = settings.appearance.detailViewType === "modal";
-
   const handleDetailClick = (e: React.MouseEvent) => {
     if (onClick) {
       onClick(e);
-      if (e.defaultPrevented) return;
-    }
-    if (isModalDetail && mediaType && mediaId) {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-        return;
-      }
-      e.preventDefault();
-      openDetailModal({ mediaType, id: mediaId });
     }
   };
 

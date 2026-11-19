@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import type { MediaSummary, MediaType } from "@/lib/tmdb";
 import { getPosterResponsiveUrls } from "@/lib/tmdb/image";
 import { getMediaHref, getYear } from "@/lib/utils/media";
-import { useSettings } from "@/hooks/useSettings";
-import { useDetailModal } from "@/components/detail/DetailModalContext";
 import { trackEvent } from "@/lib/analytics/gtag";
 import { searchMedia } from "@/lib/api/search";
 import { isSearchableQuery, normalizeSearchQuery } from "@/lib/search/query";
@@ -306,17 +304,13 @@ interface SearchResultItemProps {
 }
 
 function SearchResultItem({ item, isExpanded, onToggle, onSelect }: SearchResultItemProps) {
-  const { settings } = useSettings();
-  const { openDetailModal } = useDetailModal();
-  const isModalDetail = settings.appearance.detailViewType === "modal";
-
   const { mobile } = getPosterResponsiveUrls(item.posterPath);
   const year = getYear(item.releaseDate);
   const typeLabel = item.mediaType === "tv" ? "TV Show" : "Movie";
   const playHref = getMediaHref(item.mediaType, item.id, item.title);
   const mediaHref = getMediaHref(item.mediaType, item.id, item.title);
 
-  const handleDetailClick = (e: React.MouseEvent) => {
+  const handleDetailClick = () => {
     trackEvent({
       action: "search_result_select",
       params: {
@@ -325,17 +319,7 @@ function SearchResultItem({ item, isExpanded, onToggle, onSelect }: SearchResult
         title: item.title,
       },
     });
-
-    if (isModalDetail) {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-        return;
-      }
-      e.preventDefault();
-      onSelect();
-      openDetailModal({ mediaType: item.mediaType, id: item.id });
-    } else {
-      onSelect();
-    }
+    onSelect();
   };
 
   return (

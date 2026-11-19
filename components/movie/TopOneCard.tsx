@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import type { MediaSummary } from "@/lib/tmdb";
 import { getBackdropResponsiveUrls, getLogoUrl } from "@/lib/tmdb/image";
 import { getMediaHref, getMediaTypeLabel, getYear } from "@/lib/utils/media";
-import { useSettings } from "@/hooks/useSettings";
-import { useDetailModal } from "@/components/detail/DetailModalContext";
 import { getMediaLogoPath } from "@/lib/api/tmdb";
 
 interface TopOneCardProps {
@@ -14,10 +12,6 @@ interface TopOneCardProps {
 }
 
 export function TopOneCard({ media, className = "" }: TopOneCardProps) {
-  const { settings } = useSettings();
-  const { openDetailModal } = useDetailModal();
-  const isModalDetail = settings.appearance.detailViewType === "modal";
-
   const [fetchedLogo, setFetchedLogo] = useState<string | null>(null);
   const activeLogo = media.logoPath ?? fetchedLogo;
   const backdrop = getBackdropResponsiveUrls(media.backdropPath || media.posterPath);
@@ -25,16 +19,6 @@ export function TopOneCard({ media, className = "" }: TopOneCardProps) {
   const year = getYear(media.releaseDate);
   const typeLabel = getMediaTypeLabel(media.mediaType);
   const logoUrl = getLogoUrl(activeLogo);
-
-  const handleCardClick = (e: React.MouseEvent) => {
-    if (isModalDetail) {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-        return;
-      }
-      e.preventDefault();
-      openDetailModal({ mediaType: media.mediaType, id: media.id });
-    }
-  };
 
   useEffect(() => {
     setFetchedLogo(null);
@@ -105,7 +89,6 @@ export function TopOneCard({ media, className = "" }: TopOneCardProps) {
           {/* Wide Body Info Overlay */}
           <Link
             href={href}
-            onClick={handleCardClick}
             className="absolute inset-0 z-10 flex flex-col justify-end p-4 md:p-6 max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
           >
             {logoUrl ? (

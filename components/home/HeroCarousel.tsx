@@ -5,7 +5,6 @@ import type { MediaSummary } from "@/lib/tmdb";
 import { buildImageUrl, getBackdropResponsiveUrls, getLogoUrl } from "@/lib/tmdb/image";
 import { getMediaHref, getYear } from "@/lib/utils/media";
 import { useSettings } from "@/hooks/useSettings";
-import { useDetailModal } from "@/components/detail/DetailModalContext";
 import { HeroSkeleton } from "@/components/skeleton/HeroSkeleton";
 import { PlayButton } from "@/components/ui/PlayButton";
 import { StarIcon, TrophyIcon } from "@/components/ui/icons";
@@ -173,9 +172,6 @@ interface HeroSlideProps {
 
 function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
   const { settings } = useSettings();
-  const { openDetailModal } = useDetailModal();
-
-  const isModalDetail = settings.appearance.detailViewType === "modal";
   const { mobile, tablet, desktop, desktopSrcSet } = getBackdropResponsiveUrls(item.backdropPath);
   // Phones are portrait: a textless poster fits them without heavy cropping or upscaling. Without one,
   // the backdrop is used, because a regular poster would show its title text under our logo.
@@ -186,16 +182,6 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
 
   const playHref = getMediaHref(item.mediaType, item.id, item.title);
   const mediaHref = getMediaHref(item.mediaType, item.id, item.title);
-
-  const handleSeeMoreClick = (e: React.MouseEvent) => {
-    if (isModalDetail) {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-        return;
-      }
-      e.preventDefault();
-      openDetailModal({ mediaType: item.mediaType, id: item.id });
-    }
-  };
 
   return (
     <div className="relative h-full w-full">
@@ -303,7 +289,6 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
               <Link
                 href={mediaHref}
                 tabIndex={isActive ? 0 : -1}
-                onClick={handleSeeMoreClick}
                 className="flex h-[52px] items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-6 font-medium tracking-tight text-white backdrop-blur-[16px] transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:shadow-glow active:scale-[0.98]"
               >
                 <svg

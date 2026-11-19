@@ -1,6 +1,5 @@
 export type SiteTheme = "default" | "emerald" | "cyan" | "amber" | "rose" | "purple";
 export type EpisodeViewStyle = "carousel" | "vertical";
-export type DetailViewType = "page" | "modal";
 
 export type SubtitleFont = "cineby" | "netflix" | "montserrat";
 
@@ -48,7 +47,6 @@ export function getSubtitleFontClass(font?: SubtitleFont | null): string {
 export interface AppearanceSettings {
   theme: SiteTheme;
   episodeViewStyle: EpisodeViewStyle;
-  detailViewType: DetailViewType;
   useImageLogos: boolean;
   trailers: boolean;
 }
@@ -83,7 +81,6 @@ export const DEFAULT_SETTINGS: CinebySettings = {
   appearance: {
     theme: "default",
     episodeViewStyle: "vertical",
-    detailViewType: "page",
     useImageLogos: true,
     // Off until the user turns it on: trailers cost bandwidth and autoplay on every hover.
     trailers: false,
@@ -109,7 +106,6 @@ export const DEFAULT_SETTINGS: CinebySettings = {
 };
 
 const VALID_THEMES: readonly SiteTheme[] = ["default", "emerald", "cyan", "amber", "rose", "purple"];
-const VALID_DETAIL_VIEWS: readonly DetailViewType[] = ["page", "modal"];
 const VALID_FONTS: readonly SubtitleFont[] = ["cineby", "netflix", "montserrat"];
 
 /**
@@ -121,7 +117,6 @@ export function toApiSettingsResponse(settings: CinebySettings): Record<string, 
     // Cinejoy flat compatibility
     theme: settings.appearance.theme,
     episodeViewStyle: settings.appearance.episodeViewStyle,
-    detailViewType: settings.appearance.detailViewType,
     useImageLogos: settings.appearance.useImageLogos,
     trailersEnabled: settings.appearance.trailers,
     trailers: settings.appearance.trailers,
@@ -185,12 +180,6 @@ export function normalizeApiSettings(payload: unknown): CinebySettings {
   ) {
     episodeViewStyle = "vertical";
   }
-
-  // Detail view type
-  const detailCandidate = (rawAppearance.detailViewType ?? raw.detailViewType) as string | undefined;
-  const detailViewType: DetailViewType = VALID_DETAIL_VIEWS.includes(detailCandidate as DetailViewType)
-    ? (detailCandidate as DetailViewType)
-    : DEFAULT_SETTINGS.appearance.detailViewType;
 
   // Use image logos
   const useImageLogos = typeof rawAppearance.useImageLogos === "boolean"
@@ -335,7 +324,6 @@ export function normalizeApiSettings(payload: unknown): CinebySettings {
     appearance: {
       theme,
       episodeViewStyle,
-      detailViewType,
       useImageLogos,
       trailers,
     },

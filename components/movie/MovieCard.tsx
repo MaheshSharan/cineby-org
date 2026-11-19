@@ -3,9 +3,6 @@ import Link from "next/link";
 import type { MediaSummary } from "@/lib/tmdb";
 import { getBackdropResponsiveUrls } from "@/lib/tmdb/image";
 import { getMediaHref, getYear } from "@/lib/utils/media";
-import { useSettings } from "@/hooks/useSettings";
-import { useDetailModal } from "@/components/detail/DetailModalContext";
-
 import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
 import { CATALOG_CARD_WIDTH } from "@/components/movie/cardSizes";
 import { PlayIcon, StarIcon } from "@/components/ui/icons";
@@ -27,24 +24,10 @@ interface MovieCardProps {
 }
 
 export function MovieCard({ media, variant = "poster", rank, className = "" }: MovieCardProps) {
-  const { settings } = useSettings();
-  const { openDetailModal } = useDetailModal();
-  const isModalDetail = settings.appearance.detailViewType === "modal";
-
   const backdrop = getBackdropResponsiveUrls(media.backdropPath || media.posterPath);
   const href = getMediaHref(media.mediaType, media.id, media.title);
   const year = getYear(media.releaseDate);
   const widthClass = VARIANT_WIDTH[variant];
-
-  const handleCardClick = (e: React.MouseEvent) => {
-    if (isModalDetail) {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-        return;
-      }
-      e.preventDefault();
-      openDetailModal({ mediaType: media.mediaType, id: media.id });
-    }
-  };
 
   if (variant !== "backdrop") {
     return (
@@ -54,7 +37,6 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
         href={href}
         mediaType={media.mediaType}
         mediaId={media.id}
-        onClick={handleCardClick}
         rating={media.voteAverage}
         year={year}
         rank={rank}
@@ -67,7 +49,6 @@ export function MovieCard({ media, variant = "poster", rank, className = "" }: M
     <div className={`group/card relative flex min-w-0 flex-col transition-transform duration-500 ease-out hover:scale-105 hover:z-30 origin-center cursor-pointer ${widthClass} snap-start ${className}`}>
       <Link
         href={href}
-        onClick={handleCardClick}
         className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-neo-bg"
       >
         <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-white/5 shadow-xl shadow-black/40 isolate">

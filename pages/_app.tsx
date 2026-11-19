@@ -1,5 +1,4 @@
 import type { AppProps, NextWebVitalsMetric } from "next/app";
-import dynamic from "next/dynamic";
 import Head from "next/head";
 import Script from "next/script";
 import { useRouter } from "next/router";
@@ -7,7 +6,6 @@ import { useEffect } from "react";
 
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { SettingsProvider } from "@/hooks/useSettings";
-import { DetailModalProvider } from "@/components/detail/DetailModalContext";
 import { Layout } from "@/components/layout/Layout";
 import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { UpdateToast } from "@/components/pwa/UpdateToast";
@@ -20,11 +18,6 @@ import { isDevtoolsGuardEnabled } from "@/lib/env/public";
 import { initDevtoolsGuard } from "@/lib/security/devtoolsGuard";
 
 import "../styles/globals.css";
-
-const DetailModal = dynamic(
-  () => import("@/components/detail/DetailModal").then((mod) => mod.DetailModal),
-  { ssr: false }
-);
 
 export function reportWebVitals(metric: NextWebVitalsMetric) {
   if (!getActiveGaMeasurementId()) return;
@@ -145,18 +138,15 @@ export default function App({ Component, pageProps }: AppProps) {
 
       {/* Non-intrusive In-Page Push banner suppression placeholder */}
       <SettingsProvider>
-        <DetailModalProvider>
-          <PageLoadBar />
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
-          <DetailModal />
-          <ScrollEdgeButton />
-          <InstallBanner />
-          <UpdateToast />
-          <SocialBarAd />
-          <ConsentManager />
-        </DetailModalProvider>
+        <PageLoadBar />
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+        <ScrollEdgeButton />
+        <InstallBanner />
+        <UpdateToast />
+        <SocialBarAd />
+        <ConsentManager />
       </SettingsProvider>
     </AuthProvider>
   );

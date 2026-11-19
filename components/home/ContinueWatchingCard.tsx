@@ -4,8 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { HistoryEntry } from "@/lib/db/types";
 import { getBackdropResponsiveUrls, getPosterResponsiveUrls } from "@/lib/tmdb/image";
 import { calculateResumeSeconds, formatTimeLeft, getMediaHref } from "@/lib/utils/media";
-import { useSettings } from "@/hooks/useSettings";
-import { useDetailModal } from "@/components/detail/DetailModalContext";
 import { PlayButton } from "@/components/ui/PlayButton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ChevronDownIcon, InfoIcon, MoreVerticalIcon, TrashIcon, XIcon } from "@/components/ui/icons";
@@ -31,7 +29,6 @@ interface CardViewProps {
   subtitle?: string;
   timeLeft: string;
   progress: number;
-  onInfoClick: (event: React.MouseEvent<HTMLAnchorElement>) => void;
   onRemove: () => void;
 }
 
@@ -41,9 +38,6 @@ interface ContinueWatchingCardProps {
 }
 
 export function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardProps) {
-  const { settings } = useSettings();
-  const { openDetailModal } = useDetailModal();
-
   // Use exact progress seconds if available; otherwise calculate from progress % and duration
   const resumeSeconds =
     entry.progressSeconds && entry.progressSeconds > 0
@@ -52,14 +46,6 @@ export function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardPr
 
   const isEpisode = entry.mediaType === "tv" && Boolean(entry.seasonNumber && entry.episodeNumber);
   const playHref = getMediaHref(entry.mediaType, entry.mediaId, entry.title);
-
-  const handleInfoClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    const isPlainClick = event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
-    if (settings.appearance.detailViewType !== "modal" || !isPlainClick) return;
-
-    event.preventDefault();
-    openDetailModal({ mediaType: entry.mediaType, id: entry.mediaId });
-  };
 
   const view: CardViewProps = {
     title: entry.title,
@@ -71,7 +57,6 @@ export function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardPr
     subtitle: isEpisode ? `S${entry.seasonNumber}:E${entry.episodeNumber}` : undefined,
     timeLeft: formatTimeLeft(entry.progress, entry.duration, resumeSeconds) || "In progress",
     progress: Math.min(100, Math.max(0, entry.progress ?? 0)),
-    onInfoClick: handleInfoClick,
     onRemove: () => onRemove(entry),
   };
 
@@ -146,7 +131,7 @@ function PortraitCard(view: CardViewProps) {
           </>
         ) : (
           <>
-            <Link href={view.infoHref} onClick={view.onInfoClick} aria-label={`More info for ${view.title}`} className={ROUND_BUTTON_CLASS}>
+            <Link href={view.infoHref} aria-label={`More info for ${view.title}`} className={ROUND_BUTTON_CLASS}>
               <InfoIcon size={24} />
             </Link>
             <button
@@ -284,7 +269,6 @@ function HoverCard(view: CardViewProps) {
             </div>
             <Link
               href={view.infoHref}
-              onClick={view.onInfoClick}
               aria-label={`More info for ${view.title}`}
               title="More info"
               className={OUTLINE_BUTTON_CLASS}

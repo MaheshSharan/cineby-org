@@ -53,8 +53,6 @@ interface DetailPageProps {
   isPlaying?: boolean;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
-  variant?: "page" | "modal";
-  onClose?: () => void;
   initialEpisodes?: SeasonEpisodes | null;
   initialTrailerUrl?: string | null;
 }
@@ -65,12 +63,9 @@ export function DetailPage({
   details,
   seasonNumber,
   episodeNumber,
-  variant = "page",
-  onClose,
   initialEpisodes,
   initialTrailerUrl,
 }: DetailPageProps) {
-  const isModal = variant === "modal";
   const { user, openAuthModal, showToast } = useAuth();
   const { settings } = useSettings();
   const [isMuted, setIsMuted] = useState(true);
@@ -316,10 +311,10 @@ export function DetailPage({
 
   return (
     <div className="relative min-h-screen w-full bg-[#050505] text-white overflow-x-hidden">
-      {!isModal && !isPageReady ? <PageLoader /> : null}
+      {!isPageReady ? <PageLoader /> : null}
 
       {/* Fixed Ambient Background (matches Cinejoy) */}
-      {!isModal && heroBackdrop ? (
+      {heroBackdrop ? (
         <div
           className="fixed inset-0 z-0 pointer-events-none bg-[#050505]"
           style={{ contain: "strict", willChange: "transform" }}
@@ -354,25 +349,21 @@ export function DetailPage({
         </div>
       ) : null}
 
-      {!isModal ? (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-50 px-6 py-5 md:px-8 md:py-6">
-          <Link
-            href="/"
-            aria-label="Go back"
-            className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/40 text-text-hi backdrop-blur-xl transition-all duration-200 hover:border-white/20 hover:scale-105"
-          >
-            <ChevronLeftIcon className="h-5 w-5" />
-          </Link>
-        </div>
-      ) : null}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-50 px-6 py-5 md:px-8 md:py-6">
+        <Link
+          href="/"
+          aria-label="Go back"
+          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/40 text-text-hi backdrop-blur-xl transition-all duration-200 hover:border-white/20 hover:scale-105"
+        >
+          <ChevronLeftIcon className="h-5 w-5" />
+        </Link>
+      </div>
 
       {/* Top Hero Section — always shows backdrop */}
       <div className="relative w-full">
         {(
           <div
-            className={`relative w-full overflow-hidden ${
-              isModal ? "h-[50vh] md:h-[60vh]" : "h-[65vh] lg:h-[75vh]"
-            }`}
+            className="relative w-full overflow-hidden h-[65vh] lg:h-[75vh]"
             style={{
               maskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
               WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
@@ -485,13 +476,7 @@ export function DetailPage({
         ) : null}
 
         {/* Content Info Section */}
-        <div
-          className={`relative z-20 ${
-            isModal
-              ? "-mt-32 md:-mt-40 px-6 pb-8 md:px-10"
-              : "-mt-44 lg:-mt-[22rem] lg:flex lg:items-start lg:justify-between lg:gap-10 px-6 lg:px-16"
-          }`}
-        >
+        <div className="relative z-20 -mt-44 lg:-mt-[22rem] lg:flex lg:items-start lg:justify-between lg:gap-10 px-6 lg:px-16">
           <div className="w-full max-w-[700px] lg:max-w-[650px] lg:min-w-0 flex flex-col items-center lg:items-start text-center lg:text-left">
             {/* Title / Logo */}
             {details.logoPath && settings.appearance.useImageLogos ? (
@@ -593,14 +578,11 @@ export function DetailPage({
                   <PlayButton
                     href={resumeHref}
                     onClick={(e) => {
-                      onClose?.();
-                      if (!isModal) {
-                        e.preventDefault();
-                        if (!isHumanInteraction(e)) return;
-                        setIsTheaterActive(true);
-                        setIsDimmed(true);
-                        setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
-                      }
+                      e.preventDefault();
+                      if (!isHumanInteraction(e)) return;
+                      setIsTheaterActive(true);
+                      setIsDimmed(true);
+                      setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
                     }}
                     size="md"
                     label={resumeLabel}
@@ -623,14 +605,11 @@ export function DetailPage({
                   <Link
                     href={startOverHref}
                     onClick={(e) => {
-                      onClose?.();
-                      if (!isModal) {
-                        e.preventDefault();
-                        if (!isHumanInteraction(e)) return;
-                        setIsTheaterActive(true);
-                        setIsDimmed(true);
-                        setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
-                      }
+                      e.preventDefault();
+                      if (!isHumanInteraction(e)) return;
+                      setIsTheaterActive(true);
+                      setIsDimmed(true);
+                      setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
                     }}
                     className="flex h-[44px] items-center justify-center gap-2 rounded-full border border-white/10 bg-white/10 px-5 text-sm font-semibold tracking-wide text-white backdrop-blur-[20px] shadow-lg shadow-black/5 transition-all duration-200 hover:scale-105 hover:border-white/20 active:scale-95"
                   >
@@ -653,14 +632,11 @@ export function DetailPage({
                   <PlayButton
                     href={playHref}
                     onClick={(e) => {
-                      onClose?.();
-                      if (!isModal) {
-                        e.preventDefault();
-                        if (!isHumanInteraction(e)) return;
-                        setIsTheaterActive(true);
-                        setIsDimmed(true);
-                        setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
-                      }
+                      e.preventDefault();
+                      if (!isHumanInteraction(e)) return;
+                      setIsTheaterActive(true);
+                      setIsDimmed(true);
+                      setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
                     }}
                     size="md"
                     label="Play Now"
@@ -754,49 +730,41 @@ export function DetailPage({
           </div>
 
           {/* Desktop Right Meta Card */}
-          {!isModal ? (
-            <div className="hidden lg:block w-[280px] shrink-0 mt-36 xl:mt-40">
-              <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] overflow-hidden backdrop-blur-sm">
-                <div className="divide-y divide-white/[0.06]">
-                  {"runtime" in details && details.runtime ? (
-                    <div className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-xs text-white/40">Runtime</span>
-                      <span className="text-xs text-white/80">{formatRuntime(details.runtime)}</span>
-                    </div>
-                  ) : null}
-                  {details.originalLanguage ? (
-                    <div className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-xs text-white/40">Language</span>
-                      <span className="text-xs text-white/80 uppercase">{details.originalLanguage}</span>
-                    </div>
-                  ) : null}
-                  {details.releaseDate ? (
-                    <div className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-xs text-white/40">Release Date</span>
-                      <span className="text-xs text-white/80">
-                        {new Date(details.releaseDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </span>
-                    </div>
-                  ) : null}
-                </div>
+          <div className="hidden lg:block w-[280px] shrink-0 mt-36 xl:mt-40">
+            <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] overflow-hidden backdrop-blur-sm">
+              <div className="divide-y divide-white/[0.06]">
+                {"runtime" in details && details.runtime ? (
+                  <div className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-xs text-white/40">Runtime</span>
+                    <span className="text-xs text-white/80">{formatRuntime(details.runtime)}</span>
+                  </div>
+                ) : null}
+                {details.originalLanguage ? (
+                  <div className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-xs text-white/40">Language</span>
+                    <span className="text-xs text-white/80 uppercase">{details.originalLanguage}</span>
+                  </div>
+                ) : null}
+                {details.releaseDate ? (
+                  <div className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-xs text-white/40">Release Date</span>
+                    <span className="text-xs text-white/80">
+                      {new Date(details.releaseDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                ) : null}
               </div>
             </div>
-          ) : null}
+          </div>
         </div>
       </div>
 
       {/* Lower Section (Cast, Episodes, Recommendations) */}
-      <div
-        className={`relative z-20 ${
-          isModal
-            ? "px-6 pb-8 md:px-10 md:pb-12"
-            : "mt-10 lg:mt-14 px-6 lg:px-16 space-y-10 lg:space-y-14 pb-16"
-        }`}
-      >
+      <div className="relative z-20 mt-10 lg:mt-14 px-6 lg:px-16 space-y-10 lg:space-y-14 pb-16">
         {isTv && "seasons" in details ? (
           <EpisodesSection
             tvId={details.id}
@@ -861,7 +829,7 @@ export function DetailPage({
           <CastRow cast={details.cast} />
         </div>
         <div className="my-6">
-          <NativeBannerAd id={isModal ? "container-7f39a089ecb822ed1c9d27240135d8fd-modal" : "container-7f39a089ecb822ed1c9d27240135d8fd"} />
+          <NativeBannerAd />
         </div>
         <div id="recommendations-section" className="scroll-mt-24">
           <RecommendationsRow title="You may like" items={details.related} />

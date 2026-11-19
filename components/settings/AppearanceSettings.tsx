@@ -4,7 +4,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { SegmentedPill } from "@/components/settings/SegmentedPill";
 import { ToggleSwitch } from "@/components/settings/ToggleSwitch";
-import type { DetailViewType, EpisodeViewStyle, SiteTheme } from "@/lib/settings/types";
+import type { EpisodeViewStyle, SiteTheme } from "@/lib/settings/types";
 
 const THEME_OPTIONS: Array<{ value: SiteTheme; label: string; color: string }> = [
   { value: "default", label: "Default (Red)", color: "#dc2626" },
@@ -17,7 +17,7 @@ const THEME_OPTIONS: Array<{ value: SiteTheme; label: string; color: string }> =
 
 export function AppearanceSettings() {
   const { settings, updateAppearance } = useSettings();
-  const { theme, episodeViewStyle, detailViewType, useImageLogos, trailers } = settings.appearance;
+  const { theme, episodeViewStyle, useImageLogos, trailers } = settings.appearance;
 
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const activeThemeObj = THEME_OPTIONS.find((t) => t.value === theme) || THEME_OPTIONS[0];
@@ -104,24 +104,6 @@ export function AppearanceSettings() {
             ]}
             value={episodeViewStyle}
             onChange={(val) => updateAppearance({ episodeViewStyle: val })}
-          />
-        </div>
-
-        {/* Detail View Type */}
-        <div className="py-5 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-[15px] font-medium text-white">Detail View Type</p>
-            <p className="text-[13px] text-white/50 mt-0.5">
-              Pick between a full page or a compact modal.
-            </p>
-          </div>
-          <SegmentedPill<DetailViewType>
-            options={[
-              { label: "Page", value: "page" },
-              { label: "Modal", value: "modal" },
-            ]}
-            value={detailViewType}
-            onChange={(val) => updateAppearance({ detailViewType: val })}
           />
         </div>
 
