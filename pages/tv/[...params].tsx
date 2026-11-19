@@ -7,13 +7,14 @@ import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { listHistory } from "@/lib/db/history";
 import { logger } from "@/lib/logger";
 import { isTakenDown, TAKEDOWN_REDIRECT } from "@/lib/takedowns";
+import { decryptMediaToken } from "@/lib/seo/obfuscate";
 import {
   buildMediaDescription,
   buildMediaTitle,
   getMediaOpenGraphImage,
 } from "@/lib/seo/media";
 import { getMediaHref } from "@/lib/utils/media";
-import { extractIdFromSlug, getCanonicalSlugRedirect } from "@/lib/utils/slug";
+import { getCanonicalSlugRedirect } from "@/lib/utils/slug";
 import { fetchTrailerUrlServer } from "@/lib/services/trailer.server";
 
 import { DetailPage } from "@/components/detail/DetailPage";
@@ -55,7 +56,6 @@ export default function TvPage({
         imageHeight={ogImage?.height}
         openGraphType="video.tv_show"
         jsonLd={sanitizeJsonLd(schemas)}
-        hideFromSearch
       />
       <DetailPage
         details={details}
@@ -72,23 +72,33 @@ export default function TvPage({
 export const getServerSideProps: GetServerSideProps<TvPageProps> = async (context) => {
   const params = context.params?.params;
   const rawId = params?.[0];
-  const id = extractIdFromSlug(rawId);
   const parsedSeason = params?.[1] ? Number.parseInt(params[1], 10) : null;
   const parsedEpisode = params?.[2] ? Number.parseInt(params[2], 10) : null;
-  const isPlaying = context.query.play === "true";
 
-  if (!id) {
+  if (!rawId || typeof rawId !== "string") {
     return { notFound: true };
   }
+
+  // Enforce strict 32-char token: reject numeric IDs immediately with 404 to prevent automated DMCA probes
+  const tokenMatch = rawId.match(/^([0-9a-fA-F]{32})(?:-(.*))?$/);
+  if (!tokenMatch) {
+    return { notFound: true };
+  }
+
+  const token = tokenMatch[1].toLowerCase();
+  const decrypted = decryptMediaToken(token);
+  if (!decrypted || decrypted.mediaType !== "tv") {
+    return { notFound: true };
+  }
+
+  const id = decrypted.id;
 
   if (isTakenDown("tv", id)) {
     return { redirect: TAKEDOWN_REDIRECT };
   }
 
   try {
-    if (!isPlaying) {
-      context.res.setHeader("Cache-Control", cacheControl("page"));
-    }
+    context.res.setHeader("Cache-Control", cacheControl("page"));
 
     const details = await getTvDetails(id);
 
@@ -107,8 +117,8 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
     let effectiveSeason = seasonNumber;
     let effectiveEpisode = episodeNumber;
 
-    // If playing but no explicit season/episode in the URL, check user's history
-    if (isPlaying && (!effectiveSeason || !effectiveEpisode)) {
+    // If no explicit season/episode in the URL, check user's history
+    if (!effectiveSeason || !effectiveEpisode) {
       const user = await getCurrentUser(context.req);
       if (user) {
         const historyList = await listHistory(user.id, user.activeProfileId ?? undefined);
@@ -137,7 +147,7 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
     return {
       props: {
         details,
-        isPlaying,
+        isPlaying: false,
         seasonNumber: effectiveSeason,
         episodeNumber: effectiveEpisode,
         initialEpisodes,

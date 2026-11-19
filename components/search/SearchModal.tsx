@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { MediaSummary, MediaType } from "@/lib/tmdb";
 import { getPosterResponsiveUrls } from "@/lib/tmdb/image";
-import { getEpisodeHref, getMediaHref, getPlayHref, getYear } from "@/lib/utils/media";
+import { getMediaHref, getYear } from "@/lib/utils/media";
 import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
 import { trackEvent } from "@/lib/analytics/gtag";
@@ -313,10 +313,7 @@ function SearchResultItem({ item, isExpanded, onToggle, onSelect }: SearchResult
   const { mobile } = getPosterResponsiveUrls(item.posterPath);
   const year = getYear(item.releaseDate);
   const typeLabel = item.mediaType === "tv" ? "TV Show" : "Movie";
-  const playHref =
-    item.mediaType === "tv"
-      ? getEpisodeHref(item.id, 1, 1, null, item.title)
-      : getPlayHref(item.mediaType, item.id, null, item.title);
+  const playHref = getMediaHref(item.mediaType, item.id, item.title);
   const mediaHref = getMediaHref(item.mediaType, item.id, item.title);
 
   const handleDetailClick = (e: React.MouseEvent) => {

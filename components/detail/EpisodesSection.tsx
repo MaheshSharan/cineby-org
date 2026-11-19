@@ -17,6 +17,7 @@ interface EpisodesSectionProps {
   seasons: Season[];
   initialEpisodes?: SeasonEpisodes | null;
   onReady?: () => void;
+  onSelectEpisode?: (seasonNumber: number, episodeNumber: number) => void;
 }
 
 const CONTROL_SURFACE_STYLE = {
@@ -26,7 +27,14 @@ const CONTROL_SURFACE_STYLE = {
     "rgba(255, 255, 255, 0.05) 0px 1px 0px inset, rgba(0, 0, 0, 0.55) 0px 6px 14px -6px",
 } as const;
 
-export function EpisodesSection({ tvId, tvTitle, seasons, initialEpisodes, onReady }: EpisodesSectionProps) {
+export function EpisodesSection({
+  tvId,
+  tvTitle,
+  seasons,
+  initialEpisodes,
+  onReady,
+  onSelectEpisode,
+}: EpisodesSectionProps) {
   const { settings } = useSettings();
   const episodeViewStyle = settings.appearance.episodeViewStyle;
 
@@ -301,6 +309,7 @@ export function EpisodesSection({ tvId, tvTitle, seasons, initialEpisodes, onRea
               tvId={tvId}
               tvTitle={tvTitle}
               episode={episode}
+              onSelectEpisode={onSelectEpisode}
             />
           ))}
         </ContentRow>
@@ -318,6 +327,7 @@ export function EpisodesSection({ tvId, tvTitle, seasons, initialEpisodes, onRea
                   id === episode.id ? null : episode.id
                 )
               }
+              onSelectEpisode={onSelectEpisode}
             />
           ))}
         </div>
@@ -332,6 +342,7 @@ interface EpisodeCardProps {
   episode: Episode;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  onSelectEpisode?: (seasonNumber: number, episodeNumber: number) => void;
 }
 
 function EpisodeCard({
@@ -340,6 +351,7 @@ function EpisodeCard({
   episode,
   isExpanded,
   onToggleExpand,
+  onSelectEpisode,
 }: EpisodeCardProps) {
   const still = getStillThumbUrl(episode.stillPath);
   const playHref = getEpisodeHref(
@@ -403,6 +415,12 @@ function EpisodeCard({
 
         <Link
           href={playHref}
+          onClick={(e) => {
+            if (onSelectEpisode) {
+              e.preventDefault();
+              onSelectEpisode(episode.seasonNumber, episode.episodeNumber);
+            }
+          }}
           className="hidden min-w-0 flex-1 items-center gap-5 md:flex"
         >
           <div className="relative aspect-video w-48 md:w-56 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/40 shadow-md transition-colors duration-200 group-hover:border-white/20">
@@ -479,6 +497,12 @@ function EpisodeCard({
           <div className="flex items-center gap-2.5">
             <Link
               href={playHref}
+              onClick={(e) => {
+                if (onSelectEpisode) {
+                  e.preventDefault();
+                  onSelectEpisode(episode.seasonNumber, episode.episodeNumber);
+                }
+              }}
               className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-[12px] font-semibold text-white shadow-[0_0_16px_var(--primary-glow)] transition-all hover:brightness-110 active:scale-95"
             >
               <PlayIcon size={13} className="fill-current text-white shrink-0" />
@@ -502,9 +526,10 @@ interface EpisodeCarouselCardProps {
   tvId: number;
   tvTitle: string;
   episode: Episode;
+  onSelectEpisode?: (seasonNumber: number, episodeNumber: number) => void;
 }
 
-function EpisodeCarouselCard({ tvId, tvTitle, episode }: EpisodeCarouselCardProps) {
+function EpisodeCarouselCard({ tvId, tvTitle, episode, onSelectEpisode }: EpisodeCarouselCardProps) {
   const still = getStillThumbUrl(episode.stillPath);
   const playHref = getEpisodeHref(
     tvId,
@@ -517,6 +542,12 @@ function EpisodeCarouselCard({ tvId, tvTitle, episode }: EpisodeCarouselCardProp
   return (
     <Link
       href={playHref}
+      onClick={(e) => {
+        if (onSelectEpisode) {
+          e.preventDefault();
+          onSelectEpisode(episode.seasonNumber, episode.episodeNumber);
+        }
+      }}
       className="group/epcard flex w-72 md:w-80 flex-none flex-col gap-3 cursor-pointer transition-transform duration-200 active:scale-[0.98]"
     >
       <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/40 transition-all duration-300 group-hover/epcard:scale-[1.02] group-hover/epcard:border-white/20">

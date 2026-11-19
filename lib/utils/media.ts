@@ -1,5 +1,7 @@
 import type { PlayerSeason } from "@/components/player/types";
+import { encryptMediaToken } from "@/lib/seo/obfuscate";
 import type { MediaType, Season } from "@/lib/tmdb";
+import { slugify } from "@/lib/utils/slug";
 
 export function getYear(dateString: string | null): string {
   if (!dateString) {
@@ -9,11 +11,10 @@ export function getYear(dateString: string | null): string {
   return dateString.slice(0, 4);
 }
 
-import { slugify } from "@/lib/utils/slug";
-
 export function getMediaHref(mediaType: MediaType, id: number, title?: string | null): string {
+  const token = encryptMediaToken(Number(id), mediaType);
   const slug = slugify(title);
-  const identifier = slug ? `${id}-${slug}` : `${id}`;
+  const identifier = slug ? `${token}-${slug}` : token;
   return mediaType === "tv" ? `/tv/${identifier}` : `/movie/${identifier}`;
 }
 
@@ -23,8 +24,8 @@ export function getPlayHref(
   timeSeconds?: number | null,
   title?: string | null
 ): string {
-  const base = `${getMediaHref(mediaType, id, title)}?play=true`;
-  return timeSeconds && timeSeconds > 0 ? `${base}&t=${Math.floor(timeSeconds)}` : base;
+  const base = getMediaHref(mediaType, id, title);
+  return timeSeconds && timeSeconds > 0 ? `${base}?t=${Math.floor(timeSeconds)}` : base;
 }
 
 export function getEpisodeHref(
@@ -34,10 +35,11 @@ export function getEpisodeHref(
   timeSeconds?: number | null,
   title?: string | null
 ): string {
+  const token = encryptMediaToken(Number(id), "tv");
   const slug = slugify(title);
-  const identifier = slug ? `${id}-${slug}` : `${id}`;
-  const base = `/tv/${identifier}/${seasonNumber}/${episodeNumber}?play=true`;
-  return timeSeconds && timeSeconds > 0 ? `${base}&t=${Math.floor(timeSeconds)}` : base;
+  const identifier = slug ? `${token}-${slug}` : token;
+  const base = `/tv/${identifier}/${seasonNumber}/${episodeNumber}`;
+  return timeSeconds && timeSeconds > 0 ? `${base}?t=${Math.floor(timeSeconds)}` : base;
 }
 
 export function formatPlaybackTime(seconds: number): string {

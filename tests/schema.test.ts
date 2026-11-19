@@ -80,7 +80,7 @@ describe("Schema.org JSON-LD structured data generators", () => {
       "@type": "ListItem",
       position: 3,
       name: "Inception",
-      item: `${getSiteUrl()}/movie/27205-inception`,
+      item: `${getSiteUrl()}/movie/474643f46bbc4503ac834e551d077333-inception`,
     });
   });
 
@@ -125,7 +125,7 @@ describe("Schema.org JSON-LD structured data generators", () => {
     const action = schema.potentialAction as Record<string, unknown>;
     expect(action["@type"]).toBe("WatchAction");
     expect((action.target as Record<string, unknown>).urlTemplate).toBe(
-      `${getSiteUrl()}/movie/603-the-matrix?play=true`
+      `${getSiteUrl()}/movie/17c0ac10b3489fa141548e1ebc5d9a50-the-matrix?play=true`
     );
     expect((action.actionAccessibilityRequirement as Record<string, unknown>).category).toBe("free");
   });

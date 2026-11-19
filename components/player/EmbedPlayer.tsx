@@ -6,9 +6,6 @@ import { ONBOARD_ADS_PLAYER_INFO_KEY } from "./types";
 import { ServerDrawer } from "./ui/ServerDrawer";
 import { AdBlockModal } from "./ui/AdBlockModal";
 import { useEmbedBridge } from "./hooks/useEmbedBridge";
-import { useIsLandscape } from "./hooks/useIsLandscape";
-import { useIsFullscreen } from "./hooks/useIsFullscreen";
-import { useIsTouchDevice } from "./hooks/useIsTouchDevice";
 import { initAntiRedirectShield, setAntiRedirectShieldActive } from "@/lib/security/antiRedirect";
 import { getEmbedProvider } from "@/lib/embeds/registry";
 import { canUseSandbox, rememberSandboxRefusal, SANDBOX_CHECK_MS } from "@/lib/embeds/sandboxPolicy";
@@ -66,46 +63,18 @@ export function EmbedPlayer({
   const { settings } = useSettings();
   const embedTheme = getEmbedTheme(settings.appearance.theme);
 
-  const isTouchDevice = useIsTouchDevice();
-  const isLandscape = useIsLandscape();
-  const isFullscreen = useIsFullscreen();
-
-  // Fullscreen + Landscape rotation action for mobile portrait mode
-  const handleToggleFullscreen = useCallback(() => {
-    try {
-      if (!document.fullscreenElement) {
-        const root = document.documentElement;
-        if (root.requestFullscreen) {
-          void root.requestFullscreen().catch(() => {});
-        } else if ((root as unknown as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
-          void (root as unknown as { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen().catch(() => {});
-        }
-
-        const orientation = window.screen.orientation as {
-          lock?: (orientation: string) => Promise<void>;
-        };
-        if (typeof orientation?.lock === "function") {
-          void orientation.lock("landscape").catch(() => {});
-        }
-      } else {
-        if (document.exitFullscreen) {
-          void document.exitFullscreen().catch(() => {});
-        } else if ((document as unknown as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
-          void (document as unknown as { webkitExitFullscreen: () => Promise<void> }).webkitExitFullscreen().catch(() => {});
-        }
-        const orientation = window.screen.orientation as {
-          unlock?: () => void;
-        };
-        if (typeof orientation?.unlock === "function") {
-          try {
-            orientation.unlock();
-          } catch {}
-        }
-      }
-    } catch {
-      // Ignore unsupported platforms
-    }
+  // Auto-hide controls after inactivity
+  const [isControlsVisible, setIsControlsVisible] = useState(true);
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const showControls = useCallback(() => {
+    setIsControlsVisible(true);
+    clearTimeout(controlsTimerRef.current);
+    controlsTimerRef.current = setTimeout(() => setIsControlsVisible(false), 3000);
   }, []);
+  useEffect(() => {
+    showControls();
+    return () => clearTimeout(controlsTimerRef.current);
+  }, [showControls]);
 
   // First-run AdBlock Onboarding Modal check
   useEffect(() => {
@@ -132,8 +101,14 @@ export function EmbedPlayer({
     firstTimeRef.current = null;
   }, [media.mediaId, media.seasonNumber, media.episodeNumber, currentServerId]);
 
-  // Immediately terminate previous server stream on server change, media change, or unmount
+  // Terminate previous stream on server/media change. Guard prevents StrictMode's
+  // double-invoke from blanking the iframe before the first real load.
+  const cleanupMountedRef = useRef(false);
   useEffect(() => {
+    if (!cleanupMountedRef.current) {
+      cleanupMountedRef.current = true;
+      return;
+    }
     const currentIframe = iframeRef.current;
     return () => {
       if (currentIframe) {
@@ -422,15 +397,21 @@ export function EmbedPlayer({
   });
 
   return (
-    <div className="relative w-full h-[100dvh] bg-black overflow-hidden select-none">
-      {/* Floating mid-right edge server trigger */}
+    <div
+      className="relative w-full h-full bg-black overflow-hidden select-none"
+      onMouseMove={showControls}
+      onMouseEnter={showControls}
+      onTouchStart={showControls}
+      onTouchMove={showControls}
+    >
+      {/* Floating mid-right edge server trigger — hides with controls */}
       {servers.length > 1 && (
         <button
           type="button"
           onClick={() => setIsDrawerOpen(true)}
           aria-label="Switch streaming server"
           title={`Server: ${provider?.name ?? currentServerId}`}
-          className="group absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 pl-2.5 pr-1.5 py-3 rounded-l-2xl border-l border-y border-white/20 bg-black/60 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/85 transition-all duration-200 translate-x-3 hover:translate-x-0 shadow-2xl shadow-black/80 focus:translate-x-0 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+          className={`group absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 pl-2.5 pr-1.5 py-3 rounded-l-2xl border-l border-y border-white/20 bg-black/60 backdrop-blur-md text-white/80 hover:text-white transition-all duration-300 translate-x-3 hover:translate-x-0 shadow-2xl shadow-black/80 focus:translate-x-0 focus:outline-none ${isControlsVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:animate-pulse" />
           <svg
@@ -446,21 +427,6 @@ export function EmbedPlayer({
           >
             <path d="M15 18l-6-6 6-6" />
           </svg>
-        </button>
-      )}
-
-      {/* Mobile Portrait Quick Fullscreen / Auto-Rotate Action Pill */}
-      {isTouchDevice && !isLandscape && !isFullscreen && (
-        <button
-          type="button"
-          onClick={handleToggleFullscreen}
-          aria-label="Rotate to Landscape Fullscreen"
-          className="absolute top-4 right-4 z-30 flex items-center gap-2 px-3.5 py-2 rounded-full bg-black/75 hover:bg-black/90 border border-white/20 backdrop-blur-md text-white text-xs font-semibold shadow-xl shadow-black/80 transition-all active:scale-95 cursor-pointer"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-          </svg>
-          <span>Fullscreen</span>
         </button>
       )}
 

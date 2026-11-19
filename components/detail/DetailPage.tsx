@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { MovieDetails, SeasonEpisodes, TvDetails } from "@/lib/tmdb";
@@ -14,17 +13,30 @@ import {
 import { calculateResumeSeconds, getEpisodeHref, getMediaHref, getPlayHref, getYear, formatRuntime, formatPlaybackTime, toPlayerSeasons } from "@/lib/utils/media";
 import { getTrailerUrl } from "@/lib/services/trailer";
 
+import dynamic from "next/dynamic";
+import { isHumanInteraction } from "@/lib/player/embedShield";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useSettings } from "@/hooks/useSettings";
 import { CastRow } from "@/components/detail/CastRow";
 import { EpisodesSection } from "@/components/detail/EpisodesSection";
 import { RecommendationsRow } from "@/components/detail/RecommendationsRow";
-import { PlayerShell } from "@/components/player/PlayerShell";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { PlayButton } from "@/components/ui/PlayButton";
 import { ShareButton } from "@/components/detail/ShareButton";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
 import { trackEvent } from "@/lib/analytics/gtag";
+
+const DynamicPlayerShell = dynamic(
+  () => import("@/components/player/PlayerShell").then((mod) => mod.PlayerShell),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full aspect-video max-h-[75vh] lg:max-h-[80vh] bg-black/90 flex items-center justify-center text-white/50 animate-pulse">
+        <span>Loading player...</span>
+      </div>
+    ),
+  }
+);
 import {
   CheckIcon,
   ChevronLeftIcon,
@@ -38,7 +50,7 @@ type DetailData = MovieDetails | TvDetails;
 
 interface DetailPageProps {
   details: DetailData;
-  isPlaying: boolean;
+  isPlaying?: boolean;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
   variant?: "page" | "modal";
@@ -51,7 +63,6 @@ const TRAILER_DELAY_MS = 5000;
 
 export function DetailPage({
   details,
-  isPlaying,
   seasonNumber,
   episodeNumber,
   variant = "page",
@@ -60,7 +71,6 @@ export function DetailPage({
   initialTrailerUrl,
 }: DetailPageProps) {
   const isModal = variant === "modal";
-  const router = useRouter();
   const { user, openAuthModal, showToast } = useAuth();
   const { settings } = useSettings();
   const [isMuted, setIsMuted] = useState(true);
@@ -72,6 +82,44 @@ export function DetailPage({
   const [historyEpisode, setHistoryEpisode] = useState<{ season: number; episode: number } | null>(null);
   const [directTrailerUrl, setDirectTrailerUrl] = useState<string | null>(initialTrailerUrl ?? null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const playerSectionRef = useRef<HTMLDivElement>(null);
+
+  // Crawler shield: isolate player shell from initial SSR and mount client-side only
+  const [hasMounted, setHasMounted] = useState(false);
+  const [isTheaterActive, setIsTheaterActive] = useState(false);
+  const [isDimmed, setIsDimmed] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
+  const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  // Broadcast theater dim state to global UI controls (e.g. ScrollEdgeButton)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("cineby:theater-dim", { detail: { dimmed: isDimmed } }));
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("cineby:theater-dim", { detail: { dimmed: false } }));
+      }
+    };
+  }, [isDimmed]);
+
+  const handleSelectEpisode = useCallback((season: number, episode: number) => {
+    setSelectedSeason(season);
+    setSelectedEpisode(episode);
+    setIsTheaterActive(true);
+    setIsDimmed(true);
+    if (typeof window !== "undefined") {
+      const url = getEpisodeHref(details.id, season, episode, null, details.title);
+      window.history.replaceState(null, "", url);
+    }
+    setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  }, [details.id, details.title]);
+
+  
 
   const heroBackdrop = getHeroBackdropUrl(details.backdropPath);
   const { mobile, tablet, desktop, desktopSrcSet } = getBackdropResponsiveUrls(details.backdropPath);
@@ -80,12 +128,6 @@ export function DetailPage({
   const [historyEntry, setHistoryEntry] = useState<HistoryEntry | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      setHistoryEntry(null);
-      setHistoryEpisode(null);
-      return;
-    }
-
     let isCurrent = true;
 
     const fetchHistory = () => {
@@ -258,50 +300,19 @@ export function DetailPage({
     setIsPageReady(true);
   }, []);
 
-  if (isPlaying) {
-    const effectiveSeason = isTv ? seasonNumber ?? historyEpisode?.season ?? 1 : null;
-    const effectiveEpisode = isTv ? episodeNumber ?? historyEpisode?.episode ?? 1 : null;
-    const episodeDuration = isTv && "episodeRunTime" in details && details.episodeRunTime?.[0]
-      ? formatRuntime(details.episodeRunTime[0])
-      : undefined;
-    const movieDuration = !isTv && "runtime" in details && details.runtime
-      ? formatRuntime(details.runtime)
-      : undefined;
-    const duration = episodeDuration ?? movieDuration ?? undefined;
-    const releaseYear = details.releaseDate ? getYear(details.releaseDate) : undefined;
-    const playerSubtitle = isTv
-      ? `S${effectiveSeason} E${effectiveEpisode}`
-      : releaseYear || undefined;
-
-    return (
-      <PlayerShell
-        title={details.title}
-        subtitle={playerSubtitle}
-        media={{
-          mediaType: details.mediaType,
-          mediaId: details.id,
-          imdbId: details.imdbId,
-          title: details.title,
-          posterPath: details.posterPath,
-          backdropPath: details.backdropPath,
-          titleBackdropPath: details.titleBackdropPath ?? null,
-          seasonNumber: effectiveSeason,
-          episodeNumber: effectiveEpisode,
-          duration,
-          runtime: isTv
-            ? ("episodeRunTime" in details ? details.episodeRunTime?.[0] ?? null : null)
-            : ("runtime" in details ? details.runtime ?? null : null),
-          releaseYear,
-          seasons: isTv && "seasons" in details ? toPlayerSeasons(details.seasons) : undefined,
-          initialEpisodes,
-        }}
-        onBack={() => router.push(getMediaHref(details.mediaType, details.id, details.title))}
-        onNavigateEpisode={(season: number, episode: number) =>
-          router.push(getEpisodeHref(details.id, season, episode, null, details.title))
-        }
-      />
-    );
-  }
+  const effectiveSeason = isTv ? selectedSeason ?? seasonNumber ?? historyEpisode?.season ?? 1 : null;
+  const effectiveEpisode = isTv ? selectedEpisode ?? episodeNumber ?? historyEpisode?.episode ?? 1 : null;
+  const episodeDuration = isTv && "episodeRunTime" in details && details.episodeRunTime?.[0]
+    ? formatRuntime(details.episodeRunTime[0])
+    : undefined;
+  const movieDuration = !isTv && "runtime" in details && details.runtime
+    ? formatRuntime(details.runtime)
+    : undefined;
+  const duration = episodeDuration ?? movieDuration ?? undefined;
+  const releaseYear = details.releaseDate ? getYear(details.releaseDate) : undefined;
+  const playerSubtitle = isTv
+    ? `S${effectiveSeason} E${effectiveEpisode}`
+    : releaseYear || undefined;
 
   return (
     <div className="relative min-h-screen w-full bg-[#050505] text-white overflow-x-hidden">
@@ -355,71 +366,73 @@ export function DetailPage({
         </div>
       ) : null}
 
-      {/* Hero Backdrop Section */}
+      {/* Top Hero Section — always shows backdrop */}
       <div className="relative w-full">
-        <div
-          className={`relative w-full overflow-hidden ${
-            isModal ? "h-[50vh] md:h-[60vh]" : "h-[65vh] lg:h-[75vh]"
-          }`}
-          style={{
-            maskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
-            WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
-          }}
-        >
-          {mobile ? (
-            <picture className="h-full w-full block">
-              {desktopSrcSet ? (
-                <source media="(min-width: 960px)" srcSet={desktopSrcSet} sizes="100vw" />
-              ) : desktop ? (
-                <source media="(min-width: 960px)" srcSet={desktop} />
-              ) : null}
-              {tablet ? <source media="(min-width: 600px)" srcSet={tablet} /> : null}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+        {(
+          <div
+            className={`relative w-full overflow-hidden ${
+              isModal ? "h-[50vh] md:h-[60vh]" : "h-[65vh] lg:h-[75vh]"
+            }`}
+            style={{
+              maskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
+              WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 98%)",
+            }}
+          >
+            {mobile ? (
+              <picture className="h-full w-full block">
+                {desktopSrcSet ? (
+                  <source media="(min-width: 960px)" srcSet={desktopSrcSet} sizes="100vw" />
+                ) : desktop ? (
+                  <source media="(min-width: 960px)" srcSet={desktop} />
+                ) : null}
+                {tablet ? <source media="(min-width: 600px)" srcSet={tablet} /> : null}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={mobile}
+                  alt={`${details.title} backdrop`}
+                  className="h-full w-full object-cover object-top"
+                />
+              </picture>
+            ) : heroBackdrop ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={mobile}
+                src={heroBackdrop}
                 alt={`${details.title} backdrop`}
                 className="h-full w-full object-cover object-top"
               />
-            </picture>
-          ) : heroBackdrop ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={heroBackdrop}
-              alt={`${details.title} backdrop`}
-              className="h-full w-full object-cover object-top"
-            />
-          ) : (
-            <div className="h-full w-full bg-surface-1" />
-          )}
+            ) : (
+              <div className="h-full w-full bg-surface-1" />
+            )}
 
-          {directTrailerUrl && showTrailer && isTrailerEnabled ? (
-            <div
-              className="absolute inset-0 w-full overflow-hidden transition-opacity duration-700 ease-in-out"
-              style={{ opacity: trailerReady ? 1 : 0 }}
-            >
-              <video
-                ref={videoRef}
-                src={directTrailerUrl}
-                autoPlay
-                muted={isMuted}
-                playsInline
-                preload="auto"
-                onCanPlay={() => setTrailerReady(true)}
-                onEnded={() => {
-                  setShowTrailer(false);
-                  setTrailerReady(false);
-                }}
-                className="h-full w-full object-cover object-top pointer-events-none"
-              />
-            </div>
-          ) : null}
+            {directTrailerUrl && showTrailer && isTrailerEnabled ? (
+              <div
+                className="absolute inset-0 w-full overflow-hidden transition-opacity duration-700 ease-in-out"
+                style={{ opacity: trailerReady ? 1 : 0 }}
+              >
+                <video
+                  ref={videoRef}
+                  src={directTrailerUrl}
+                  autoPlay
+                  muted={isMuted}
+                  playsInline
+                  preload="auto"
+                  onCanPlay={() => setTrailerReady(true)}
+                  onEnded={() => {
+                    setShowTrailer(false);
+                    setTrailerReady(false);
+                  }}
+                  className="h-full w-full object-cover object-top pointer-events-none"
+                />
+              </div>
+            ) : null}
 
-          {/* Gradients matching Cinejoy */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-transparent pointer-events-none hidden lg:block" />
-        </div>
+            {/* Gradients matching Cinejoy */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-transparent pointer-events-none hidden lg:block" />
+          </div>
+        )}
 
-        {directTrailerUrl && showTrailer && trailerReady && isTrailerEnabled ? (
+        {directTrailerUrl && showTrailer && trailerReady && isTrailerEnabled && !isTheaterActive ? (
           <button
             type="button"
             onClick={() => {
@@ -579,50 +592,81 @@ export function DetailPage({
                 return (
                   <PlayButton
                     href={resumeHref}
-                    onClick={onClose}
+                    onClick={(e) => {
+                      onClose?.();
+                      if (!isModal) {
+                        e.preventDefault();
+                        if (!isHumanInteraction(e)) return;
+                        setIsTheaterActive(true);
+                        setIsDimmed(true);
+                        setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+                      }
+                    }}
                     size="md"
                     label={resumeLabel}
                   />
                 );
               })() : null}
 
-              {historyEntry ? (
-                <Link
-                  href={
-                    isTv
-                      ? getEpisodeHref(
-                          details.id,
-                          seasonNumber ?? historyEpisode?.season ?? 1,
-                          episodeNumber ?? historyEpisode?.episode ?? 1,
-                          null,
-                          details.title
-                        )
-                      : getPlayHref(details.mediaType, details.id, null, details.title)
-                  }
-                  onClick={onClose}
-                  className="flex h-[44px] items-center justify-center gap-2 rounded-full border border-white/10 bg-white/10 px-5 text-sm font-semibold tracking-wide text-white backdrop-blur-[20px] shadow-lg shadow-black/5 transition-all duration-200 hover:scale-105 hover:border-white/20 active:scale-95"
-                >
-                  <PlayIcon size={18} className="fill-current text-white shrink-0" />
-                  <span>Start Over</span>
-                </Link>
-              ) : (
-                <PlayButton
-                  href={
-                    isTv
-                      ? getEpisodeHref(
-                          details.id,
-                          seasonNumber ?? historyEpisode?.season ?? 1,
-                          episodeNumber ?? historyEpisode?.episode ?? 1,
-                          null,
-                          details.title
-                        )
-                      : getPlayHref(details.mediaType, details.id, null, details.title)
-                  }
-                  onClick={onClose}
-                  size="md"
-                  label="Play"
-                />
-              )}
+              {historyEntry ? (() => {
+                const startOverHref = isTv
+                  ? getEpisodeHref(
+                      details.id,
+                      seasonNumber ?? historyEpisode?.season ?? 1,
+                      episodeNumber ?? historyEpisode?.episode ?? 1,
+                      null,
+                      details.title
+                    )
+                  : getPlayHref(details.mediaType, details.id, null, details.title);
+
+                return (
+                  <Link
+                    href={startOverHref}
+                    onClick={(e) => {
+                      onClose?.();
+                      if (!isModal) {
+                        e.preventDefault();
+                        if (!isHumanInteraction(e)) return;
+                        setIsTheaterActive(true);
+                        setIsDimmed(true);
+                        setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+                      }
+                    }}
+                    className="flex h-[44px] items-center justify-center gap-2 rounded-full border border-white/10 bg-white/10 px-5 text-sm font-semibold tracking-wide text-white backdrop-blur-[20px] shadow-lg shadow-black/5 transition-all duration-200 hover:scale-105 hover:border-white/20 active:scale-95"
+                  >
+                    <PlayIcon size={18} className="fill-current text-white shrink-0" />
+                    <span>Start Over</span>
+                  </Link>
+                );
+              })() : (() => {
+                const playHref = isTv
+                  ? getEpisodeHref(
+                      details.id,
+                      seasonNumber ?? historyEpisode?.season ?? 1,
+                      episodeNumber ?? historyEpisode?.episode ?? 1,
+                      null,
+                      details.title
+                    )
+                  : getPlayHref(details.mediaType, details.id, null, details.title);
+
+                return (
+                  <PlayButton
+                    href={playHref}
+                    onClick={(e) => {
+                      onClose?.();
+                      if (!isModal) {
+                        e.preventDefault();
+                        if (!isHumanInteraction(e)) return;
+                        setIsTheaterActive(true);
+                        setIsDimmed(true);
+                        setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+                      }
+                    }}
+                    size="md"
+                    label="Play Now"
+                  />
+                );
+              })()}
 
               {/* Add to Watchlist button */}
               <button
@@ -760,7 +804,58 @@ export function DetailPage({
             seasons={details.seasons}
             initialEpisodes={initialEpisodes}
             onReady={handleEpisodeReady}
+            onSelectEpisode={handleSelectEpisode}
           />
+        ) : null}
+        {/* Theater Player — between Episodes and Cast, never in hero */}
+        {hasMounted && isTheaterActive ? (
+          <div ref={playerSectionRef} className="w-full scroll-mt-6">
+            {/* Full-page dim overlay — clicking outside player removes dim */}
+            {isDimmed && (
+              <div
+                className="fixed inset-0 z-10 bg-black/60 transition-opacity duration-500 cursor-pointer"
+                onClick={() => setIsDimmed(false)}
+              />
+            )}
+            <div className="relative z-20 w-full aspect-video max-h-[calc(100dvh-5rem)] max-w-[calc((100dvh-5rem)*16/9)] mx-auto bg-black rounded-xl overflow-hidden shadow-2xl">
+              {/* Transparent click-catcher sits on top of iframe when dim is off, restores dim on click */}
+              {!isDimmed && (
+                <div
+                  className="absolute inset-0 z-10 cursor-pointer"
+                  onClick={() => setIsDimmed(true)}
+                />
+              )}
+              <DynamicPlayerShell
+                title={details.title}
+                subtitle={playerSubtitle}
+                media={{
+                  mediaType: details.mediaType,
+                  mediaId: details.id,
+                  imdbId: details.imdbId,
+                  title: details.title,
+                  posterPath: details.posterPath,
+                  backdropPath: details.backdropPath,
+                  titleBackdropPath: details.titleBackdropPath ?? null,
+                  seasonNumber: effectiveSeason,
+                  episodeNumber: effectiveEpisode,
+                  duration,
+                  runtime: isTv
+                    ? ("episodeRunTime" in details ? details.episodeRunTime?.[0] ?? null : null)
+                    : ("runtime" in details ? details.runtime ?? null : null),
+                  releaseYear,
+                  seasons: isTv && "seasons" in details ? toPlayerSeasons(details.seasons) : undefined,
+                  initialEpisodes,
+                }}
+                onBack={() => {
+                  setIsTheaterActive(false);
+                  setIsDimmed(false);
+                }}
+                onNavigateEpisode={(season: number, episode: number) => {
+                  handleSelectEpisode(season, episode);
+                }}
+              />
+            </div>
+          </div>
         ) : null}
         <div>
           <CastRow cast={details.cast} />

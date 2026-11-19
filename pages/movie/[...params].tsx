@@ -3,6 +3,7 @@ import type { GetServerSideProps } from "next";
 import { cacheControl } from "@/lib/cache/profiles";
 import { logger } from "@/lib/logger";
 import { isTakenDown, TAKEDOWN_REDIRECT } from "@/lib/takedowns";
+import { decryptMediaToken } from "@/lib/seo/obfuscate";
 import {
   buildMediaDescription,
   buildMediaTitle,
@@ -11,7 +12,7 @@ import {
 import type { MovieDetails } from "@/lib/tmdb";
 import { getMovieDetails, isTmdbNotFoundError } from "@/lib/tmdb/server";
 import { getMediaHref } from "@/lib/utils/media";
-import { extractIdFromSlug, getCanonicalSlugRedirect } from "@/lib/utils/slug";
+import { getCanonicalSlugRedirect } from "@/lib/utils/slug";
 import { fetchTrailerUrlServer } from "@/lib/services/trailer.server";
 
 import { DetailPage } from "@/components/detail/DetailPage";
@@ -43,7 +44,6 @@ export default function MoviePage({ details, isPlaying, initialTrailerUrl }: Mov
         imageHeight={ogImage?.height}
         openGraphType="video.movie"
         jsonLd={sanitizeJsonLd(schemas)}
-        hideFromSearch
       />
       <DetailPage
         details={details}
@@ -56,20 +56,31 @@ export default function MoviePage({ details, isPlaying, initialTrailerUrl }: Mov
 
 export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (context) => {
   const param = context.params?.params?.[0];
-  const id = extractIdFromSlug(param);
 
-  if (!id) {
+  if (!param || typeof param !== "string") {
     return { notFound: true };
   }
+
+  // Enforce strict 32-char token: reject numeric IDs immediately with 404 to prevent automated DMCA probes
+  const tokenMatch = param.match(/^([0-9a-fA-F]{32})(?:-(.*))?$/);
+  if (!tokenMatch) {
+    return { notFound: true };
+  }
+
+  const token = tokenMatch[1].toLowerCase();
+  const decrypted = decryptMediaToken(token);
+  if (!decrypted || decrypted.mediaType !== "movie") {
+    return { notFound: true };
+  }
+
+  const id = decrypted.id;
 
   if (isTakenDown("movie", id)) {
     return { redirect: TAKEDOWN_REDIRECT };
   }
 
   try {
-    if (context.query.play !== "true") {
-      context.res.setHeader("Cache-Control", cacheControl("page"));
-    }
+    context.res.setHeader("Cache-Control", cacheControl("page"));
 
     const details = await getMovieDetails(id);
 
@@ -89,7 +100,7 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (con
     return {
       props: {
         details,
-        isPlaying: context.query.play === "true",
+        isPlaying: false,
         initialTrailerUrl,
       },
     };

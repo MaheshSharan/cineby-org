@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { HistoryEntry } from "@/lib/db/types";
 import { getBackdropResponsiveUrls, getPosterResponsiveUrls } from "@/lib/tmdb/image";
-import { calculateResumeSeconds, formatTimeLeft, getEpisodeHref, getMediaHref, getPlayHref } from "@/lib/utils/media";
+import { calculateResumeSeconds, formatTimeLeft, getMediaHref } from "@/lib/utils/media";
 import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
 import { PlayButton } from "@/components/ui/PlayButton";
@@ -51,9 +51,7 @@ export function ContinueWatchingCard({ entry, onRemove }: ContinueWatchingCardPr
       : calculateResumeSeconds(entry.progress, entry.duration);
 
   const isEpisode = entry.mediaType === "tv" && Boolean(entry.seasonNumber && entry.episodeNumber);
-  const playHref = isEpisode
-    ? getEpisodeHref(entry.mediaId, entry.seasonNumber ?? 1, entry.episodeNumber ?? 1, resumeSeconds, entry.title)
-    : getPlayHref(entry.mediaType, entry.mediaId, resumeSeconds, entry.title);
+  const playHref = getMediaHref(entry.mediaType, entry.mediaId, entry.title);
 
   const handleInfoClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     const isPlainClick = event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;

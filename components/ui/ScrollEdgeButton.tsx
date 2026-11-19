@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useScrollEdge } from "@/hooks/useScrollEdge";
 
@@ -10,6 +11,19 @@ function scrollToEdge(direction: "up" | "down") {
 export function ScrollEdgeButton() {
   const { visible, direction } = useScrollEdge();
   const { pathname } = useRouter();
+  const [isTheaterDimmed, setIsTheaterDimmed] = useState(false);
+
+  useEffect(() => {
+    const handleTheaterDim = (e: Event) => {
+      const customEvent = e as CustomEvent<{ dimmed?: boolean }>;
+      setIsTheaterDimmed(Boolean(customEvent.detail?.dimmed));
+    };
+
+    window.addEventListener("cineby:theater-dim", handleTheaterDim);
+    return () => {
+      window.removeEventListener("cineby:theater-dim", handleTheaterDim);
+    };
+  }, []);
 
   if (pathname.startsWith("/watch")) return null;
 
@@ -19,7 +33,9 @@ export function ScrollEdgeButton() {
       aria-label={`Scroll to ${direction === "up" ? "top" : "bottom"}`}
       onClick={() => scrollToEdge(direction)}
       className={`fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] right-4 sm:right-6 z-[9999] flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#05070a]/95 text-white shadow-2xl backdrop-blur-xl transition-all duration-300 ${
-        visible ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-3 pointer-events-none"
+        visible && !isTheaterDimmed
+          ? "opacity-100 translate-y-0 pointer-events-auto"
+          : "opacity-0 translate-y-3 pointer-events-none"
       }`}
     >
       <svg

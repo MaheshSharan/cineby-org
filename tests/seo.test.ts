@@ -64,7 +64,7 @@ describe("robots.txt", () => {
       const group = findGroup(groups, agent);
 
       expect(group?.rules).toContain("Allow: /");
-      expect(group?.rules).toContain("Disallow: /watch/");
+      expect(group?.rules).toContain("Disallow: /*?play=");
       expect(group?.rules).toContain("Disallow: /api/auth/");
       expect(group?.rules).toContain("Disallow: /api/stream/");
     }

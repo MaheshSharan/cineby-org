@@ -71,6 +71,4 @@ export const TAKEDOWN_LIST: readonly TakedownEntry[] = [
   { mediaType: "tv", id: 289892, title: "Helluva Boss" },
   { mediaType: "tv", id: 84773, title: "The Lord of the Rings: The Rings of Power" },
   { mediaType: "movie", id: 323929, title: "Krisha" },
-  { mediaType: "movie", id: 323929, title: "Krisha" },
-  { mediaType: "movie", id: 1813355, title: "a story of derry" },
 ];

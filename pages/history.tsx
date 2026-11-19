@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import type { HistoryEntry } from "@/lib/db/types";
 import { clearAllHistory, listHistory, removeFromHistory } from "@/lib/api/history";
 import { addToWatchlist } from "@/lib/api/watchlist";
-import { getEpisodeHref, getPlayHref } from "@/lib/utils/media";
+import { isSameTitle } from "@/lib/history/continueWatching";
+import { getMediaHref } from "@/lib/utils/media";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { MediaPosterCard } from "@/components/movie/MediaPosterCard";
 import { PageSeo } from "@/components/seo/PageSeo";
@@ -176,7 +177,11 @@ export default function HistoryPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-3">
-              {items.map((entry) => (
+              {/* Deduplicate: keep newest entry per title */}
+              {[...items]
+                .sort((a, b) => Date.parse(b.watchedAt) - Date.parse(a.watchedAt))
+                .filter((entry, idx, arr) => arr.findIndex((o) => isSameTitle(o, entry)) === idx)
+                .map((entry) => (
                 <HistoryCard
                   key={entry.id}
                   entry={entry}
@@ -237,14 +242,16 @@ interface HistoryCardProps {
 }
 
 function HistoryCard({ entry, onRemove, onAddToWatchlist }: HistoryCardProps) {
-  const playHref =
+  const playHref = getMediaHref(entry.mediaType, entry.mediaId, entry.title);
+  const subtitle =
     entry.mediaType === "tv" && entry.seasonNumber && entry.episodeNumber
-      ? getEpisodeHref(entry.mediaId, entry.seasonNumber, entry.episodeNumber, null, entry.title)
-      : getPlayHref(entry.mediaType, entry.mediaId, null, entry.title);
+      ? `S${entry.seasonNumber}:E${entry.episodeNumber}`
+      : undefined;
 
   return (
     <MediaPosterCard
       title={entry.title}
+      subtitle={subtitle}
       posterPath={entry.posterPath}
       href={playHref}
       progress={entry.progress}

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 
 import type { MediaSummary } from "@/lib/tmdb";
 import { buildImageUrl, getBackdropResponsiveUrls, getLogoUrl } from "@/lib/tmdb/image";
-import { getEpisodeHref, getMediaHref, getPlayHref, getYear } from "@/lib/utils/media";
+import { getMediaHref, getYear } from "@/lib/utils/media";
 import { useSettings } from "@/hooks/useSettings";
 import { useDetailModal } from "@/components/detail/DetailModalContext";
 import { HeroSkeleton } from "@/components/skeleton/HeroSkeleton";
@@ -184,10 +184,7 @@ function HeroSlide({ item, genreNames, isActive }: HeroSlideProps) {
   const genres = getGenreNames(item, genreNames);
   const rating = item.voteAverage ? item.voteAverage.toFixed(1) : null;
 
-  const playHref =
-    item.mediaType === "tv"
-      ? getEpisodeHref(item.id, 1, 1, null, item.title)
-      : getPlayHref(item.mediaType, item.id, null, item.title);
+  const playHref = getMediaHref(item.mediaType, item.id, item.title);
   const mediaHref = getMediaHref(item.mediaType, item.id, item.title);
 
   const handleSeeMoreClick = (e: React.MouseEvent) => {

@@ -9,6 +9,7 @@ import { PlayIcon, StarIcon } from "@/components/ui/icons";
 
 interface MediaPosterCardProps {
   title: string;
+  subtitle?: string;
   posterPath: string | null;
   href: string;
   mediaType?: "movie" | "tv";
@@ -24,6 +25,7 @@ interface MediaPosterCardProps {
 
 export function MediaPosterCard({
   title,
+  subtitle,
   posterPath,
   href,
   mediaType,
@@ -116,6 +118,9 @@ export function MediaPosterCard({
               <h3 className="line-clamp-2 text-sm font-bold leading-tight text-white drop-shadow-md">
                 {title}
               </h3>
+              {subtitle ? (
+                <p className="text-xs font-medium text-white/60">{subtitle}</p>
+              ) : null}
               <div className="flex items-center justify-center gap-2 text-xs font-medium text-white/80">
                 {year ? <span>{year}</span> : null}
                 {rating != null && rating > 0 ? (
@@ -140,6 +145,9 @@ export function MediaPosterCard({
           <h3 className="line-clamp-1 text-xs font-medium leading-tight text-white">
             {title}
           </h3>
+          {subtitle ? (
+            <p className="text-[10px] font-medium text-white/50">{subtitle}</p>
+          ) : null}
           <div className="flex items-center gap-2 text-[10px] text-white/60">
             {rating != null && rating > 0 ? (
               <span className="flex items-center gap-0.5">
