@@ -7,12 +7,12 @@ interface NativeBannerAdProps {
   id?: string;
 }
 
-const AD_SCRIPT_SRC = "https://pl32119482.profitableratecpmnetwork.com/7f39a089ecb822ed1c9d27240135d8fd/invoke.js";
+const AD_SCRIPT_SRC = "";
 const AD_UNIT_NAME = "native_banner";
 // The ad network renders its links without text, which screen readers announce as an unnamed link.
 const AD_LINK_LABEL = "Sponsored link";
 
-export function NativeBannerAd({ className = "", id = "container-7f39a089ecb822ed1c9d27240135d8fd" }: NativeBannerAdProps) {
+export function NativeBannerAd({ className = "", id = "" }: NativeBannerAdProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const impressionTrackedRef = useRef(false);
   const [hasAdLoaded, setHasAdLoaded] = useState(false);
@@ -21,7 +21,7 @@ export function NativeBannerAd({ className = "", id = "container-7f39a089ecb822e
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !hasInteracted) return;
+    if (!container || !hasInteracted || !AD_SCRIPT_SRC || !id) return;
 
     let observer: IntersectionObserver | null = null;
 
