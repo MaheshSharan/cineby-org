@@ -88,6 +88,13 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
     kind: "int",
   },
   {
+    name: "VIDBOLT_EMBED_HOST",
+    category: "player",
+    scope: "server",
+    kind: "url",
+    requiredWhen: () => false,
+  },
+  {
     name: "VIXSRC_EMBED_HOST",
     category: "player",
     scope: "server",

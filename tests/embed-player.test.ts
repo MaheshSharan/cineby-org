@@ -676,5 +676,55 @@ describe("Player Onboarding & AdBlock Configuration", () => {
     const parsedTv = new URL(tvUrl);
     expect(parsedTv.pathname).toBe("/tv/94997/2/5");
   });
+
+  it("builds correct movie, tv, and anime URLs with params for VidBolt", async () => {
+    const { vidboltEmbed } = await import("@/lib/embeds/sites/vidbolt");
+
+    const movieUrl = vidboltEmbed.buildUrl({
+      type: "movie",
+      tmdbId: 1007757,
+      startAtSec: 90,
+      autoplay: true,
+      lang: "hindi",
+      theme: { primary: "#E50914" },
+    });
+    const parsedMovie = new URL(movieUrl);
+    expect(parsedMovie.origin + parsedMovie.pathname).toBe("https://vidbolt.pro/movie/1007757");
+    expect(parsedMovie.searchParams.get("startAt")).toBe("90");
+    expect(parsedMovie.searchParams.get("autoPlay")).toBe("true");
+    expect(parsedMovie.searchParams.get("audio")).toBe("hindi");
+    expect(parsedMovie.searchParams.get("theme")).toBe("E50914");
+
+    const tvUrl = vidboltEmbed.buildUrl({
+      type: "tv",
+      tmdbId: 1399,
+      season: 1,
+      episode: 1,
+    });
+    const parsedTv = new URL(tvUrl);
+    expect(parsedTv.origin + parsedTv.pathname).toBe("https://vidbolt.pro/tv/1399/1/1");
+
+    const animeUrl = vidboltEmbed.buildUrl({
+      type: "anime",
+      anilistId: 16498,
+      episode: 1,
+    });
+    const parsedAnime = new URL(animeUrl);
+    expect(parsedAnime.origin + parsedAnime.pathname).toBe("https://vidbolt.pro/anime/16498/1");
+
+    expect(vidboltEmbed.resume?.buildMessage(120)).toEqual({ type: "seek", time: 120 });
+    expect(vidboltEmbed.resume?.targetOrigin).toBe("https://vidbolt.pro");
+
+    const origin = "https://vidbolt.pro";
+    expect(vidboltEmbed.parseEvent(origin, { type: "timeupdate", time: 45, duration: 180 })).toEqual({
+      event: "timeupdate",
+      currentTime: 45,
+      duration: 180,
+    });
+    expect(vidboltEmbed.parseEvent(origin, { type: "play" })?.event).toBe("play");
+    expect(vidboltEmbed.parseEvent(origin, { type: "pause" })?.event).toBe("pause");
+    expect(vidboltEmbed.parseEvent(origin, { type: "ended" })?.event).toBe("ended");
+    expect(vidboltEmbed.parseEvent("https://unauthorized.evil", { type: "play" })).toBeNull();
+  });
 });
 
