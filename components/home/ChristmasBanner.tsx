@@ -4,6 +4,7 @@ import Link from "next/link";
 import { buildImageUrl } from "@/lib/tmdb/image";
 import type { MediaSummary } from "@/lib/tmdb/types";
 import { CHRISTMAS_KEYWORD_ID, getChristmasStatus } from "@/lib/christmas";
+import { getMediaHref } from "@/lib/utils/media";
 
 export { CHRISTMAS_KEYWORD_ID, getChristmasStatus };
 
@@ -513,7 +514,7 @@ export function ChristmasBanner({ movies }: ChristmasBannerProps) {
               return (
                 <Link
                   key={movie.id}
-                  href={`/${movie.mediaType}/${movie.id}`}
+                  href={getMediaHref(movie.mediaType, movie.id, movie.title)}
                   className={`xmas-poster relative -mx-1.5 sm:-mx-2 md:-mx-2.5 lg:-mx-3 w-24 sm:w-28 md:w-28 lg:w-32 shrink-0 cursor-pointer ${
                     i === 0 ? "hidden sm:block" : ""
                   }`}
