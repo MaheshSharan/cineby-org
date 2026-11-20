@@ -76,6 +76,15 @@ export function EmbedPlayer({
     return () => clearTimeout(controlsTimerRef.current);
   }, [showControls]);
 
+  // On mobile the cross-origin iframe swallows touch events, so the parent div never fires
+  // onTouchStart/onTouchMove. When the user taps the embed, the window loses focus — use that
+  // as the signal to briefly surface the server selector for 3 seconds.
+  useEffect(() => {
+    const handleWindowBlur = () => showControls();
+    window.addEventListener("blur", handleWindowBlur);
+    return () => window.removeEventListener("blur", handleWindowBlur);
+  }, [showControls]);
+
   // First-run AdBlock Onboarding Modal check
   useEffect(() => {
     try {
@@ -411,7 +420,7 @@ export function EmbedPlayer({
           onClick={() => setIsDrawerOpen(true)}
           aria-label="Switch streaming server"
           title={`Server: ${provider?.name ?? currentServerId}`}
-          className={`group absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 pl-2.5 pr-1.5 py-3 rounded-l-2xl border-l border-y border-white/20 bg-black/60 backdrop-blur-md text-white/80 hover:text-white transition-all duration-300 translate-x-3 hover:translate-x-0 shadow-2xl shadow-black/80 focus:translate-x-0 focus:outline-none ${isControlsVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+          className={`group absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 pl-2.5 pr-1.5 py-3 rounded-l-2xl border-l border-y border-white/20 bg-black/60 backdrop-blur-md text-white/80 hover:text-white transition-all duration-300 translate-x-0 md:translate-x-3 md:hover:translate-x-0 shadow-2xl shadow-black/80 focus:translate-x-0 focus:outline-none ${isControlsVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:animate-pulse" />
           <svg
