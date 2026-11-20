@@ -20,8 +20,9 @@ export default withApiContext("api/tmdb/browse", async (req: NextApiRequest, res
   const genreId = parseOptionalNumber(req.query.genreId);
   const sortBy = typeof req.query.sortBy === "string" ? req.query.sortBy : undefined;
   const page = parsePage(req.query.page);
+  const withKeywords = typeof req.query.keywords === "string" ? req.query.keywords : undefined;
 
-  const result = await getBrowsePage({ mediaType, genreId, sortBy, page });
+  const result = await getBrowsePage({ mediaType, genreId, sortBy, page, withKeywords });
 
   res.setHeader("Cache-Control", cacheControl("discover"));
   res.status(200).json(result);

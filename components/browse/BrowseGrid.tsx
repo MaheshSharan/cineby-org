@@ -23,9 +23,10 @@ interface BrowseGridProps {
   genres: Genre[];
   initialItems: MediaSummary[];
   initialTotalPages: number;
+  initialKeywords?: string | null;
 }
 
-export function BrowseGrid({ mediaType, genres, initialItems, initialTotalPages }: BrowseGridProps) {
+export function BrowseGrid({ mediaType, genres, initialItems, initialTotalPages, initialKeywords }: BrowseGridProps) {
   const [filters, setFilters] = useState<Filters>({ sortKey: "popular" });
   const [items, setItems] = useState(initialItems);
   const [page, setPage] = useState(1);
@@ -45,7 +46,7 @@ export function BrowseGrid({ mediaType, genres, initialItems, initialTotalPages 
     setItems(initialItems);
     setPage(1);
     setTotalPages(initialTotalPages);
-  }, [mediaType, initialItems, initialTotalPages]);
+  }, [mediaType, initialItems, initialTotalPages, initialKeywords]);
 
   const fetchPage = useCallback(
     async (targetPage: number, nextFilters: Filters) => {
@@ -59,6 +60,10 @@ export function BrowseGrid({ mediaType, genres, initialItems, initialTotalPages 
       params.set("page", String(targetPage));
       // Part of the cache key: responses cached with another page size must never be reused.
       params.set("size", String(BROWSE_PAGE_SIZE));
+
+      if (initialKeywords) {
+        params.set("keywords", initialKeywords);
+      }
 
       if (nextFilters.genreId) {
         params.set("genreId", String(nextFilters.genreId));
@@ -105,6 +110,15 @@ export function BrowseGrid({ mediaType, genres, initialItems, initialTotalPages 
 
   return (
     <section className="mx-auto w-full max-w-[1360px] overflow-x-hidden px-3 sm:px-4 pt-24 pb-28 md:pt-28 md:pb-12">
+      {initialKeywords === "207317" && (
+        <div className="flex items-center gap-2 mb-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[hsl(var(--accent)/0.15)] text-[hsl(var(--accent))] border border-[hsl(var(--accent)/0.3)]">
+            <span>🎄</span>
+            <span>Christmas {mediaType === "tv" ? "TV Shows" : "Movies"} Collection</span>
+          </span>
+        </div>
+      )}
+
       <BrowseFilters
         genres={genres}
         sortKey={filters.sortKey}

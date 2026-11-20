@@ -14,6 +14,7 @@ interface BrowsePageProps {
   genres: Genre[];
   initialItems: MediaSummary[];
   initialTotalPages: number;
+  initialKeywords?: string | null;
 }
 
 const CATEGORY_SEO: Record<MediaType, { title: string; heading: string; description: string }> = {
@@ -29,15 +30,35 @@ const CATEGORY_SEO: Record<MediaType, { title: string; heading: string; descript
   },
 };
 
-export default function BrowsePage({ mediaType, genres, initialItems, initialTotalPages }: BrowsePageProps) {
-  const { title, heading, description } = CATEGORY_SEO[mediaType];
+export default function BrowsePage({
+  mediaType,
+  genres,
+  initialItems,
+  initialTotalPages,
+  initialKeywords,
+}: BrowsePageProps) {
+  const isChristmas = initialKeywords === "207317";
+  const defaultSeo = CATEGORY_SEO[mediaType];
+  const title = isChristmas
+    ? mediaType === "tv"
+      ? "Browse Christmas TV Shows & Holiday Specials | Cineby"
+      : "Browse Christmas Movies & Holiday Films | Cineby"
+    : defaultSeo.title;
+  const heading = isChristmas
+    ? mediaType === "tv"
+      ? "Christmas TV Shows"
+      : "Christmas Movies"
+    : defaultSeo.heading;
+  const description = isChristmas
+    ? `Stream warm holiday ${mediaType === "tv" ? "TV shows" : "movies"}, family classics, and Christmas specials on Cineby.`
+    : defaultSeo.description;
 
   return (
     <>
       <PageSeo
         title={title}
         description={description}
-        path={`/browse/${mediaType}`}
+        path={`/browse/${mediaType}${initialKeywords ? `?keywords=${initialKeywords}` : ""}`}
         jsonLd={sanitizeJsonLd(buildCategoryBreadcrumbJsonLd(mediaType))}
       />
       <h1 className="sr-only">{heading}</h1>
@@ -47,6 +68,7 @@ export default function BrowsePage({ mediaType, genres, initialItems, initialTot
         genres={genres}
         initialItems={initialItems}
         initialTotalPages={initialTotalPages}
+        initialKeywords={initialKeywords}
       />
     </>
   );
@@ -60,13 +82,14 @@ export const getServerSideProps: GetServerSideProps<BrowsePageProps> = async (co
   }
 
   const mediaType: MediaType = category;
+  const keywords = typeof context.query.keywords === "string" ? context.query.keywords : undefined;
 
   try {
     context.res.setHeader("Cache-Control", cacheControl("page"));
 
     const [genreList, initial] = await Promise.all([
       getGenres(mediaType),
-      getBrowsePage({ mediaType, sortBy: "popularity.desc", page: 1 }),
+      getBrowsePage({ mediaType, sortBy: "popularity.desc", page: 1, withKeywords: keywords }),
     ]);
 
     return {
@@ -75,6 +98,7 @@ export const getServerSideProps: GetServerSideProps<BrowsePageProps> = async (co
         genres: genreList.genres,
         initialItems: initial.results,
         initialTotalPages: initial.totalPages,
+        initialKeywords: keywords ?? null,
       },
     };
   } catch (error) {

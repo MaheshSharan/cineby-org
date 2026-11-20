@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
 
@@ -28,6 +28,9 @@ import { OnlyOnRow } from "@/components/home/OnlyOnRow";
 import { TopTenRow } from "@/components/home/TopTenRow";
 import { UpcomingRow } from "@/components/home/UpcomingRow";
 import { NativeBannerAd } from "@/components/ads/NativeBannerAd";
+import { ChristmasBanner } from "@/components/home/ChristmasBanner";
+import { SnowCanvas } from "@/components/home/SnowCanvas";
+import { CHRISTMAS_KEYWORD_ID, getChristmasStatus } from "@/lib/christmas";
 import { FaqSection } from "@/components/home/FaqSection";
 import { SeoContentSection } from "@/components/home/SeoContentSection";
 import { PageSeo } from "@/components/seo/PageSeo";
@@ -58,6 +61,7 @@ interface HomePageProps {
   topRatedSeries?: MediaSummary[];
   upcomingMovies?: MediaSummary[];
   upcomingTv?: MediaSummary[];
+  christmasMovies?: MediaSummary[];
 }
 
 export default function Home({
@@ -71,8 +75,53 @@ export default function Home({
   upcomingMovies = [],
   upcomingTv = [],
   genreNames,
+  christmasMovies = [],
 }: HomePageProps) {
   const [activeProviderId, setActiveProviderId] = useState<number>(8);
+  const christmasStatus = useMemo(() => getChristmasStatus(), []);
+
+  const snowCutoffRef = useRef<HTMLDivElement>(null);
+  const [snowState, setSnowState] = useState<{ continuous: boolean; vanish: boolean }>({
+    continuous: true,
+    vanish: false,
+  });
+
+  useEffect(() => {
+    if (!christmasStatus.isActive) return;
+
+    let hasDropped = false;
+
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const cutoffEl = snowCutoffRef.current;
+
+      // 1. Only reactivate when user has scrolled back to the very top of the page (<= 80px)
+      if (scrollY <= 80) {
+        if (hasDropped) {
+          hasDropped = false;
+          setSnowState({ continuous: true, vanish: false });
+        }
+        return;
+      }
+
+      // 2. If already dropped, stay off until reaching the very top
+      if (hasDropped) return;
+
+      // 3. Drop snow once user scrolls past the cutoff (Christmas Banner & Live Sports)
+      if (cutoffEl) {
+        const rect = cutoffEl.getBoundingClientRect();
+        if (rect.top <= 0) {
+          hasDropped = true;
+          setSnowState({ continuous: false, vanish: true });
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [christmasStatus.isActive]);
 
   const excludeKeys = useMemo(() => {
     const keys: string[] = [];
@@ -153,6 +202,14 @@ export default function Home({
 
       <h1 className="sr-only">Cineby - Watch Free Movies & TV Shows Online with No Sign Up</h1>
 
+      {christmasStatus.isActive && (
+        <SnowCanvas
+          continuous={snowState.continuous}
+          vanish={snowState.vanish}
+          amount={0.5}
+        />
+      )}
+
       <HeroPreload item={heroItems[0]} />
       <HeroCarousel items={heroItems} genreNames={genreNames} />
 
@@ -160,7 +217,13 @@ export default function Home({
         <ContinueWatchingRow />
 
         <BrowseByProviderRow onSelectProvider={(id) => setActiveProviderId(id)} />
+
+        <ChristmasBanner movies={christmasMovies} />
+
         <LiveSportsRow />
+
+        {/* Snow cutoff sentinel: snow falls through Christmas banner & Live Sports, then drops */}
+        <div ref={snowCutoffRef} className="pointer-events-none -mt-4 h-px w-px" aria-hidden="true" />
 
         <NativeBannerAd className="my-2" />
 
@@ -251,6 +314,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
     netflixTv,
     upcomingMoviesData,
     upcomingTvData,
+    christmasMoviesData,
   ] = await Promise.all([
     safePaginated(getTrending("all", "day", 1)),
     safePaginated(getTrending("all", "day", 2)),
@@ -267,6 +331,9 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
     safePaginated(discoverTv({ providerId: 8, watchRegion: "US", sortBy: "popularity.desc", page: 1 })),
     safePaginated(getUpcomingMedia({ mediaType: "movie", daysAhead: 35, page: 1 })),
     safePaginated(getUpcomingMedia({ mediaType: "tv", daysAhead: 35, page: 1 })),
+    getChristmasStatus().isActive
+      ? safePaginated(discoverMovies({ withKeywords: CHRISTMAS_KEYWORD_ID, sortBy: "popularity.desc", page: 1 }))
+      : Promise.resolve({ page: 1, results: [], total_pages: 0, total_results: 0 }),
   ]);
 
   const seenKeys = new Set<string>();
@@ -346,6 +413,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ re
       upcomingMovies,
       upcomingTv,
       genreNames,
+      christmasMovies: christmasMoviesData.results.slice(0, 5).map(toRowSummary),
     },
   };
 };

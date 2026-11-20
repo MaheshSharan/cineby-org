@@ -15,16 +15,19 @@ export interface BrowseOptions {
   genreId?: number;
   sortBy?: string;
   page: number;
+  withKeywords?: string;
 }
 
-async function fetchTmdbPage({ mediaType, genreId, sortBy }: BrowseOptions, page: number) {
-  const isTopRated = !genreId && (sortBy === "vote_average.desc" || sortBy === "top_rated");
+async function fetchTmdbPage({ mediaType, genreId, sortBy, withKeywords }: BrowseOptions, page: number) {
+  const isTopRated = !genreId && !withKeywords && (sortBy === "vote_average.desc" || sortBy === "top_rated");
 
   if (isTopRated) {
     return mediaType === "tv" ? getTopRatedTv(page) : getTopRatedMovies(page);
   }
 
-  return mediaType === "tv" ? discoverTv({ genreId, sortBy, page }) : discoverMovies({ genreId, sortBy, page });
+  return mediaType === "tv"
+    ? discoverTv({ genreId, sortBy, withKeywords, page })
+    : discoverMovies({ genreId, sortBy, withKeywords, page });
 }
 
 /** Keeps the first occurrence of each title and drops titles that have no poster to show. */
