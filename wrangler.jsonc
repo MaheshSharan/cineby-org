@@ -36,7 +36,7 @@
     "VIXSRC_EMBED_HOST": "https://vixsrc.to",
     "VIDY_EMBED_HOST": "https://vidy.st",
     "VIDNEST_EMBED_HOST": "https://vidnest.fun",
-    "CACHE_BACKEND": "kv",
+    "CACHE_BACKEND": "memory",
     "CACHE_MAX_ENTRIES": "5000",
     "DATABASE_PATH": "data/cineby.db",
     "NEXT_PUBLIC_SITE_URL": "https://thecineby.org",

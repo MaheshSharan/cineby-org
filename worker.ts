@@ -29,6 +29,16 @@ const worker = {
   fetch(request: Request, env: WorkerEnv, ctx: WorkerContext): Promise<Response> {
     const url = new URL(request.url);
 
+    // Block internal cache namespace and direct probe requests
+    if (url.pathname.startsWith("/__edge-cache")) {
+      return Promise.resolve(
+        new Response("Not Found", {
+          status: 404,
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+        })
+      );
+    }
+
     // Stealth sitemap endpoint for Google Search Console (hidden from client bundles)
     if (url.pathname === "/dashcse5323.xml") {
       const internalUrl = new URL("/api/sitemaps/pages.xml", request.url);
