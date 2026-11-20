@@ -189,8 +189,8 @@ export default function Home({
   return (
     <>
       <PageSeo
-        title="Cineby - Official Site | Watch Free Movies & TV Shows Online"
-        description={`Cineby is back at ${getSiteHost()}, its official home. Stream movies and TV shows online free with no sign up, on phones, tablets, TVs and computers.`}
+        title="Cineby - Official Site | Movies & TV Shows"
+        description={`Cineby is back at ${getSiteHost()}, its official home. Discover trending movies, popular series, ratings, cast, and trailers across all devices.`}
         path="/"
         jsonLd={sanitizeJsonLd([
           buildOrganizationJsonLd(),
@@ -200,7 +200,7 @@ export default function Home({
         ])}
       />
 
-      <h1 className="sr-only">Cineby - Watch Free Movies & TV Shows Online with No Sign Up</h1>
+      <h1 className="sr-only">Cineby - Official Home for Movies & TV Shows</h1>
 
       {christmasStatus.isActive && (
         <SnowCanvas

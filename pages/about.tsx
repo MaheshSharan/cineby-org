@@ -8,7 +8,7 @@ export default function AboutPage() {
     <>
       <PageSeo
         title="About Cineby - Official Website of Cineby"
-        description={`Cineby is a free movie and TV streaming site. The earlier sites shut down in August 2026 and Cineby relaunched in November 2026 at ${getSiteHost()}, its official home.`}
+        description={`Cineby is a movie and TV discovery platform. The earlier sites shut down in August 2026 and Cineby relaunched in November 2026 at ${getSiteHost()}, its official home.`}
         path="/about"
         jsonLd={sanitizeJsonLd(buildAboutPageJsonLd())}
       />

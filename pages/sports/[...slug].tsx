@@ -180,8 +180,8 @@ export default function SportWatchPage({
       return (
         <>
           <PageSeo
-            title={`Watch ${fallbackTitle} Live Stream Free | Cineby Sports`}
-            description={`Watch ${fallbackTitle} live stream free online in HD. Follow live coverage, scores, and schedule on Cineby Sports.`}
+            title={`${fallbackTitle} - Live Sports | Cineby Sports`}
+            description={`Follow ${fallbackTitle} live coverage, scores, and schedule on Cineby Sports.`}
             path={pagePath}
           />
           <div className="min-h-screen flex flex-col items-center justify-center pt-20">
@@ -219,8 +219,8 @@ export default function SportWatchPage({
   return (
     <>
       <PageSeo
-        title={`Watch ${match.name} Live Stream Free | Cineby Sports`}
-        description={`Watch ${match.name} live stream online. Streaming links for ${match.category_name} - ${match.tag}.`}
+        title={`${match.name} - Live Match | Cineby Sports`}
+        description={`Live coverage and scores for ${match.name}. Match details for ${match.category_name}${match.tag ? ` - ${match.tag}` : ""}.`}
         path={getSportWatchHref(match.uri_name)}
         jsonLd={sportsEventJsonLd}
       />

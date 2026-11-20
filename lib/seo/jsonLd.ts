@@ -222,10 +222,11 @@ export function buildBlogPostJsonLd(post: {
 }
 
 /**
- * Generates Schema.org Movie structured data.
+ * Generates Schema.org Movie structured data with compliant WatchAction EntryPoint.
  */
 export function buildMovieJsonLd(movie: MovieDetails): JsonLdData {
   const url = buildAbsoluteUrl(getMediaHref("movie", movie.id, movie.title));
+  const playUrl = `${url}?play=true`;
   const image = getMediaOpenGraphImageUrl(movie);
 
   const jsonLd: JsonLdData = {
@@ -235,6 +236,24 @@ export function buildMovieJsonLd(movie: MovieDetails): JsonLdData {
     description: movie.overview,
     url,
     inLanguage: "en",
+    potentialAction: {
+      "@type": "WatchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: playUrl,
+        actionPlatform: [
+          "http://schema.org/DesktopWebPlatform",
+          "http://schema.org/MobileWebPlatform",
+          "http://schema.org/AndroidPlatform",
+          "http://schema.org/IOSPlatform",
+        ],
+      },
+      actionAccessibilityRequirement: {
+        "@type": "ActionAccessSpecification",
+        category: "free",
+        availabilityStarts: movie.releaseDate || undefined,
+      },
+    },
   };
 
   if (image) {
@@ -284,6 +303,7 @@ export function buildMovieJsonLd(movie: MovieDetails): JsonLdData {
  */
 export function buildTvSeriesJsonLd(tv: TvDetails): JsonLdData {
   const url = buildAbsoluteUrl(getMediaHref("tv", tv.id, tv.title));
+  const playUrl = `${url}?play=true`;
   const image = getMediaOpenGraphImageUrl(tv);
 
   const jsonLd: JsonLdData = {
@@ -295,6 +315,24 @@ export function buildTvSeriesJsonLd(tv: TvDetails): JsonLdData {
     inLanguage: "en",
     numberOfSeasons: tv.numberOfSeasons || tv.seasons?.length || 1,
     numberOfEpisodes: tv.numberOfEpisodes || undefined,
+    potentialAction: {
+      "@type": "WatchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: playUrl,
+        actionPlatform: [
+          "http://schema.org/DesktopWebPlatform",
+          "http://schema.org/MobileWebPlatform",
+          "http://schema.org/AndroidPlatform",
+          "http://schema.org/IOSPlatform",
+        ],
+      },
+      actionAccessibilityRequirement: {
+        "@type": "ActionAccessSpecification",
+        category: "free",
+        availabilityStarts: tv.releaseDate || undefined,
+      },
+    },
   };
 
   if (image) {
@@ -409,7 +447,7 @@ export function buildSportsEventJsonLd(
     "@context": "https://schema.org",
     "@type": "SportsEvent",
     name: match.name,
-    description: `Watch ${match.name} live stream free online in HD on ${SITE_NAME}. High quality streams for ${category}${tagDesc}.`,
+    description: `Follow ${match.name} live match coverage and schedule on ${SITE_NAME}. Event details for ${category}${tagDesc}.`,
     startDate: startIso,
     endDate: endIso,
     eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",

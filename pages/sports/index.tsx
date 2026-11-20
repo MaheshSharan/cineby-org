@@ -111,9 +111,9 @@ export default function SportsPage({ initialData }: SportsPageProps) {
       {
         "@context": "https://schema.org",
         "@type": "WebPage",
-        name: "Live Sports Streaming - Watch Football, F1, PPV & NBA | Cineby",
+        name: "Live Sports Schedule & Matches — Football, F1, PPV & NBA | Cineby",
         description:
-          "Stream live sports matches online free. Watch Premier League, Champions League, Formula 1, PPV fights, NBA, and NFL streams in HD on Cineby.",
+          "Follow live sports matches and schedules for Premier League, Champions League, Formula 1, PPV fights, NBA, and NFL on Cineby.",
       },
       {
         "@context": "https://schema.org",
@@ -121,10 +121,10 @@ export default function SportsPage({ initialData }: SportsPageProps) {
         mainEntity: [
           {
             "@type": "Question",
-            name: "How can I watch free live sports on mobile & Smart TV?",
+            name: "How can I access live sports on mobile & Smart TV?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "Cineby Sports is fully mobile and Smart TV responsive. Visit thecineby.org/sports on any browser or PWA install to stream with zero plugins or APK downloads.",
+              text: "Cineby Sports is fully mobile and Smart TV responsive. Visit cineby.group/sports on any browser or PWA install with zero plugins or APK downloads.",
             },
           },
           {
@@ -143,8 +143,8 @@ export default function SportsPage({ initialData }: SportsPageProps) {
   return (
     <>
       <PageSeo
-        title="Live Sports Streaming - Watch Football, F1, PPV & NBA Free | Cineby"
-        description="Stream live sports matches online free in HD. Watch F1, streamed football, PPV fights, Premier League, Champions League, NBA, NFL, and Cricket on Cineby."
+        title="Live Sports Schedule & Matches — Football, F1, NBA & More | Cineby"
+        description="Follow live sports schedules, scores, and match events across Football, Formula 1, Premier League, Champions League, NBA, and combat sports on Cineby."
         path="/sports"
         jsonLd={sportsHubJsonLd}
       />
@@ -422,21 +422,21 @@ export default function SportsPage({ initialData }: SportsPageProps) {
         <section className="mt-12 border-t border-white/[0.08] pt-10 text-white/80 space-y-6 text-left">
           <div>
             <h2 className="text-base sm:text-lg font-bold tracking-tight text-white mb-2 uppercase">
-              Free Live Sports Streaming Online in HD — Football, F1, PPV &amp; NBA
+              Live Sports Schedules &amp; Match Events — Football, F1, PPV &amp; NBA
             </h2>
             <div className="space-y-2 text-xs sm:text-sm text-white/60 leading-relaxed font-normal">
               <p>
-                Cineby Sports lists live and upcoming matches across football, Formula 1, the Champions League, the Premier League, NBA, NFL and combat sports. Open a match to watch it free, with no subscription.
+                Cineby Sports lists live and upcoming matches across football, Formula 1, the Champions League, the Premier League, NBA, NFL and combat sports. Open any match to follow live event coverage with no subscription.
               </p>
               <p>
-                Each match page has a server selector, so you can switch servers if a stream is slow.
+                Each match page has multiple servers, so you can switch if a connection is slow.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-2">
-              <h3 className="text-sm font-semibold text-white">How to watch free live sports on mobile &amp; Smart TV?</h3>
+              <h3 className="text-sm font-semibold text-white">How to access live sports on mobile &amp; Smart TV?</h3>
               <p className="text-xs text-white/60 leading-relaxed">
                 Cineby Sports is 100% web and PWA-compatible. Simply open Cineby on Chrome, Safari, Android TV, or Amazon Firestick and select any live match for full-screen HD playback without installing third-party APKs.
               </p>

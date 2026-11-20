@@ -9,27 +9,27 @@ export const HOME_FAQ_ITEMS: FaqItem[] = [
   {
     question: "What is Cineby?",
     answer:
-      "Cineby is a free movie and TV streaming site at thecineby.org. You can browse trending, top-rated and upcoming titles, read details, cast and trailers, and start watching without a subscription.",
+      "Cineby is a movie and TV discovery platform at cineby.group. You can browse trending, top-rated and upcoming titles, explore cast, details, and trailers across all your devices.",
   },
   {
     question: "What is the official Cineby website?",
     answer:
-      "The official Cineby website is thecineby.org. The earlier Cineby sites shut down in August 2026, and Cineby relaunched in November 2026 at thecineby.org.",
+      "The official Cineby website is cineby.group. The earlier Cineby sites shut down in August 2026, and Cineby relaunched in November 2026 at cineby.group.",
   },
   {
     question: "Are cineby.gd, cineby.ws and cineby.rocks the same as Cineby?",
     answer:
-      "No. Cineby does not operate cineby.gd, cineby.ws, cineby.rocks or other addresses and apps that copy the name. Use thecineby.org and bookmark it.",
+      "No. Cineby does not operate cineby.gd, cineby.ws, cineby.rocks or other addresses and apps that copy the name. Use cineby.group and bookmark it.",
   },
   {
-    question: "Is Cineby free to watch movies and TV shows?",
+    question: "Is Cineby free to use?",
     answer:
-      "Yes. Cineby is free to browse and watch, with no monthly subscription or credit card.",
+      "Yes. Cineby is completely free to explore, with no subscription or credit card required.",
   },
   {
-    question: "Do I need to create an account to stream on Cineby?",
+    question: "Do I need to create an account on Cineby?",
     answer:
-      "No account or sign up is required to stream. Cineby offers free movie streaming with no sign up or credit card. You can start watching instantly as a guest, or optionally create a free account to sync custom watchlists and resume progress across devices.",
+      "No account or sign up is required. You can explore titles instantly as a guest, or optionally create an account to sync custom watchlists and resume progress across devices.",
   },
   {
     question: "How frequently is content updated on Cineby?",
@@ -44,7 +44,7 @@ export const HOME_FAQ_ITEMS: FaqItem[] = [
   {
     question: "Is there an official Cineby app download or APK?",
     answer:
-      "Cineby is designed as an ultra-fast Progressive Web App (PWA). You do not need to download shady APK files that compromise your security. Simply visit thecineby.org on Chrome or Safari and tap 'Add to Home Screen' or 'Install Cineby' to get a native app experience with zero storage overhead.",
+      "Cineby is designed as an ultra-fast Progressive Web App (PWA). You do not need to download shady APK files that compromise your security. Simply visit cineby.group on Chrome or Safari and tap 'Add to Home Screen' or 'Install Cineby' to get a native app experience with zero storage overhead.",
   },
   {
     question: "What should I do if a stream or video server buffers?",
@@ -54,7 +54,7 @@ export const HOME_FAQ_ITEMS: FaqItem[] = [
   {
     question: "Is Cineby back online in 2026? What happened to the old site?",
     answer:
-      "Yes, Cineby is online. The original Cineby sites and related mirrors shut down in August 2026. Cineby relaunched in November 2026 at thecineby.org, which is now the official home. The relaunched site runs on Cloudflare, works in any browser without registration, and can be installed as a Progressive Web App on phones and Smart TVs.",
+      "Yes, Cineby is online. The original Cineby sites and related mirrors shut down in August 2026. Cineby relaunched in November 2026 at cineby.group, which is now the official home. The relaunched site runs on Cloudflare, works in any browser without registration, and can be installed as a Progressive Web App on phones and Smart TVs.",
   },
 ];
 

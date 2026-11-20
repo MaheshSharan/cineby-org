@@ -19,14 +19,14 @@ interface BrowsePageProps {
 
 const CATEGORY_SEO: Record<MediaType, { title: string; heading: string; description: string }> = {
   movie: {
-    title: "Browse Movies & Popular Streaming Titles | Cineby",
+    title: "Browse Movies | Cineby",
     heading: "Browse Movies",
-    description: "Browse popular movies by genre and find your next movie to watch on Cineby.",
+    description: "Explore popular movies by genre, ratings, and release year on Cineby.",
   },
   tv: {
-    title: "Browse TV Shows & Streaming Series | Cineby",
+    title: "Browse TV Shows | Cineby",
     heading: "Browse TV Shows",
-    description: "Browse popular TV shows by genre and find your next series to watch on Cineby.",
+    description: "Explore popular TV shows and series by genre, ratings, and seasons on Cineby.",
   },
 };
 
@@ -41,8 +41,8 @@ export default function BrowsePage({
   const defaultSeo = CATEGORY_SEO[mediaType];
   const title = isChristmas
     ? mediaType === "tv"
-      ? "Browse Christmas TV Shows & Holiday Specials | Cineby"
-      : "Browse Christmas Movies & Holiday Films | Cineby"
+      ? "Christmas TV Shows & Holiday Specials | Cineby"
+      : "Christmas Movies & Holiday Films | Cineby"
     : defaultSeo.title;
   const heading = isChristmas
     ? mediaType === "tv"
@@ -50,7 +50,7 @@ export default function BrowsePage({
       : "Christmas Movies"
     : defaultSeo.heading;
   const description = isChristmas
-    ? `Stream warm holiday ${mediaType === "tv" ? "TV shows" : "movies"}, family classics, and Christmas specials on Cineby.`
+    ? `Explore holiday ${mediaType === "tv" ? "TV shows" : "movies"}, family classics, and Christmas specials on Cineby.`
     : defaultSeo.description;
 
   return (
