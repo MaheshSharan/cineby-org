@@ -122,12 +122,7 @@ describe("Schema.org JSON-LD structured data generators", () => {
     expect(schema.name).toBe("The Matrix");
     expect(schema.inLanguage).toBe("en");
 
-    const action = schema.potentialAction as Record<string, unknown>;
-    expect(action["@type"]).toBe("WatchAction");
-    expect((action.target as Record<string, unknown>).urlTemplate).toBe(
-      `${getSiteUrl()}/movie/17c0ac10b3489fa141548e1ebc5d9a50-the-matrix?play=true`
-    );
-    expect((action.actionAccessibilityRequirement as Record<string, unknown>).category).toBe("free");
+    expect(schema.potentialAction).toBeUndefined();
   });
 
   it("generates TVSeries schema with containsSeason hierarchy nodes", () => {

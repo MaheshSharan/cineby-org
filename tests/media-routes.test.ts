@@ -215,7 +215,7 @@ describe("pages/movie/[...params].tsx", () => {
 
     const rendered = MoviePage({ details, isPlaying: false });
     const pageSeo = (rendered.props.children as any[])[0];
-    expect(pageSeo.props.hideFromSearch).toBeUndefined();
+    expect(pageSeo.props.hideFromSearch).toBe(true);
     expect(pageSeo.props.path).toMatch(/^\/movie\/[0-9a-f]{32}-the-matrix$/);
   });
 });
@@ -309,7 +309,7 @@ describe("pages/tv/[...params].tsx", () => {
 
     const rendered = TvPage({ details, isPlaying: false });
     const pageSeo = (rendered.props.children as any[])[0];
-    expect(pageSeo.props.hideFromSearch).toBeUndefined();
+    expect(pageSeo.props.hideFromSearch).toBe(true);
     expect(pageSeo.props.path).toMatch(/^\/tv\/[0-9a-f]{32}-game-of-thrones$/);
   });
 });
