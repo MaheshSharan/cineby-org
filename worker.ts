@@ -27,6 +27,32 @@ function getEdgeCache(): EdgeCache {
 
 const worker = {
   fetch(request: Request, env: WorkerEnv, ctx: WorkerContext): Promise<Response> {
+    const url = new URL(request.url);
+
+    // Stealth sitemap endpoint for Google Search Console (hidden from client bundles)
+    if (url.pathname === "/dashcse5323.xml") {
+      const internalUrl = new URL("/api/sitemaps/pages.xml", request.url);
+      const internalReq = new Request(internalUrl.toString(), request);
+      return serveWithEdgeCache(internalReq, env.CF_VERSION_METADATA?.id, getEdgeCache(), ctx, () =>
+        handler.fetch(internalReq, env, ctx)
+      );
+    }
+
+    // Block standard sitemap discovery and internal API probes
+    if (
+      url.pathname === "/sitemap.xml" ||
+      url.pathname === "/sitemap_index.xml" ||
+      url.pathname === "/sitemaps/pages.xml" ||
+      url.pathname.startsWith("/api/sitemaps")
+    ) {
+      return Promise.resolve(
+        new Response("Not Found", {
+          status: 404,
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+        })
+      );
+    }
+
     return serveWithEdgeCache(request, env.CF_VERSION_METADATA?.id, getEdgeCache(), ctx, () =>
       handler.fetch(request, env, ctx)
     );

@@ -10,17 +10,11 @@ AI search engines (e.g., ChatGPT Search, Perplexity, Claude, Google AI Overviews
 | Entity Type | Route Pattern | Key Variables | Description |
 | :--- | :--- | :--- | :--- |
 | **Homepage** | `/` | — | Trending releases, popular titles, and top-rated media shelves. |
-| **Movie Details** | `/movie/{id}-{slug}` | `{id}` (Integer, TMDB ID)<br>`{slug}` (Kebab-case Title) | Movie overview, cast, directors, release year, runtime, and streaming playback. |
-| **Movie Playback** | `/movie/{id}-{slug}?play=true` | `{id}` (Integer)<br>`{slug}` (Kebab-case Title) | Direct full-screen video player for the specified movie. |
+| **Movie Details** | `/movie/{id}-{slug}` | `{id}` (Integer, TMDB ID)<br>`{slug}` (Kebab-case Title) | Movie overview, cast, directors, release year, runtime, and media details. |
 | **TV Series Details** | `/tv/{id}-{slug}` | `{id}` (Integer, TMDB ID)<br>`{slug}` (Kebab-case Title) | TV series overview, full season & episode hierarchy, ratings, and cast. |
-| **TV Episode Playback** | `/tv/{id}-{slug}/{season}/{episode}?play=true` | `{id}` (Integer)<br>`{season}` (Integer)<br>`{episode}` (Integer) | Direct playback deep link for a specific season and episode. |
+| **TV Episode Details** | `/tv/{id}-{slug}/{season}/{episode}` | `{id}` (Integer)<br>`{season}` (Integer)<br>`{episode}` (Integer) | Detailed episode guide for a specific season and episode. |
 | **Movie Browse Hub** | `/browse/movie` | `?q={query}` (Optional search query) | Movie catalog filtering by genre, release year, and popularity. |
 | **TV Browse Hub** | `/browse/tv` | `?q={query}` (Optional search query) | TV catalog filtering by network, genre, and status. |
-
-## Sitemaps & Structured Feeds
-Cineby lists its core pages and blog posts in an edge-cached XML sitemap:
-- [Master Sitemap Index](https://thecineby.org/sitemap.xml): Primary entry point for web and AI crawlers
-- [Core Pages](https://thecineby.org/sitemaps/pages.xml): Home, browse hubs, sports, app, about, blog, privacy and terms
 
 ## Key Navigation Links
 - [Cineby Homepage](https://thecineby.org/): Trending movies, TV series, and media carousels
@@ -33,7 +27,6 @@ Cineby lists its core pages and blog posts in an edge-cached XML sitemap:
 All title pages output Schema.org structured data embedded via `<script type="application/ld+json">`:
 - `Movie` / `TVSeries` nodes including title, overview, aggregateRating, datePublished, genre, and cast.
 - `BreadcrumbList` nodes outlining the exact link path: `Home > Movies|TV > Title`.
-- `WatchAction` entry points for direct media interaction.
 - `containsSeason` and `TVSeason` nodes structuring multi-season TV shows.
 
 ## Content Crawling & AI Usage Policy

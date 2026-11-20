@@ -55,8 +55,8 @@ describe("robots.txt", () => {
   const robotsText = readPublicFile("robots.txt");
   const groups = parseRobotsGroups(robotsText);
 
-  it("points crawlers to the sitemap on the canonical origin", () => {
-    expect(robotsText).toContain(`Sitemap: ${getSiteUrl()}/sitemap.xml`);
+  it("does not expose sitemap in robots.txt for scraper stealth", () => {
+    expect(robotsText).not.toContain("Sitemap:");
   });
 
   it("keeps the player and private APIs away from every crawler group that allows the site", () => {

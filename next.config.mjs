@@ -69,18 +69,6 @@ const nextConfig = {
       },
     ];
   },
-  async rewrites() {
-    return [
-      {
-        source: "/sitemap.xml",
-        destination: "/api/sitemaps/index.xml",
-      },
-      {
-        source: "/sitemaps/pages.xml",
-        destination: "/api/sitemaps/pages.xml",
-      },
-    ];
-  },
 };
 
 export default nextConfig;

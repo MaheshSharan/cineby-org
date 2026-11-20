@@ -40,5 +40,3 @@ User-agent: Bytespider
 User-agent: Amazonbot
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Disallow: /
-
-Sitemap: https://thecineby.org/sitemap.xml
