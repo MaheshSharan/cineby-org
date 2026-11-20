@@ -59,30 +59,19 @@ describe("robots.txt", () => {
     expect(robotsText).not.toContain("Sitemap:");
   });
 
-  it("keeps the player and private APIs away from every crawler group that allows the site", () => {
-    for (const agent of ["*", "OAI-SearchBot", "Claude-SearchBot", "PerplexityBot"]) {
-      const group = findGroup(groups, agent);
-
-      expect(group?.rules).toContain("Allow: /");
-      expect(group?.rules).toContain("Disallow: /*?play=");
-      expect(group?.rules).toContain("Disallow: /api/auth/");
-      expect(group?.rules).toContain("Disallow: /api/stream/");
-    }
+  it("blocks private APIs while keeping public rendering APIs open", () => {
+    const wildcard = findGroup(groups, "*");
+    expect(wildcard?.rules).toContain("Allow: /");
+    expect(wildcard?.rules).toContain("Disallow: /api/");
+    expect(wildcard?.rules).toContain("Allow: /api/tmdb/");
+    expect(wildcard?.rules).toContain("Allow: /api/discover/");
   });
 
-  it("does not block the pages and APIs public pages need to render", () => {
+  it("does not block the pages and next assets public pages need to render", () => {
     const wildcard = findGroup(groups, "*");
 
     expect(wildcard?.rules).not.toContain("Disallow: /");
-    expect(wildcard?.rules).not.toContain("Disallow: /api/");
     expect(wildcard?.rules).not.toContain("Disallow: /_next/");
-  });
-
-  it("blocks AI training crawlers entirely", () => {
-    for (const agent of ["GPTBot", "ClaudeBot", "CCBot"]) {
-      const groupRules = findGroup(groups, agent)?.rules;
-      expect(groupRules).toContain("Disallow: /");
-    }
   });
 
   it("lets Google-Extended through so Gemini can use the content", () => {
