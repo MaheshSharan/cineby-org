@@ -124,7 +124,7 @@ export default function SportsPage({ initialData }: SportsPageProps) {
             name: "How can I watch free live sports on mobile & Smart TV?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "Cineby Sports is fully mobile and Smart TV responsive. Visit cineby.group/sports on any browser or PWA install to stream with zero plugins or APK downloads.",
+              text: "Cineby Sports is fully mobile and Smart TV responsive. Visit thecineby.org/sports on any browser or PWA install to stream with zero plugins or APK downloads.",
             },
           },
           {

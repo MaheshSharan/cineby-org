@@ -7,9 +7,9 @@ import type { BlogPost, BlogPostMeta } from "./types";
 export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "cineby-is-back-2026-official-streaming-relaunch",
-    title: "Cineby Is Back: The 2026 Relaunch at Cineby.group",
+    title: "Cineby Is Back: The 2026 Relaunch at thecineby.org",
     description:
-      "Cineby shut down in August 2026 and relaunched in November 2026. Here is what happened, why cineby.group is the official home, and what has changed.",
+      "Cineby shut down in August 2026 and relaunched in November 2026. Here is what happened, why thecineby.org is the official home, and what has changed.",
     publishedAt: "2026-11-06",
     updatedAt: "2026-11-06",
     author: {
@@ -21,7 +21,7 @@ export const BLOG_POSTS: BlogPost[] = [
     coverImage: "/blog/cineby-relaunch-2026.webp",
     readTimeMinutes: 3,
     content: `
-**Cineby is back online.** The original Cineby sites and related mirrors shut down in August 2026. Cineby relaunched in November 2026, and its official home is **cineby.group**.
+**Cineby is back online.** The original Cineby sites and related mirrors shut down in August 2026. Cineby relaunched in November 2026, and its official home is **thecineby.org**.
 
 ---
 
@@ -31,7 +31,7 @@ In August 2026 the earlier Cineby sites went offline, and mirror sites that copi
 
 ### Where to find Cineby now
 
-The official site is **cineby.group**. Other addresses that use the Cineby name are not run by us, so use the official domain and bookmark it.
+The official site is **thecineby.org**. Other addresses that use the Cineby name are not run by us, so use the official domain and bookmark it.
 
 ### What you can do on the relaunched site
 
@@ -42,7 +42,7 @@ The official site is **cineby.group**. Other addresses that use the Cineby name 
 
 ### Staying up to date
 
-We share news about Cineby on our official channels. If you see conflicting information elsewhere, this page and **cineby.group** are the reference.
+We share news about Cineby on our official channels. If you see conflicting information elsewhere, this page and **thecineby.org** are the reference.
 `,
   },
   {

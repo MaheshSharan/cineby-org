@@ -41,7 +41,7 @@ export default function AppPage() {
         name: "How do I install Cineby on iPhone or iPad?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Open Safari on your iOS device, visit cineby.group, tap the Share button (square with arrow), and choose 'Add to Home Screen'. Cineby will launch as a standalone app with full-screen playback.",
+          text: "Open Safari on your iOS device, visit thecineby.org, tap the Share button (square with arrow), and choose 'Add to Home Screen'. Cineby will launch as a standalone app with full-screen playback.",
         },
       },
       {
@@ -49,7 +49,7 @@ export default function AppPage() {
         name: "Can I watch Cineby on Smart TV or Amazon Firestick?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes. Open the built-in browser (Silk Browser on Firestick, Chrome on Android TV, or standard TV browser on Samsung/LG), navigate to cineby.group, and bookmark or add to home screen for big-screen streaming.",
+          text: "Yes. Open the built-in browser (Silk Browser on Firestick, Chrome on Android TV, or standard TV browser on Samsung/LG), navigate to thecineby.org, and bookmark or add to home screen for big-screen streaming.",
         },
       },
       {
@@ -236,7 +236,7 @@ export default function AppPage() {
                     Android (Chrome / Edge / Brave / Firefox)
                   </h3>
                   <ol className="list-decimal list-inside space-y-3 text-xs sm:text-sm text-white/80 leading-relaxed">
-                    <li>Open <strong>Chrome</strong> or your preferred Android browser and go to <strong>cineby.group</strong>.</li>
+                    <li>Open <strong>Chrome</strong> or your preferred Android browser and go to <strong>thecineby.org</strong>.</li>
                     <li>Tap the <strong>three dots menu (⋮)</strong> in the top right corner.</li>
                     <li>Select <strong>&quot;Install app&quot;</strong> or <strong>&quot;Add to Home Screen&quot;</strong>.</li>
                     <li>Confirm the prompt. Cineby will appear in your app drawer like a native Android APK with an app icon.</li>
@@ -250,7 +250,7 @@ export default function AppPage() {
                     iPhone &amp; iPad (Safari)
                   </h3>
                   <ol className="list-decimal list-inside space-y-3 text-xs sm:text-sm text-white/80 leading-relaxed">
-                    <li>Open <strong>Safari</strong> and navigate to <strong>cineby.group</strong>.</li>
+                    <li>Open <strong>Safari</strong> and navigate to <strong>thecineby.org</strong>.</li>
                     <li>Tap the <strong>Share</strong> button (the square with an arrow pointing upward) at the bottom toolbar.</li>
                     <li>Scroll down and tap <strong>&quot;Add to Home Screen&quot;</strong>.</li>
                     <li>Tap <strong>Add</strong> in the top right. Cineby will install directly to your iOS home screen with no App Store needed.</li>
@@ -265,7 +265,7 @@ export default function AppPage() {
                   </h3>
                   <ol className="list-decimal list-inside space-y-3 text-xs sm:text-sm text-white/80 leading-relaxed">
                     <li>Open <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong> on your computer.</li>
-                    <li>Visit <strong>cineby.group</strong>.</li>
+                    <li>Visit <strong>thecineby.org</strong>.</li>
                     <li>Look at the right side of the URL address bar and click the <strong>Install icon (computer with down arrow)</strong>.</li>
                     <li>Click <strong>Install</strong>. Cineby will open as an independent window with its own taskbar shortcut.</li>
                   </ol>
@@ -279,7 +279,7 @@ export default function AppPage() {
                   </h3>
                   <ol className="list-decimal list-inside space-y-3 text-xs sm:text-sm text-white/80 leading-relaxed">
                     <li>Launch your TV&apos;s web browser (e.g. <strong>Amazon Silk Browser</strong> on Fire TV, or <strong>Chrome / Puffin</strong> on Android TV).</li>
-                    <li>Type <strong>cineby.group</strong> into the address bar.</li>
+                    <li>Type <strong>thecineby.org</strong> into the address bar.</li>
                     <li>Add the page to your browser <strong>Bookmarks / Favorites</strong> or home screen shortcuts for one-click access.</li>
                     <li>Use your remote or TV air-mouse to navigate full HD streaming in full screen.</li>
                   </ol>

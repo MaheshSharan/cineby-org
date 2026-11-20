@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "cineby-web",
+  "name": "thecineby-web",
   "main": "worker.ts",
   "compatibility_date": "2026-10-29",
   "compatibility_flags": [
@@ -18,13 +18,13 @@
     {
       "binding": "DB",
       "database_name": "cineby-db",
-      "database_id": "d9b17c57-accb-42b2-af82-65a3ef942575"
+      "database_id": "2c8b732d-8ccf-4b04-aff0-569d6b7d53bf"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "CACHE_KV",
-      "id": "aba23fb855ef4dd489de81586c5b4f56"
+      "id": "9de488a992714878a77fd362aa47ff02"
     }
   ],
   "vars": {
@@ -39,10 +39,10 @@
     "CACHE_BACKEND": "kv",
     "CACHE_MAX_ENTRIES": "5000",
     "DATABASE_PATH": "data/cineby.db",
-    "NEXT_PUBLIC_SITE_URL": "https://cineby.group",
-    "NEXT_PUBLIC_CONTACT_EMAIL": "contact@cineby.group",
-    "NEXT_PUBLIC_LEGAL_CONTACT_EMAIL": "contact@cineby.group",
-    "TMDB_API_URL": "https://db.wecollege.net/3",
+    "NEXT_PUBLIC_SITE_URL": "https://thecineby.org",
+    "NEXT_PUBLIC_CONTACT_EMAIL": "contact@thecineby.org",
+    "NEXT_PUBLIC_LEGAL_CONTACT_EMAIL": "contact@thecineby.org",
+    "TMDB_API_URL": "https://api.themoviedb.org/3",
     "NEXT_PUBLIC_TMDB_DEFAULT_LANGUAGE": "en",
     "NEXT_PUBLIC_IMAGE_MODE": "wsrv",
     "NEXT_PUBLIC_IMAGE_PROXY_URL": "https://wsrv.nl",
@@ -51,19 +51,18 @@
     "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "710500048793-55rctnc4coj15s1jvao7l2ouejvpftpn.apps.googleusercontent.com",
     "NEXT_PUBLIC_FLAGS_API_BASE_URL": "https://flagsapi.com",
     "NEXT_PUBLIC_ENABLE_ANALYTICS": "true",
-    "NEXT_PUBLIC_GA_MEASUREMENT_ID": "G-GWQTFJK3QW",
-    "NEXT_PUBLIC_ENABLE_CLARITY": "true",
-    "NEXT_PUBLIC_CLARITY_PROJECT_ID": "z9fgapyp2a",
-    "CORS_ALLOWED_ORIGINS": "https://cineby.group,https://www.cineby.group",
+    "NEXT_PUBLIC_GA_MEASUREMENT_ID": "G-JGTQE24FP6",
+    "NEXT_PUBLIC_ENABLE_CLARITY": "false",
+    "CORS_ALLOWED_ORIGINS": "https://thecineby.org,https://www.thecineby.org",
     "LOG_LEVEL": "info"
   },
   "routes": [
     {
-      "pattern": "cineby.group",
+      "pattern": "thecineby.org",
       "custom_domain": true
     },
     {
-      "pattern": "www.cineby.group",
+      "pattern": "www.thecineby.org",
       "custom_domain": true
     }
   ],

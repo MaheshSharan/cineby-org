@@ -1,4 +1,4 @@
-# Cineby (https://cineby.group)
+# Cineby (https://thecineby.org)
 > Modern, fast, and accessible entertainment discovery and streaming web application.
 
 ## Overview
@@ -19,15 +19,15 @@ AI search engines (e.g., ChatGPT Search, Perplexity, Claude, Google AI Overviews
 
 ## Sitemaps & Structured Feeds
 Cineby lists its core pages and blog posts in an edge-cached XML sitemap:
-- [Master Sitemap Index](https://cineby.group/sitemap.xml): Primary entry point for web and AI crawlers
-- [Core Pages](https://cineby.group/sitemaps/pages.xml): Home, browse hubs, sports, app, about, blog, privacy and terms
+- [Master Sitemap Index](https://thecineby.org/sitemap.xml): Primary entry point for web and AI crawlers
+- [Core Pages](https://thecineby.org/sitemaps/pages.xml): Home, browse hubs, sports, app, about, blog, privacy and terms
 
 ## Key Navigation Links
-- [Cineby Homepage](https://cineby.group/): Trending movies, TV series, and media carousels
-- [Browse Movies Hub](https://cineby.group/browse/movie): Catalog exploration by genre and year
-- [Browse TV Shows Hub](https://cineby.group/browse/tv): Television catalog exploration
-- [Privacy Policy](https://cineby.group/privacy): Data handling and compliance documentation
-- [Terms of Service](https://cineby.group/terms): Platform usage and terms of service
+- [Cineby Homepage](https://thecineby.org/): Trending movies, TV series, and media carousels
+- [Browse Movies Hub](https://thecineby.org/browse/movie): Catalog exploration by genre and year
+- [Browse TV Shows Hub](https://thecineby.org/browse/tv): Television catalog exploration
+- [Privacy Policy](https://thecineby.org/privacy): Data handling and compliance documentation
+- [Terms of Service](https://thecineby.org/terms): Platform usage and terms of service
 
 ## Machine-Readable Schemas (JSON-LD)
 All title pages output Schema.org structured data embedded via `<script type="application/ld+json">`:
