@@ -17,9 +17,11 @@ export function AdBlockModal({ isOpen, onClose }: AdBlockModalProps) {
   useEffect(() => {
     if (isOpen) {
       previousFocusRef.current = document.activeElement as HTMLElement | null;
-      closeButtonRef.current?.focus();
+      closeButtonRef.current?.focus({ preventScroll: true });
     } else if (previousFocusRef.current) {
-      previousFocusRef.current.focus();
+      // preventScroll: without it the browser scrolls the page to the element that had focus before
+      // (the Play button or an episode), pulling the viewer away from the player.
+      previousFocusRef.current.focus({ preventScroll: true });
       previousFocusRef.current = null;
     }
   }, [isOpen]);
