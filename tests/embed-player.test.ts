@@ -721,6 +721,10 @@ describe("Player Onboarding & AdBlock Configuration", () => {
       currentTime: 45,
       duration: 180,
     });
+    expect(vidboltEmbed.parseEvent(origin, { type: "durationchange", duration: 7200 })).toEqual({
+      event: "durationchange",
+      duration: 7200,
+    });
     expect(vidboltEmbed.parseEvent(origin, { type: "play" })?.event).toBe("play");
     expect(vidboltEmbed.parseEvent(origin, { type: "pause" })?.event).toBe("pause");
     expect(vidboltEmbed.parseEvent(origin, { type: "ended" })?.event).toBe("ended");

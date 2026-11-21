@@ -21,6 +21,7 @@ export function useEmbedBridge({
   const onTimeUpdateRef = useRef(onTimeUpdate);
   const onEndedRef = useRef(onEnded);
   const onEventRef = useRef(onEvent);
+  const durationRef = useRef<number>(0);
 
   useEffect(() => {
     onTimeUpdateRef.current = onTimeUpdate;
@@ -58,8 +59,16 @@ export function useEmbedBridge({
 
       onEventRef.current?.(parsed);
 
+      if (typeof parsed.duration === "number" && parsed.duration > 0) {
+        durationRef.current = parsed.duration;
+      }
+
       if (typeof parsed.currentTime === "number") {
-        onTimeUpdateRef.current?.(parsed.currentTime, parsed.duration ?? 0);
+        const effectiveDuration =
+          typeof parsed.duration === "number" && parsed.duration > 0
+            ? parsed.duration
+            : durationRef.current;
+        onTimeUpdateRef.current?.(parsed.currentTime, effectiveDuration);
       }
 
       if (parsed.event === "ended" || parsed.event === "next") {

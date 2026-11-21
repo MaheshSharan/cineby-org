@@ -107,7 +107,20 @@ export function PlayerShell({
       if (shouldSave) {
         lastSavedRef.current = { time: now, seconds: currentTime };
 
-        const calculatedPercent = Math.round((currentTime / Math.max(1, duration)) * 100);
+        const totalDuration =
+          duration > 0
+            ? duration
+            : media.runtime && media.runtime > 0
+            ? media.runtime * 60
+            : 0;
+
+        const calculatedPercent =
+          totalDuration > 0
+            ? Math.min(100, Math.round((currentTime / totalDuration) * 100))
+            : currentTime > 5
+            ? 1
+            : 0;
+
         const effectiveProgress = currentTime > 5 && calculatedPercent === 0 ? 1 : calculatedPercent;
 
         void queueHistorySave(

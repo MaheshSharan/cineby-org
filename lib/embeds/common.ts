@@ -69,6 +69,7 @@ const VALID_EVENT_TYPES = new Set<EmbedEventType>([
   "pause",
   "seeked",
   "timeupdate",
+  "durationchange",
   "ended",
   "next",
   "media_data",

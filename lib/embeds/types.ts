@@ -41,6 +41,7 @@ export type EmbedEventType =
   | "pause"
   | "seeked"
   | "timeupdate"
+  | "durationchange"
   | "ended"
   | "next"
   | "episode"
