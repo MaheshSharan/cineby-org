@@ -7,6 +7,7 @@ import { useActiveProfile } from "@/hooks/useActiveProfile";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Dock } from "@/components/layout/Dock";
 import { ProfileDropdown } from "@/components/layout/ProfileDropdown";
+import { NotificationDropdown } from "@/components/notification/NotificationDropdown";
 import { SearchModal } from "@/components/search/SearchModal";
 import {
   ClapperboardIcon,
@@ -107,6 +108,11 @@ export function Header() {
               <span className="text-xl font-bold text-white md:text-2xl">Cineby</span>
             </Link>
 
+            {/* Mobile notification bell */}
+            <div className="flex items-center md:hidden z-10">
+              <NotificationDropdown placement="bottom" />
+            </div>
+
             {/* Right side navigation cluster */}
             <nav
               className="control-3d header-search-cluster relative hidden md:flex items-center h-10 px-1 rounded-[12px]"
@@ -149,6 +155,9 @@ export function Header() {
               >
                 <SearchIcon size={16} />
               </button>
+
+              {/* Notification Bell trigger with Dropdown */}
+              <NotificationDropdown />
 
               {/* Profile / Account trigger with Dropdown */}
               <div className="relative profile-trigger">
