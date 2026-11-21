@@ -411,7 +411,7 @@ export function EmbedPlayer({
           onClick={() => setIsDrawerOpen(true)}
           aria-label="Switch streaming server"
           title={`Server: ${provider?.name ?? currentServerId}`}
-          className="group absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 pl-2.5 pr-1.5 py-3 rounded-l-2xl border-l border-y border-white/20 bg-black/60 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/85 transition-all duration-200 translate-x-3 hover:translate-x-0 shadow-2xl shadow-black/80 focus:translate-x-0 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+          className={`group absolute right-0 top-1/2 -translate-y-1/2 z-30 flex items-center gap-1.5 pl-2.5 pr-1.5 py-3 rounded-l-2xl border-l border-y border-white/20 bg-black/60 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/85 transition-all duration-200 translate-x-3 hover:translate-x-0 shadow-2xl shadow-black/80 focus:translate-x-0 focus:outline-none focus:ring-2 focus:ring-red-500/50 ${isControlsVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:animate-pulse" />
           <svg

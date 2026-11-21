@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { MovieDetails, SeasonEpisodes, TvDetails } from "@/lib/tmdb";
@@ -50,7 +51,6 @@ type DetailData = MovieDetails | TvDetails;
 
 interface DetailPageProps {
   details: DetailData;
-  isPlaying?: boolean;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
   initialEpisodes?: SeasonEpisodes | null;
@@ -66,6 +66,7 @@ export function DetailPage({
   initialEpisodes,
   initialTrailerUrl,
 }: DetailPageProps) {
+  const router = useRouter();
   const { user, openAuthModal, showToast } = useAuth();
   const { settings } = useSettings();
   const [isMuted, setIsMuted] = useState(true);
@@ -85,6 +86,7 @@ export function DetailPage({
   const [isDimmed, setIsDimmed] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null);
+  const [startSeconds, setStartSeconds] = useState<number | null>(null);
 
   useEffect(() => {
     setHasMounted(true);
@@ -102,19 +104,35 @@ export function DetailPage({
     };
   }, [isDimmed]);
 
+  const openPlayer = useCallback((startAt: number | null) => {
+    setStartSeconds(startAt);
+    setIsTheaterActive(true);
+    setIsDimmed(true);
+    setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  }, []);
+
   const handleSelectEpisode = useCallback((season: number, episode: number) => {
     setSelectedSeason(season);
     setSelectedEpisode(episode);
-    setIsTheaterActive(true);
-    setIsDimmed(true);
-    if (typeof window !== "undefined") {
-      const url = getEpisodeHref(details.id, season, episode, null, details.title);
-      window.history.replaceState(null, "", url);
-    }
-    setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
-  }, [details.id, details.title]);
+    openPlayer(0);
+    // Shallow replace keeps Next's own history state intact, so Back still works.
+    void router.replace(getEpisodeHref(details.id, season, episode, null, details.title), undefined, { shallow: true });
+  }, [details.id, details.title, openPlayer, router]);
 
-  
+  const handlePlayClick = useCallback((
+    event: React.MouseEvent,
+    startAt: number | null,
+    season?: number,
+    episode?: number
+  ) => {
+    event.preventDefault();
+    if (!isHumanInteraction(event)) return;
+    if (season && episode) {
+      setSelectedSeason(season);
+      setSelectedEpisode(episode);
+    }
+    openPlayer(startAt);
+  }, [openPlayer]);
 
   const heroBackdrop = getHeroBackdropUrl(details.backdropPath);
   const { mobile, tablet, desktop, desktopSrcSet } = getBackdropResponsiveUrls(details.backdropPath);
@@ -313,7 +331,7 @@ export function DetailPage({
     <div className="relative min-h-screen w-full bg-[#050505] text-white overflow-x-hidden">
       {!isPageReady ? <PageLoader /> : null}
 
-      {/* Fixed Ambient Background (matches Cinejoy) */}
+      {/* Fixed Ambient Background */}
       {heroBackdrop ? (
         <div
           className="fixed inset-0 z-0 pointer-events-none bg-[#050505]"
@@ -417,7 +435,7 @@ export function DetailPage({
               </div>
             ) : null}
 
-            {/* Gradients matching Cinejoy */}
+            {/* Gradients */}
             <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent pointer-events-none" />
             <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-transparent pointer-events-none hidden lg:block" />
           </div>
@@ -554,7 +572,9 @@ export function DetailPage({
                       ? details.runtime
                       : historyEntry.duration);
 
-                const resumeSeconds = calculateResumeSeconds(historyEntry.progress, totalMinutes);
+                const resumeSeconds = historyEntry.progressSeconds && historyEntry.progressSeconds > 0
+                  ? historyEntry.progressSeconds
+                  : calculateResumeSeconds(historyEntry.progress, totalMinutes);
                 const resumeLabel = resumeSeconds > 0
                   ? `Resume at ${formatPlaybackTime(resumeSeconds)}`
                   : `Resume${historyEntry.progress ? ` (${historyEntry.progress}%)` : ""}`;
@@ -577,13 +597,14 @@ export function DetailPage({
                 return (
                   <PlayButton
                     href={resumeHref}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (!isHumanInteraction(e)) return;
-                      setIsTheaterActive(true);
-                      setIsDimmed(true);
-                      setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
-                    }}
+                    onClick={(e) =>
+                      handlePlayClick(
+                        e,
+                        resumeSeconds,
+                        isTv ? historyEntry.seasonNumber ?? historyEpisode?.season ?? 1 : undefined,
+                        isTv ? historyEntry.episodeNumber ?? historyEpisode?.episode ?? 1 : undefined
+                      )
+                    }
                     size="md"
                     label={resumeLabel}
                   />
@@ -604,13 +625,7 @@ export function DetailPage({
                 return (
                   <Link
                     href={startOverHref}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (!isHumanInteraction(e)) return;
-                      setIsTheaterActive(true);
-                      setIsDimmed(true);
-                      setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
-                    }}
+                    onClick={(e) => handlePlayClick(e, 0)}
                     className="flex h-[44px] items-center justify-center gap-2 rounded-full border border-white/10 bg-white/10 px-5 text-sm font-semibold tracking-wide text-white backdrop-blur-[20px] shadow-lg shadow-black/5 transition-all duration-200 hover:scale-105 hover:border-white/20 active:scale-95"
                   >
                     <PlayIcon size={18} className="fill-current text-white shrink-0" />
@@ -631,13 +646,7 @@ export function DetailPage({
                 return (
                   <PlayButton
                     href={playHref}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (!isHumanInteraction(e)) return;
-                      setIsTheaterActive(true);
-                      setIsDimmed(true);
-                      setTimeout(() => playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
-                    }}
+                    onClick={(e) => handlePlayClick(e, null)}
                     size="md"
                     label="Play Now"
                   />
@@ -813,6 +822,7 @@ export function DetailPage({
                   releaseYear,
                   seasons: isTv && "seasons" in details ? toPlayerSeasons(details.seasons) : undefined,
                   initialEpisodes,
+                  progressSeconds: startSeconds,
                 }}
                 onBack={() => {
                   setIsTheaterActive(false);

@@ -147,11 +147,12 @@ export function PlayerShell({
   );
 
   const queryTime = typeof router.query.t === "string" ? Number.parseInt(router.query.t, 10) || 0 : 0;
+  // An explicit start time (Resume = N seconds, Start Over = 0) beats the URL, which beats saved progress.
   const initialTimeSec =
-    queryTime > 0
-      ? queryTime
-      : media?.progressSeconds && media.progressSeconds > 0
+    media?.progressSeconds != null
       ? media.progressSeconds
+      : queryTime > 0
+      ? queryTime
       : media?.progress && media.runtime
       ? Math.round((media.progress / 100) * media.runtime * 60)
       : 0;
