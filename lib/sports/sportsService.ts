@@ -369,7 +369,9 @@ export async function fetchSportsData(): Promise<FlattenedSportsData> {
         data = json;
         break;
       }
-      failures.push(`${host}: no streams in response`);
+      const keys = json && typeof json === "object" ? Object.keys(json).slice(0, 6).join(",") : typeof json;
+      const count = Array.isArray(json?.streams) ? json.streams.length : "n/a";
+      failures.push(`${host}: no streams (keys=${keys}; streams=${count})`);
     } catch (err) {
       failures.push(`${host}: ${err instanceof Error ? err.name : "error"}`);
     }
