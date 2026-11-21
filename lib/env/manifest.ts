@@ -153,6 +153,20 @@ export const ENV_MANIFEST: readonly EnvVariable[] = [
     requiredWhen: () => false,
   },
   {
+    name: "NEXT_PUBLIC_NATIVE_BANNER_URL",
+    category: "integrations",
+    scope: "public",
+    kind: "url",
+    requiredWhen: (env) => Boolean(env.NEXT_PUBLIC_NATIVE_BANNER_URL?.trim()),
+  },
+  {
+    name: "NEXT_PUBLIC_SOCIAL_BAR_URL",
+    category: "integrations",
+    scope: "public",
+    kind: "url",
+    requiredWhen: (env) => Boolean(env.NEXT_PUBLIC_SOCIAL_BAR_URL?.trim()),
+  },
+  {
     name: "NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED",
     category: "integrations",
     scope: "public",

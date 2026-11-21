@@ -1,18 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "@/lib/analytics/gtag";
 import { useFirstInteraction } from "@/hooks/useFirstInteraction";
+import { getNativeBannerUrl } from "@/lib/env/public";
 
 interface NativeBannerAdProps {
   className?: string;
-  id?: string;
+  /** Tells apart several banners on one page, because element ids must be unique. */
+  instance?: string;
 }
 
-const AD_SCRIPT_SRC = "";
 const AD_UNIT_NAME = "native_banner";
 // The ad network renders its links without text, which screen readers announce as an unnamed link.
 const AD_LINK_LABEL = "Sponsored link";
 
-export function NativeBannerAd({ className = "", id = "" }: NativeBannerAdProps) {
+function getPlacementKey(scriptUrl: string): string {
+  return new URL(scriptUrl).pathname.split("/").filter(Boolean).pop() ?? "";
+}
+
+export function NativeBannerAd({ className = "", instance }: NativeBannerAdProps) {
+  const scriptSrc = getNativeBannerUrl();
+  const baseId = scriptSrc ? `container-${getPlacementKey(scriptSrc)}` : "";
+  const id = instance ? `${baseId}-${instance}` : baseId;
   const containerRef = useRef<HTMLDivElement>(null);
   const impressionTrackedRef = useRef(false);
   const [hasAdLoaded, setHasAdLoaded] = useState(false);
@@ -21,7 +29,7 @@ export function NativeBannerAd({ className = "", id = "" }: NativeBannerAdProps)
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !hasInteracted || !AD_SCRIPT_SRC || !id) return;
+    if (!container || !hasInteracted || !scriptSrc) return;
 
     let observer: IntersectionObserver | null = null;
 
@@ -81,7 +89,7 @@ export function NativeBannerAd({ className = "", id = "" }: NativeBannerAdProps)
     const script = document.createElement("script");
     script.async = true;
     script.setAttribute("data-cfasync", "false");
-    script.src = AD_SCRIPT_SRC;
+    script.src = scriptSrc;
     container.appendChild(script);
 
     return () => {
@@ -91,7 +99,7 @@ export function NativeBannerAd({ className = "", id = "" }: NativeBannerAdProps)
         container.innerHTML = "";
       }
     };
-  }, [id, hasInteracted]);
+  }, [id, hasInteracted, scriptSrc]);
 
   const handleClick = () => {
     trackEvent({
@@ -103,6 +111,8 @@ export function NativeBannerAd({ className = "", id = "" }: NativeBannerAdProps)
       },
     });
   };
+
+  if (!scriptSrc) return null;
 
   return (
     <div

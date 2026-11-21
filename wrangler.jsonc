@@ -40,6 +40,7 @@
     "CACHE_BACKEND": "memory",
     "CACHE_MAX_ENTRIES": "5000",
     "DATABASE_PATH": "data/cineby.db",
+    "NEXT_PUBLIC_NATIVE_BANNER_URL": "https://bicea.org/21/4c8b5228acc2c04b5676e77fe922a2e4",
     "NEXT_PUBLIC_SITE_URL": "https://thecineby.org",
     "NEXT_PUBLIC_CONTACT_EMAIL": "contact@thecineby.org",
     "NEXT_PUBLIC_LEGAL_CONTACT_EMAIL": "contact@thecineby.org",

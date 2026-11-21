@@ -86,6 +86,21 @@ export function getTrailerApiUrl(): string {
   return parseUrl("NEXT_PUBLIC_TRAILER_API_URL", process.env.NEXT_PUBLIC_TRAILER_API_URL);
 }
 
+/**
+ * Script URL of the native banner ad, as given by the ad network. Optional: without it no banner is rendered.
+ * The last path segment is the placement key.
+ */
+export function getNativeBannerUrl(): string | undefined {
+  const value = process.env.NEXT_PUBLIC_NATIVE_BANNER_URL?.trim();
+  return value ? parseUrl("NEXT_PUBLIC_NATIVE_BANNER_URL", value) : undefined;
+}
+
+/** Script URL of the social bar ad. Optional: without it no social bar is loaded. */
+export function getSocialBarUrl(): string | undefined {
+  const value = process.env.NEXT_PUBLIC_SOCIAL_BAR_URL?.trim();
+  return value ? parseUrl("NEXT_PUBLIC_SOCIAL_BAR_URL", value) : undefined;
+}
+
 /** Google Search Console verification token. Optional. */
 export function getGoogleSiteVerification(): string | undefined {
   return process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim() || undefined;
