@@ -15,7 +15,7 @@ export interface NotificationItem {
 }
 
 /**
- * Announcements shown by the bell. Newest first. While the list is empty the bell is not rendered.
+ * Announcements shown by the bell. Newest first. While the list is empty the bell opens an empty state.
  * To announce something, add an item with a new unique `id`: the toast opens once per visitor per id.
  */
 const NOTIFICATIONS: NotificationItem[] = [];
@@ -94,10 +94,8 @@ export function NotificationDropdown({
     };
   }, [isDropdownOpen]);
 
-  if (!mainAlert) return null;
-
   const markSeen = () => {
-    markNotificationSeen(mainAlert.id);
+    if (mainAlert) markNotificationSeen(mainAlert.id);
     setHasUnread(false);
   };
 
@@ -136,7 +134,7 @@ export function NotificationDropdown({
       </button>
 
       {/* 1. AUTO-OPEN TOAST (Exact Reference Mockup Match) */}
-      {isToastVisible && !isDropdownOpen && (
+      {isToastVisible && !isDropdownOpen && mainAlert && (
         <div
           role="alert"
           aria-live="polite"
@@ -322,9 +320,11 @@ export function NotificationDropdown({
                 <span className="text-[14px] font-semibold text-white tracking-wide">
                   Notifications
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#e50914]/20 text-red-400 border border-red-500/30">
-                  {NOTIFICATIONS.length}
-                </span>
+                {NOTIFICATIONS.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#e50914]/20 text-red-400 border border-red-500/30">
+                    {NOTIFICATIONS.length}
+                  </span>
+                )}
               </div>
               <button
                 type="button"
@@ -337,6 +337,13 @@ export function NotificationDropdown({
 
             {/* List */}
             <div className="divide-y divide-white/[0.06] max-h-[420px] overflow-y-auto">
+              {NOTIFICATIONS.length === 0 && (
+                <div className="flex flex-col items-center gap-2 px-5 py-10 text-center">
+                  <BellIcon size={22} className="text-zinc-500" />
+                  <p className="text-[13px] font-medium text-zinc-300">No announcements yet</p>
+                  <p className="text-[12px] text-zinc-500">News and updates will appear here.</p>
+                </div>
+              )}
               {NOTIFICATIONS.map((item) => (
                 <div
                   key={item.id}
