@@ -98,8 +98,7 @@ export function Header() {
               <picture>
                 <img
                   src="/cineby-logo.png"
-                  alt="Cineby - Free Movies & TV Shows"
-                  title="Cineby Online Streaming"
+                  alt="Cineby"
                   width={40}
                   height={40}
                   className="h-8 w-8 transition-transform duration-300 group-hover:scale-[1.06] md:h-10 md:w-10"

@@ -22,7 +22,6 @@ import { PageSeo } from "@/components/seo/PageSeo";
 
 interface TvPageProps {
   details: TvDetails;
-  isPlaying: boolean;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
   initialEpisodes?: SeasonEpisodes | null;
@@ -33,7 +32,6 @@ import { buildBreadcrumbJsonLd, buildTvSeriesJsonLd, sanitizeJsonLd } from "@/li
 
 export default function TvPage({
   details,
-  isPlaying,
   seasonNumber,
   episodeNumber,
   initialEpisodes,
@@ -55,12 +53,12 @@ export default function TvPage({
         imageWidth={ogImage?.width}
         imageHeight={ogImage?.height}
         openGraphType="video.tv_show"
+        hideFromSearch
         jsonLd={sanitizeJsonLd(schemas)}
         hideFromSearch={true}
       />
       <DetailPage
         details={details}
-        isPlaying={isPlaying}
         seasonNumber={seasonNumber}
         episodeNumber={episodeNumber}
         initialEpisodes={initialEpisodes}
@@ -148,7 +146,6 @@ export const getServerSideProps: GetServerSideProps<TvPageProps> = async (contex
     return {
       props: {
         details,
-        isPlaying: false,
         seasonNumber: effectiveSeason,
         episodeNumber: effectiveEpisode,
         initialEpisodes,

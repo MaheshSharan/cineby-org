@@ -13,11 +13,6 @@ function toResults(data: ResultsResponse): MediaSummary[] {
   return Array.isArray(data.results) ? data.results : [];
 }
 
-/** Details for one title, as served by the movie and tv routes. */
-export function getMediaDetails<T>(mediaType: MediaType, id: number | string, signal?: AbortSignal): Promise<T> {
-  return getJson<T>(`/api/tmdb/${mediaType}/${id}`, { signal });
-}
-
 /** Items for a home page row, given the row's own API URL. Returns nothing instead of throwing. */
 export async function getRowItems(rowUrl: string): Promise<MediaSummary[]> {
   try {

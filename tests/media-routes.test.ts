@@ -138,7 +138,6 @@ describe("pages/movie/[...params].tsx", () => {
     if ("props" in result) {
       const props = await result.props;
       expect(props.details.id).toBe(603);
-      expect(props.isPlaying).toBe(false);
     }
   });
 
@@ -213,7 +212,7 @@ describe("pages/movie/[...params].tsx", () => {
       releaseDate: "1999-03-30",
     } as any;
 
-    const rendered = MoviePage({ details, isPlaying: false });
+    const rendered = MoviePage({ details });
     const pageSeo = (rendered.props.children as any[])[0];
     expect(pageSeo.props.hideFromSearch).toBe(true);
     expect(pageSeo.props.path).toMatch(/^\/movie\/[0-9a-f]{32}-the-matrix$/);
@@ -269,7 +268,6 @@ describe("pages/tv/[...params].tsx", () => {
       expect(props.details.id).toBe(1399);
       expect(props.seasonNumber).toBe(1);
       expect(props.episodeNumber).toBe(2);
-      expect(props.isPlaying).toBe(false);
     }
   });
 
@@ -307,7 +305,7 @@ describe("pages/tv/[...params].tsx", () => {
       releaseDate: "2011-04-17",
     } as any;
 
-    const rendered = TvPage({ details, isPlaying: false });
+    const rendered = TvPage({ details });
     const pageSeo = (rendered.props.children as any[])[0];
     expect(pageSeo.props.hideFromSearch).toBe(true);
     expect(pageSeo.props.path).toMatch(/^\/tv\/[0-9a-f]{32}-game-of-thrones$/);

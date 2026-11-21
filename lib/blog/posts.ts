@@ -57,11 +57,11 @@ We share news about Cineby on our official channels. If you see conflicting info
       role: "Lead Entertainment Curators",
       avatar: "/avatar/classic-1.png",
     },
-    tags: ["Movie Discovery", "Streaming Guide", "How-To"],
+    tags: ["Movie Discovery", "Discovery Guide", "How-To"],
     coverImage: "/blog/how-to-find-movies-and-tv-shows-to-watch-online.webp",
     readTimeMinutes: 7,
     content: `
-Find your next movie night pick or new series without starting from a blank search. Cineby gives you a free-to-browse catalog with dedicated [Movie Browse](/browse/movie) and [TV Series](/browse/tv) catalogs, trending collections, title details, and related recommendations—so you can explore options and make a better-informed shortlist.
+Find your next movie night pick or new series without starting from a blank search. Cineby gives you a catalog with dedicated [Movie Browse](/browse/movie) and [TV Series](/browse/tv) catalogs, trending collections, title details, and related recommendations—so you can explore options and make a better-informed shortlist.
 
 ---
 
@@ -105,7 +105,7 @@ For a series, episode titles, summaries, and runtimes can help you understand ho
 #### What should I watch this week?
 Start with Cineby's trending movie and series collections on the [Homepage](/), then narrow choices by your mood, preferred genre, and available time. Read the synopsis and compare listed years and ratings before choosing.
 
-#### How do I narrow down a large streaming catalog?
+#### How do I narrow down a large catalog?
 Decide on a mood, genre, format, and viewing-time preference first. Keep a shortlist in your [Cineby Watchlist](/watchlist) so you can return to promising picks instead of restarting your search from scratch.
 
 #### Can I find a title by checking its trailer first?
@@ -189,17 +189,17 @@ Add all eight titles to your [Cineby Watchlist](/watchlist) to track your progre
   },
   {
     slug: "how-to-fix-video-buffering-streaming-guide",
-    title: "How to Fix Video Buffering: Expert Guide to Fast, Seamless Streaming",
+    title: "How to Fix Video Buffering: Expert Guide to Smooth Playback",
     description:
       "Tired of constant buffering circles and playback stutter? Follow this technical troubleshooting checklist to optimize network latency, cache settings, and player performance.",
     publishedAt: "2026-10-30",
     updatedAt: "2026-10-31",
     author: {
       name: "Cineby Technical Desk",
-      role: "Streaming Infrastructure Specialists",
+      role: "Playback Specialists",
       avatar: "/avatar/classic-14.png",
     },
-    tags: ["Tech Guide", "Streaming Tips", "Performance"],
+    tags: ["Tech Guide", "Playback Tips", "Performance"],
     coverImage: "/screenshots/home-wide.png",
     readTimeMinutes: 4,
     content: `
@@ -226,9 +226,9 @@ If video stutters while audio continues playing:
 
 ---
 
-### 3. Switch Stream Mirrors
+### 3. Switch Servers
 
-Cineby embeds multiple redundant stream providers in the **Server Selection Drawer**. If a particular mirror experiences peak-hour regional congestion, simply click **Select Server** in the player overlay and switch to an alternate high-speed mirror.
+Cineby embeds multiple player servers in the **Server Selection Drawer**. If a particular server experiences peak-hour regional congestion, simply click **Select Server** in the player overlay and switch to an alternate server.
 `,
   },
 ];

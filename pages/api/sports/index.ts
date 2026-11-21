@@ -43,10 +43,10 @@ export default withApiContext("api/sports", async (req: NextApiRequest, res: Nex
     // A refresh answers one person who asked for fresh data, so no shared cache may keep that response.
     res.setHeader("Cache-Control", isRefreshRequested ? NO_STORE_CACHE_CONTROL : cacheControl("sportsData"));
     res.status(200).json(payload);
-  } catch (error) {
+  } catch {
     res.setHeader("Cache-Control", NO_STORE_CACHE_CONTROL);
     res.status(502).json({
-      error: error instanceof Error ? error.message : "Failed to fetch sports data",
+      error: "Live listings are unavailable right now.",
     });
   }
 });

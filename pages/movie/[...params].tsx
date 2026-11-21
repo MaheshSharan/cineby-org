@@ -20,13 +20,12 @@ import { PageSeo } from "@/components/seo/PageSeo";
 
 interface MoviePageProps {
   details: MovieDetails;
-  isPlaying: boolean;
   initialTrailerUrl?: string | null;
 }
 
 import { buildBreadcrumbJsonLd, buildMovieJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
 
-export default function MoviePage({ details, isPlaying, initialTrailerUrl }: MoviePageProps) {
+export default function MoviePage({ details, initialTrailerUrl }: MoviePageProps) {
   const schemas = [
     buildBreadcrumbJsonLd("movie", details.title, details.id),
     buildMovieJsonLd(details),
@@ -43,12 +42,12 @@ export default function MoviePage({ details, isPlaying, initialTrailerUrl }: Mov
         imageWidth={ogImage?.width}
         imageHeight={ogImage?.height}
         openGraphType="video.movie"
+        hideFromSearch
         jsonLd={sanitizeJsonLd(schemas)}
         hideFromSearch={true}
       />
       <DetailPage
         details={details}
-        isPlaying={isPlaying}
         initialTrailerUrl={initialTrailerUrl}
       />
     </>
@@ -101,7 +100,6 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (con
     return {
       props: {
         details,
-        isPlaying: false,
         initialTrailerUrl,
       },
     };

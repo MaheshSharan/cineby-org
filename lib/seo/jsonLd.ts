@@ -162,7 +162,7 @@ export function buildSiteNavigationJsonLd(): JsonLdData {
         "@type": "SiteNavigationElement",
         position: 3,
         name: "Editorial & Guides",
-        description: "Expert streaming guides, movie recommendations, and buffering fixes.",
+        description: "Movie and TV guides, recommendations and viewing tips.",
         url: `${baseUrl}/blog`,
       },
       {
