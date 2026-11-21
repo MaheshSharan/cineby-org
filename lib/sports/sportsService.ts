@@ -371,7 +371,9 @@ export async function fetchSportsData(): Promise<FlattenedSportsData> {
       }
       const keys = json && typeof json === "object" ? Object.keys(json).slice(0, 6).join(",") : typeof json;
       const count = Array.isArray(json?.streams) ? json.streams.length : "n/a";
-      failures.push(`${host}: no streams (keys=${keys}; streams=${count})`);
+      const errorField = (json as { error?: unknown } | null)?.error;
+      const reason = typeof errorField === "string" ? `; error=${errorField.slice(0, 120)}` : "";
+      failures.push(`${host}: no streams (keys=${keys}; streams=${count}${reason})`);
     } catch (err) {
       failures.push(`${host}: ${err instanceof Error ? err.name : "error"}`);
     }
