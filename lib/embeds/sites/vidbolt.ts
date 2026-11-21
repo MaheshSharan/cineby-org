@@ -77,7 +77,7 @@ export const vidboltEmbed: EmbedProvider = {
       url.searchParams.set("startAt", Math.floor(startSec).toString());
     }
 
-    if (opts.autoplay === true) {
+    if (opts.autoplay !== false) {
       url.searchParams.set("autoPlay", "true");
     }
 
