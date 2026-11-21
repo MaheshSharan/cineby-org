@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { SettingsProvider } from "@/hooks/useSettings";
+import { useBuildFreshness } from "@/hooks/useBuildFreshness";
 import { Layout } from "@/components/layout/Layout";
 import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { UpdateToast } from "@/components/pwa/UpdateToast";
@@ -54,6 +55,8 @@ export function reportWebVitals(metric: NextWebVitalsMetric) {
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const gaMeasurementId = getActiveGaMeasurementId();
+
+  useBuildFreshness();
 
   useEffect(() => {
     const teardown = initDevtoolsGuard({

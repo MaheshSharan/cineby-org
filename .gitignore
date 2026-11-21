@@ -54,3 +54,6 @@ docs/
 
 # D1 exports contain user emails and password hashes
 /*.sql
+
+# Written by next.config.mjs on every build
+/public/v.txt
