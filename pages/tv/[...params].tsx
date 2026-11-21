@@ -53,7 +53,6 @@ export default function TvPage({
         imageWidth={ogImage?.width}
         imageHeight={ogImage?.height}
         openGraphType="video.tv_show"
-        hideFromSearch
         jsonLd={sanitizeJsonLd(schemas)}
         hideFromSearch={true}
       />

@@ -42,7 +42,6 @@ export default function MoviePage({ details, initialTrailerUrl }: MoviePageProps
         imageWidth={ogImage?.width}
         imageHeight={ogImage?.height}
         openGraphType="video.movie"
-        hideFromSearch
         jsonLd={sanitizeJsonLd(schemas)}
         hideFromSearch={true}
       />
