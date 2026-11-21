@@ -89,11 +89,12 @@ async function fetchFromMirrors(): Promise<FlattenedSportsData | null> {
 }
 
 /**
- * Our own cached endpoint goes first: it is same-origin, edge-cached and raises no cross-origin errors.
- * The third-party mirrors are the fallback for when the Worker is blocked upstream.
+ * The browser asks the mirrors directly first: they allow cross-origin requests, and going through our Worker
+ * costs a Worker request plus up to five upstream calls that fail when the Worker's address is blocked.
+ * Our own endpoint is the fallback for visitors whose browser cannot reach the mirrors.
  */
 async function executeFetch(bypassCache = false): Promise<FlattenedSportsData | null> {
-  return (await fetchFromInternalApi(bypassCache)) ?? (await fetchFromMirrors());
+  return (await fetchFromMirrors()) ?? (await fetchFromInternalApi(bypassCache));
 }
 
 /**

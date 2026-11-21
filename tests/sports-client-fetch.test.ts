@@ -19,7 +19,7 @@ describe("fetchSportsClientSide", () => {
     vi.unstubAllGlobals();
   });
 
-  it("asks our own cached endpoint first and skips the third-party mirrors when it answers", async () => {
+  it("asks the first mirror directly and never touches our own endpoint when it answers", async () => {
     const match = {
       id: 1,
       name: "Arsenal vs Chelsea",
@@ -32,18 +32,19 @@ describe("fetchSportsClientSide", () => {
       iframe: "https://example.test/embed",
       viewers: "10",
     };
-    const payload: FlattenedSportsData = { ...emptyPayload, all: [match] };
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify(payload), { status: 200 }));
+    // Mirrors answer with raw category groups, not the flattened shape our own endpoint returns.
+    const mirrorPayload = { streams: [{ category: "Football", streams: [match] }] };
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(mirrorPayload), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
     const { fetchSportsClientSide } = await import("@/hooks/useSportsData");
     const result = await fetchSportsClientSide();
 
     expect(result?.all).toHaveLength(1);
-    expect(requestedUrls(fetchMock)).toEqual(["/api/sports"]);
+    expect(requestedUrls(fetchMock)).toEqual([getActiveEndpoints()[0]]);
   });
 
-  it("falls back to every mirror, in order, when our endpoint has nothing", async () => {
+  it("tries every mirror in order, then falls back to our own endpoint", async () => {
     const fetchMock = vi.fn(async () => new Response("bad gateway", { status: 502 }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -51,6 +52,6 @@ describe("fetchSportsClientSide", () => {
     const result = await fetchSportsClientSide();
 
     expect(result).toBeNull();
-    expect(requestedUrls(fetchMock)).toEqual(["/api/sports", ...getActiveEndpoints()]);
+    expect(requestedUrls(fetchMock)).toEqual([...getActiveEndpoints(), "/api/sports"]);
   });
 });

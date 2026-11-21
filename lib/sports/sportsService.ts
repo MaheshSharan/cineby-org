@@ -339,13 +339,16 @@ export function processStreamsPayload(data: SportsApiResponse): FlattenedSportsD
   };
 }
 
+const MIRROR_TIMEOUT_MS = 4000;
+
 export async function fetchSportsData(): Promise<FlattenedSportsData> {
-  let lastError: Error | null = null;
+  const failures: string[] = [];
   let data: SportsApiResponse | null = null;
 
   const endpoints = await getActiveEndpoints();
 
   for (const endpoint of endpoints) {
+    const host = new URL(endpoint).host;
     try {
       const res = await fetch(endpoint, {
         headers: {
@@ -353,10 +356,11 @@ export async function fetchSportsData(): Promise<FlattenedSportsData> {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         },
+        signal: AbortSignal.timeout(MIRROR_TIMEOUT_MS),
       });
 
       if (!res.ok) {
-        lastError = new Error(`HTTP ${res.status} from ${endpoint}`);
+        failures.push(`${host}: HTTP ${res.status}`);
         continue;
       }
 
@@ -365,13 +369,15 @@ export async function fetchSportsData(): Promise<FlattenedSportsData> {
         data = json;
         break;
       }
+      failures.push(`${host}: no streams in response`);
     } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
+      failures.push(`${host}: ${err instanceof Error ? err.name : "error"}`);
     }
   }
 
   if (!data) {
-    throw lastError || new Error("Failed to fetch sports streams from all mirrors");
+    // The route logs this message, so the log shows which mirror failed and how.
+    throw new Error(`All sports mirrors failed (${failures.join("; ")})`);
   }
 
   return processStreamsPayload(data);

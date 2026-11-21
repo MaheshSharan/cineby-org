@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { appCacheKeys, cachedFetch, getCacheStore } from "@/lib/cache";
 import { cacheControl, NO_STORE_CACHE_CONTROL } from "@/lib/cache/profiles";
 import { applyCorsHeaders } from "@/lib/cors";
+import { logger } from "@/lib/logger";
 import { fetchSportsData, isFamousMatch } from "@/lib/sports/sportsService";
 import { withApiContext } from "@/lib/validation";
 
@@ -43,7 +44,8 @@ export default withApiContext("api/sports", async (req: NextApiRequest, res: Nex
     // A refresh answers one person who asked for fresh data, so no shared cache may keep that response.
     res.setHeader("Cache-Control", isRefreshRequested ? NO_STORE_CACHE_CONTROL : cacheControl("sportsData"));
     res.status(200).json(payload);
-  } catch {
+  } catch (error) {
+    logger.error("[sports] Failed to load live listings", error);
     res.setHeader("Cache-Control", NO_STORE_CACHE_CONTROL);
     res.status(502).json({
       error: "Live listings are unavailable right now.",
