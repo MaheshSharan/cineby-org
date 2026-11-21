@@ -16,6 +16,11 @@
 
 export const CHRISTMAS_KEYWORD_ID = "207317";
 
+/** Only known keyword ids are accepted: any other value would create a new cache entry per request. */
+export function parseBrowseKeywords(value: unknown): string | undefined {
+  return value === CHRISTMAS_KEYWORD_ID ? value : undefined;
+}
+
 export interface ChristmasStatus {
   isActive: boolean;
   pillText: string;
@@ -36,9 +41,10 @@ export function getChristmasStatus(now: Date = new Date()): ChristmasStatus {
     };
   }
 
-  const year = now.getFullYear();
-  const month = now.getMonth(); // 0 = Jan ... 10 = Nov, 11 = Dec
-  const day = now.getDate();
+  // UTC, so the server render and every visitor's browser agree on the date and hydration matches.
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth(); // 0 = Jan ... 10 = Nov, 11 = Dec
+  const day = now.getUTCDate();
 
   // Active season: Nov 15 through Jan 2 (or forced via env)
   const isSeason =
@@ -59,7 +65,7 @@ export function getChristmasStatus(now: Date = new Date()): ChristmasStatus {
 
   // Target Christmas date
   const xmasYear = month === 0 ? year - 1 : year;
-  const xmas = new Date(xmasYear, 11, 25);
+  const xmas = new Date(Date.UTC(xmasYear, 11, 25));
 
   const diffTime = xmas.getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

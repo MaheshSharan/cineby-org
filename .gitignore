@@ -51,3 +51,6 @@ docs/
 # local SEO audit output and the unused disavow list
 /cineby.group-audit/
 /disavow.txt
+
+# D1 exports contain user emails and password hashes
+/*.sql

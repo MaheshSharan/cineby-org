@@ -82,7 +82,7 @@ export function BrowseGrid({ mediaType, genres, initialItems, initialTotalPages,
         if (requestId === latestRequestRef.current) setIsLoading(false);
       }
     },
-    [mediaType]
+    [mediaType, initialKeywords]
   );
 
   const scrollToGridTop = useCallback(() => {

@@ -3,6 +3,7 @@ import { cacheControl } from "@/lib/cache/profiles";
 import { getBrowsePage } from "@/lib/tmdb/server";
 import { withApiContext } from "@/lib/validation";
 import { applyCorsHeaders } from "@/lib/cors";
+import { parseBrowseKeywords } from "@/lib/christmas";
 import type { MediaType } from "@/lib/tmdb";
 
 export default withApiContext("api/tmdb/browse", async (req: NextApiRequest, res: NextApiResponse) => {
@@ -20,7 +21,7 @@ export default withApiContext("api/tmdb/browse", async (req: NextApiRequest, res
   const genreId = parseOptionalNumber(req.query.genreId);
   const sortBy = typeof req.query.sortBy === "string" ? req.query.sortBy : undefined;
   const page = parsePage(req.query.page);
-  const withKeywords = typeof req.query.keywords === "string" ? req.query.keywords : undefined;
+  const withKeywords = parseBrowseKeywords(req.query.keywords);
 
   const result = await getBrowsePage({ mediaType, genreId, sortBy, page, withKeywords });
 

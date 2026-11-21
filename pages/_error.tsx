@@ -3,17 +3,13 @@ import type { NextPageContext } from "next";
 
 interface ErrorProps {
   statusCode?: number;
+  isChunkError?: boolean;
 }
 
-export default function ErrorPage({ statusCode }: ErrorProps) {
+export default function ErrorPage({ statusCode, isChunkError }: ErrorProps) {
   useEffect(() => {
     // ChunkLoadError happens when a new deployment invalidates old JS chunk hashes.
     // Auto-reload once to fetch the new chunks — sessionStorage guard prevents loops.
-    const win = window as Window & { __NEXT_CHUNK_LOAD_ERROR__?: boolean };
-    const isChunkError =
-      win.__NEXT_CHUNK_LOAD_ERROR__ === true ||
-      document.title.includes("Application error");
-
     if (isChunkError) {
       const key = "chunk_reload_attempted";
       if (!sessionStorage.getItem(key)) {
@@ -21,7 +17,7 @@ export default function ErrorPage({ statusCode }: ErrorProps) {
         window.location.reload();
       }
     }
-  }, []);
+  }, [isChunkError]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0a] text-white gap-4 px-4">
@@ -43,5 +39,6 @@ export default function ErrorPage({ statusCode }: ErrorProps) {
 
 ErrorPage.getInitialProps = ({ res, err }: NextPageContext) => {
   const statusCode = res?.statusCode ?? err?.statusCode ?? 500;
-  return { statusCode };
+  const isChunkError = err?.name === "ChunkLoadError" || /Loading (CSS )?chunk .* failed/i.test(err?.message ?? "");
+  return { statusCode, isChunkError };
 };

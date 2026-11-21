@@ -8,6 +8,7 @@ import { getBrowsePage, getGenres } from "@/lib/tmdb/server";
 import { BrowseGrid } from "@/components/browse/BrowseGrid";
 import { PageSeo } from "@/components/seo/PageSeo";
 import { buildCategoryBreadcrumbJsonLd, sanitizeJsonLd } from "@/lib/seo/jsonLd";
+import { parseBrowseKeywords } from "@/lib/christmas";
 
 interface BrowsePageProps {
   mediaType: MediaType;
@@ -82,7 +83,7 @@ export const getServerSideProps: GetServerSideProps<BrowsePageProps> = async (co
   }
 
   const mediaType: MediaType = category;
-  const keywords = typeof context.query.keywords === "string" ? context.query.keywords : undefined;
+  const keywords = parseBrowseKeywords(context.query.keywords);
 
   try {
     context.res.setHeader("Cache-Control", cacheControl("page"));
