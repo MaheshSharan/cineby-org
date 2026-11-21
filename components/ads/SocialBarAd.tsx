@@ -3,7 +3,7 @@ import Script from "next/script";
 import { useRouter } from "next/router";
 
 import { trackEvent } from "@/lib/analytics/gtag";
-import { isPlayerPath } from "@/lib/ads/placement";
+import { isAdFreePath } from "@/lib/ads/placement";
 import { useFirstInteraction } from "@/hooks/useFirstInteraction";
 import { getSocialBarUrl } from "@/lib/env/public";
 
@@ -40,7 +40,7 @@ export function SocialBarAd() {
   const [shouldLoad, setShouldLoad] = useState(false);
   // The bar sets third-party cookies and is not needed for the first paint, so it waits for the visitor.
   const hasInteracted = useFirstInteraction();
-  const onPlayer = isPlayerPath(router.asPath);
+  const onPlayer = isAdFreePath(router.asPath);
 
   useEffect(() => {
     if (onPlayer) {
@@ -59,7 +59,7 @@ export function SocialBarAd() {
   // load is the only reliable way to guarantee no ad code runs on a player page.
   useEffect(() => {
     const handleRouteStart = (url: string) => {
-      if (!scriptLoaded || !isPlayerPath(url)) return;
+      if (!scriptLoaded || !isAdFreePath(url)) return;
       window.location.assign(url);
       router.events.emit("routeChangeError");
       throw new Error("Route change aborted: reloading without ads");
