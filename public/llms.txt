@@ -1,34 +1,17 @@
 # Cineby (https://thecineby.org)
-> Modern, fast, and accessible entertainment discovery and streaming web application.
+> Movie and TV discovery: ratings, cast, trailers and recommendations.
 
 ## Overview
-Cineby provides comprehensive metadata, trailers, recommendations, and streaming for movies and television series. All title information is synchronized with TMDB and organized under clean, canonical URLs.
+Cineby helps people find something to watch. Title information comes from TMDB.
 
-## Data Indexing Schema Matrix
-AI search engines (e.g., ChatGPT Search, Perplexity, Claude, Google AI Overviews) should utilize the following structural matrix when discovering, querying, or citing media entities on Cineby:
+## Key Pages
+- [Home](https://thecineby.org/): Trending and popular titles
+- [Browse Movies](https://thecineby.org/browse/movie): Movie catalog by genre and year
+- [Browse TV Shows](https://thecineby.org/browse/tv): TV catalog by genre
+- [Blog](https://thecineby.org/blog): Guides and news
+- [Privacy Policy](https://thecineby.org/privacy): Data handling
+- [Terms of Service](https://thecineby.org/terms): Terms of use
 
-| Entity Type | Route Pattern | Key Variables | Description |
-| :--- | :--- | :--- | :--- |
-| **Homepage** | `/` | — | Trending releases, popular titles, and top-rated media shelves. |
-| **Movie Details** | `/movie/{id}-{slug}` | `{id}` (Integer, TMDB ID)<br>`{slug}` (Kebab-case Title) | Movie overview, cast, directors, release year, runtime, and media details. |
-| **TV Series Details** | `/tv/{id}-{slug}` | `{id}` (Integer, TMDB ID)<br>`{slug}` (Kebab-case Title) | TV series overview, full season & episode hierarchy, ratings, and cast. |
-| **TV Episode Details** | `/tv/{id}-{slug}/{season}/{episode}` | `{id}` (Integer)<br>`{season}` (Integer)<br>`{episode}` (Integer) | Detailed episode guide for a specific season and episode. |
-| **Movie Browse Hub** | `/browse/movie` | `?q={query}` (Optional search query) | Movie catalog filtering by genre, release year, and popularity. |
-| **TV Browse Hub** | `/browse/tv` | `?q={query}` (Optional search query) | TV catalog filtering by network, genre, and status. |
-
-## Key Navigation Links
-- [Cineby Homepage](https://thecineby.org/): Trending movies, TV series, and media carousels
-- [Browse Movies Hub](https://thecineby.org/browse/movie): Catalog exploration by genre and year
-- [Browse TV Shows Hub](https://thecineby.org/browse/tv): Television catalog exploration
-- [Privacy Policy](https://thecineby.org/privacy): Data handling and compliance documentation
-- [Terms of Service](https://thecineby.org/terms): Platform usage and terms of service
-
-## Machine-Readable Schemas (JSON-LD)
-All title pages output Schema.org structured data embedded via `<script type="application/ld+json">`:
-- `Movie` / `TVSeries` nodes including title, overview, aggregateRating, datePublished, genre, and cast.
-- `BreadcrumbList` nodes outlining the exact link path: `Home > Movies|TV > Title`.
-- `containsSeason` and `TVSeason` nodes structuring multi-season TV shows.
-
-## Content Crawling & AI Usage Policy
-- **AI Search & Retrieval Bots** (`OAI-SearchBot`, `Claude-SearchBot`, `PerplexityBot`): Fully permitted (`Allow: /`) to index, search, summarize, and cite Cineby content with canonical attribution.
-- **Bulk Training Crawlers** (`GPTBot`, `ClaudeBot`, `Google-Extended`, `CCBot`): Blocked (`Disallow: /`) per RFC 9309 standards defined in `/robots.txt`.
+## Crawling Policy
+Search and retrieval bots (`OAI-SearchBot`, `Claude-SearchBot`, `PerplexityBot`) follow the rules in `/robots.txt`.
+Bulk training crawlers (`GPTBot`, `ClaudeBot`, `Google-Extended`, `CCBot`) are blocked there.
