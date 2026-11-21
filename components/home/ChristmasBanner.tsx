@@ -70,6 +70,7 @@ function FairyLights() {
           </radialGradient>
         </defs>
 
+        <g className="xmas-wire">
         {/* Scalloped wire spanning 1400px width */}
         <path
           d="M0 4 Q46 25 92 4 M92 4 Q138 25 184 4 M184 4 Q230 25 276 4 M276 4 Q322 25 368 4 M368 4 Q414 25 460 4 M460 4 Q506 25 552 4 M552 4 Q598 25 644 4 M644 4 Q690 25 736 4 M736 4 Q782 25 828 4 M828 4 Q874 25 920 4 M920 4 Q966 25 1012 4 M1012 4 Q1058 25 1104 4 M1104 4 Q1150 25 1196 4 M1196 4 Q1242 25 1288 4 M1288 4 Q1334 25 1400 4"
@@ -83,23 +84,72 @@ function FairyLights() {
         {bulbs.map((b, idx) => (
           <g
             key={idx}
-            className="xmas-bulb"
+            className={`xmas-bulb xmas-bulb-${idx % 3}`}
             style={{
               animationDelay: `${b.delay}s`,
               animationDuration: `${b.dur}s`,
             }}
           >
-            <circle cx={b.cx} cy={b.cy} r="9" fill={`url(#${b.grad})`} />
+            <circle cx={b.cx} cy={b.cy} r="11" fill={`url(#${b.grad})`} />
             <rect x={b.cx - 1.5} y={b.cy - 8} width="3" height="3" fill="#14532d" />
             <rect x={b.cx - 2} y={b.cy - 5} width="4" height="6" rx="1" fill={b.fill} />
             <rect x={b.cx - 1} y={b.cy + 1} width="2" height="1.5" fill={b.fill} />
             <rect x={b.cx - 1} y={b.cy - 4} width="1" height="2.5" fill="#fff" opacity="0.8" />
           </g>
         ))}
+        </g>
       </svg>
     </div>
   );
 }
+
+// Fixed star positions (no Math.random) so the server and browser render the same sky.
+const SKY_STARS = Array.from({ length: 34 }, (_, i) => ({
+  left: (i * 37 + (i % 5) * 11) % 97,
+  top: (i * 53 + (i % 4) * 7) % 62,
+  size: i % 7 === 0 ? 3 : i % 3 === 0 ? 2 : 1.5,
+  delay: (i * 0.43) % 4,
+  dur: 2.2 + (i % 5) * 0.7,
+}));
+
+// Twinkling stars, a slow aurora glow and an occasional shooting star
+function NightSky() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[5] overflow-hidden" aria-hidden="true">
+      <div
+        className="xmas-aurora absolute -top-10 left-[8%] h-40 w-[70%] rounded-full blur-3xl"
+        style={{ background: "radial-gradient(ellipse at center, rgba(52,211,153,0.22) 0%, rgba(56,189,248,0.12) 45%, transparent 72%)" }}
+      />
+      {SKY_STARS.map((star, i) => (
+        <span
+          key={i}
+          className="xmas-star absolute rounded-full bg-white"
+          style={{
+            left: `${star.left}%`,
+            top: `${star.top}%`,
+            width: star.size,
+            height: star.size,
+            animationDelay: `${star.delay}s`,
+            animationDuration: `${star.dur}s`,
+            boxShadow: star.size >= 3 ? "0 0 6px 1px rgba(255,255,255,0.7)" : undefined,
+          }}
+        />
+      ))}
+      <span
+        className="xmas-shooting-star absolute right-[30%] top-[14%] h-px w-16"
+        style={{ background: "linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.95))" }}
+      />
+    </div>
+  );
+}
+
+// Foreground snow glints: fixed positions, each flashes at its own time
+const SNOW_SPARKLES = [
+  { x: 70, y: 186, d: 0 }, { x: 190, y: 178, d: 1.1 }, { x: 330, y: 190, d: 2.3 },
+  { x: 450, y: 181, d: 0.6 }, { x: 580, y: 188, d: 1.8 }, { x: 690, y: 183, d: 2.9 },
+  { x: 800, y: 189, d: 0.3 }, { x: 930, y: 180, d: 1.5 }, { x: 1040, y: 190, d: 2.6 },
+  { x: 1150, y: 182, d: 0.9 }, { x: 1260, y: 187, d: 2.0 }, { x: 1350, y: 179, d: 1.3 },
+];
 
 // Detailed realistic Christmas Moon with lunar craters & atmospheric halo
 function FestiveMoon() {
@@ -156,145 +206,334 @@ function FestiveMoon() {
   );
 }
 
-// Continuous snowy winter landscape with center cabin & live rising chimney smoke (left trees removed)
+const TREE_LIGHT_COLORS = ["#ef4444", "#facc15", "#38bdf8", "#22c55e", "#f472b6"];
+
+// Light positions along the three garlands of a tree (tree space is 40 wide, 56 tall)
+const TREE_LIGHTS = [
+  [8, 38.5], [14, 42], [20, 43.5], [26, 42], [32, 38.5],
+  [12, 25], [20, 29], [28, 24.5],
+  [15.5, 12], [20, 14.5], [24.5, 11.5],
+];
+
+interface ChristmasTreeProps {
+  x: number;
+  baseY: number;
+  scale: number;
+  delay?: number;
+}
+
+// Layered pine with snow caps, glowing garlands, baubles and a pulsing star
+function ChristmasTree({ x, baseY, scale, delay = 0 }: ChristmasTreeProps) {
+  return (
+    <g transform={`translate(${x - 20 * scale}, ${baseY - 55 * scale}) scale(${scale})`}>
+      <ellipse cx="20" cy="55" rx="17" ry="2.6" fill="#7fb6a0" opacity="0.4" />
+      <g className="xmas-tree-sway" style={{ animationDelay: `${delay}s` }}>
+        <rect x="18" y="46" width="5" height="9" fill="#3a1e0c" rx="1" />
+        <polygon points="20,22 1,48 39,48" fill="url(#treeTierA)" />
+        <polygon points="20,10 5,33 35,33" fill="url(#treeTierB)" />
+        <polygon points="20,0 10,19 30,19" fill="url(#treeTierC)" />
+        <path d="M1 48 Q8 43 13 46.5 Q20 41 27 46.5 Q32 43 39 48 Z" fill="#f1f8f4" />
+        <path d="M5 33 Q11 29 16 31.5 Q20 28 24 31.5 Q29 29 35 33 Z" fill="#f1f8f4" />
+        <path d="M10 19 Q15 15.5 20 17 Q25 15.5 30 19 Z" fill="#f1f8f4" />
+        <path d="M7 40 Q20 49 33 38" fill="none" stroke="#fbbf24" strokeWidth="0.9" opacity="0.85" />
+        <path d="M11 26 Q20 32 29 25" fill="none" stroke="#fbbf24" strokeWidth="0.9" opacity="0.85" />
+        <path d="M14 13 Q20 17 26 12" fill="none" stroke="#fbbf24" strokeWidth="0.9" opacity="0.85" />
+        {TREE_LIGHTS.map(([lx, ly], i) => (
+          <circle
+            key={i}
+            cx={lx}
+            cy={ly}
+            r="1.25"
+            fill={TREE_LIGHT_COLORS[i % TREE_LIGHT_COLORS.length]}
+            className="xmas-ornament"
+            style={{ animationDelay: `${(delay + i * 0.37) % 2.6}s` }}
+          />
+        ))}
+        <circle cx="16" cy="36" r="1.7" fill="#dc2626" />
+        <circle cx="25" cy="34.5" r="1.7" fill="#2563eb" />
+        <circle cx="19" cy="22" r="1.4" fill="#f59e0b" />
+        <polygon
+          points="20,-6 21.4,-2 25.5,-2 22.2,0.5 23.4,4.5 20,2 16.6,4.5 17.8,0.5 14.5,-2 18.6,-2"
+          fill="#fde047"
+          className="xmas-topper"
+        />
+      </g>
+    </g>
+  );
+}
+
+// Presents stacked under a tree
+function GiftBoxes({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x}, ${y})`}>
+      <rect x="0" y="0" width="12" height="9" fill="#dc2626" rx="0.8" />
+      <rect x="5" y="0" width="2" height="9" fill="#fde047" />
+      <rect x="0" y="3.5" width="12" height="2" fill="#fde047" />
+      <rect x="14" y="3" width="9" height="6" fill="#2563eb" rx="0.8" />
+      <rect x="18" y="3" width="1.6" height="6" fill="#f8fafc" />
+      <rect x="5" y="-7" width="8" height="7" fill="#16a34a" rx="0.8" />
+      <rect x="8.4" y="-7" width="1.4" height="7" fill="#fde047" />
+    </g>
+  );
+}
+
+const TREE_GROVE: ChristmasTreeProps[] = [
+  { x: 95, baseY: 178, scale: 1.9, delay: 0.4 },
+  { x: 205, baseY: 168, scale: 1.4, delay: 1.2 },
+  { x: 320, baseY: 180, scale: 2.1, delay: 2.0 },
+  { x: 470, baseY: 166, scale: 1.5, delay: 0.8 },
+  { x: 880, baseY: 166, scale: 1.5, delay: 1.6 },
+  { x: 985, baseY: 180, scale: 2.1, delay: 0.2 },
+  { x: 1105, baseY: 170, scale: 1.45, delay: 2.4 },
+  { x: 1215, baseY: 180, scale: 1.9, delay: 1.0 },
+  { x: 1325, baseY: 168, scale: 1.5, delay: 1.8 },
+];
+
+const RIDGE_PINES = [40, 120, 210, 290, 395, 470, 560, 840, 930, 1020, 1110, 1190, 1280, 1365];
+const SMOKE_PUFFS = [0, 0.55, 1.1, 1.65, 2.2, 2.75, 3.3, 3.85];
+const ICICLE_XS = [-3, 2, 7, 12, 17, 29, 34, 39, 44, 49];
+const EAVE_LIGHT_XS = [-4, 3, 10, 17, 24, 31, 38, 45, 52];
+
+// Snowy valley: forest ridge, a cozy log cabin with a smoking stone chimney, and a grove of lit trees
 function SnowyWinterLandscape() {
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 w-full overflow-hidden" aria-hidden="true">
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 w-full" aria-hidden="true">
       <svg
-        viewBox="0 0 1400 170"
-        preserveAspectRatio="none"
-        className="w-full h-28 sm:h-36 md:h-44"
+        viewBox="0 0 1400 200"
+        preserveAspectRatio="xMidYMax slice"
+        className="w-full h-40 sm:h-48 md:h-56 overflow-visible"
       >
         <defs>
           <linearGradient id="snowGradBack" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1e4d36" stopOpacity="0.8" />
+            <stop offset="0%" stopColor="#1e4d36" stopOpacity="0.85" />
             <stop offset="100%" stopColor="#0d281a" stopOpacity="1" />
           </linearGradient>
           <linearGradient id="snowGradMid" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#78ad97" />
-            <stop offset="50%" stopColor="#3d735b" />
+            <stop offset="0%" stopColor="#8fc3ad" />
+            <stop offset="55%" stopColor="#3d735b" />
             <stop offset="100%" stopColor="#163826" />
           </linearGradient>
           <linearGradient id="snowGradFront" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="40%" stopColor="#e2f1ea" />
+            <stop offset="45%" stopColor="#e2f1ea" />
             <stop offset="100%" stopColor="#b4d7c7" />
           </linearGradient>
-          <linearGradient id="snowGlow" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#d5ede2" stopOpacity="0.3" />
+          <linearGradient id="treeTierA" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0f4a28" />
+            <stop offset="100%" stopColor="#082b17" />
+          </linearGradient>
+          <linearGradient id="treeTierB" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#176b38" />
+            <stop offset="100%" stopColor="#0e4a28" />
+          </linearGradient>
+          <linearGradient id="treeTierC" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#22964a" />
+            <stop offset="100%" stopColor="#15693a" />
+          </linearGradient>
+          <radialGradient id="cabinGlow">
+            <stop offset="0%" stopColor="#fde68a" stopOpacity="0.55" />
+            <stop offset="60%" stopColor="#f59e0b" stopOpacity="0.14" />
+            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+          </radialGradient>
+          <linearGradient id="smokeGrad" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stopColor="#f1f5f9" />
+            <stop offset="100%" stopColor="#cbd5e1" />
           </linearGradient>
         </defs>
 
-        {/* Layer 1: Distant dark forest silhouette ridge */}
+        {/* Distant forest ridge with pines */}
         <path
-          d="M0 170 L0 105 Q120 85 240 100 Q360 70 480 95 Q600 65 720 90 Q840 70 960 88 Q1080 65 1200 85 Q1320 75 1400 95 L1400 170 Z"
+          d="M0 200 L0 118 Q100 100 220 112 Q340 90 460 108 Q580 88 700 104 Q820 86 940 104 Q1060 88 1180 106 Q1300 94 1400 110 L1400 200 Z"
           fill="url(#snowGradBack)"
         />
-
-        {/* Layer 2: Mid-distance rolling snowy hill */}
-        <path
-          d="M0 170 L0 120 Q160 95 320 115 Q480 88 640 110 Q800 85 960 105 Q1120 80 1280 102 Q1350 95 1400 110 L1400 170 Z"
-          fill="url(#snowGradMid)"
-          opacity="0.85"
-        />
-
-        {/* SINGLE COZY WINTER CABIN IN THE CENTER with LIVE animated rising chimney smoke */}
-        <g transform="translate(560, 92) scale(1.35)">
-          {/* Animated live chimney smoke puffs */}
-          <circle cx="36" cy="-10" r="3.5" fill="#ffffff" className="xmas-smoke-puff" style={{ animationDelay: "0s" }} />
-          <circle cx="36" cy="-10" r="4" fill="#ffffff" className="xmas-smoke-puff" style={{ animationDelay: "0.7s" }} />
-          <circle cx="36" cy="-10" r="4.5" fill="#ffffff" className="xmas-smoke-puff" style={{ animationDelay: "1.4s" }} />
-          <circle cx="36" cy="-10" r="5" fill="#ffffff" className="xmas-smoke-puff" style={{ animationDelay: "2.1s" }} />
-          <circle cx="36" cy="-10" r="5.5" fill="#ffffff" className="xmas-smoke-puff" style={{ animationDelay: "2.8s" }} />
-
-          {/* Chimney */}
-          <rect x="33" y="-8" width="6" height="15" fill="#52321c" />
-          <rect x="32" y="-10" width="8" height="3" fill="#3b1f0c" rx="1" />
-
-          {/* Cabin Walls */}
-          <rect x="0" y="8" width="46" height="26" fill="#5c381e" rx="1.5" />
-          <line x1="0" y1="13" x2="46" y2="13" stroke="#402310" strokeWidth="1" />
-          <line x1="0" y1="18" x2="46" y2="18" stroke="#402310" strokeWidth="1" />
-          <line x1="0" y1="23" x2="46" y2="23" stroke="#402310" strokeWidth="1" />
-          <line x1="0" y1="28" x2="46" y2="28" stroke="#402310" strokeWidth="1" />
-
-          {/* Two warm glowing amber windows */}
-          <rect x="6" y="14" width="10" height="10" fill="#fef08a" rx="1" />
-          <line x1="11" y1="14" x2="11" y2="24" stroke="#78350f" strokeWidth="0.8" />
-          <line x1="6" y1="19" x2="16" y2="19" stroke="#78350f" strokeWidth="0.8" />
-
-          <rect x="30" y="14" width="10" height="10" fill="#fef08a" rx="1" />
-          <line x1="35" y1="14" x2="35" y2="24" stroke="#78350f" strokeWidth="0.8" />
-          <line x1="30" y1="19" x2="40" y2="19" stroke="#78350f" strokeWidth="0.8" />
-
-          {/* Center wooden door */}
-          <rect x="19" y="17" width="8" height="17" fill="#3b1f0c" rx="0.5" />
-          <circle cx="25.5" cy="25" r="0.8" fill="#facc15" />
-
-          {/* Snow-covered gabled roof */}
-          <polygon points="-5,8 23,-6 51,8" fill="#1e3a2b" />
-          <path d="M-8 8 Q23 -10 54 8 Q23 -3 -8 8 Z" fill="#ffffff" />
+        <g fill="#14402a" opacity="0.8">
+          {RIDGE_PINES.map((px, i) => {
+            const top = 76 + (i % 3) * 6;
+            const base = 112 + (i % 3) * 2;
+            return <polygon key={px} points={`${px},${top} ${px - 11},${base} ${px + 11},${base}`} />;
+          })}
         </g>
 
-        {/* Layer 3: Main rolling white snow drifts with gentle slope */}
+        {/* Mid-distance rolling hill */}
         <path
-          d="M0 170 L0 135 Q180 110 360 128 Q540 102 720 122 Q900 98 1080 118 Q1260 102 1400 122 L1400 170 Z"
+          d="M0 200 L0 138 Q200 114 400 134 Q600 110 800 132 Q1000 112 1200 130 Q1320 122 1400 132 L1400 200 Z"
+          fill="url(#snowGradMid)"
+          opacity="0.9"
+        />
+
+        {/* Front snow drift the cabin sits on */}
+        <path
+          d="M0 200 L0 158 Q250 138 500 154 Q750 134 1000 152 Q1250 138 1400 150 L1400 200 Z"
           fill="url(#snowGradFront)"
         />
 
-        {/* Snow highlights along top of drift */}
-        <path
-          d="M0 136 Q180 111 360 129 Q540 103 720 123 Q900 99 1080 119 Q1260 103 1400 123 L1400 129 Q1260 109 1080 125 Q900 105 720 129 Q540 109 360 135 Q180 117 0 142 Z"
-          fill="url(#snowGlow)"
-        />
+        {/* Warm glow around the cabin */}
+        <circle cx="700" cy="118" r="100" fill="url(#cabinGlow)" className="xmas-window" />
 
-        {/* Foreground undulating bright snow blanket */}
+        {/* LOG CABIN */}
+        <g transform="translate(645, 72) scale(2.4)">
+          {/* Chimney smoke: wavering puffs that drift and grow */}
+          {SMOKE_PUFFS.map((delay, i) => (
+            <circle
+              key={delay}
+              cx={37 + (i % 2) * 0.8}
+              cy="-10"
+              r={3 + (i % 3) * 0.7}
+              fill="url(#smokeGrad)"
+              className="xmas-smoke-puff"
+              style={{ animationDelay: `${delay}s`, animationDuration: `${4.2 + (i % 3) * 0.5}s` }}
+            />
+          ))}
+
+          {/* Stone chimney with snow cap */}
+          <rect x="33" y="-8" width="8" height="16" fill="#6b7280" />
+          <g stroke="#4b5563" strokeWidth="0.5">
+            <line x1="33" y1="-3" x2="41" y2="-3" />
+            <line x1="33" y1="2" x2="41" y2="2" />
+            <line x1="37" y1="-8" x2="37" y2="-3" />
+            <line x1="35" y1="-3" x2="35" y2="2" />
+            <line x1="39" y1="-3" x2="39" y2="2" />
+          </g>
+          <rect x="32" y="-10" width="10" height="3" fill="#f8fafc" rx="1.2" />
+
+          {/* Log walls with end caps */}
+          <rect x="0" y="8" width="46" height="26" fill="#6b4226" rx="1.5" />
+          {[13, 18, 23, 28].map((ly) => (
+            <line key={ly} x1="0" y1={ly} x2="46" y2={ly} stroke="#3f2411" strokeWidth="0.9" />
+          ))}
+          {[10.5, 15.5, 20.5, 25.5, 30.5].map((ly) => (
+            <g key={ly}>
+              <circle cx="0.6" cy={ly} r="1.6" fill="#8a5a33" />
+              <circle cx="45.4" cy={ly} r="1.6" fill="#8a5a33" />
+            </g>
+          ))}
+
+          {/* Windows: warm light, frames, curtains */}
+          <rect x="3" y="11" width="16" height="16" fill="#fde68a" opacity="0.28" rx="3" className="xmas-window" />
+          <rect x="27" y="11" width="16" height="16" fill="#fde68a" opacity="0.28" rx="3" className="xmas-window" style={{ animationDelay: "0.9s" }} />
+          <rect x="6" y="14" width="10" height="10" fill="#fef08a" rx="1" className="xmas-window" />
+          <rect x="30" y="14" width="10" height="10" fill="#fef08a" rx="1" className="xmas-window" style={{ animationDelay: "0.9s" }} />
+          <path d="M6 14 L9 14 L6 20 Z M16 14 L13 14 L16 20 Z" fill="#b91c1c" opacity="0.8" />
+          <path d="M30 14 L33 14 L30 20 Z M40 14 L37 14 L40 20 Z" fill="#b91c1c" opacity="0.8" />
+          <g stroke="#78350f" strokeWidth="0.8" fill="none">
+            <rect x="6" y="14" width="10" height="10" />
+            <line x1="11" y1="14" x2="11" y2="24" />
+            <line x1="6" y1="19" x2="16" y2="19" />
+            <rect x="30" y="14" width="10" height="10" />
+            <line x1="35" y1="14" x2="35" y2="24" />
+            <line x1="30" y1="19" x2="40" y2="19" />
+          </g>
+          {/* Snowy sills */}
+          <rect x="5" y="24" width="12" height="1.6" fill="#f8fafc" rx="0.8" />
+          <rect x="29" y="24" width="12" height="1.6" fill="#f8fafc" rx="0.8" />
+
+          {/* Door, wreath, step */}
+          <rect x="19" y="17" width="8" height="17" fill="#3b1f0c" rx="0.8" />
+          <circle cx="25.2" cy="25.5" r="0.7" fill="#facc15" />
+          <circle cx="23" cy="21.5" r="2.5" fill="none" stroke="#166534" strokeWidth="1.3" />
+          <circle cx="23" cy="24" r="0.75" fill="#ef4444" />
+          <circle cx="21.3" cy="20.6" r="0.5" fill="#fde047" className="xmas-ornament" />
+          <circle cx="24.7" cy="20.6" r="0.5" fill="#38bdf8" className="xmas-ornament" style={{ animationDelay: "0.8s" }} />
+          <rect x="17" y="34" width="12" height="2.2" fill="#8a5a33" rx="0.6" />
+          <rect x="17" y="34" width="12" height="0.9" fill="#f8fafc" />
+
+          {/* Snow-covered roof with overhang and icicles */}
+          <polygon points="-5,8 23,-6 51,8" fill="#1e3a2b" />
+          <path d="M-8 8 Q23 -10 54 8 Q23 -3 -8 8 Z" fill="#ffffff" />
+          <path d="M-8 8 Q-2 5 4 8 Q10 5 16 8 Q22 4 28 8 Q34 5 40 8 Q46 5 54 8" fill="none" stroke="#e2e8f0" strokeWidth="0.6" />
+          {ICICLE_XS.map((ix, i) => (
+            <polygon key={ix} points={`${ix},8.4 ${ix + 1.1},8.4 ${ix + 0.55},${11 + (i % 3)}`} fill="#dbeafe" opacity="0.9" />
+          ))}
+          {/* Fairy lights along the eaves */}
+          {EAVE_LIGHT_XS.map((ex, i) => (
+            <circle
+              key={ex}
+              cx={ex}
+              cy={9.8 + (i % 2) * 0.8}
+              r="1.15"
+              fill={TREE_LIGHT_COLORS[i % 4]}
+              className="xmas-ornament"
+              style={{ animationDelay: `${i * 0.33}s` }}
+            />
+          ))}
+
+          {/* Lamp post */}
+          <rect x="-9" y="16" width="1.2" height="19" fill="#374151" />
+          <circle cx="-8.4" cy="15" r="5" fill="#fde68a" opacity="0.3" className="xmas-window" />
+          <circle cx="-8.4" cy="15" r="1.6" fill="#fef3c7" className="xmas-window" />
+
+          {/* Woodpile */}
+          <rect x="50" y="29" width="9" height="2.4" fill="#5c381e" rx="1.2" />
+          <rect x="50" y="31.6" width="9" height="2.4" fill="#6b4226" rx="1.2" />
+          <rect x="52" y="26.6" width="6" height="2.4" fill="#6b4226" rx="1.2" />
+          <rect x="49.5" y="25.4" width="10" height="1.6" fill="#f8fafc" rx="0.8" />
+        </g>
+
+        {/* Snow mound against the cabin base */}
+        <ellipse cx="700" cy="153" rx="70" ry="6" fill="#f8fafc" />
+
+        {/* Fence with snow caps beside the cabin */}
+        <g>
+          {[520, 536, 552, 568].map((fx) => (
+            <g key={fx}>
+              <rect x={fx} y="140" width="3" height="16" fill="#6b4226" rx="0.6" />
+              <rect x={fx - 0.5} y="138.5" width="4" height="2" fill="#f8fafc" rx="1" />
+            </g>
+          ))}
+          <rect x="519" y="145" width="53" height="2" fill="#6b4226" />
+          <rect x="519" y="144" width="53" height="1" fill="#f8fafc" />
+        </g>
+
+        {/* Snowman */}
+        <g transform="translate(588, 128)">
+          <ellipse cx="11" cy="32" rx="11" ry="2.4" fill="#0d281a" opacity="0.2" />
+          <circle cx="11" cy="25" r="8.5" fill="#f1f5f9" />
+          <circle cx="11" cy="14" r="6" fill="#ffffff" />
+          <circle cx="11" cy="6.6" r="4.3" fill="#ffffff" />
+          <polygon points="11,6.6 17,7.6 11,8.7" fill="#f97316" />
+          <circle cx="9.6" cy="5.4" r="0.6" fill="#111827" />
+          <circle cx="12.5" cy="5.4" r="0.6" fill="#111827" />
+          <rect x="6" y="10.6" width="10" height="2" fill="#dc2626" rx="0.8" />
+          <rect x="13.4" y="11" width="2" height="5" fill="#dc2626" rx="0.6" />
+          <rect x="6.8" y="0.6" width="8.4" height="2.8" fill="#1f2937" />
+          <rect x="8.4" y="-3.4" width="5.2" height="4.2" fill="#1f2937" />
+          <rect x="8.4" y="-0.4" width="5.2" height="1" fill="#dc2626" />
+          <circle cx="11" cy="18" r="0.7" fill="#111827" />
+          <circle cx="11" cy="22" r="0.7" fill="#111827" />
+          <line x1="3.6" y1="14" x2="-4" y2="9" stroke="#52321c" strokeWidth="1.1" strokeLinecap="round" />
+          <line x1="18.4" y1="14" x2="26" y2="9" stroke="#52321c" strokeWidth="1.1" strokeLinecap="round" />
+        </g>
+
+        {/* Hero tree beside the cabin, with presents */}
+        <ChristmasTree x={800} baseY={176} scale={2.35} delay={0.6} />
+        <GiftBoxes x={768} y={168} />
+        <GiftBoxes x={826} y={170} />
+
+        {/* Tree grove */}
+        {TREE_GROVE.map((tree) => (
+          <ChristmasTree key={tree.x} {...tree} />
+        ))}
+
+        {/* Foreground snow blanket */}
         <path
-          d="M0 170 L0 150 Q220 132 460 146 Q700 126 940 142 Q1180 128 1400 142 L1400 170 Z"
+          d="M0 200 L0 178 Q300 162 600 174 Q900 160 1150 172 Q1300 166 1400 170 L1400 200 Z"
           fill="#f8fafc"
-          opacity="0.95"
+          opacity="0.97"
         />
 
-        {/* Trees positioned to the right of cabin framing the fanned posters */}
-        {/* Tree 1: Right next to center cabin */}
-        <g transform="translate(710, 74) scale(1.55)">
-          <rect x="18" y="44" width="5" height="9" fill="#3a1e0c" rx="1" />
-          <polygon points="20,24 3,46 37,46" fill="#0d2b17" />
-          <path d="M3 46 Q10 42 20 44 Q30 42 37 46 Z" fill="#ffffff" />
-          <polygon points="20,12 8,32 32,32" fill="#14532d" />
-          <path d="M8 32 Q14 28 20 30 Q26 28 32 32 Z" fill="#ffffff" />
-          <polygon points="20,2 12,18 28,18" fill="#166534" />
-          <circle cx="15" cy="38" r="1.3" fill="#ef4444" />
-          <circle cx="26" cy="40" r="1.3" fill="#38bdf8" />
-          <polygon points="20,-2 21.2,1.2 24.5,1.2 21.8,3.2 22.8,6.5 20,4.5 17.2,6.5 18.2,3.2 15.5,1.2 18.8,1.2" fill="#fde047" />
-        </g>
+        {/* Footpath from the door */}
+        <path d="M690 156 Q668 172 640 200 L734 200 Q716 176 712 156 Z" fill="#dbeafe" opacity="0.55" />
 
-        {/* Tree 2: Mid-right hill under cards */}
-        <g transform="translate(960, 62) scale(1.75)">
-          <rect x="18" y="44" width="5" height="10" fill="#3a1e0c" rx="1" />
-          <polygon points="20,24 2,46 38,46" fill="#0d2b17" />
-          <path d="M2 46 Q10 42 20 44 Q30 42 38 46 Z" fill="#ffffff" />
-          <polygon points="20,12 7,32 33,32" fill="#14532d" />
-          <path d="M7 32 Q14 28 20 30 Q26 28 33 32 Z" fill="#ffffff" />
-          <polygon points="20,2 11,18 29,18" fill="#166534" />
-          <circle cx="13" cy="40" r="1.4" fill="#facc15" />
-          <circle cx="28" cy="41" r="1.4" fill="#38bdf8" />
-          <polygon points="20,-2 21.2,1.2 24.5,1.2 21.8,3.2 22.8,6.5 20,4.5 17.2,6.5 18.2,3.2 15.5,1.2 18.8,1.2" fill="#fde047" />
-        </g>
-
-        {/* Tree 3: Big prominent Christmas tree on the far right edge */}
-        <g transform="translate(1300, 38) scale(2.2)">
-          <rect x="18" y="44" width="5" height="10" fill="#3a1e0c" rx="1" />
-          <polygon points="20,24 2,46 38,46" fill="#0d2b17" />
-          <path d="M2 46 Q10 42 20 44 Q30 42 38 46 Z" fill="#ffffff" />
-          <polygon points="20,12 7,32 33,32" fill="#14532d" />
-          <path d="M7 32 Q14 28 20 30 Q26 28 33 32 Z" fill="#ffffff" />
-          <polygon points="20,2 11,18 29,18" fill="#166534" />
-          <circle cx="14" cy="40" r="1.5" fill="#ef4444" />
-          <circle cx="27" cy="41" r="1.5" fill="#facc15" />
-          <polygon points="20,-2 21.2,1.2 24.5,1.2 21.8,3.2 22.8,6.5 20,4.5 17.2,6.5 18.2,3.2 15.5,1.2 18.8,1.2" fill="#fde047" />
-        </g>
+        {/* Snow glints */}
+        {SNOW_SPARKLES.map((sp) => (
+          <path
+            key={sp.x}
+            d={`M${sp.x} ${sp.y - 4} L${sp.x + 1} ${sp.y - 1} L${sp.x + 4} ${sp.y} L${sp.x + 1} ${sp.y + 1} L${sp.x} ${sp.y + 4} L${sp.x - 1} ${sp.y + 1} L${sp.x - 4} ${sp.y} L${sp.x - 1} ${sp.y - 1} Z`}
+            fill="#ffffff"
+            className="xmas-sparkle"
+            style={{ animationDelay: `${sp.d}s` }}
+          />
+        ))}
       </svg>
     </div>
   );
@@ -317,23 +556,61 @@ export function ChristmasBanner({ movies }: ChristmasBannerProps) {
   const status = useMemo(() => getChristmasStatus(), []);
   const displayMovies = movies.slice(0, 5);
   const miniThumbMovies = movies.slice(0, 3);
+  const isCountdown = !status.isEve && !status.isChristmasDay && status.daysRemaining > 0;
 
   if (!status.isActive) {
     return null;
   }
 
   return (
-    <section className="relative mx-auto w-full overflow-hidden rounded-2xl border border-red-900/40 bg-gradient-to-br from-[#0a1a12] via-[#102a1c] to-[#1e3a2a] my-3">
+    <section className="xmas-banner relative mx-auto w-full overflow-hidden rounded-2xl border border-red-900/40 bg-gradient-to-br from-[#0a1a12] via-[#102a1c] to-[#1e3a2a] my-3">
       {/* Google font import for "Mountains of Christmas" + Keyframes */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&display=swap');
 
-        @keyframes xmas-bulb {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.55; }
+        @keyframes xmas-twinkle-a { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+        @keyframes xmas-twinkle-b { 0%, 100% { opacity: 0.4; } 20% { opacity: 1; } 40% { opacity: 0.55; } 60% { opacity: 1; } 80% { opacity: 0.5; } }
+        @keyframes xmas-twinkle-c { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+        .xmas-bulb { animation: xmas-twinkle-a 2.4s ease-in-out infinite; }
+        .xmas-bulb-1 { animation-name: xmas-twinkle-b; }
+        .xmas-bulb-2 { animation-name: xmas-twinkle-c; }
+
+        @keyframes xmas-wire-sway { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1.6px); } }
+        .xmas-wire { animation: xmas-wire-sway 6s ease-in-out infinite; }
+
+        .xmas-star { opacity: 0.4; animation: xmas-twinkle-b 3s ease-in-out infinite; }
+        @keyframes xmas-aurora { 0%, 100% { opacity: 0.35; transform: translateX(-4%); } 50% { opacity: 0.7; transform: translateX(5%); } }
+        .xmas-aurora { animation: xmas-aurora 14s ease-in-out infinite; }
+        @keyframes xmas-shoot {
+          0%, 86% { transform: translate(0, 0) rotate(-25deg); opacity: 0; }
+          88% { opacity: 1; }
+          100% { transform: translate(-240px, 110px) rotate(-25deg); opacity: 0; }
         }
-        .xmas-bulb {
-          animation: xmas-bulb 2.4s ease-in-out infinite;
+        .xmas-shooting-star { opacity: 0; animation: xmas-shoot 13s linear 4s infinite; }
+
+        @keyframes xmas-window { 0%, 100% { opacity: 1; } 45% { opacity: 0.8; } 55% { opacity: 0.95; } 75% { opacity: 0.74; } }
+        .xmas-window { animation: xmas-window 3.4s ease-in-out infinite; }
+        @keyframes xmas-tree-sway { 0%, 100% { transform: rotate(-0.9deg); } 50% { transform: rotate(0.9deg); } }
+        .xmas-tree-sway { transform-box: fill-box; transform-origin: 50% 100%; animation: xmas-tree-sway 5.5s ease-in-out infinite; }
+        .xmas-ornament { animation: xmas-twinkle-b 2.4s ease-in-out infinite; }
+        @keyframes xmas-topper { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.3); opacity: 1; } }
+        .xmas-topper { transform-box: fill-box; transform-origin: center; animation: xmas-topper 2.6s ease-in-out infinite; }
+        @keyframes xmas-sparkle { 0%, 100% { transform: scale(0); opacity: 0; } 50% { transform: scale(1); opacity: 0.95; } }
+        .xmas-sparkle { transform-box: fill-box; transform-origin: center; animation: xmas-sparkle 3.2s ease-in-out infinite; }
+
+        @keyframes xmas-shimmer { 0% { transform: translateX(-130%); } 55%, 100% { transform: translateX(130%); } }
+        .xmas-pill::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.28) 50%, transparent 70%);
+          animation: xmas-shimmer 4.5s ease-in-out infinite;
+        }
+        @keyframes xmas-badge-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(252, 211, 77, 0.45); } 50% { box-shadow: 0 0 10px 2px rgba(252, 211, 77, 0.35); } }
+        .xmas-pill-badge { animation: xmas-badge-glow 2.6s ease-in-out infinite; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .xmas-banner *, .xmas-banner *::after { animation: none !important; }
         }
 
         .xmas-poster {
@@ -355,27 +632,20 @@ export function ChristmasBanner({ movies }: ChristmasBannerProps) {
         }
 
         @keyframes xmas-smoke {
-          0% {
-            transform: translateY(0) translateX(0) scale(0.6);
-            opacity: 0;
-          }
-          15% {
-            opacity: 0.55;
-          }
-          60% {
-            opacity: 0.35;
-          }
-          100% {
-            transform: translateY(-44px) translateX(12px) scale(2.6);
-            opacity: 0;
-          }
+          0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+          12% { opacity: 0.75; }
+          35% { transform: translate(3px, -9px) scale(1.2); }
+          60% { transform: translate(-2px, -18px) scale(1.8); opacity: 0.45; }
+          100% { transform: translate(7px, -29px) scale(2.5); opacity: 0; }
         }
         .xmas-smoke-puff {
           transform-box: fill-box;
           transform-origin: center;
-          animation: xmas-smoke 3.5s ease-out infinite;
+          animation: xmas-smoke 4.5s ease-out infinite;
         }
       `}</style>
+
+      <NightSky />
 
       {/* Full-width edge-to-edge fairy lights along top */}
       <FairyLights />
@@ -407,19 +677,28 @@ export function ChristmasBanner({ movies }: ChristmasBannerProps) {
       <SnowyWinterLandscape />
 
       {/* Main banner grid content */}
-      <div className="relative z-20 grid gap-6 p-5 pt-12 sm:p-6 sm:pt-14 md:grid-cols-[1fr_auto] md:items-center md:gap-8 md:p-10 lg:p-12">
+      <div className="relative z-20 grid gap-6 p-5 pt-12 sm:p-6 sm:pt-14 md:grid-cols-[1fr_auto] md:items-center md:gap-8 md:p-10 lg:p-12 pb-44 sm:pb-44 md:pb-44 lg:pb-48">
 
         {/* Left Column: Heading, countdown, copy, unified collection card button */}
         <div className="max-w-md text-center md:text-left mx-auto md:mx-0">
 
           {/* Dynamic Holiday / Countdown Pill */}
-          <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-red-400/40 bg-[hsl(var(--accent)/0.25)] px-3 py-1 text-xs font-semibold text-red-100 backdrop-blur-sm shadow-sm">
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" aria-hidden="true">
-              <path d="M12 2 L6 10 L10 10 L4 20 L20 20 L14 10 L18 10 Z" fill="#14532d" />
-              <circle cx="9" cy="14" r="1" fill="#ef4444" />
-              <circle cx="15" cy="16" r="1" fill="#facc15" />
-            </svg>
-            <span>{status.pillText}</span>
+          <span
+            aria-label={status.pillText}
+            className="xmas-pill relative mb-3 inline-flex items-center gap-2 overflow-hidden rounded-full border border-amber-300/40 bg-gradient-to-r from-red-800/70 via-red-600/50 to-emerald-700/55 py-1 pl-1 pr-4 text-xs font-semibold text-red-50 shadow-[0_0_20px_rgba(239,68,68,0.35)] backdrop-blur-sm"
+          >
+            <span className="xmas-pill-badge flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-red-950/75 px-1.5 text-[13px] font-bold tabular-nums text-amber-200 ring-1 ring-amber-300/50">
+              {isCountdown ? (
+                status.daysRemaining
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" aria-hidden="true">
+                  <path d="M12 2 L14.6 8.6 L21.5 9.2 L16.2 13.8 L17.9 20.6 L12 16.9 L6.1 20.6 L7.8 13.8 L2.5 9.2 L9.4 8.6 Z" fill="#fde047" />
+                </svg>
+              )}
+            </span>
+            <span className="relative tracking-wide">
+              {isCountdown ? `${status.daysRemaining === 1 ? "day" : "days"} to Christmas` : status.pillText}
+            </span>
           </span>
 
           {/* Exact calligraphy title: "Cozy up for the holidays." */}
