@@ -12,7 +12,8 @@ export async function withStyledNotFound(
   if (response.status !== 404 || response.headers.has("content-type")) return response;
 
   const page = await fetchPage(new Request(new URL("/404", request.url)));
-  if (!page.ok) return response;
+  // The /404 page answers with status 404 itself, so only its HTML body matters here.
+  if (!page.headers.get("content-type")?.includes("text/html")) return response;
 
   return new Response(page.body, {
     status: 404,

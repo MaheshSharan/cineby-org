@@ -24,6 +24,12 @@ describe("withStyledNotFound", () => {
     expect(result).toBe(original);
   });
 
+  it("accepts a styled page that itself answers 404", async () => {
+    const page = () => Promise.resolve(new Response("<html>404</html>", { status: 404, headers: { "content-type": "text/html" } }));
+    const result = await withStyledNotFound(request, new Response(new TextEncoder().encode("bare"), { status: 404 }), page);
+    expect(await result.text()).toBe("<html>404</html>");
+  });
+
   it("ignores non-404 responses", async () => {
     const ok = new Response("ok");
     expect(await withStyledNotFound(request, ok, styledPage)).toBe(ok);
