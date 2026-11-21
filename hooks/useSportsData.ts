@@ -41,26 +41,6 @@ function writeSessionStorageCache(entry: CachedSportsEntry): void {
   }
 }
 
-async function fetchFromInternalApi(bypassCache: boolean): Promise<FlattenedSportsData | null> {
-  const url = bypassCache ? "/api/sports?refresh=true" : "/api/sports";
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const localRes = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (localRes.ok) {
-      const localData = await localRes.json();
-      if (Array.isArray(localData?.all) && localData.all.length > 0) {
-        return localData as FlattenedSportsData;
-      }
-    }
-  } catch {
-    // Fall through to the direct mirrors.
-  }
-
-  return null;
-}
-
 async function fetchFromMirrors(): Promise<FlattenedSportsData | null> {
   const endpoints = getActiveEndpoints();
 
@@ -89,15 +69,6 @@ async function fetchFromMirrors(): Promise<FlattenedSportsData | null> {
 }
 
 /**
- * The browser asks the mirrors directly first: they allow cross-origin requests, and going through our Worker
- * costs a Worker request plus up to five upstream calls that fail when the Worker's address is blocked.
- * Our own endpoint is the fallback for visitors whose browser cannot reach the mirrors.
- */
-async function executeFetch(bypassCache = false): Promise<FlattenedSportsData | null> {
-  return (await fetchFromMirrors()) ?? (await fetchFromInternalApi(bypassCache));
-}
-
-/**
  * Single deduplicated fetch for all consumers (HeroCarousel, LiveSportsRow, SportsHub).
  * Reuses active in-flight request, in-memory cache, and sessionStorage.
  */
@@ -118,7 +89,7 @@ export async function fetchSportsClientSide(bypassCache = false): Promise<Flatte
 
   // Deduplicate concurrent requests
   if (!activeFetchPromise || bypassCache) {
-    activeFetchPromise = executeFetch(bypassCache)
+    activeFetchPromise = fetchFromMirrors()
       .then((data) => {
         if (data && data.all.length > 0) {
           const entry: CachedSportsEntry = {

@@ -21,7 +21,6 @@ function clean(part: string | number | undefined): string {
 }
 
 export const appCacheKeys = {
-  sportsData: "sports:data:v1",
   trailer: (imdbId: string) => `trailer:${imdbId}`,
   flag: (countryCode: string) => `flag:${countryCode}`,
 };

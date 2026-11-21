@@ -339,54 +339,6 @@ export function processStreamsPayload(data: SportsApiResponse): FlattenedSportsD
   };
 }
 
-const MIRROR_TIMEOUT_MS = 4000;
-
-export async function fetchSportsData(): Promise<FlattenedSportsData> {
-  const failures: string[] = [];
-  let data: SportsApiResponse | null = null;
-
-  const endpoints = await getActiveEndpoints();
-
-  for (const endpoint of endpoints) {
-    const host = new URL(endpoint).host;
-    try {
-      const res = await fetch(endpoint, {
-        headers: {
-          Accept: "application/json, text/plain, */*",
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        },
-        signal: AbortSignal.timeout(MIRROR_TIMEOUT_MS),
-      });
-
-      if (!res.ok) {
-        failures.push(`${host}: HTTP ${res.status}`);
-        continue;
-      }
-
-      const json = (await res.json()) as SportsApiResponse;
-      if (json && Array.isArray(json.streams) && json.streams.length > 0) {
-        data = json;
-        break;
-      }
-      const keys = json && typeof json === "object" ? Object.keys(json).slice(0, 6).join(",") : typeof json;
-      const count = Array.isArray(json?.streams) ? json.streams.length : "n/a";
-      const errorField = (json as { error?: unknown } | null)?.error;
-      const reason = typeof errorField === "string" ? `; error=${errorField.slice(0, 120)}` : "";
-      failures.push(`${host}: no streams (keys=${keys}; streams=${count}${reason})`);
-    } catch (err) {
-      failures.push(`${host}: ${err instanceof Error ? err.name : "error"}`);
-    }
-  }
-
-  if (!data) {
-    // The route logs this message, so the log shows which mirror failed and how.
-    throw new Error(`All sports mirrors failed (${failures.join("; ")})`);
-  }
-
-  return processStreamsPayload(data);
-}
-
 export function findMatchBySlugOrId(matches: SportMatch[], slugOrId: string): SportMatch | undefined {
   if (!slugOrId) return undefined;
   const normalized = decodeURIComponent(slugOrId).trim().toLowerCase();

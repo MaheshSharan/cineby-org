@@ -44,7 +44,7 @@ describe("fetchSportsClientSide", () => {
     expect(requestedUrls(fetchMock)).toEqual([getActiveEndpoints()[0]]);
   });
 
-  it("tries every mirror in order, then falls back to our own endpoint", async () => {
+  it("tries every mirror in order and gives up when none answers", async () => {
     const fetchMock = vi.fn(async () => new Response("bad gateway", { status: 502 }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -52,6 +52,6 @@ describe("fetchSportsClientSide", () => {
     const result = await fetchSportsClientSide();
 
     expect(result).toBeNull();
-    expect(requestedUrls(fetchMock)).toEqual([...getActiveEndpoints(), "/api/sports"]);
+    expect(requestedUrls(fetchMock)).toEqual(getActiveEndpoints());
   });
 });
